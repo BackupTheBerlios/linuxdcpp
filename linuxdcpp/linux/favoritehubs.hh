@@ -79,6 +79,7 @@ private:
 	static void preNew_gui (GtkWidget *widget, gpointer data);
 	static void preEdit_gui (GtkWidget *widget, gpointer data);
 	void edit_client (FavoriteHubEntry *e);
+	void add_client (FavoriteHubEntry e);
 	void remove_client (FavoriteHubEntry *e);
 	static void remove_gui (GtkWidget *widget, gpointer data);
 	static void moveUp_gui (GtkWidget *widget, gpointer data);

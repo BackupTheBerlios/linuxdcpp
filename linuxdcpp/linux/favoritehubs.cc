@@ -330,7 +330,12 @@ void FavoriteHubs::edit_client (FavoriteHubEntry *e)
 	e->setNick (gtk_entry_get_text (GTK_ENTRY (dialog["Nick"])));
 	e->setPassword (gtk_entry_get_text (GTK_ENTRY (dialog["Password"])));
 	e->setUserDescription (gtk_entry_get_text (GTK_ENTRY (dialog["User description"])));
-	HubManager::getInstance ()->save ();	
+	HubManager::getInstance ()->save ();
+}
+void FavoriteHubs::add_client (FavoriteHubEntry e)
+{
+	HubManager::getInstance()->addFavorite (e);
+	HubManager::getInstance ()->save ();
 }
 void FavoriteHubs::addDialog_gui (bool edit, string uname, string uaddress, string udesc, string unick, string upassword, string uuserdesc)
 {
@@ -365,9 +370,7 @@ void FavoriteHubs::addDialog_gui (bool edit, string uname, string uaddress, stri
 			e.setNick (gtk_entry_get_text (GTK_ENTRY (dialog["Nick"])));
 			e.setPassword (gtk_entry_get_text (GTK_ENTRY (dialog["Password"])));
 			e.setUserDescription (gtk_entry_get_text (GTK_ENTRY (dialog["User description"])));
-			pthread_mutex_lock (&favoriteLock);
-			HubManager::getInstance()->addFavorite (e);
-			pthread_mutex_unlock (&favoriteLock);
+			WulforManager::get ()->dispatchClientFunc (new Func1<FavoriteHubs, FavoriteHubEntry> (this, &FavoriteHubs::add_client, e));
 		}
 		else
 		{
@@ -378,7 +381,6 @@ void FavoriteHubs::addDialog_gui (bool edit, string uname, string uaddress, stri
 
 			if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 				return;
-
 			FavoriteHubEntry::List &fh = HubManager::getInstance ()->getFavoriteHubs ();
 			for (int i=0;i<TreeViewFactory::getCount (m);i++)
 			{
