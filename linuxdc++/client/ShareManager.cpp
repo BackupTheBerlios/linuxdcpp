@@ -140,6 +140,25 @@ ShareManager::Directory::~Directory() {
 }
 
 
+std::string linuxSeparator (const std::string &ps)
+{
+	std::string str = ps;
+	for (std::string::iterator it=str.begin (); it != str.end (); it++)
+		if ((*it) == '\\')
+			(*it) = '/';
+
+	return str;
+}
+std::string windowsSeparator (const std::string &ps)
+{
+	std::string str = ps;
+	for (std::string::iterator it=str.begin (); it != str.end (); it++)
+		if ((*it) == '/')
+			(*it) = '\\';
+
+	return str;
+}
+
 string ShareManager::translateFileName(const string& aFile, bool adc) throw(ShareException) {
 	RLock l(cs);
 	if(aFile == "MyList.DcLst") {
@@ -192,12 +211,13 @@ string ShareManager::translateFileName(const string& aFile, bool adc) throw(Shar
 			throw ShareException("File Not Available");
 		}
 
-		file = file.substr(i + 1);
-		
+		file = linuxSeparator (file.substr(i + 1));
+
+		cout << j->second + file << endl;		
 		if(!checkFile(j->second, file)) {
 			throw ShareException("File Not Available");
 		}
-		
+
 		return j->second + file;
 	}
 }
@@ -1352,6 +1372,6 @@ void ShareManager::on(TimerManagerListener::Minute, u_int32_t tick) throw() {
 
 /**
  * @file
- * $Id: ShareManager.cpp,v 1.2 2004/11/12 16:29:31 phase Exp $
+ * $Id: ShareManager.cpp,v 1.3 2004/11/30 19:41:47 phase Exp $
  */
 
