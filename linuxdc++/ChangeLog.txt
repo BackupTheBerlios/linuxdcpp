@@ -1,3 +1,7 @@
+2004-12-12 23:20 phase
+
+	* linux/favorites.hh/cc: Fixed password support.
+
 2004-12-12 23:08 phase
 
 	* linux/favorites.hh/cc: Fix some variables problems on some gcc versions.

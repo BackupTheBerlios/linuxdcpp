@@ -314,8 +314,10 @@ void FavoriteHubs::connect ()
 
 	if (!row)
 		return;
-			
-	Hub *h = new Hub (((ustring)row[columns.server]).raw (), mainwindow, ((ustring)row[columns.nick]).raw (), ((ustring)row[columns.password]).raw (), ((ustring)row[columns.userdescription]).raw ());
+
+	FavoriteHubEntry *e = row[columns.entry];
+		
+	Hub *h = new Hub (e->getServer (), mainwindow, e->getNick (), e->getPassword (), e->getUserDescription ());
 	if (mainwindow->addPage (h))
 		manage (h);
 	else
