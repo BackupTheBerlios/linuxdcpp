@@ -218,15 +218,28 @@ void Hub::clearNickList_gui() {
 }
 
 void Hub::getPassword_gui() {
+	MainWindow *mainWin = WulforManager::get()->getMainWindow();
+	GtkWidget *entry;
 	string password;
+	int ret;
 
-	gint response = gtk_dialog_run(passwordDialog);
-	if (response == GTK_RESPONSE_CANCEL)
-		return;		
-		
-	password = gtk_entry_get_text(passwordEntry);
-	gtk_widget_hide (GTK_WIDGET (passwordDialog));
-	
+	GtkWidget *dialog = gtk_dialog_new_with_buttons ("Enter password",
+		mainWin->getWindow(),
+		(GtkDialogFlags)(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
+		GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
+		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+		NULL);
+
+	entry = gtk_entry_new();
+	gtk_entry_set_visibility(GTK_ENTRY(entry), FALSE);
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), entry, TRUE, TRUE, 5);
+	gtk_widget_show_all(dialog);
+
+	ret = gtk_dialog_run(GTK_DIALOG(dialog));
+	gtk_widget_destroy(dialog);
+	if (ret == GTK_RESPONSE_CANCEL) return;
+	password = gtk_entry_get_text(GTK_ENTRY(entry));
+
 	typedef Func1<Hub, string> F1;
 	F1 *func = new F1(this, &Hub::setPassword_client, password);
 	WulforManager::get()->dispatchClientFunc(func);
