@@ -263,11 +263,10 @@ private:
 	GdkEventType filePrevious, dirPrevious;
 	
 	/* Queue info */
-	void buildList (const QueueItem::StringMap& l);
+	void buildList (const QueueItem::StringMap& ll);
 	void addDir (string path, Gtk::TreeModel::Row row, Glib::ustring &current);
 	void removeDir (Glib::ustring path);
 	void removeFile (Glib::ustring target);
-	void removeFiles (Glib::ustring path);
 	void setFilePriority (Glib::ustring target, QueueItem::Priority p);
 	void setDirPriority (Glib::ustring path, QueueItem::Priority p);
 	int countFiles (Glib::ustring path);
@@ -276,6 +275,7 @@ private:
 	string getTrailingSubDir (string path);
 	string getRemainingDir (string path);
 	void getChildren (Glib::ustring path, vector<Gtk::TreeModel::iterator> *iter);
+	void getChildren (Glib::ustring path, vector<Glib::ustring> *iter);
 	std::map<Glib::ustring, Gtk::TreeModel::Row> dirMap;
 	std::map<Glib::ustring, std::vector<QueueItemInfo*> > dirFileMap;
 	std::map<Glib::ustring, QueueItem*> fileMap;
