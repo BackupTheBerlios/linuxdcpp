@@ -10,4 +10,5 @@ bookentry.cc    hub.cc         publichubs.hh      sharebrowser.hh \
 bookentry.hh    hub.hh         wulfor.cc \
 mainwindow.cc   search.cc      mainwindow.hh  search.hh \
 guilistener.hh  privatemsg.cc  settingsdialog.cc \
-util.hh		util.cc	       transfer.hh	  transfer.cc
+util.hh		util.cc	       transfer.hh	  transfer.cc \
+hashdialog.hh	hashdialog.cc

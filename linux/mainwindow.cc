@@ -49,7 +49,8 @@ MainWindow::MainWindow():
 	pubHubsIcon("test.xpm"),
 	searchIcon("test.xpm"),
 	settingsIcon("test.xpm"),
-	exitIcon("test.xpm")
+	exitIcon("test.xpm"),
+	hashIcon("test.xpm")
 {
 	int i;
 	Slot0<void> callback;
@@ -59,6 +60,8 @@ MainWindow::MainWindow():
 	set_title(WUtil::ConvertToUTF8("Wülfor 0.1"));
 	set_default_size(800, 600);
 
+	hashProgress = new HashDialog (this);
+	
 	callback = 
 		open_tunnel(tunnel, slot(*this, &MainWindow::pubHubsClicked), false);
 	leftBar.tools().push_back(ButtonElem("Public Hubs", pubHubsIcon, callback));
@@ -68,7 +71,9 @@ MainWindow::MainWindow():
 	callback = 
 		open_tunnel(tunnel, slot(*this, &MainWindow::settingsClicked), false);
 	leftBar.tools().push_back(ButtonElem("Settings", settingsIcon, callback));
-
+	callback =
+		open_tunnel(tunnel, slot(*this, &MainWindow::hashClicked), false);
+	leftBar.tools().push_back(ButtonElem("Hash", hashIcon, callback));
 	callback = 
 		open_tunnel(tunnel, slot(*this, &MainWindow::exitClicked), false);
 	rightBar.tools().push_back(ButtonElem("Exit", exitIcon, callback));
@@ -112,6 +117,8 @@ MainWindow::MainWindow():
 
 	proxy->addListener<MainWindow, TimerManagerListener>(this, TimerManager::getInstance());
 
+	showingHash = false;
+	
 	startSocket();
 }
 
@@ -271,6 +278,15 @@ void MainWindow::settingsClicked() {
 		startSocket();
 }
 
+void MainWindow::hashClicked()
+{
+	hashProgress->show_all ();
+	showingHash = true;
+	hashProgress->run ();
+	showingHash = false;
+	hashProgress->hide_all ();
+}
+
 bool MainWindow::on_delete_event(GdkEventAny *e) {
 	exitClicked();
 	return true;
@@ -300,6 +316,9 @@ void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw()
 	lastUpdate = ticks;
 	lastUp = Socket::getTotalUp();
 	lastDown = Socket::getTotalDown();
+
+	if (!showingHash)
+		hashProgress->updateStats ();
 }
 
 void MainWindow::quit ()

@@ -27,6 +27,8 @@
 #include "util.hh"
 #include "transfer.hh"
 
+#include "hashdialog.hh"
+
 #include "../client/stdinc.h"
 #include "../client/DCPlusPlus.h"
 #include "../client/DownloadManager.h"
@@ -70,6 +72,7 @@ class MainWindow:
 		void searchClicked();
 		void settingsClicked();
 		void exitClicked();
+		void hashClicked();
 		bool on_delete_event(GdkEventAny *e);
 
 		int64_t lastUpdate, lastUp, lastDown;
@@ -81,7 +84,10 @@ class MainWindow:
 		
 		Gtk::Notebook book;
 		Gtk::Statusbar status[NUM_STATUS];
-		Gtk::Image pubHubsIcon, exitIcon, settingsIcon, searchIcon;
+		Gtk::Image pubHubsIcon, exitIcon, settingsIcon, searchIcon, hashIcon;
+
+		HashDialog *hashProgress;
+		bool showingHash;
 
 };
 

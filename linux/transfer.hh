@@ -184,4 +184,4 @@ class CTransfer : 	public DownloadManagerListener,
 		static CTransfer *instance;
 };
 
-#endif			
+#endif

@@ -141,9 +141,8 @@ void CTransfer::on(ConnectionManagerListener::Removed, ConnectionQueueItem *item
 
 	TransferItem *i;
 	Lock l(cs);
-	TransferItem::MapIter t= transfer.find (item);
-
-	if (t == transfer.end())
+	
+	if (transfer.find (item) == transfer.end())
 	{
 		i = bruteFindTransfer ();
 		if (i == NULL)
@@ -153,14 +152,14 @@ void CTransfer::on(ConnectionManagerListener::Removed, ConnectionQueueItem *item
 		}
 	}
 	else
-		i = t->second;
+		i = transfer[item];
 
-	i = t->second;
 	TreeModel::iterator it = findTransfer (i);
 	assert (it != transferStore->children().end());
-	
-	transfer.erase (t);
+
 	transferStore->erase (it);
+	if (transfer.find (item) != transfer.end())
+		transfer.erase (transfer.find (item));
 }
 
 void CTransfer::on(ConnectionManagerListener::Failed, ConnectionQueueItem *item, const string &reason) throw()

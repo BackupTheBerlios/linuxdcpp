@@ -23,6 +23,8 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+#include <iostream>
+
 #include "Singleton.h"
 #include "MerkleTree.h"
 #include "Thread.h"
@@ -259,5 +261,5 @@ private:
 
 /**
  * @file
- * $Id: HashManager.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
+ * $Id: HashManager.h,v 1.3 2004/11/03 23:45:05 phase Exp $
  */
