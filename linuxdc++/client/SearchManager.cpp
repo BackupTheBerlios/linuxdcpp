@@ -111,7 +111,9 @@ string SearchResult::getFileName() const {
 
 void SearchManager::setPort(short aPort) throw(SocketException) {
 	port = aPort;
-	if(socket != NULL) {
+	
+	if(socket != NULL)
+	{
 		disconnect();
 	} else {
 		socket = new Socket();
@@ -292,6 +294,6 @@ string SearchManager::clean(const string& aSearchString) {
 
 /**
  * @file
- * $Id: SearchManager.cpp,v 1.4 2004/12/19 14:30:18 phase Exp $
+ * $Id: SearchManager.cpp,v 1.5 2004/12/21 23:35:27 phase Exp $
  */
 

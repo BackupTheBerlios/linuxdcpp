@@ -33,7 +33,7 @@ void Thread::start() throw(ThreadException) {
 
 #else
 void Thread::start() throw(ThreadException) { 
-	join();
+	//join();
 	if(pthread_create(&threadHandle, NULL, &starter, this) != 0) {
 		throw ThreadException(STRING(UNABLE_TO_CREATE_THREAD));
 	}
@@ -41,6 +41,6 @@ void Thread::start() throw(ThreadException) {
 #endif
 /**
  * @file
- * $Id: Thread.cpp,v 1.2 2004/11/12 16:29:31 phase Exp $
+ * $Id: Thread.cpp,v 1.3 2004/12/21 23:35:27 phase Exp $
  */
 

@@ -125,11 +125,15 @@ Search::Search(MainWindow *mw):
 	items.back ().set_sensitive (false);
 	items.push_back (SeparatorElem ());
 	items.push_back (MenuElem ("Get file list", open_tunnel (tunnel, slot (*this, &Search::getFileList), true)));
+
+	statusbar.pack_start (status, PACK_EXPAND_WIDGET);
 	
 	mainBox.pack_start(barBox, PACK_SHRINK);
 	mainBox.pack_start(scroll, PACK_EXPAND_WIDGET);
 
-	pack_start(mainBox);
+	superMainBox.pack_start (mainBox, PACK_EXPAND_WIDGET);
+	superMainBox.pack_start (statusbar, PACK_SHRINK);
+	pack_start(superMainBox);
 	show_all();
 
 	label.set_text(WUtil::ConvertToUTF8("Search"));
@@ -190,8 +194,7 @@ void Search::searchPressed() {
 	int64_t size;
 	SearchManager::TypeModes fileType;
 	SearchManager::SizeModes sizeType;
-	Label *l;
-	ComboDropDownItem *i;
+	std::list<ustring> popdown;
 
 	resultsStore->clear();
 
@@ -203,15 +206,24 @@ void Search::searchPressed() {
 	fileType = (SearchManager::TypeModes)typeOM.get_history();
 	sizeType = (SearchManager::SizeModes)sizeOM.get_history();
 
-	l = new Label(search.get_entry()->get_text());
-	i = new ComboDropDownItem();
-	manage(l);
-	manage(i);
-	i->add(*l);
-	search.get_list()->children().push_front(*i);
-	l->show();
+	popdown = search.get_popdown_strings ();
+	bool found=false;
+	for (std::list<ustring>::iterator it=popdown.begin (); it != popdown.end (); it++)
+		if (*it == search.get_entry ()->get_text ())
+		{
+			found = true;
+			break;
+		}
+
+	if (!found)
+	{
+		popdown.push_front (search.get_entry ()->get_text ());
+		search.set_popdown_strings (popdown);
+	}
 
 	SearchManager::getInstance()->search(name, size, fileType, sizeType);
+	status.pop (1);
+	status.push ("Searching for " + search.get_entry ()->get_text () + "...");
 }
 
 void Search::on(SearchManagerListener::SR, SearchResult *result) throw() {

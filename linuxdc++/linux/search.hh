@@ -111,8 +111,9 @@ class Search: public BookEntry, public SearchManagerListener {
 		Gtk::Menu sizeMenu, unitMenu, typeMenu, popupMenu;
 		Gtk::CheckButton slotCB;
 		Gtk::Button searchButton;
-		Gtk::VBox barBox;
-		Gtk::HBox mainBox;
+		Gtk::VBox barBox, superMainBox;
+		Gtk::HBox mainBox, statusbar;
+		Gtk::Statusbar status; 
 		Gtk::Entry sizeEntry;
 
 		static int columnSize[];

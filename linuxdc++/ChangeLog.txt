@@ -1,3 +1,15 @@
+2004-12-22 00:26 phase
+
+	* linux/search.hh/cc: Added statusbar, the dropdown menu now saves the stuff that you're searching for. Hopefully fixed seg. fault?
+
+2004-12-20 23:57 phase
+
+	* client/Thread.cpp: Fixed the bug where one couldn't change the active port nr with a freeze.
+
+2004-12-19 19:20 phase
+
+	* client/searchmanager.h/cpp, linux/selecter.cc: Fixed the bug where one couldn't exit cleanly if in active mode.
+	
 2004-12-18 16:05 phase
 
 	* linux/queue.hh/cc, linux/mainwindow.hh/cc: Fixed some VERY serious bugs with the dlqueue. Added basic resizing on the mainwindow statusbar (to start with).

@@ -147,10 +147,10 @@ void MainWindow::startSocket() {
 	short firstPort = lastPort;
 
 	while(true) {
-		try {
+		try
+		{
 			ConnectionManager::getInstance()->setPort(lastPort);
-			Selecter::WSAASyncSelect(
-				ConnectionManager::getInstance()->getServerSocket());
+			Selecter::WSAASyncSelect(ConnectionManager::getInstance()->getServerSocket());
 
 			SearchManager::getInstance()->setPort(lastPort);
 			break;
