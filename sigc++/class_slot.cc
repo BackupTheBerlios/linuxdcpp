@@ -1,5 +1,5 @@
 // Copyright 2000, Karl Einar Nelson
-#include "sigc++/class_slot.h"
+#include <sigc++/class_slot.h>
 
 #ifdef SIGC_CXX_NAMESPACES
 namespace SigC

@@ -1,37 +1,39 @@
 Introduction
 ------------
-This is a broken but partially working port of DC++ to Unix-likes. I have no
-idea why I called it wulfor, but I know I was bored with all projects called
-[arbitrary letter]dc or something. But why wulfor of all names I don't know.
-Later I have realized that DC-- probably would be the best name for it since
+This is a broken but partially working port of DC++ to Unix-likes. The name
+is in sort of flux right now, many of the sourch files says Wulfor but the
+binary is called dcpp. I just don't know what to call it at the moment.
+I have realized that DC-- probably would be the best name for it since
 it's no way near feature complete compared to DC++.
 
 Dependencies:
 -------------
 Gtkmm 2.2
+libdl
+pthread
+zlib
+libbz2
+automake
+
 Currently configures for, and successfully built using g++-3.3 but it will
-probably work on other gcc versions as well. Just change the makefile.
+probably work on other gcc versions as well. If you want to specify a specific
+g++ version (if you have more than one installed) you can do like this:
+CXX=g++-3.3 ./configure
 
 Compiling:
 ----------
-In a dream world:
-
-cd sigc
+./configure
 make
-cd ../sigcx
-make
-cd..
 cd linux
-make
-./wulfor
+./dcpp
 
-Sadly, I had to make compile my own version of libsigc and libsigcx since 
-the standard versions did not support functions with enough arguments. 
-This means that I can't use pkg-config anymore, since this will link with the
-standard libsigc on your system. So you will have to edit the makefile
-manually and change all the compiler flags. The easiest way to do this
-is probably to run pkg-config --cflags/--libs gtkmm-2.0, remove everything
-about libsigc++ from the output and paste what's left into the makefile.
+The configure script will tell you if something's missing in a clear and
+human-readable way. Hopefully. I'm not sure how well it will work, since this
+is my first attempt at autoconf/automake.
+
+If you want to generate a new configure script, do 
+aclocal && automake --foreign && autoconf.
+Not sure why you want to do that, but like I said I'm new to autoconf.
 
 License:
 --------
