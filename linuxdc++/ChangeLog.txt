@@ -1,3 +1,7 @@
+2004-12-12 23:08 phase
+
+	* linux/favorites.hh/cc: Fix some variables problems on some gcc versions.
+
 2004-12-12 22:35 phase
 	
 	* linux/favorites.hh/cc, linux/mainwindow.hh/cc, linux/queue.cc: Add Favorite Hubs with auto connect support. You should be able to remove directorys safely from the Download queue.

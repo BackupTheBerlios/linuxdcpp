@@ -44,7 +44,7 @@ bConnect ("Connect")
 	GuiProxy *proxy = GuiProxy::getInstance();
 	ThreadTunnel *tunnel = proxy->getTunnel();
 		
-	window = mw;
+	mainwindow = mw;
 	ID = BOOK_FAVORITE_HUBS;
 
 	label.set_text ("Favorite Hubs");
@@ -226,7 +226,7 @@ void FavoriteHubs::preEdit ()
 }
 void FavoriteHubs::addDialog (bool edit, ustring uname, ustring uaddress, ustring udesc, ustring unick, ustring upassword, ustring uuserdesc)
 {
-	Gtk::Dialog window ("Favorite Hub Properties", *window, true) ;
+	Gtk::Dialog window ("Favorite Hub Properties", *mainwindow, true);
 	Gtk::Entry nameEntry, addressEntry, descEntry, nickEntry, passwordEntry, userdescEntry;
 	nameEntry.set_text (uname);
 	addressEntry.set_text (uaddress);
@@ -315,8 +315,8 @@ void FavoriteHubs::connect ()
 	if (!row)
 		return;
 			
-	Hub *h = new Hub (((ustring)row[columns.server]).raw (), window, ((ustring)row[columns.nick]).raw (), ((ustring)row[columns.password]).raw (), ((ustring)row[columns.userdescription]).raw ());
-	if (window->addPage (h))
+	Hub *h = new Hub (((ustring)row[columns.server]).raw (), mainwindow, ((ustring)row[columns.nick]).raw (), ((ustring)row[columns.password]).raw (), ((ustring)row[columns.userdescription]).raw ());
+	if (mainwindow->addPage (h))
 		manage (h);
 	else
 		delete h;

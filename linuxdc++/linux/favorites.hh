@@ -99,7 +99,7 @@ private:
 	
 	static int columnSize[];
 	GdkEventType previous;
-	MainWindow *window;
+	MainWindow *mainwindow;
 };
 
 #endif
