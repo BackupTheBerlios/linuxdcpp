@@ -48,7 +48,7 @@ class PublicHubs:
 		void filterHubs_gui();
 		void connect_gui();
 		void updateList_gui();
-		void setStatus_gui(int status, std::string text);
+		void setStatus_gui(GtkStatusbar *status, std::string text);
 
 		//from HubManagerListener
 		void on(HubManagerListener::DownloadStarting, 
@@ -66,18 +66,11 @@ class PublicHubs:
 		void on(HubManagerListener::UserRemoved, 
 			const User::Ptr &user) throw();
 
-		enum {
-			STATUS_MAIN,
-			STATUS_USERS,
-			STATUS_HUBS
-		};
-		
 	private:
 		static void filter_callback(GtkWidget *widget, gpointer data);
 		static void connect_callback(GtkWidget *widget, gpointer data);
 
 		pthread_mutex_t hubLock;
-		TreeView *treeView;
 
 		HubEntry::List hubs;
 		StringSearch filter;

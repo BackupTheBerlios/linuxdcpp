@@ -41,154 +41,158 @@ class Func0: public FuncBase {
 		void (c::*func)();
 };
 
-template<class c, class p1>
+template<class c, typename p1>
 class Func1: public FuncBase {
 	public:
-		Func1(c *obj, void (c::*func)(p1), p1 param1) {
+		Func1(c *obj, void (c::*func)(p1), p1 param1):
+			_param1(param1)
+		{
 			this->obj = obj;
 			this->func = func;
-			this->param1 = param1;
 		}
 
 		void call() {
-			(*obj.*func)(param1);
+			(*obj.*func)(_param1);
 		}
 
 	private:
 		c *obj;
 		void (c::*func)(p1);
-		p1 param1;
+		p1 _param1;
 };
 
-template<class c, class p1, class p2>
+template<class c, typename p1, typename p2>
 class Func2: public FuncBase {
 	public:
-		Func2(c *obj, void (c::*func)(p1, p2), p1 param1, p2 param2) {
+		Func2(c *obj, void (c::*func)(p1, p2), p1 param1, p2 param2):
+			_param1(param1),
+			_param2(param2)
+		{
 			this->obj = obj;
 			this->func = func;
-			this->param1 = param1;
-			this->param2 = param2;
 		}
 
 		void call() {
-			(*obj.*func)(param1, param2);
+			(*obj.*func)(_param1, _param2);
 		}
 
 	private:
 		c *obj;
 		void (c::*func)(p1, p2);
-		p1 param1;
-		p2 param2;
+		p1 _param1;
+		p2 _param2;
 };
 
-template<class c, class p1, class p2, class p3>
+template<class c, typename p1, typename p2, typename p3>
 class Func3: public FuncBase {
 	public:
-		Func3(c *obj, void (c::*func)(p1, p2, p3), p1 param1, p2 param2, p3 param3) {
+		Func3(c *obj, void (c::*func)(p1, p2, p3), p1 param1, p2 param2, p3 param3):
+			_param1(param1),
+			_param2(param2),
+			_param3(param3)
+		{
 			this->obj = obj;
 			this->func = func;
-			this->param1 = param1;
-			this->param2 = param2;
-			this->param3 = param3;
 		}
 
 		void call() {
-			(*obj.*func)(param1, param2, param3);
+			(*obj.*func)(_param1, _param2, _param3);
 		}
 
 	private:
 		c *obj;
 		void (c::*func)(p1, p2, p3);
-		p1 param1;
-		p2 param2;
-		p3 param3;
+		p1 _param1;
+		p2 _param2;
+		p3 _param3;
 };
 
-template<class c, class p1, class p2, class p3, class p4>
+template<class c, typename p1, typename p2, typename p3, typename p4>
 class Func4: public FuncBase {
 	public:
 		Func4(c *obj, void (c::*func)(p1, p2, p3, p4), 
-			p1 param1, p2 param2, p3 param3, p4 param4)
+			p1 param1, p2 param2, p3 param3, p4 param4):
+			_param1(param1),
+			_param2(param2),
+			_param3(param3),
+			_param4(param4)
 		{
 			this->obj = obj;
 			this->func = func;
-			this->param1 = param1;
-			this->param2 = param2;
-			this->param3 = param3;
-			this->param4 = param4;
 		}
 
 		void call() {
-			(*obj.*func)(param1, param2, param3, param4);
+			(*obj.*func)(_param1, _param2, _param3, _param4);
 		}
 
 	private:
 		c *obj;
 		void (c::*func)(p1, p2, p3, p4);
-		p1 param1;
-		p2 param2;
-		p3 param3;
-		p4 param4;
+		p1 _param1;
+		p2 _param2;
+		p3 _param3;
+		p4 _param4;
 };
 
-template<class c, class p1, class p2, class p3, class p4, class p5>
+template<class c, typename p1, typename p2, typename p3, typename p4, typename p5>
 class Func5: public FuncBase {
 	public:
 		Func5(c *obj, void (c::*func)(p1, p2, p3, p4, p5), 
-			p1 param1, p2 param2, p3 param3, p4 param4, p5 param5)
+			p1 param1, p2 param2, p3 param3, p4 param4, p5 param5):
+			_param1(param1),
+			_param2(param2),
+			_param3(param3),
+			_param4(param4),
+			_param5(param5)
 		{
 			this->obj = obj;
 			this->func = func;
-			this->param1 = param1;
-			this->param2 = param2;
-			this->param3 = param3;
-			this->param4 = param4;
-			this->param5 = param5;
 		}
 
 		void call() {
-			(*obj.*func)(param1, param2, param3, param4, param5);
+			(*obj.*func)(_param1, _param2, _param3, _param4, _param5);
 		}
 
 	private:
 		c *obj;
 		void (c::*func)(p1, p2, p3, p4, p5);
-		p1 param1;
-		p2 param2;
-		p3 param3;
-		p4 param4;
-		p5 param5;
+		p1 _param1;
+		p2 _param2;
+		p3 _param3;
+		p4 _param4;
+		p5 _param5;
 };
 
-template<class c, class p1, class p2, class p3, class p4, class p5, class p6>
+template<class c, typename p1, typename p2, typename p3, typename p4, typename p5, typename p6>
 class Func6: public FuncBase {
 	public:
 		Func6(c *obj, void (c::*func)(p1, p2, p3, p4, p5, p6), 
-			p1 param1, p2 param2, p3 param3, p4 param4, p5 param5, p6 param6)
+			p1 param1, p2 param2, p3 param3, p4 param4, p5 param5, p6 param6):
+			_param1(param1),
+			_param2(param2),
+			_param3(param3),
+			_param4(param4),
+			_param5(param5),
+			_param6(param6)
+			
 		{
 			this->obj = obj;
 			this->func = func;
-			this->param1 = param1;
-			this->param2 = param2;
-			this->param3 = param3;
-			this->param4 = param4;
-			this->param5 = param5;
-			this->param6 = param6;
 		}
 
 		void call() {
-			(*obj.*func)(param1, param2, param3, param4, param5, param6);
+			(*obj.*func)(_param1, _param2, _param3, _param4, _param5, _param6);
 		}
 
 	private:
 		c *obj;
 		void (c::*func)(p1, p2, p3, p4, p5, p6);
-		p1 param1;
-		p2 param2;
-		p3 param3;
-		p4 param4;
-		p5 param5;
-		p6 param6;
+		p1 _param1;
+		p2 _param2;
+		p3 _param3;
+		p4 _param4;
+		p5 _param5;
+		p6 _param6;
 };
 
 #else

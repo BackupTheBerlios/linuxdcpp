@@ -50,6 +50,7 @@ void MainWindow::createWindow_gui() {
 	ulStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "status6"));
 	dlStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "status7"));
 
+	window = GTK_WINDOW(glade_xml_get_widget(xml, "mainWindow"));
 	book = GTK_NOTEBOOK(glade_xml_get_widget(xml, "book"));
 	transfers = GTK_TREE_VIEW(glade_xml_get_widget(xml, "transfers"));
 	
@@ -62,6 +63,10 @@ void MainWindow::createWindow_gui() {
     g_signal_connect(o, "clicked", G_CALLBACK(quit_callback), (gpointer)this);
 	
 	gtk_statusbar_push(mainStatus, 0, "Welcome to Wulfor - Reloaded");
+}
+
+GtkWindow *MainWindow::getWindow() {
+	return window;
 }
 
 void MainWindow::startSocket() {

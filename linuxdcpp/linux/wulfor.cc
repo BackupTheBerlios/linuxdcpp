@@ -44,6 +44,7 @@ int main(int argc, char *argv[]) {
 	TimerManager::getInstance()->start();
 
 	g_thread_init(NULL);
+	gdk_threads_init();
 	gtk_init(&argc, &argv);
 	glade_init();
 

@@ -26,7 +26,7 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 {
 	HubManager::getInstance()->addListener(this);
 	if (HubManager::getInstance()->isDownloading())
-		setStatus_gui(STATUS_MAIN, "Downloading hub list");
+		setStatus_gui(statusMain, "Downloading hub list");
 	
 	string file = WulforManager::get()->getPath() + "/glade/publichubs.glade";
 	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
@@ -47,11 +47,11 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	
 	hubStore = gtk_list_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_STRING);
 	gtk_tree_view_set_model(hubView, GTK_TREE_MODEL(hubStore));
-	treeView = new TreeView(hubView, NULL);
-	treeView->addColumn_gui(COLUMN_NAME, "Name", TreeView::STRING, WIDTH_NAME);
-	treeView->addColumn_gui(COLUMN_DESC, "Description", TreeView::STRING, WIDTH_DESC);
-	treeView->addColumn_gui(COLUMN_USERS, "Users", TreeView::INT, WIDTH_USERS);
-	treeView->addColumn_gui(COLUMN_ADDRESS, "Address", TreeView::STRING, WIDTH_ADDRESS);
+	TreeView treeView(hubView);
+	treeView.addColumn_gui(COLUMN_NAME, "Name", TreeView::STRING, WIDTH_NAME);
+	treeView.addColumn_gui(COLUMN_DESC, "Description", TreeView::STRING, WIDTH_DESC);
+	treeView.addColumn_gui(COLUMN_USERS, "Users", TreeView::INT, WIDTH_USERS);
+	treeView.addColumn_gui(COLUMN_ADDRESS, "Address", TreeView::STRING, WIDTH_ADDRESS);
 
 	GObject *o;
 	o = G_OBJECT(glade_xml_get_widget(xml, "filterButton"));
@@ -67,7 +67,6 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 PublicHubs::~PublicHubs() {
 	HubManager::getInstance()->removeListener(this);
 	pthread_mutex_destroy(&hubLock);
-	delete treeView;
 }
 
 void PublicHubs::downloadList_client() {
@@ -115,8 +114,8 @@ void PublicHubs::updateList_gui() {
 	
 	hubStream << "Hubs: " << numHubs;
 	userStream << "Users: " << numUsers;
-	setStatus_gui(STATUS_HUBS, hubStream.str());
-	setStatus_gui(STATUS_USERS, userStream.str());
+	setStatus_gui(statusHubs, hubStream.str());
+	setStatus_gui(statusUsers, userStream.str());
 }
 
 GtkWidget *PublicHubs::getWidget() {
@@ -129,35 +128,35 @@ void PublicHubs::filterHubs_gui() {
 }
 
 void PublicHubs::connect_gui() {
-
-
+	string address = gtk_entry_get_text(connectEntry);
+	GtkTreeIter iter;
+	GtkTreeSelection *selection;
+	char *text;
+	
+	if (!address.empty()) {
+		WulforManager::get()->addHub_gui(address);
+		return;
+	}
+	
+	selection = gtk_tree_view_get_selection(hubView);
+	if (gtk_tree_selection_get_selected(selection, NULL, &iter)) {
+		gtk_tree_model_get(GTK_TREE_MODEL(hubStore), &iter, COLUMN_ADDRESS, &text, -1);
+		address = text;
+		WulforManager::get()->addHub_gui(address);
+	}
 }
 
-void PublicHubs::setStatus_gui(int status, string text) {
-	GtkStatusbar *bar;
-
-	switch (status) {
-		case STATUS_MAIN:
-			bar = statusMain;
-			break;
-		case STATUS_USERS:
-			bar = statusUsers;
-			break;
-		case STATUS_HUBS:
-			bar = statusHubs;
-			break;
-	}
-
-	gtk_statusbar_pop(bar, 0);
-	gtk_statusbar_push(bar, 0, text.c_str());
+void PublicHubs::setStatus_gui(GtkStatusbar *status, string text) {
+	gtk_statusbar_pop(status, 0);
+	gtk_statusbar_push(status, 0, text.c_str());
 }
 
 void PublicHubs::on(HubManagerListener::DownloadStarting, 
 	const string &file) throw()
 {
 	string msg = "Download starting: " + file;
-	typedef Func2<PublicHubs, int, string> Func;
-	Func *func = new Func(this, &PublicHubs::setStatus_gui, STATUS_MAIN, msg);
+	typedef Func2<PublicHubs, GtkStatusbar*, string> Func;
+	Func *func = new Func(this, &PublicHubs::setStatus_gui, statusMain, msg);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 	
@@ -165,8 +164,8 @@ void PublicHubs::on(HubManagerListener::DownloadFailed,
 	const string &file) throw()
 {
 	string msg = "Download failed: " + file;
-	typedef Func2<PublicHubs, int, string> Func;
-	Func *func = new Func(this, &PublicHubs::setStatus_gui, STATUS_MAIN, msg);
+	typedef Func2<PublicHubs, GtkStatusbar*, string> Func;
+	Func *func = new Func(this, &PublicHubs::setStatus_gui, statusMain, msg);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
@@ -174,8 +173,8 @@ void PublicHubs::on(HubManagerListener::DownloadFinished,
 	const string &file) throw()
 {
 	string msg = "Download finished: " + file;
-	typedef Func2<PublicHubs, int, string> Func;
-	Func *f2 = new Func(this, &PublicHubs::setStatus_gui, STATUS_MAIN, msg);
+	typedef Func2<PublicHubs, GtkStatusbar*, string> Func;
+	Func *f2 = new Func(this, &PublicHubs::setStatus_gui, statusMain, msg);
 	WulforManager::get()->dispatchGuiFunc(f2);
 
 	pthread_mutex_lock(&hubLock);

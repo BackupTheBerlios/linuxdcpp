@@ -34,9 +34,11 @@ class BookEntry {
 		GtkWidget *getTitle();
 		virtual GtkWidget *getWidget() = 0;
 
+	protected:
+		std::string id;
+
 	private:
 		int type;
-		std::string id;
 		GtkWidget *box;
 		GtkButton *button;
 		GtkLabel *label;

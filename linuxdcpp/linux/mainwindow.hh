@@ -36,6 +36,8 @@ class MainWindow:
 		MainWindow();
 		~MainWindow();
 
+		GtkWindow *getWindow();
+
 		//gui functions
 		void createWindow_gui();
 		void setStatus_gui(std::string status);
@@ -58,6 +60,7 @@ class MainWindow:
 
 		int64_t lastUpdate, lastUp, lastDown;
 
+		GtkWindow *window;
 		GtkStatusbar *mainStatus, *hubStatus, *slotStatus, *dTotStatus, *uTotStatus,
 			*dlStatus, *ulStatus;
 		GtkNotebook *book;
