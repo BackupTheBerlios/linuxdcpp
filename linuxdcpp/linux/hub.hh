@@ -63,6 +63,8 @@ class Hub:
 		void browseItemClicked_gui(GtkMenuItem *, gpointer);
 		void msgItemClicked_gui(GtkMenuItem *, gpointer);
 		void grantItemClicked_gui(GtkMenuItem *, gpointer);
+		void completion_gui(GtkWidget *, GdkEventKey *, gpointer);
+                void setChatEntryFocus(GtkWidget *, GdkEventKey *, gpointer);
 
 		//to be called from client thread
 		void connectClient_client(string address, 
@@ -104,10 +106,11 @@ class Hub:
 
 	private:
 		Client *client;
-
+		
 		Callback2<Hub, void, GtkEntry *> enterCallback;
 		Callback3<Hub, void, GtkWidget *, GdkEventButton *> nickListCallback;
 		Callback2<Hub, void, GtkMenuItem *> browseCallback, msgCallback, grantCallback;
+		Callback3<Hub, void, GtkWidget *, GdkEventKey *> completionCallback, setFocusCallback;
 
 		std::set<std::string> nicks;
 		pthread_mutex_t clientLock;
@@ -129,6 +132,10 @@ class Hub:
 		GtkTreeSelection *nickSelection;
 		GtkScrolledWindow *chatScroll;
 		GtkTextMark *chatMark;
+		GtkTreeIter completion_iter;
+
+		string prev_nick;
+		string nick_completion;
 		
 		const int WIDTH_ICON, WIDTH_NICK, WIDTH_SHARED;
 		

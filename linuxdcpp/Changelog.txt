@@ -1,3 +1,7 @@
+2005-05-06 - paskharen
+* Added tab compleation for nicks (thaks s4kk3)
+* Fixed unicode conversion when downloading to a directory in sharbrowser (also from s4kk3)
+
 2005-02-27 - paskharen
 * New and improved publichubs with context menu and stuff.
 * Added separate connect dialog to connect to a hub by address.

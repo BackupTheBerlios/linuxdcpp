@@ -330,7 +330,7 @@ void ShareBrowser::menuClicked_gui(GtkMenuItem *item, gpointer) {
 			NULL);
 
 		ret = gtk_dialog_run(GTK_DIALOG(chooser));
-		target = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(chooser));
+		target = Text::toT(gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(chooser))) + Text::toT("/");
 		gtk_widget_destroy(GTK_WIDGET(chooser));
 		if (ret == GTK_RESPONSE_CANCEL) return;
 	} else {

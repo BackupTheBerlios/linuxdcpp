@@ -22,6 +22,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <gdk/gdkkeysyms.h>
 
 using namespace std;
 
@@ -32,6 +33,8 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	browseCallback(this, &Hub::browseItemClicked_gui),
 	msgCallback(this, &Hub::msgItemClicked_gui),
 	grantCallback(this, &Hub::grantItemClicked_gui),
+	completionCallback(this, &Hub::completion_gui),
+	setFocusCallback(this, &Hub::setChatEntryFocus),
 	WIDTH_ICON(20),
 	WIDTH_NICK(100),
 	WIDTH_SHARED(50)
@@ -69,7 +72,7 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	GtkTextIter iter;
 	gtk_text_buffer_get_end_iter(chatBuffer, &iter);
 	chatMark = gtk_text_buffer_create_mark(chatBuffer, NULL, &iter, FALSE);
-
+ 	
 	nickMenu = GTK_MENU(gtk_menu_new());
 	browseItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Browse files"));
 	msgItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Private message"));
@@ -99,12 +102,14 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	userIcons["dc++-fw"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
 	tmp = path + "dc++-fw-op.png";
 	userIcons["dc++-fw-op"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
-
+	
 	enterCallback.connect(G_OBJECT(chatEntry), "activate", NULL);
 	nickListCallback.connect_after(G_OBJECT(nickView), "button-release-event", NULL);
 	browseCallback.connect(G_OBJECT(browseItem), "activate", NULL);
 	msgCallback.connect(G_OBJECT(msgItem), "activate", NULL);
 	grantCallback.connect(G_OBJECT(grantItem), "activate", NULL);
+	completionCallback.connect_after(G_OBJECT(chatEntry), "key-press-event", NULL);
+	setFocusCallback.connect_after(G_OBJECT(chatEntry), "key-press-event", NULL);
 }
 
 Hub::~Hub() {
@@ -588,4 +593,91 @@ void Hub::on(ClientListener::NmdcSearch, Client *client, const string&,
 	int, int64_t, int, const string&) throw()
 {
 	//TODO: figure out what to do here...
+}
+
+void Hub::completion_gui(GtkWidget *, GdkEventKey *key, gpointer) {
+	if (!BOOLSETTING(TAB_COMPLETION)) return;
+	if (key->keyval != GDK_Tab) return;
+	
+	string nick;
+	int countMatches;
+	string command;
+ 
+	nick = gtk_entry_get_text(chatEntry);
+
+	//this is needed if we want to use tab completion with user commands
+	if (g_strrstr(nick.c_str(), " ")) {
+		string::size_type len = nick.length();
+		string::size_type pos = nick.find_last_of(" ", len);
+		command = nick.substr(0, pos+1);
+		nick = nick.erase(0, pos+1);
+	}
+	else command = "";
+
+	//check if nick is same as previous time.. so we can continue from it
+	if (nick == prev_nick) {
+		gtk_tree_model_iter_next(GTK_TREE_MODEL(nickStore), &completion_iter);
+	}
+	//if it's different then start from beginning
+	else {
+		string::size_type length = nick.length();
+		nick_completion = g_utf8_strdown(nick.c_str(), length);
+		gtk_tree_model_get_iter_first(GTK_TREE_MODEL(nickStore), &completion_iter);
+		countMatches = 0; //reset match counter
+	}
+	while (gtk_list_store_iter_is_valid(nickStore, &completion_iter)) {
+		const char *t;
+
+		gtk_tree_model_get(GTK_TREE_MODEL(nickStore), &completion_iter, COLUMN_NICK, &t, -1);
+
+		int length = strlen(t); //length is needed for few things
+		string name = g_utf8_strdown(t, length);
+
+		//check for [ or ( prefix and remove [] or () with text inside them
+		while(g_str_has_prefix(name.c_str(), "[") || g_str_has_prefix(name.c_str(), "(")){
+			if(g_str_has_prefix(name.c_str(), "[")){
+				string::size_type start = name.find_first_of("[", 0);
+				string::size_type end = name.find_first_of("]", start);
+				if (end == string::npos) end = start; //if end == string::npos it looks like there isn't closing bracket so we can safely remove [ and continue completion.. or can we???
+				name = name.erase(start, end+1);
+			}
+			else {
+				string::size_type start = name.find_first_of("(", 0);
+				string::size_type end = name.find_first_of(")", start);
+				if (end == string::npos) end = start; //same as previous
+				name = name.erase(start, end+1);
+			}
+		}
+
+		//if we found a match let's show it
+		if (g_str_has_prefix(name.c_str(), nick_completion.c_str())) {
+			gtk_entry_set_text(chatEntry, t);
+			gtk_entry_set_position(chatEntry, -1);
+			//if we used some commands or words before tab-completion let's prepend them
+			gtk_entry_prepend_text(chatEntry, command.c_str());
+			prev_nick = t; //store nick for later use (see beginning of this void)
+			countMatches++;
+			return;
+		}
+		
+		gtk_tree_model_iter_next(GTK_TREE_MODEL(nickStore), &completion_iter);
+
+		if (!gtk_list_store_iter_is_valid(nickStore, &completion_iter)) {
+			//if no matches found, don't continue, if we don't do this, client will enter to endless loop
+			if(countMatches == 0) return;
+			gtk_tree_model_get_iter_first(GTK_TREE_MODEL(nickStore), &completion_iter);
+			&Hub::completion_gui; //if there were matches, we can safely start from beginning
+		}	
+	}
+}
+
+void Hub::setChatEntryFocus(GtkWidget *, GdkEventKey *key, gpointer)
+{
+  if(key->keyval != GDK_Tab) return;
+  gtk_widget_grab_focus(GTK_WIDGET(chatEntry));
+  //set "cursor" (the blinking thing) at the end of text. this is because of few things
+  //1. "cursor" will be at the beginning of text
+  //2. whole text in entry is painted
+  gtk_entry_set_position(chatEntry, strlen(gtk_entry_get_text(chatEntry)));
+  return;
 }
