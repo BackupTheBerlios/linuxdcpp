@@ -21,6 +21,8 @@
 #include <assert.h>
 
 using namespace Gtk;
+using namespace SigC;
+using namespace SigCX;
 
 CTransfer *CTransfer::instance;
 
@@ -34,9 +36,14 @@ CTransfer::~CTransfer ()
 	
 }
 
-CTransfer::CTransfer ()
+CTransfer::CTransfer () : 	menuRemoveTransfer("Close transfer"),
+										menuBrowse("Browse user filelist"),
+										menuRemoveQueue("Remove from queue")
 {
-	GuiProxy *proxy = GuiProxy::getInstance ();
+	Slot1<void, GdkEventButton*> callback1;
+	Slot0<void> callback0;
+	GuiProxy *proxy = GuiProxy::getInstance();
+	ThreadTunnel *tunnel = proxy->getTunnel();
 
 	transferStore = ListStore::create(columns);
 	transferList.set_model(transferStore);
@@ -53,6 +60,20 @@ CTransfer::CTransfer ()
 	proxy->addListener<CTransfer, DownloadManagerListener>(this, DownloadManager::getInstance());
 	proxy->addListener<CTransfer, UploadManagerListener>(this, UploadManager::getInstance());
 	proxy->addListener<CTransfer, ConnectionManagerListener>(this, ConnectionManager::getInstance());
+
+	callback1 = open_tunnel(tunnel, slot(*this, &CTransfer::showPopupMenu), true);
+	transferList.signal_button_press_event().connect_notify(callback1);
+
+	callback0 = open_tunnel(tunnel, slot(*this, &CTransfer::removeTransferClicked), true);
+	menuRemoveTransfer.signal_activate().connect(callback0);
+	callback0 = open_tunnel(tunnel, slot(*this, &CTransfer::browseClicked), true);
+	menuBrowse.signal_activate().connect(callback0);
+	callback0 = open_tunnel(tunnel, slot(*this, &CTransfer::removeQueueClicked), true);
+	menuRemoveQueue.signal_activate().connect(callback0);
+
+	popupMenu.append (menuRemoveTransfer);
+	popupMenu.append (menuBrowse);
+	popupMenu.append (menuRemoveQueue);
 }
 
 TreeModel::iterator CTransfer::findTransfer (TransferItem *t)
@@ -145,7 +166,7 @@ void CTransfer::on(ConnectionManagerListener::Removed, ConnectionQueueItem *item
 	if (transfer.find (item) == transfer.end())
 	{
 		i = bruteFindTransfer ();
-		if (i == NULL)
+		if (!i)
 		{
 			cout << "Transfer doesn't exist." << endl;
 			return;
@@ -192,11 +213,33 @@ void CTransfer::on(ConnectionManagerListener::Failed, ConnectionQueueItem *item,
 void CTransfer::on(DownloadManagerListener::Starting, Download *dl) throw()
 {
 	cout << "Download starting." << endl;
-	ConnectionQueueItem *cqi = dl->getUserConnection ()->getCQI ();
-	TransferItem *i;
+	ConnectionQueueItem* cqi;
+	if (dl->getUserConnection ())
+		if (dl->getUserConnection ()->getCQI ())
+	 		cqi = dl->getUserConnection()->getCQI();
+		
+	TransferItem* i;
 	Lock l(cs);
-
-	if (transfer.find(cqi) == transfer.end())
+	if (dl->getUserConnection ())
+	{
+		if (dl->getUserConnection ()->getCQI ())
+		{
+			if (transfer.find(cqi) == transfer.end())
+			{
+				i = bruteFindTransfer ();
+				if (i == NULL)
+				{
+					cout << "Transfer doesn't exist." << endl;
+					return;
+				}
+			}
+			else
+			{
+				i = transfer[cqi];
+			}
+		}
+	}
+	else
 	{
 		i = bruteFindTransfer ();
 		if (i == NULL)
@@ -205,8 +248,6 @@ void CTransfer::on(DownloadManagerListener::Starting, Download *dl) throw()
 			return;
 		}
 	}
-	else
-		i = transfer[cqi];
 	i->status = TransferItem::STATUS_RUNNING;
 	i->pos = 0;
 	i->start = dl->getPos();
@@ -255,10 +296,33 @@ void CTransfer::on(DownloadManagerListener::Tick, const Download::List &list) th
 void CTransfer::on(DownloadManagerListener::Failed, Download* dl, const string& reason)throw()
 {
 	cout << "Download failed. Reason: " << reason << endl;
-	ConnectionQueueItem* cqi = dl->getUserConnection()->getCQI();
+	ConnectionQueueItem* cqi;
+	if (dl->getUserConnection ())
+		if (dl->getUserConnection ()->getCQI ())
+	 		cqi = dl->getUserConnection()->getCQI();
+		
 	TransferItem* i;
 	Lock l(cs);
-	if (transfer.find(cqi) == transfer.end())
+	if (dl->getUserConnection ())
+	{
+		if (dl->getUserConnection ()->getCQI ())
+		{
+			if (transfer.find(cqi) == transfer.end())
+			{
+				i = bruteFindTransfer ();
+				if (i == NULL)
+				{
+					cout << "Transfer doesn't exist." << endl;
+					return;
+				}
+			}
+			else
+			{
+				i = transfer[cqi];
+			}
+		}
+	}
+	else
 	{
 		i = bruteFindTransfer ();
 		if (i == NULL)
@@ -267,8 +331,6 @@ void CTransfer::on(DownloadManagerListener::Failed, Download* dl, const string& 
 			return;
 		}
 	}
-	else
-		i = transfer[cqi];
 	i->status = TransferItem::STATUS_WAITING;
 	i->pos = 0;
 	i->statusString = reason;
@@ -282,10 +344,33 @@ void CTransfer::on(DownloadManagerListener::Failed, Download* dl, const string& 
 void CTransfer::on(UploadManagerListener::Starting, Upload *ul)throw()
 {
 	cout << "Upload starting." << endl;
-	ConnectionQueueItem* cqi = ul->getUserConnection()->getCQI();
+	ConnectionQueueItem* cqi;
+	if (ul->getUserConnection ())
+		if (ul->getUserConnection ()->getCQI ())
+	 		cqi = ul->getUserConnection()->getCQI();
+		
 	TransferItem* i;
 	Lock l(cs);
-	if (transfer.find(cqi) == transfer.end())
+	if (ul->getUserConnection ())
+	{
+		if (ul->getUserConnection ()->getCQI ())
+		{
+			if (transfer.find(cqi) == transfer.end())
+			{
+				i = bruteFindTransfer ();
+				if (i == NULL)
+				{
+					cout << "Transfer doesn't exist." << endl;
+					return;
+				}
+			}
+			else
+			{
+				i = transfer[cqi];
+			}
+		}
+	}
+	else
 	{
 		i = bruteFindTransfer ();
 		if (i == NULL)
@@ -294,8 +379,6 @@ void CTransfer::on(UploadManagerListener::Starting, Upload *ul)throw()
 			return;
 		}
 	}
-	else
-		i = transfer[cqi];
 		
 	i->pos = 0;
 	i->start = ul->getPos();
@@ -351,11 +434,36 @@ void CTransfer::onTransferComplete(Transfer* t, bool upload)
 		cout << "Upload complete." << endl;
 	else
 		cout << "Download complete." << endl;
-	ConnectionQueueItem* cqi = t->getUserConnection()->getCQI();
+
+	ConnectionQueueItem* cqi;
+	if (t->getUserConnection ())
+		if (t->getUserConnection ()->getCQI ())
+	 		cqi = t->getUserConnection()->getCQI();
+	else
+		cout << "Connection not found." << endl;
+		
 	TransferItem* i;
 	Lock l(cs);
-	
-	if (transfer.find(cqi) == transfer.end())
+	if (t->getUserConnection ())
+	{
+		if (t->getUserConnection ()->getCQI ())
+		{
+			if (transfer.find(cqi) == transfer.end())
+			{
+				i = bruteFindTransfer ();
+				if (i == NULL)
+				{
+					cout << "Transfer doesn't exist." << endl;
+					return;
+				}
+			}
+			else
+			{
+				i = transfer[cqi];
+			}
+		}
+	}
+	else
 	{
 		i = bruteFindTransfer ();
 		if (i == NULL)
@@ -364,9 +472,7 @@ void CTransfer::onTransferComplete(Transfer* t, bool upload)
 			return;
 		}
 	}
-	else
-		i = transfer[cqi];
-		
+
 	i->status = TransferItem::STATUS_WAITING;
 	i->pos = 0;
 
@@ -421,4 +527,28 @@ void CTransfer::shutdown ()
 	GuiProxy::getInstance ()->removeListener<CTransfer> (this);
 
 	delete this;
+}
+
+void CTransfer::showPopupMenu(GdkEventButton* event)
+{
+	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 3))
+	{
+		popupMenu.popup(event->button, event->time);
+		popupMenu.show_all();
+	}
+}
+
+void CTransfer::removeTransferClicked ()
+{
+
+}
+
+void CTransfer::browseClicked ()
+{
+
+}
+
+void CTransfer::removeQueueClicked ()
+{
+
 }
