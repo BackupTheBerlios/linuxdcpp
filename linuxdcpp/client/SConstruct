@@ -1,0 +1,18 @@
+client_files = ['ADLSearch.cpp',	'FinishedManager.cpp',		'Socket.cpp',
+	'AdcCommand.cpp',		'HashManager.cpp',		'StringDefs.cpp',
+	'AdcHub.cpp',			'HttpConnection.cpp',	'StringTokenizer.cpp',
+	'BZUtils.cpp',			'HubManager.cpp',		'Text.cpp',
+	'BufferedSocket.cpp',	'LogManager.cpp',		'Thread.cpp',
+	'Client.cpp',			'NmdcHub.cpp',			'TigerHash.cpp',
+	'ClientManager.cpp',	'QueueManager.cpp',		'TimerManager.cpp',
+	'ConnectionManager.cpp','ResourceManager.cpp',	'UploadManager.cpp',
+	'CryptoManager.cpp',	'SFVReader.cpp',		'User.cpp',
+	'DCPlusPlus.cpp',		'SearchManager.cpp',	'UserConnection.cpp',
+	'DirectoryListing.cpp',	'ServerSocket.cpp',		'Util.cpp',
+	'DownloadManager.cpp',	'SettingsManager.cpp',	'ZUtils.cpp',
+	'Encoder.cpp',			'ShareManager.cpp',		'stdinc.cpp',
+	'Exception.cpp',		'SimpleXML.cpp']
+
+Import('env')
+clientObjs = env.Object(client_files)
+Return('clientObjs')

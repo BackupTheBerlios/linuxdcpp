@@ -1,0 +1,7 @@
+gui_files = [	'selecter.cc',				'wulformanager.cc',
+				'bookentry.cc',				'mainwindow.cc',
+				'wulfor.cc', 				'prefix.cc']
+
+Import('env')
+guiObjs = env.Object(gui_files)
+Return('guiObjs')

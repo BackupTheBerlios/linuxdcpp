@@ -1,0 +1,115 @@
+def CheckPKGConfig(context): 
+     context.Message('Checking for pkg-config... ') 
+     ret = context.TryAction('pkg-config --version')[0] 
+     context.Result(ret)
+     return ret 
+ 
+def CheckPKG(context, name): 
+     context.Message('Checking for %s... ' % name) 
+     ret = context.TryAction('pkg-config --exists \'%s\'' % name)[0] 
+     context.Result(ret) 
+     return ret 
+
+def CheckDefine(context, symbol, header, library):
+	testProg = """
+		#include<%s>
+		#ifndef %s
+			#error
+		#endif
+		int main() {
+			return 0;
+		}
+		""" % (header, symbol)
+	context.Message('Checking for %s in %s... ' % (symbol, header))
+	result = context.TryCompile(testProg, '.cc')
+	context.Result(result)
+	return result
+ 
+env = Environment(CXX='g++-3.4')
+conf = Configure(env, custom_tests = {'CheckPKGConfig' : CheckPKGConfig, 
+	'CheckDefine' : CheckDefine,
+	'CheckPKG' : CheckPKG }) 
+
+if not conf.CheckPKGConfig(): 
+     print 'pkg-config not found.' 
+     Exit(1) 
+ 
+if not conf.CheckPKG('gtk+-2.0 >= 2.4'): 
+     print 'gtk+ >= 2.4 not found.' 
+     Exit(1) 
+
+if not conf.CheckPKG('gthread-2.0 >= 2.4'): 
+     print 'gthread >= 2.4 not found.' 
+     Exit(1) 
+
+if not conf.CheckPKG('libglade-2.0 >= 2.4'): 
+     print 'libglade >= 2.4 not found.' 
+     Exit(1) 
+
+if not conf.CheckHeader('time.h'):
+	print 'Did not find the header time.h'
+	print 'Can\'t live without it, sorry'
+	Exit(1)
+
+if not conf.CheckHeader('signal.h'):
+	print 'Did not find the header signal.h'
+	print 'Can\'t live without it, sorry'
+	Exit(1)
+
+if not conf.CheckHeader('unistd.h'):
+	print 'Did not find the header signal.h'
+	print 'Can\'t live without it, sorry'
+	Exit(1)
+	
+if not conf.CheckHeader('sys/poll.h'):
+	print 'Did not find the header sys/poll.h'
+	print 'Can\'t live without it, sorry'
+	Exit(1)
+
+if not conf.CheckLibWithHeader('pthread', 'pthread.h', 'c'):
+	print 'Did not find the pthread library, exiting!'
+	print 'Note: You might have the lib but not the headers'
+	Exit(1)
+
+if not conf.CheckLibWithHeader('z', 'zlib.h', 'c'):
+	print 'Did not find the z library (gzip/z compression)'
+	print 'Can\'t live without it, exiting'
+	print 'Note: You might have the lib but not the headers'
+	Exit(1)
+
+if not conf.CheckLibWithHeader('bz2', 'bzlib.h', 'c'):
+	print 'Did not find the bz2 library (bz2 compression)'
+	print 'Can\'t live without it, exiting'
+	print 'Note: You might have the lib but not the headers'
+	Exit(1)
+
+if not conf.CheckHeader('asm/atomic.h'):
+	print 'Did not find the header asm/atomic.h'
+	print 'You can compile without it, but it might cause some instabillity'
+else:
+	conf.env.Append(CXXFLAGS = '-DHAVE_ASM_ATOMIC_H')
+
+if not conf.CheckDefine('PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP', 'pthread.h', 'pthread'):
+	print 'PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP not declared, it is needed'
+	print 'Something is strange with your pthread.h'
+	Exit(1)
+else:
+	conf.env.Append(CXXFLAGS = '-DHAVE_DECL_PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP')
+
+env = conf.Finish()
+env.ParseConfig('pkg-config --cflags --libs libglade-2.0') 
+env.ParseConfig('pkg-config --cflags --libs gthread-2.0') 
+env.Append(CXXFLAGS = ['-I.', '-DENABLE_BINRELOC'])
+
+debug = ARGUMENTS.get('debug', 0)
+if int(debug):
+	env.Append(CXXFLAGS = '-g')
+
+release = ARGUMENTS.get('release', 0)
+if int(release):
+	env.Append(CXXFLAGS = '-O3')
+
+objs = []
+objs.append(SConscript('client/SConstruct', exports='env', build_dir='build/client', duplicate=0))
+objs.append(SConscript('linux/SConstruct', exports='env', build_dir='build/gui', duplicate=0))
+Default(env.Program('dcpp', objs))
