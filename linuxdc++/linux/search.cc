@@ -28,6 +28,8 @@ using namespace SigC;
 using namespace SigCX;
 using namespace Glib;
 
+int Search::columnSize[] = { 200, 100, 50, 80, 100, 40, 70, 150, 80, 100, 125 };
+
 Search::Search(MainWindow *mw):
 	barTable(4, 14),
 
@@ -47,19 +49,33 @@ Search::Search(MainWindow *mw):
 	int i;
 	MenuItem *item;
 	Slot0<void> callback;
+	Slot1<void, GdkEventButton*> callback1;
 	GuiProxy *proxy = GuiProxy::getInstance();
 	ThreadTunnel *tunnel = proxy->getTunnel();
 
 	resultsStore = ListStore::create(columns);
 	resultsView.set_model(resultsStore);
 	resultsView.append_column("File", columns.file);
-	resultsView.append_column("Size", columns.size);
-	resultsView.append_column("Slots", columns.slots);
 	resultsView.append_column("User", columns.user);
+	resultsView.append_column("Type", columns.type);
+	resultsView.append_column("Size", columns.filesize);
 	resultsView.append_column("Path", columns.path);
+	resultsView.append_column("Slots", columns.slots);
+	resultsView.append_column("Connection", columns.connection);
+	resultsView.append_column("Hub", columns.hub);
+	resultsView.append_column("Exact size", columns.exactsize);
+	resultsView.append_column("IP", columns.ip);
+	resultsView.append_column("TTH", columns.tth);
 
 	scroll.add(resultsView);
 
+	for (int i=0;i<columns.size ()-1;i++)
+	{
+		resultsView.get_column (i)->set_sizing (TREE_VIEW_COLUMN_FIXED);
+		resultsView.get_column (i)->set_resizable (true);
+		resultsView.get_column (i)->set_fixed_width (columnSize[i]);
+	}
+	
 	for (i=0; i<3; i++) {
 		item = new MenuItem(sizeItems[i]);
 		sizeMenu.append(*item);
@@ -103,6 +119,20 @@ Search::Search(MainWindow *mw):
 	pack_start(pane);
 	*/
 
+	using namespace Gtk::Menu_Helpers;
+	MenuList items = popupMenu.items();
+	items.push_back (MenuElem ("Download", open_tunnel (tunnel, slot (*this, &Search::download), true)));
+	items.push_back (MenuElem ("Download to..."));
+	items.back ().set_sensitive (false);
+	items.push_back (MenuElem ("Download whole directory", open_tunnel (tunnel, slot (*this, &Search::downloadDir), true)));
+	items.push_back (MenuElem ("Download whole directory to..."));
+	items.back ().set_sensitive (false);
+	items.push_back (SeparatorElem ());
+	items.push_back (MenuElem ("Search by TTH"));
+	items.back ().set_sensitive (false);
+	items.push_back (SeparatorElem ());
+	items.push_back (MenuElem ("Get file list", open_tunnel (tunnel, slot (*this, &Search::getFileList), true)));
+	
 	mainBox.pack_start(barBox, PACK_SHRINK);
 	mainBox.pack_start(scroll, PACK_EXPAND_WIDGET);
 
@@ -113,9 +143,14 @@ Search::Search(MainWindow *mw):
 	label.show();
 
 	//callback = slot(*this, &Search::searchPressed);
-	callback = open_tunnel(tunnel, slot(*this, &Search::searchPressed), false);
+	callback = open_tunnel(tunnel, slot(*this, &Search::searchPressed), true);
 	searchButton.signal_clicked().connect(callback);
 	search.get_entry()->signal_activate().connect(callback);
+
+	callback1 = open_tunnel(tunnel, slot(*this, &Search::buttonPressedResult), true);
+	resultsView.signal_button_press_event().connect_notify(callback1);
+	callback1 = open_tunnel(tunnel, slot(*this, &Search::buttonReleasedResult), true);
+	resultsView.signal_button_release_event().connect_notify(callback1);
 
 	proxy->addListener<Search, SearchManagerListener>(
 		this, SearchManager::getInstance());
@@ -127,6 +162,28 @@ bool Search::operator== (BookEntry &b) {
 	Search *s = dynamic_cast<Search *>(&b);
 	
 	return !(s == NULL);
+}
+
+void Search::buttonPressedResult (GdkEventButton *event)
+{
+	resultPrevious = event->type;
+}
+void Search::buttonReleasedResult (GdkEventButton *event)
+{
+	//single click
+	if (resultPrevious == GDK_BUTTON_PRESS) {
+		//left button
+		if (event->button == 1)
+		{
+		}
+
+		//right button
+		if (event->button == 3)
+		{
+			popupMenu.popup(event->button, event->time);
+			popupMenu.show_all();
+		}
+	}
 }
 
 void Search::searchFor (ustring searchString)
@@ -171,12 +228,115 @@ void Search::on(SearchManagerListener::SR, SearchResult *result) throw() {
 	if (slotCB.get_active() && result->getFreeSlots() < 1)	return;
 
 	it = resultsStore->append();
-	(*it)[columns.file] = result->getFile();
-	(*it)[columns.size] = Util::formatBytes(result->getSize());
-	(*it)[columns.slots] = result->getSlotString();
+
+	if(result->getType() == SearchResult::TYPE_FILE)
+	{
+		string file = WUtil::linuxSeparator (result->getFile ());
+		(*it)[columns.path] = Util::getFilePath(file);
+		(*it)[columns.file] = Util::getFileName (file);
+
+		ustring type = Util::getFileExt(file);
+		if(!type.empty() && type[0] == '.')
+			type.erase(0, 1);
+
+		(*it)[columns.type] = type;			
+		(*it)[columns.filesize] = Util::formatBytes(result->getSize());
+		(*it)[columns.exactsize] = Util::formatExactSize(result->getSize());
+	}
+	else
+	{
+		(*it)[columns.file] = WUtil::linuxSeparator (result->getFileName ());
+		(*it)[columns.path] = WUtil::linuxSeparator (result->getFile ());
+		(*it)[columns.type] = "Directory";
+	}
 	(*it)[columns.user] = result->getUser()->getNick();
-	(*it)[columns.path] = result->getFileName();
+	(*it)[columns.connection] = result->getUser()->getConnection();
+	(*it)[columns.hub] = result->getHubName();
+	(*it)[columns.slots] = result->getSlotString();
+	(*it)[columns.ip] = result->getIP();
+	if(result->getTTH() != NULL)
+		(*it)[columns.tth] = result->getTTH()->toBase32();
+	
+	(*it)[columns.info] = new SearchInfo (result);
 }
 
+void Search::SearchInfo::download ()
+{
+	try
+	{
+		if(sr->getType () == SearchResult::TYPE_FILE)
+			QueueManager::getInstance()->add(	sr->getFile (), sr->getSize(), sr->getUser(), SETTING(DOWNLOAD_DIRECTORY) +Util::getFileName (WUtil::linuxSeparator (sr->getFile ())),
+																		sr->getTTH(), QueueItem::FLAG_RESUME | (sr->getUtf8() ? QueueItem::FLAG_SOURCE_UTF8 : 0), QueueItem::DEFAULT);
+		else
+			QueueManager::getInstance()->addDirectory(sr->getFile(), sr->getUser(), SETTING(DOWNLOAD_DIRECTORY), 	QueueItem::DEFAULT);
+	}
+	catch(...)
+	{
+		cout << "Couldn't add file for download." << endl;
+	}		
+}
 
+void Search::SearchInfo::downloadDir ()
+{
+	try
+	{
+		if(sr->getType() == SearchResult::TYPE_FILE)
+			QueueManager::getInstance()->addDirectory(	WUtil::windowsSeparator (Util::getFilePath (WUtil::linuxSeparator (sr->getFile ()))), sr->getUser(),
+ 																						SETTING (DOWNLOAD_DIRECTORY), QueueItem::DEFAULT);
+		else
+			QueueManager::getInstance()->addDirectory(sr->getFile (), sr->getUser(), SETTING (DOWNLOAD_DIRECTORY), QueueItem::DEFAULT);
+	}
+	catch(...)
+	{
+		cout << "Couldn't add dir for download." << endl;
+	}	
+}
+
+void Search::SearchInfo::getFilelist ()
+{
+	try
+	{
+		QueueManager::getInstance ()->addList(sr->getUser (), QueueItem::FLAG_CLIENT_VIEW);
+	}
+	catch (...)
+	{
+		cout << "Couldn't add filelist." << endl;
+	}
+}
+
+void Search::getFileList ()
+{
+	TreeModel::Row r = *(resultsView.get_selection ()->get_selected ());
+
+	if (!r)
+		return;
+
+	SearchInfo *s = r[columns.info];
+
+	s->getFilelist ();
+}
+
+void Search::download ()
+{
+	TreeModel::Row r = *(resultsView.get_selection ()->get_selected ());
+
+	if (!r)
+		return;
+
+	SearchInfo *s = r[columns.info];
+		
+	s->download ();
+}
+
+void Search::downloadDir ()
+{
+	TreeModel::Row r = *(resultsView.get_selection ()->get_selected ());
+
+	if (!r)
+		return;
+
+	SearchInfo *s = r[columns.info];
+
+	s->downloadDir ();
+}
 

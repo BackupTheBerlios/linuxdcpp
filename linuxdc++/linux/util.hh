@@ -26,6 +26,8 @@ namespace WUtil
 {
 	Glib::ustring ConvertToUTF8 (const std::string &opsys);
 	std::string ConvertFromUTF8 (const Glib::ustring &opsys);
+	std::string linuxSeparator (const std::string &ps);
+	std::string windowsSeparator (const std::string &ps);
 };
 
 #endif

@@ -28,22 +28,10 @@
 #include "../client/Util.h"
 #include "../client/SearchManager.h"
 #include "../client/SearchManagerListener.h"
+#include "../client/QueueManager.h"
 
 #include "bookentry.hh"
 #include "mainwindow.hh"
-
-class SearchColumns: public Gtk::TreeModel::ColumnRecord {
-	public:
-		SearchColumns() {
-			add(user);
-			add(file);
-			add(slots);
-			add(size);
-			add(path);
-		}
-
-		Gtk::TreeModelColumn<Glib::ustring> user, file, size, path, slots;
-};
 
 class Search: public BookEntry, public SearchManagerListener {
 	public:	
@@ -58,6 +46,56 @@ class Search: public BookEntry, public SearchManagerListener {
 		void on(SearchManagerListener::SR, SearchResult *result) throw();
 
 	private:
+
+		class SearchInfo
+		{
+			public:
+				SearchInfo (SearchResult *s) { s->incRef (); sr = s; }
+				~SearchInfo () { sr->decRef (); }
+				void download ();
+				void downloadDir ();
+				void getFilelist ();
+			private:
+				SearchResult *sr;
+		};
+
+		class SearchColumns: public Gtk::TreeModel::ColumnRecord {
+			public:
+				SearchColumns()
+				{
+					add(user);
+					add(file);
+					add(slots);
+					add(filesize);
+					add(path);
+					add(type);
+					add(connection);
+					add(hub);
+					add(exactsize);
+					add(ip);
+					add(tth);
+					add(info);
+				}
+	
+				Gtk::TreeModelColumn<Glib::ustring> user, file, filesize, path, slots, type, connection, hub, exactsize, ip, tth;
+				Gtk::TreeModelColumn<SearchInfo*> info;
+		};
+	
+		enum {
+			COLUMN_FIRST,
+			COLUMN_FILENAME = COLUMN_FIRST,
+			COLUMN_NICK,
+			COLUMN_TYPE,
+			COLUMN_SIZE,
+			COLUMN_PATH,
+			COLUMN_SLOTS,
+			COLUMN_CONNECTION,
+			COLUMN_HUB,
+			COLUMN_EXACT_SIZE,
+			COLUMN_IP,
+			COLUMN_TTH,
+			COLUMN_LAST
+		};	
 		MainWindow *mw;
 		SearchColumns columns;
 
@@ -69,12 +107,21 @@ class Search: public BookEntry, public SearchManagerListener {
 		Gtk::Label searchLabel, sizeLabel, typeLabel, optionLabel;
 		Gtk::Combo search;
 		Gtk::OptionMenu sizeOM, unitOM, typeOM;
-		Gtk::Menu sizeMenu, unitMenu, typeMenu;
+		Gtk::Menu sizeMenu, unitMenu, typeMenu, popupMenu;
 		Gtk::CheckButton slotCB;
 		Gtk::Button searchButton;
 		Gtk::VBox barBox;
 		Gtk::HBox mainBox;
 		Gtk::Entry sizeEntry;
+
+		static int columnSize[];
+		GdkEventType resultPrevious;
+
+		void buttonPressedResult (GdkEventButton *event);
+		void buttonReleasedResult (GdkEventButton *event);
+		void getFileList ();
+		void download ();
+		void downloadDir ();
 };
 
 #else

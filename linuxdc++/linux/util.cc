@@ -57,4 +57,22 @@ namespace WUtil
 		}
 		return result;		
 	}
+	std::string linuxSeparator (const std::string &ps)
+	{
+		std::string str = ps;
+		for (std::string::iterator it=str.begin (); it != str.end (); it++)
+			if ((*it) == '\\')
+				(*it) = '/';
+
+		return str;
+	}
+	std::string windowsSeparator (const std::string &ps)
+	{
+		std::string str = ps;
+		for (std::string::iterator it=str.begin (); it != str.end (); it++)
+			if ((*it) == '/')
+				(*it) = '\\';
+
+		return str;
+	}	
 }

@@ -1,3 +1,7 @@
+2004-10-27 17:00 phase
+	
+	* linux/search.hh/cc: You can now download stuff from the searchtab.
+
 2004-10-27 02:18 paskharen
 
 	* linux/*.cc: Unicode fixes

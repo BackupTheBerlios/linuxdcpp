@@ -106,6 +106,8 @@ smRemoveAll ("Remove user from queue")
 		else
 			statusBar[i].set_size_request (100, -1);
 	}
+	queueItems = 0;
+	queueSize = 0;
 	updateStatus ();
 	buildList (QueueManager::getInstance ()->lockQueue ());
 	QueueManager::getInstance()->unlockQueue();
@@ -311,11 +313,15 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 	TreeModel::iterator item;
 	if (!add)
 	{
+		bool found=false;
 		for (item = dq->fileStore->children ().begin (); item != dq->fileStore->children ().end (); item++)
 			if (((QueueItemInfo*)(*item)[dq->fileColumns.item]) == this)
+			{
+				found = true;
 				break;
+			}
 
-		if (!item)
+		if (!found)
 			return;
 // Users
 		int online=0;
@@ -893,6 +899,7 @@ void DownloadQueue::updateFiles (QueueItem *aQI)
 			ii->getBadSources().push_back(QueueItemInfo::SourceInfo(*(*j)));
 
 	ii->update (this, false);
+	updateStatus ();
 }
 
 void DownloadQueue::setFilePriority (Glib::ustring target, QueueItem::Priority p)

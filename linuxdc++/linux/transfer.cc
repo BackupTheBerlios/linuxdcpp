@@ -69,6 +69,7 @@ CTransfer::CTransfer () : 	menuRemoveTransfer("Close transfer"),
 	}
 
 	transferScroll.add (transferList);
+	transferScroll.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
 	
 	proxy->addListener<CTransfer, DownloadManagerListener>(this, DownloadManager::getInstance());
 	proxy->addListener<CTransfer, UploadManagerListener>(this, UploadManager::getInstance());
