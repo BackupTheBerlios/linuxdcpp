@@ -111,10 +111,12 @@ class MainWindow:
 		static void quit_callback(GtkWidget *widget, gpointer data);
 		
 		static void exit_callback(GtkWidget *widget, gpointer data);
+		static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data);
 
 		int64_t lastUpdate, lastUp, lastDown;
 
 		GtkWindow *window;
+		GtkDialog *exitDialog;
 		GtkStatusbar *mainStatus, *hubStatus, *slotStatus, 
 			*dTotStatus, *uTotStatus, *dlStatus, *ulStatus;
 		GtkToolButton *pubHubsButton, *searchButton, *settingsButton, 

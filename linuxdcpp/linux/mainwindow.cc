@@ -35,11 +35,27 @@
 using namespace std;
 
 void MainWindow::quit_callback(GtkWidget *widget, gpointer data) {
-	gtk_main_quit();
+	MainWindow *m = (MainWindow*)data;
+	gtk_widget_show_all (GTK_WIDGET (m->exitDialog));
+	gint response = gtk_dialog_run (m->exitDialog);
+	gtk_widget_hide (GTK_WIDGET (m->exitDialog));
+	if (response == GTK_RESPONSE_OK)	
+		gtk_main_quit();
 }
 
 void MainWindow::exit_callback(GtkWidget *widget, gpointer data) {
 	gtk_main_quit();
+}
+
+gboolean MainWindow::delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
+	MainWindow *m = (MainWindow*)data;
+	gtk_widget_show_all (GTK_WIDGET (m->exitDialog));
+	gint response = gtk_dialog_run (m->exitDialog);
+	gtk_widget_hide (GTK_WIDGET (m->exitDialog));
+	if (response == GTK_RESPONSE_OK)
+		return FALSE;
+	else
+		return TRUE;
 }
 
 void MainWindow::pubHubs_callback(GtkWidget *widget, gpointer data) {
@@ -140,7 +156,9 @@ void MainWindow::createWindow_gui() {
 	quitButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "quit"));
 
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "mainWindow"));
-	g_signal_connect (G_OBJECT (window), "destroy", G_CALLBACK (exit_callback), NULL);
+	g_signal_connect (G_OBJECT (window), "destroy", G_CALLBACK (exit_callback), (gpointer)this);
+	g_signal_connect (G_OBJECT (window), "delete_event", G_CALLBACK (delete_callback), (gpointer)this);
+	exitDialog = GTK_DIALOG (glade_xml_get_widget (xml, "exitDialog"));
 	book = GTK_NOTEBOOK(glade_xml_get_widget(xml, "book"));
 	transferView = GTK_TREE_VIEW(glade_xml_get_widget(xml, "transfers"));
 
