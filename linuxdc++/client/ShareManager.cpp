@@ -203,7 +203,7 @@ string ShareManager::translateFileName(const string& aFile, bool adc) throw(Shar
 		if(i == string::npos)
 			throw ShareException("File Not Available");
 		
-		string aDir = file.substr(0, i);
+		string aDir =  linuxSeparator (file.substr(0, i));
 
 		RLock l(cs);
 		StringPairIter j = lookupVirtual(aDir);
@@ -1372,6 +1372,6 @@ void ShareManager::on(TimerManagerListener::Minute, u_int32_t tick) throw() {
 
 /**
  * @file
- * $Id: ShareManager.cpp,v 1.3 2004/11/30 19:41:47 phase Exp $
+ * $Id: ShareManager.cpp,v 1.4 2004/11/30 20:08:51 phase Exp $
  */
 
