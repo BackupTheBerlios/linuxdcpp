@@ -79,8 +79,12 @@ void Hub::updateUser_client(const User::Ptr &user) {
 	string nick = user->getNick();
 	int64_t shared = user->getBytesShared();
 
-	//TODO: Make this set the correct picture
-	string icon = WulforManager::get()->getPath() + "/pixmaps/normal.png";
+	string icon = WulforManager::get()->getPath() + "/pixmaps/";
+	if (user->isSet(User::DCPLUSPLUS)) icon += "dc++";
+	else icon += "normal";
+	if (user->isSet(User::PASSIVE)) icon += "-fw";
+	if (user->isSet(User::OP)) icon += "-op";
+	icon += ".png";
 
 	func = new F3(this, &Hub::updateUser_gui, nick, shared, icon);
 	WulforManager::get()->dispatchGuiFunc(func);
@@ -178,9 +182,7 @@ void Hub::addPrivateMessage_gui(const User::Ptr &user, std::string msg) {
 	if (!privMsg)
 		privMsg = WulforManager::get()->addPrivMsg_gui(user);
 	
-	typedef Func1< ::PrivateMessage, string> F1;
-	F1 *func = new F1(privMsg, &::PrivateMessage::addMessage_gui,	msg);
-	WulforManager::get()->dispatchGuiFunc(func);
+	privMsg->addMessage_gui(msg);
 }
 
 void Hub::sendMessage_gui() {

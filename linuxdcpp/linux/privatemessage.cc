@@ -19,6 +19,8 @@
 #include "privatemessage.hh"
 #include "wulformanager.hh"
 
+#include <iostream>
+
 using namespace std;
 
 void PrivateMessage::enter_callback(GtkEntry *entry, gpointer data) {
@@ -46,6 +48,9 @@ PrivateMessage::PrivateMessage(User::Ptr user, GCallback closeCallback):
 	buffer = gtk_text_buffer_new(NULL);
 	gtk_text_view_set_buffer(text, buffer);
 	
+    g_signal_connect(G_OBJECT(entry), "activate", 
+		G_CALLBACK(enter_callback), (gpointer)this);
+
 	this->user = user;
 }
 
@@ -70,7 +75,7 @@ void PrivateMessage::sendMessage_gui() {
 	typedef Func1<PrivateMessage, string> F1;
 	F1 *func;
 
-	if (!message.empty()) {
+	if (!text.empty()) {
 		gtk_entry_set_text(entry, "");
 		message = "<" + user->getClientNick() + "> " + text;
 		addMessage_gui(message);
