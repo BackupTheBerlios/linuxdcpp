@@ -31,6 +31,7 @@ using namespace std;
 using namespace Gtk;
 using namespace SigC;
 using namespace SigCX;
+using Glib::ustring;
 //can't import whole namespace, messes with client/Exception
 
 ShareBrowser::ShareBrowser(QueueItem *item, MainWindow *mw):
@@ -209,9 +210,9 @@ void ShareBrowser::processDirectory(DirectoryListing::Directory::List dir,
 
 		//add the name and check if the name is in UTF8
 		if (listing->getUtf8()) {
-			row[dCol.name] = (*it)->getName();
+			newRow[dCol.name] = (*it)->getName();
 		} else {
-			row[dCol.name] = WUtil::ConvertToUTF8((*it)->getName());
+			newRow[dCol.name] = WUtil::ConvertToUTF8((*it)->getName());
 		}
 
 		newRow[dCol.dir] = *it;
