@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+ 
 #include "stdinc.h"
 #include "DCPlusPlus.h"
 
@@ -574,5 +575,5 @@ void ConnectionManager::on(UserConnectionListener::Supports, UserConnection* con
 
 /**
  * @file
- * $Id: ConnectionManager.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
+ * $Id: ConnectionManager.cpp,v 1.3 2004/11/02 00:12:01 phase Exp $
  */

@@ -243,10 +243,11 @@ bool ShareManager::checkFile(const string& dir, const string& aFile) {
 
 void ShareManager::load(SimpleXML* aXml) {
 	WLock l(cs);
-
+	
 	if(aXml->findChild("Share")) {
 		aXml->stepIn();
-		while(aXml->findChild("Directory")) {
+		while(aXml->findChild("Directory"))
+		{
 			const string& virt = aXml->getChildAttrib("Virtual");
 			string d(aXml->getChildData()), newVirt;
 
@@ -260,9 +261,16 @@ void ShareManager::load(SimpleXML* aXml) {
 			} else {
 				newVirt = Util::getLastDir(d);
 			}
-			Directory* dp = new Directory(newVirt);
-			directories[d] = dp;
-			virtualMap.push_back(make_pair(newVirt, d));
+			bool found=false;
+			for (StringPairIter it=virtualMap.begin ();it!=virtualMap.end();it++)
+				if (*it == make_pair(newVirt, d))
+					found=true;
+			if (!found)
+			{
+				Directory* dp = new Directory(newVirt);
+				directories[d] = dp;
+				virtualMap.push_back(make_pair(newVirt, d));
+			}
 		}
 		aXml->stepOut();
 	}
@@ -317,6 +325,11 @@ void ShareManager::addDirectory(const string& aDirectory, const string& aName) t
 		}
 
 		dp = buildTree(d, NULL);
+		/*for (Directory::File::Iter it = dp->files.begin();it != dp->files.end();it++)
+			dp->size += (*it).getSize ();
+		for(Directory::MapIter i = directories.begin(); i != directories.end(); ++i)
+			for (Directory::File::Iter it = (*i).files.begin ();it != (*i).files.end();it++)
+				(*i).size += (*it).getSize ();*/
 		dp->setName(aName);
 	}
 	{
@@ -580,6 +593,7 @@ ShareManager::Directory* ShareManager::buildTree(const string& aName, Directory*
 
 				HashManager::getInstance()->checkTTH(aName + name, size, i->getLastWriteTime());
 				lastFileIter = dir->files.insert(lastFileIter, Directory::File(name, size, dir, NULL));
+				//dir->size += size;
 
 			}
 		}
@@ -1338,6 +1352,6 @@ void ShareManager::on(TimerManagerListener::Minute, u_int32_t tick) throw() {
 
 /**
  * @file
- * $Id: ShareManager.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
+ * $Id: ShareManager.cpp,v 1.3 2004/11/02 00:12:01 phase Exp $
  */
 

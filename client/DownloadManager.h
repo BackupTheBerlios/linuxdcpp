@@ -101,6 +101,8 @@ public:
 		return cmd;
 	}
 
+	User::Ptr& getUser() { dcassert(getUserConnection() != NULL); return getUserConnection()->getUser(); };
+	
 	typedef CalcOutputStream<CRC32Filter, true> CrcOS;
 	GETSET(string, source, Source);
 	GETSET(string, target, Target);
@@ -230,5 +232,5 @@ private:
 
 /**
  * @file
- * $Id: DownloadManager.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
+ * $Id: DownloadManager.h,v 1.3 2004/11/02 00:12:01 phase Exp $
  */

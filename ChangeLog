@@ -1,0 +1,51 @@
+2004-10-02 00:51 phase
+
+	* linux/transfer.hh/cc: Added "connection lister". Though, you can't abort or anything, you can just watch .)
+
+2004-10-31 03:14 phase
+
+	* linux/guilistener.hh: Added functions for ConnectionManagerListener. 
+
+2004-10-31 02:37 phase
+	
+	* linux/hub.hh/cc, linux/bookentry.hh/cc: You're now actually disconnected when you close a hub.
+
+2004-10-30 18:13 phase
+
+	* client/DownloadManager.h: Added getUser ().
+
+2004-10-28 03:12 phase
+
+	* linux/bookentry.hh/cc: Remove tab from notebook, don't just hide it.
+
+2004-10-27 02:15 phase
+
+	* linux/mainwindow.hh/cc, linux/transfer.hh/cc: Removed "Connection Lister" part from mainwindow and put it all in transfer.
+
+2004-10-27 00:40 phase
+
+	* linux/privatemsg.hh/cc: You can now actually send messages. :) Added timestamps.
+	
+2004-10-27 00:32 phase
+
+	* linux/hub.hh/cc: Added statusbar so info about each hub is being shown there instead of the main statusbar, also shows user connected to the hub and current share of the hub. If a privatechat is in session and that users quits it sends an message to that window that the user left. Added timestamps. 
+	
+2004-10-27 00:05 phase
+
+	* linux/mainwindow.hh/cc, linux/bookentry.hh/cc: Added the ability to chage how many types of each tab there should be.
+	
+2004-10-26 15:30 phase
+	
+	* client/ShareManager.h: Didn't check if the directory was added already which resulted in the sharelist being dubbled during every refresh.
+	
+2004-10-26 01:39 phase
+	
+	* client/SearchManager.h: Client now exit's cleanly. join(); were executed after socket was disconnected.
+
+2004-10-26 01:30 phase
+	
+	* linux/settingsdialog.cc: Fixed the bug where connectionspeed were'nt saved. Fixed the bug where TEMP_DOWNLOAD_DIRECTORY was reverted to default when empty.
+
+2004-10-26 01:20 phase
+
+	* linux/*.cc: Added some fallbacks for locale_to_utf8 through WUtil.

@@ -153,7 +153,7 @@ public:
 #else
 		char* home = getenv("HOME");
 		if (home) {
-			return string(home) + "/dc++/";
+			return string(home) + "/.dc++/";
 		}
 		return emptyString;
 #endif
@@ -535,5 +535,5 @@ struct noCaseStringLess {
 
 /**
  * @file
- * $Id: Util.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
+ * $Id: Util.h,v 1.3 2004/11/02 00:12:01 phase Exp $
  */

@@ -15,7 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-
+#include <iostream>
 #include "stdinc.h"
 #include "DCPlusPlus.h"
 
@@ -216,6 +216,7 @@ void UploadManager::onGetBlock(UserConnection* aSource, const string& aFile, int
 			aSource->setState(UserConnection::STATE_DONE);
 			aSource->transmitFile(u->getFile());
 			fire(UploadManagerListener::Starting(), u);
+			std::cout << "UploadManagerListener::Starting" << endl;
 		}
 	}
 }
@@ -232,6 +233,7 @@ void UploadManager::on(UserConnectionListener::Send, UserConnection* aSource) th
 	u->setStart(GET_TICK());
 	aSource->setState(UserConnection::STATE_DONE);
 	aSource->transmitFile(u->getFile());
+	cout << "UploadManagerListener::Starting" << endl;
 	fire(UploadManagerListener::Starting(), u);
 }
 
@@ -247,6 +249,7 @@ void UploadManager::on(UserConnectionListener::Failed, UserConnection* aSource, 
 
 	if(u) {
 		aSource->setUpload(NULL);
+		cout << "UploadManagerListener::Failed" << endl;
 		fire(UploadManagerListener::Failed(), u, aError);
 
 		dcdebug("UM::onFailed: Removing upload\n");
@@ -281,6 +284,7 @@ void UploadManager::on(UserConnectionListener::TransmitDone, UserConnection* aSo
 		LOG(UPLOAD_AREA, Util::formatParams(SETTING(LOG_FORMAT_POST_UPLOAD), params));
 	}
 
+	cout << "UploadManagerListener::Complete" << endl;
 	fire(UploadManagerListener::Complete(), u);
 	removeUpload(u);
 }
@@ -350,6 +354,7 @@ void UploadManager::on(Command::GET, UserConnection* aSource, const Command& c) 
 		aSource->send(cmd);
 		aSource->setState(UserConnection::STATE_DONE);
 		aSource->transmitFile(u->getFile());
+		cout << "UploadManagerListener::Starting" << endl;		
 		fire(UploadManagerListener::Starting(), u);
 	}
 }
@@ -364,7 +369,10 @@ void UploadManager::on(TimerManagerListener::Second, u_int32_t) throw() {
 	}
 	
 	if(ticks.size() > 0)
+	{
+		cout << "UploadManagerListener::Tick" << endl;		
 		fire(UploadManagerListener::Tick(), ticks);
+	}
 
 }
 
@@ -390,5 +398,5 @@ void UploadManager::on(ClientManagerListener::UserUpdated, const User::Ptr& aUse
 
 /**
  * @file
- * $Id: UploadManager.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
+ * $Id: UploadManager.cpp,v 1.3 2004/11/02 00:12:01 phase Exp $
  */
