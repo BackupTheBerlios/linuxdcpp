@@ -2,7 +2,6 @@
 <!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
 
 <glade-interface>
-<requires lib="gnome"/>
 
 <widget class="GtkDialog" id="settingsDialog">
   <property name="title" translatable="yes">Settings</property>
@@ -108,8 +107,8 @@
 		      <property name="n_rows">4</property>
 		      <property name="n_columns">2</property>
 		      <property name="homogeneous">False</property>
-		      <property name="row_spacing">0</property>
-		      <property name="column_spacing">2</property>
+		      <property name="row_spacing">4</property>
+		      <property name="column_spacing">4</property>
 
 		      <child>
 			<widget class="GtkLabel" id="label9">
@@ -338,8 +337,8 @@
 			  <property name="n_rows">3</property>
 			  <property name="n_columns">5</property>
 			  <property name="homogeneous">False</property>
-			  <property name="row_spacing">0</property>
-			  <property name="column_spacing">0</property>
+			  <property name="row_spacing">4</property>
+			  <property name="column_spacing">4</property>
 
 			  <child>
 			    <widget class="GtkRadioButton" id="radiobuttonActive">
@@ -1051,7 +1050,7 @@
 			      <property name="n_rows">2</property>
 			      <property name="n_columns">2</property>
 			      <property name="homogeneous">False</property>
-			      <property name="row_spacing">0</property>
+			      <property name="row_spacing">4</property>
 			      <property name="column_spacing">4</property>
 
 			      <child>
@@ -1783,8 +1782,8 @@
 		  <property name="n_rows">2</property>
 		  <property name="n_columns">3</property>
 		  <property name="homogeneous">False</property>
-		  <property name="row_spacing">0</property>
-		  <property name="column_spacing">2</property>
+		  <property name="row_spacing">4</property>
+		  <property name="column_spacing">4</property>
 
 		  <child>
 		    <widget class="GtkLabel" id="label36">
@@ -2755,7 +2754,7 @@
 		      <property name="n_rows">2</property>
 		      <property name="n_columns">6</property>
 		      <property name="homogeneous">False</property>
-		      <property name="row_spacing">0</property>
+		      <property name="row_spacing">4</property>
 		      <property name="column_spacing">4</property>
 
 		      <child>

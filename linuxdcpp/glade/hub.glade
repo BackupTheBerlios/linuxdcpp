@@ -2,7 +2,6 @@
 <!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
 
 <glade-interface>
-<requires lib="gnome"/>
 
 <widget class="GtkWindow" id="hubWindow">
   <property name="width_request">800</property>
@@ -21,7 +20,7 @@
 
   <child>
     <widget class="GtkVBox" id="hubBox">
-      <property name="border_width">8</property>
+      <property name="border_width">4</property>
       <property name="visible">True</property>
       <property name="homogeneous">False</property>
       <property name="spacing">4</property>
