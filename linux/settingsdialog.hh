@@ -74,7 +74,7 @@ class SettingsDialog: public Gtk::Dialog {
 		
 		Gtk::OptionMenu connectionOption;
 		Gtk::Menu connectionMenu;
-		Gtk::MenuItem *connectionItems[8];
+		Gtk::MenuItem *connectionItems[SettingsManager::SPEED_LAST];
 		Gtk::CheckButton sock5CB;
 		Gtk::RadioButton activeRB, passiveRB, sock5RB;
 		

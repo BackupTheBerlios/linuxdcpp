@@ -31,7 +31,6 @@ using namespace Gtk;
 using namespace SigC;
 using namespace SigCX;
 //can't import whole namespace, messes with client/Exception
-using Glib::locale_to_utf8;
 
 ShareBrowser::ShareBrowser(User::Ptr user, MainWindow *mw):
 	listing(NULL)
@@ -52,7 +51,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, MainWindow *mw):
 		cout << "error: " << e.getError() << endl;
 	}
 
-	label.set_text(locale_to_utf8(user->getNick()));
+	label.set_text(WUtil::ConvertToUTF8(user->getNick()));
 	label.show();
 
 	dirStore = TreeStore::create(dCol);
@@ -89,22 +88,15 @@ ShareBrowser::~ShareBrowser() {
 void ShareBrowser::on(QueueManagerListener::Finished, 
 	QueueItem *item) throw() 
 {
-	if ( !(item->isSet(QueueItem::FLAG_CLIENT_VIEW) && 
-		item->isSet(QueueItem::FLAG_USER_LIST) && 
-		item->isSource(user)))
+	if ( item->isSet(QueueItem::FLAG_CLIENT_VIEW) &&
+		item->isSet(QueueItem::FLAG_USER_LIST))
 	{
-		//this is something other than a file list
-		cout << "Nope, not a fileList" << endl;
-		if (item->isSet(QueueItem::FLAG_USER_LIST) && item->isSource(user))
-			cout << "Client view not set" << endl;
-		return;
+		assert(listing == NULL);
+		listing = new DirectoryListing(user);
+		listing->loadFile(item->getListName(), false);
+		buildList();
+		setPosition(item->getSearchString());
 	}
-
-	assert(listing == NULL);
-	listing = new DirectoryListing(user);
-	listing->loadFile(item->getListName(), false);
-	buildList();
-	setPosition(item->getSearchString());
 }
 
 void ShareBrowser::buildList() {
@@ -117,7 +109,7 @@ void ShareBrowser::buildList() {
 	
 	for (it = dirs.begin(); it != dirs.end(); it++) {
 		row = *(dirStore->append());
-		row[dCol.dir] = locale_to_utf8((*it)->getName());
+		row[dCol.dir] = WUtil::ConvertToUTF8((*it)->getName());
 		row[dCol.files] = &((*it)->files);
 		processDirectory((*it)->directories, row);
 	}
@@ -131,7 +123,7 @@ void ShareBrowser::processDirectory(DirectoryListing::Directory::List dir,
 
 	for (it = dir.begin(); it != dir.end(); it++) {
 		newRow = *(dirStore->append(row.children()));
-		newRow[dCol.dir] = locale_to_utf8((*it)->getName());
+		newRow[dCol.dir] = WUtil::ConvertToUTF8((*it)->getName());
 		newRow[dCol.files] = &((*it)->files);
 		processDirectory((*it)->directories, newRow);
 	}
@@ -151,9 +143,9 @@ void ShareBrowser::dirPressed (const Gtk::TreeModel::Path& path,
 
 	for (it = files->begin(); it != files->end(); it++) {
 		row = *(fileStore->append());
-		row[fCol.name] = locale_to_utf8((*it)->getName());
-		row[fCol.type] = locale_to_utf8((*it)->getName());
-		row[fCol.size] = locale_to_utf8(Util::formatBytes((*it)->getSize()));
+		row[fCol.name] = WUtil::ConvertToUTF8((*it)->getName());
+		row[fCol.type] = WUtil::ConvertToUTF8((*it)->getName());
+		row[fCol.size] = WUtil::ConvertToUTF8(Util::formatBytes((*it)->getSize()));
 	}
 }
 

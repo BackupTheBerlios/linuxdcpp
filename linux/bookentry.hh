@@ -21,6 +21,16 @@
 #ifndef WULFOR_BOOK_ENTRY
 #define WULFOR_BOOK_ENTRY
 
+enum
+{
+	BOOK_PUBLIC_HUBS,
+	BOOK_HUB,
+	BOOK_SEARCH,
+	BOOK_PRIVATE_MESSAGE,
+	BOOK_FILE_LIST,
+	BOOK_NUMBER
+};
+
 class BookEntry: public Gtk::VBox {
 	public:
 		BookEntry();
@@ -31,11 +41,22 @@ class BookEntry: public Gtk::VBox {
 		virtual void close();
 		Gtk::Label &getLabel();
 		Gtk::HBox &getBox();
+
+		int getID ();
+
+		void setParent (Gtk::Notebook *p);
+		Gtk::Notebook *getParent () { return parent; }
+		
+		const static bool useMultipleTabs[];
 		
 	protected:
 		Gtk::HBox box;
 		Gtk::Label label;
 		Gtk::Button button;
+
+		Gtk::Notebook *parent;
+
+		int ID;
 };
 
 #else

@@ -40,7 +40,7 @@ PublicHubs::PublicHubs(MainWindow *mw):
 	connectFrame("Manual connect address")
 {
 	this->mw = mw;
-	
+	ID = BOOK_PUBLIC_HUBS;
 	label.set_text("Public hubs");
 
 	hubStore = ListStore::create(columns);
@@ -104,14 +104,10 @@ void PublicHubs::updateList() {
 			filter.match(i->getServer()) )
 		{
 			it = hubStore->append();
-			(*it)[columns.name] = locale_to_utf8(i->getName());
-			//(*it)[columns.name] = i->getName();
-			(*it)[columns.description] = locale_to_utf8(i->getDescription());
-			//(*it)[columns.description] = i->getDescription();
+			(*it)[columns.name] = WUtil::ConvertToUTF8(i->getName());
+			(*it)[columns.description] = WUtil::ConvertToUTF8(i->getDescription());
 			(*it)[columns.users] = i->getUsers();
-			(*it)[columns.address] = locale_to_utf8(i->getServer());
-			//(*it)[columns.address] = i->getServer();
-			cout << i->getName() << endl;
+			(*it)[columns.address] = WUtil::ConvertToUTF8(i->getServer());
 		}
 	}
 }
@@ -174,7 +170,7 @@ bool PublicHubs::operator== (BookEntry &b) {
 
 void PublicHubs::refresh() {
 	filter = //filterEntry.get_text();
-		locale_from_utf8(filterEntry.get_text());
+		WUtil::ConvertFromUTF8(filterEntry.get_text());
 	
 	//No reloading - this is nothing but a waist of time
 	//HubManager::getInstance()->refresh(); 
@@ -184,7 +180,7 @@ void PublicHubs::refresh() {
 
 void PublicHubs::connect() {
 	string address = //connectEntry.get_text();
-		locale_from_utf8(connectEntry.get_text());
+		WUtil::ConvertFromUTF8(connectEntry.get_text());
 	Hub *hub;
 	TreeModel::iterator it;
 	RefPtr<TreeSelection> selection;
@@ -193,7 +189,7 @@ void PublicHubs::connect() {
 		selection = hubList.get_selection();
 		if (selection->count_selected_rows() == 0) return;
 		it = selection->get_selected();
-		address = locale_from_utf8((*it)[columns.address]);
+		address = WUtil::ConvertFromUTF8((*it)[columns.address]);
 	}
 
 	hub = new Hub(address, mw);

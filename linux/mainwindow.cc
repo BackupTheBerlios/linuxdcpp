@@ -42,7 +42,7 @@ using namespace Toolbar_Helpers;
 using namespace Notebook_Helpers;
 
 //cant include Glib, conflicts with Exception
-using Glib::locale_to_utf8;
+using Glib::ustring;
 
 MainWindow::MainWindow():
 	Window(),
@@ -56,7 +56,7 @@ MainWindow::MainWindow():
 	GuiProxy *proxy = GuiProxy::getInstance();
 	ThreadTunnel *tunnel = proxy->getTunnel();
 
-	set_title(locale_to_utf8("Wülfor 0.1"));
+	set_title(WUtil::ConvertToUTF8("Wülfor 0.1"));
 	set_default_size(800, 600);
 
 	callback = 
@@ -73,16 +73,10 @@ MainWindow::MainWindow():
 		open_tunnel(tunnel, slot(*this, &MainWindow::exitClicked), false);
 	rightBar.tools().push_back(ButtonElem("Exit", exitIcon, callback));
 
-	transferStore = ListStore::create(columns);
-	transferList.set_model(transferStore);
-	transferList.append_column("User", columns.user);
-	transferList.append_column("Status", columns.status);
-	transferList.append_column("Speed", columns.speed);
-
 	add(mainBox);
 	
 	pane.add1(book);
-	pane.add2(transferList);
+	pane.add2(CTransfer::getInstance ()->getTransferList ());
 	pane.set_position(360);
 	
 	mainBox.pack_start(toolBox, PACK_SHRINK, 0);
@@ -96,7 +90,8 @@ MainWindow::MainWindow():
 		status[i].set_has_resize_grip(false);
 		if (i == 0) statusBox.pack_start(status[i], PACK_EXPAND_WIDGET, 2);
 		else statusBox.pack_start(status[i], PACK_SHRINK, 2);
-		
+
+
 		switch (i) {
 			case 1:
 				status[i].set_size_request(70, -1); break;
@@ -111,16 +106,11 @@ MainWindow::MainWindow():
 		}
 	}
 
-	lastUp = lastDown = lastUpdate = 0;	
+	show_all ();
+	
+	lastUp = lastDown = lastUpdate = 0;
 
-	proxy->addListener<MainWindow, DownloadManagerListener>(
-		this, DownloadManager::getInstance());
-	proxy->addListener<MainWindow, UploadManagerListener>(
-		this, UploadManager::getInstance());
-	proxy->addListener<MainWindow, ConnectionManagerListener>(
-		this, ConnectionManager::getInstance());
-	proxy->addListener<MainWindow, TimerManagerListener>(
-		this, TimerManager::getInstance());
+	proxy->addListener<MainWindow, TimerManagerListener>(this, TimerManager::getInstance());
 
 	startSocket();
 }
@@ -174,15 +164,14 @@ bool MainWindow::addPage(BookEntry *page) {
 		
 		assert(e != NULL);
 	
-		if (*page == *e) {
+		if (*page == *e && !BookEntry::useMultipleTabs[page->getID()]) {
 			book.set_current_page(i);
-			//todo: remove delete from here or from other places...
-			delete page;
 			return false;
 		}
 	}
 	
 	book.append_page(*page, page->getBox(), page->getLabel());
+	page->setParent (&book);
 	show_all();
 	page->show_all();
 	book.set_current_page(-1);
@@ -211,11 +200,33 @@ BookEntry *MainWindow::getPage(BookEntry *page) {
 	return NULL;
 }
 
-void MainWindow::setStatus(string text, int num) {
-	if (num<0 || num>NUM_STATUS) return;
+BookEntry *MainWindow::findPage (ustring text)
+{
+	int i;
+	BookEntry *e;
+	
+	for (i=0;i<book.get_n_pages();i++)
+	{
+		e = dynamic_cast<BookEntry*>(book.get_nth_page (i));
+		
+		assert (e != NULL);
+		
+		if (e->getLabel ().get_text () == text)
+			return e;
+	}
+	
+	return NULL;
+}
+
+void MainWindow::setStatus(string text, int num)
+{
+	if (num<0 || num>NUM_STATUS-1) return;
 
 	status[num].pop(1);
-	status[num].push(locale_to_utf8(text), 1);
+	if (num == 0)
+		status[num].push ("[" + Util::getShortTimeString() + "] " + WUtil::ConvertToUTF8 (text), 1);
+	else
+		status[num].push (WUtil::ConvertToUTF8 (text), 1);
 }
 
 void MainWindow::pubHubsClicked()  {
@@ -232,7 +243,7 @@ void MainWindow::searchClicked()  {
 
 void MainWindow::exitClicked()  {
 	Dialog d("Exit Wulfor?", *this, true);
-	Label text("Do you REALLY want to exit this fine application?");
+	Label text("Do you really wan't to quit?");
 	const int YES = 1, NO = 0;
 	
 	d.get_vbox()->pack_start(text, PACK_EXPAND_WIDGET, 2);
@@ -265,65 +276,6 @@ bool MainWindow::on_delete_event(GdkEventAny *e) {
 	return true;
 }
 
-//From DownloadManagerListener:
-void MainWindow::on(DownloadManagerListener::Starting, 
-	Download *dl) throw()
-{
-	cout << "Starting dl file: " << dl->getTargetFileName() << endl;
-}
-
-void MainWindow::on(DownloadManagerListener::Tick, const Download::List&)
-	throw()
-{
-	cout << "Tick" << endl;
-}
-
-void MainWindow::on(DownloadManagerListener::Complete, Download *dl) throw()
-{
-	cout << "Complete dl file: " << dl->getTargetFileName() << endl;
-}
-
-void MainWindow::on(DownloadManagerListener::Failed, 
-	Download *dl, const string& reason) throw()
-{
-	cout << "Failed dl file: " << dl->getTargetFileName() << endl;
-	cout << "Reason: " << reason << endl;
-}
-
-//From UploadManagerListener
-
-		
-//From ConnectionManagerListener
-void MainWindow::on(ConnectionManagerListener::Added, 
-	ConnectionQueueItem *item) throw()
-{
-	cout << "Added connection" << endl;
-}
-
-void MainWindow::on(ConnectionManagerListener::Connected, 
-	ConnectionQueueItem *item) throw()
-{
-	cout << "Connected" << endl;
-}
-
-void MainWindow::on(ConnectionManagerListener::Removed, 
-	ConnectionQueueItem *item) throw()
-{
-	cout << "Removed connection" << endl;
-}
-			
-void MainWindow::on(ConnectionManagerListener::Failed, 
-	ConnectionQueueItem *item, const string &reason) throw()
-{
-	cout << "Connection failed" << endl;
-}
-
-void MainWindow::on(ConnectionManagerListener::StatusChanged, 
-			ConnectionQueueItem *item) throw()
-{
-	cout << "Connection changed status" << endl;
-}
- 
 //From TimerManagerListener
 void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw()
 {
@@ -338,10 +290,10 @@ void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw()
 		Util::toString(SETTING(SLOTS)), STATUS_SLOTS);
 	setStatus("D: " + Util::formatBytes(Socket::getTotalDown()), STATUS_DL);
 	setStatus("U: " + Util::formatBytes(Socket::getTotalUp()), STATUS_UL);
-	setStatus("D: " + Util::formatBytes(downdiff/diff) + "/s (" +
+	setStatus("D: " + Util::formatBytes((int64_t)(downdiff*1000)/diff) + "/s (" +
 		Util::toString(DownloadManager::getInstance()->getDownloads()) + ")", 
 		STATUS_DL_SPEED);
-	setStatus("U: " + Util::formatBytes(updiff/diff) + "/s (" +
+	setStatus("U: " + Util::formatBytes((int64_t)(updiff*1000)/diff) + "/s (" +
 		Util::toString(UploadManager::getInstance()->getUploads()) + ")",
 		STATUS_UL_SPEED);
 

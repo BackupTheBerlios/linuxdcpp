@@ -33,6 +33,7 @@
 #include "../client/DownloadManager.h"
 #include "../client/UploadManager.h"
 #include "../client/QueueManagerListener.h"
+#include "../client/ConnectionManagerListener.h"
 #include "../client/Client.h"
 #include "../client/SearchManagerListener.h"
 #include "../client/TimerManager.h"
@@ -80,6 +81,28 @@ class GuiListener:
 			mySpeaker->removeListener(this);
 		}
 
+		//ConnectionManagerListener
+		void on(ConnectionManagerListener::Added t, ConnectionQueueItem *a) throw()
+		{
+			realOn (t, a);
+		}
+		void on(ConnectionManagerListener::Connected t, ConnectionQueueItem *a) throw()
+		{
+			realOn (t, a);
+		}
+		void on(ConnectionManagerListener::Removed t, ConnectionQueueItem *a) throw()
+		{
+			realOn (t, a);
+		}
+		void on(ConnectionManagerListener::Failed t, ConnectionQueueItem *a, const string& b) throw()
+		{
+			realOnConst (t, a, b);
+		}
+		void on(ConnectionManagerListener::StatusChanged t, ConnectionQueueItem *a) throw()
+		{
+			realOn (t, a);
+		}
+		
 		//HubManagerListener
 		void on(HubManagerListener::DownloadStarting t, const string& a) throw()
 			{realOnConst(t, a);}

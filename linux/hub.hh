@@ -32,6 +32,14 @@
 #ifndef WULFOR_HUB
 #define WULFOR_HUB
 
+enum 
+{
+	HUB_STATUS_MAIN,
+	HUB_STATUS_USERS,
+	HUB_STATUS_SHARED,
+	HUB_NUM_MESSAGES
+};
+
 class Hub:
 	public ClientListener,
 	public BookEntry
@@ -78,6 +86,8 @@ class Hub:
 		void enterPressed();
 		void somethingChanged();
 		void valueChanged();
+		void setStatus (std::string text, int num);
+		void close ();
 
 	private:
 		class NickListColumns: public Gtk::TreeModel::ColumnRecord {
@@ -91,13 +101,18 @@ class Hub:
 		};
 
 		Gtk::TreeModel::iterator findUser(Glib::ustring nick);
+		int findUserNr(Glib::ustring nick);
 		std::string address;
+
+		Gtk::VBox mainBox;
+		Gtk::HBox statusBox;		
 		
 		Gtk::HPaned pane;
 		Gtk::ScrolledWindow nickScroll, chatScroll;
 		Gtk::Entry chatEntry;
 		Gtk::VBox chatBox;
 		Gtk::TextView chat;
+		Gtk::Statusbar statusBar[HUB_NUM_MESSAGES];
 		
 		Glib::RefPtr<Gtk::ListStore> nickStore;
 		Gtk::TreeView nickView;

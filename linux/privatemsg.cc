@@ -17,14 +17,20 @@
 */
 
 #include "privatemsg.hh"
+#include "guiproxy.hh"
 
 using namespace std;
 using namespace Gtk;
 using namespace SigC;
+using namespace SigCX;
 using namespace Glib;
 
 PrivateMsg::PrivateMsg(User::Ptr userName, MainWindow *mw) {
 	user = userName;
+	ID = BOOK_PRIVATE_MESSAGE;
+	Slot0<void> callback0;
+	GuiProxy *proxy = GuiProxy::getInstance();
+	ThreadTunnel *tunnel = proxy->getTunnel();
 
 	text.set_editable(false);
 	scroll.add(text);
@@ -34,8 +40,11 @@ PrivateMsg::PrivateMsg(User::Ptr userName, MainWindow *mw) {
 
 	pack_start(box, PACK_EXPAND_WIDGET);
 
-	label.set_text(locale_to_utf8(user->getNick()));
+	label.set_text(WUtil::ConvertToUTF8(user->getNick()));
 	label.show();
+	
+	callback0 = open_tunnel(tunnel, slot(*this, &PrivateMsg::enterPressed), true);
+	entry.signal_activate().connect(callback0);
 	
 	this->mw = mw;
 }
@@ -52,11 +61,18 @@ bool PrivateMsg::operator== (User::Ptr &otherUser) {
 }
 
 void PrivateMsg::update() {
-	label.set_text(locale_to_utf8(user->getNick()));
+	label.set_text(WUtil::ConvertToUTF8(user->getNick()));
 	label.show();
 }
 
 void PrivateMsg::addMsg(std::string msg) {
 	RefPtr<TextBuffer> buffer = text.get_buffer();
-	buffer->insert(buffer->end(), locale_to_utf8(msg));
+	buffer->insert(buffer->end(), "[" + Util::getShortTimeString() + "] " + WUtil::ConvertToUTF8(msg + "\n"));
+}
+
+void PrivateMsg::enterPressed ()
+{
+	user->privateMessage (WUtil::ConvertToUTF8 (entry.get_text()));
+	addMsg ("<" + user->getClientNick () + "> " + WUtil::ConvertToUTF8 (entry.get_text()));
+	entry.set_text("");
 }

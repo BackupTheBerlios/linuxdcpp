@@ -37,6 +37,7 @@ class PrivateMsg: public BookEntry {
 		bool operator== (User::Ptr &otherUser);
 
 		void update();
+		void enterPressed ();
 		void addMsg(std::string msg);
 
 	private:

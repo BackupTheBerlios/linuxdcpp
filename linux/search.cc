@@ -39,6 +39,7 @@ Search::Search(MainWindow *mw):
 	slotCB("Only users with free slots"),
 	searchButton("Search")
 {
+	ID = BOOK_SEARCH;
 	char *sizeItems[] = {"Normal", "At least", "At most"};
 	char *unitItems[] = {"B", "kB", "MB", "GB"};
 	char *typeItems[] = {"Any", "Audio", "Compressed", "Document",
@@ -108,7 +109,7 @@ Search::Search(MainWindow *mw):
 	pack_start(mainBox);
 	show_all();
 
-	label.set_text(locale_to_utf8("Search"));
+	label.set_text(WUtil::ConvertToUTF8("Search"));
 	label.show();
 
 	//callback = slot(*this, &Search::searchPressed);
@@ -138,11 +139,11 @@ void Search::searchPressed() {
 
 	resultsStore->clear();
 
-	name = locale_from_utf8(search.get_entry()->get_text());
+	name = WUtil::ConvertFromUTF8(search.get_entry()->get_text());
 	name = SearchManager::clean(name);
 
 	size = pow((double)1024, unitOM.get_history());
-	size *= Util::toInt64(locale_from_utf8(sizeEntry.get_text()));
+	size *= Util::toInt64(WUtil::ConvertFromUTF8(sizeEntry.get_text()));
 	fileType = (SearchManager::TypeModes)typeOM.get_history();
 	sizeType = (SearchManager::SizeModes)sizeOM.get_history();
 
@@ -164,11 +165,11 @@ void Search::on(SearchManagerListener::SR, SearchResult *result) throw() {
 	if (slotCB.get_active() && result->getFreeSlots() < 1)	return;
 
 	it = resultsStore->append();
-	(*it)[columns.file] = locale_to_utf8(result->getFile());
-	(*it)[columns.size] = locale_to_utf8(Util::formatBytes(result->getSize()));
-	(*it)[columns.slots] = locale_to_utf8(result->getSlotString());
-	(*it)[columns.user] = locale_to_utf8(result->getUser()->getNick());
-	(*it)[columns.path] = locale_to_utf8(result->getFileName());
+	(*it)[columns.file] = WUtil::ConvertToUTF8(result->getFile());
+	(*it)[columns.size] = WUtil::ConvertToUTF8(Util::formatBytes(result->getSize()));
+	(*it)[columns.slots] = WUtil::ConvertToUTF8(result->getSlotString());
+	(*it)[columns.user] = WUtil::ConvertToUTF8(result->getUser()->getNick());
+	(*it)[columns.path] = WUtil::ConvertToUTF8(result->getFileName());
 }
 
 

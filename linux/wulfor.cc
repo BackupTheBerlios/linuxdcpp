@@ -24,6 +24,7 @@
 
 #include "mainwindow.hh"
 #include "guiproxy.hh"
+#include "transfer.hh"
 
 #include "../client/stdinc.h"
 #include "../client/DCPlusPlus.h"
@@ -47,6 +48,7 @@ int main(int argc, char *argv[]) {
 
 	//start the gui proxy. this must be done in the main gtk thread, this one
 	GuiProxy::startup();
+	CTransfer::startup();
 
 	MainWindow mw;
 	mw.setStatus("Welcome to Wulfor 0.1!", STATUS_MAIN);
@@ -56,6 +58,8 @@ int main(int argc, char *argv[]) {
 	main.run();
 
 	GuiProxy::getInstance()->shutdown();
+	CTransfer::getInstance()->shutdown();
+	cout << "Shutting down." << endl;
 	shutdown();
 	
 	return 0;

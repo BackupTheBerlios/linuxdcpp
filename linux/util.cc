@@ -16,44 +16,45 @@
 * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-#include "bookentry.hh"
-#include <iostream>
+#include "util.hh"
 
-using namespace Gtk;
-using namespace SigC;
 using namespace Glib;
-using namespace std;
-using namespace Toolbar_Helpers;
 
-const bool BookEntry::useMultipleTabs[] = {false, false, true, false, true};
-
-BookEntry::BookEntry():button("X") {
-	button.signal_clicked().connect(slot(*this, &BookEntry::close));
-	box.pack_start(label, Gtk::PACK_EXPAND_WIDGET);
-	box.pack_start(button, Gtk::PACK_SHRINK);
-	box.show_all();
-}
-
-BookEntry::~BookEntry() {	
-}
-
-void BookEntry::close ()
+namespace WUtil
 {
-	parent->remove_page (*this);
-}
-
-Label &BookEntry::getLabel() {
-	return label;
-}
-
-HBox &BookEntry::getBox() {
-	return box;
-}
-
-int BookEntry::getID() {
-	return ID;
-}
-
-void BookEntry::setParent (Notebook *p) {
-	parent = p;
+	ustring ConvertToUTF8 (const std::string &opsys)
+	{
+		ustring str = opsys;
+		try
+		{
+			str = locale_to_utf8 (str);
+		}
+		catch (ConvertError)
+		{
+			std::string tmp = opsys;
+			for (std::string::iterator it=tmp.begin();it != tmp.end(); it++)
+				if ((*it & '\x80') != 0)
+					(*it) = '?';
+			
+		str = tmp;
+		}
+		return str;
+	}
+	std::string ConvertFromUTF8 (const Glib::ustring &opsys)
+	{
+		ustring str = opsys;
+		std::string result;
+		try
+		{
+			result = locale_from_utf8 (str);
+		}
+		catch (ConvertError)
+		{
+			result = opsys.raw ();
+			for (std::string::iterator it=result.begin();it != result.end(); it++)
+				if ((*it & '\x80') != 0)
+					(*it) = '?';
+		}
+		return result;		
+	}
 }

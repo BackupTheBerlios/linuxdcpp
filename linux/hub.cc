@@ -43,7 +43,11 @@ Hub::Hub(string address, MainWindow *mw):
 	
 	this->address = address;
 	this->mw = mw;
+	
+	this->ID = BOOK_HUB;
 
+	add (mainBox);
+	
 	pane.set_position(600);
 
 	chat.set_editable(false);
@@ -64,9 +68,24 @@ Hub::Hub(string address, MainWindow *mw):
 	pane.add2(nickScroll);
 	
 	//from BookEntry
-	pack_start(pane, PACK_EXPAND_WIDGET);
+	pack_start(mainBox, PACK_EXPAND_WIDGET);
+	
+	mainBox.pack_start (pane, PACK_EXPAND_WIDGET, 0);
+	mainBox.pack_start (statusBox, PACK_SHRINK, 0);
+	
+	for (int i=0;i<HUB_NUM_MESSAGES;i++)
+	{
+		statusBar[i].set_has_resize_grip (false);
+		if (i==0)
+			statusBox.pack_start (statusBar[i], PACK_EXPAND_WIDGET, 2);
+		else
+			statusBox.pack_start (statusBar[i], PACK_SHRINK, 2);
+		
+		if (i>0)	
+			statusBar[i].set_size_request (75, -1);
+	}
 
-	label.set_text(locale_to_utf8(address));
+	label.set_text (WUtil::ConvertToUTF8 (address));
 	label.show();
 
 	//for the popup menu when left-clicking users
@@ -117,14 +136,17 @@ bool Hub::operator== (BookEntry &b) {
 }
 
 void Hub::on(ClientListener::Connecting, Client *client) throw() {
-	mw->setStatus("Connecting to " + address, STATUS_MAIN);
+	setStatus("Connecting", HUB_STATUS_MAIN);
+	setStatus("0 Users", HUB_STATUS_USERS);
+	setStatus("0 B", HUB_STATUS_SHARED);
 }
 
 void Hub::on(ClientListener::Connected, Client *client) throw() {
-	mw->setStatus("Connected to " + address, STATUS_MAIN);
+	setStatus("Connected", HUB_STATUS_MAIN);
 }
 
 void Hub::on(ClientListener::BadPassword, Client *client) throw() {
+	setStatus ("Sorry, wrong password", HUB_STATUS_MAIN);
 	client->setPassword("");
 }
 
@@ -132,15 +154,21 @@ void Hub::on(ClientListener::UserUpdated, Client *client,
 	const User::Ptr &user) throw() 
 {
 	std::string str;
+	int i;
 	TreeModel::iterator it = findUser(user->getNick());
 		
 	if (it == nickStore->children().end())
 		it = nickStore->append();
 			
 	str = user->getNick();
-	(*it)[columns.nick] = locale_to_utf8(str);	
+	(*it)[columns.nick] = WUtil::ConvertToUTF8(str);	
 	str = Util::formatBytes(user->getBytesShared());
-	(*it)[columns.shared] = locale_to_utf8(str);
+	(*it)[columns.shared] = WUtil::ConvertToUTF8(str);	
+
+	char buffer[32];
+	sprintf (buffer, "%d User(s)", client->getUserCount ());
+	setStatus (buffer, HUB_STATUS_USERS);
+	setStatus (Util::formatBytes(client->getAvailable ()), HUB_STATUS_SHARED);
 }
 	
 void Hub::on(ClientListener::UsersUpdated, 
@@ -157,17 +185,25 @@ void Hub::on(ClientListener::UsersUpdated,
 			it = nickStore->append();
 			
 		str = list[i]->getNick();
-		(*it)[columns.nick] = locale_to_utf8(str);	
+		(*it)[columns.nick] = WUtil::ConvertToUTF8(str);	
 		str = Util::formatBytes(list[i]->getBytesShared());
-		(*it)[columns.shared] = locale_to_utf8(str);
+		(*it)[columns.shared] = WUtil::ConvertToUTF8(str);	
 	}
 }
 
 void Hub::on(ClientListener::UserRemoved, 
 	Client *client, const User::Ptr &user) throw()
 {
+	BookEntry *e = mw->findPage (user->getNick ());
+	if (e != NULL && e->getID() == BOOK_PRIVATE_MESSAGE)
+		(dynamic_cast<PrivateMsg*>(e))->addMsg (user->getNick () + " left the hub.");
 	TreeModel::iterator it = findUser(user->getNick());
 	nickStore->erase(it);
+	
+	char buffer[32];
+	sprintf (buffer, "%d User(s)", client->getUserCount ());
+	setStatus (buffer, HUB_STATUS_USERS);
+	setStatus (Util::formatBytes(client->getAvailable ()), HUB_STATUS_SHARED);
 }
 
 void Hub::on(ClientListener::Redirect, 
@@ -197,7 +233,7 @@ void Hub::on(ClientListener::Redirect,
 void Hub::on(ClientListener::Failed, 
 	Client *client, const string &reason) throw()
 {
-	mw->setStatus(reason, STATUS_MAIN);
+	setStatus("Connect failed: " + reason, HUB_STATUS_MAIN);
 }
 
 void Hub::on(ClientListener::GetPassword, Client *client) throw() {
@@ -205,7 +241,7 @@ void Hub::on(ClientListener::GetPassword, Client *client) throw() {
 }
 
 void Hub::on(ClientListener::HubUpdated, Client *client) throw() {
-	label.set_text(locale_to_utf8(client->getName()));
+	label.set_text (WUtil::ConvertToUTF8 (client->getName ()));
 }
 
 void Hub::on(ClientListener::Message, 
@@ -214,7 +250,7 @@ void Hub::on(ClientListener::Message,
 	RefPtr<TextBuffer> buffer;
 
 	buffer = chat.get_buffer();
-	buffer->insert(buffer->end(), locale_to_utf8(msg + "\n"));
+	buffer->insert (buffer->end(), "[" + Util::getShortTimeString() + "] " + WUtil::ConvertToUTF8 (msg + "\n"));
 }
 
 void Hub::on(ClientListener::PrivateMessage, 
@@ -235,19 +271,19 @@ void Hub::on(ClientListener::UserCommand, Client *client,
 }
 
 void Hub::on(ClientListener::HubFull, Client *client) throw() {
-	mw->setStatus("Sorry, hub full", STATUS_MAIN);
+	setStatus("Sorry, hub full", HUB_STATUS_MAIN);
 }
 
 void Hub::on(ClientListener::NickTaken, Client *client) throw() {
 	client->removeListener(this);
 	client->disconnect();
-	mw->setStatus("Nick taken", STATUS_MAIN);
+	setStatus("Nick taken", HUB_STATUS_MAIN);
 }
 
 void Hub::on(ClientListener::SearchFlood, Client *client, 
 	const string &msg) throw() 
 {
-	mw->setStatus("Search spam from: " + msg, STATUS_MAIN);
+	setStatus("Search spam from: " + msg, HUB_STATUS_MAIN);
 }
 	
 void Hub::on(ClientListener::NmdcSearch, Client *client, const string&, 
@@ -266,6 +302,21 @@ TreeModel::iterator Hub::findUser(ustring nick) {
 			
 	return kids.end();
 }
+int Hub::findUserNr(ustring nick)
+{
+	TreeModel::iterator it;
+	TreeModel::Children kids = nickStore->children();
+	int count=0;
+	
+	for (it = kids.begin(); it != kids.end(); it++)
+	{
+		if ((*it)[columns.nick] == nick)
+			return count;
+		count++;
+	}
+	
+	return -1;
+}
 
 void Hub::showPopupMenu(GdkEventButton* event) {
 	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 3)) {
@@ -282,9 +333,9 @@ void Hub::browseClicked() {
 	
 	ClientManager *man = ClientManager::getInstance();
 	
-	if (!it) return;
-	user = man->getUser(locale_from_utf8((*it)[columns.nick]), client);
-	
+	if (it == NULL) return;
+	user = man->getUser (WUtil::ConvertFromUTF8 ((*it)[columns.nick]), client);
+
 	b = new ShareBrowser(user, mw);
 	mw->addPage(b);
 }
@@ -295,9 +346,10 @@ void Hub::pmClicked() {
 	RefPtr<TreeSelection> sel = nickView.get_selection();
 	TreeModel::iterator it = sel->get_selected();
 	
-	if (!it) return;
-	user = new User(locale_from_utf8((*it)[columns.nick]));
-	user->setClient(client);	
+	if (it == NULL) return;
+	user = new User (WUtil::ConvertFromUTF8 ((*it)[columns.nick]));
+	
+	user->setClient(client);
 	privMsg = new PrivateMsg(user, mw);
 	mw->addPage(privMsg);
 }
@@ -307,7 +359,7 @@ void Hub::favClicked() {
 }
 
 void Hub::enterPressed() {
-	client->getMe()->clientMessage(locale_from_utf8(chatEntry.get_text()));
+	client->getMe ()->clientMessage (WUtil::ConvertToUTF8 (chatEntry.get_text()));
 	chatEntry.set_text("");
 }
 
@@ -325,4 +377,23 @@ void Hub::valueChanged() {
 	scrollVal = chatScroll.get_vscrollbar()->get_value();
 }
 
+void Hub::setStatus(std::string text, int num) 
+{
+	if (num<0 || num>HUB_NUM_MESSAGES-1) return;
 
+	statusBar[num].pop(1);
+	if (num == 0)
+		statusBar[num].push ("[" + Util::getShortTimeString() + "] " + WUtil::ConvertToUTF8 (text), 1);
+	else
+		statusBar[num].push (WUtil::ConvertToUTF8 (text), 1);
+		
+}
+
+void Hub::close ()
+{
+	if (client->isConnected ())
+		cout << "Disconnected from " << client->getName () << endl;
+	client->disconnect ();
+	getParent ()->remove_page (*this);
+	delete this;
+}
