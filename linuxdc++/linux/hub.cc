@@ -125,10 +125,10 @@ Hub::Hub(string address, MainWindow *mw, const std::string nick, const std::stri
 	popupMenu.append(favItem);
 
 	client = ClientManager::getInstance()->getClient(address);
-	proxy->addListener<Hub, ClientListener>(this, client);
 	client->setNick(nick.empty () ? SETTING (NICK) : nick);
 	if (!userdesc.empty())
 		client->setDescription(userdesc);
+	proxy->addListener<Hub, ClientListener>(this, client);
 	client->setPassword(password);
 	client->connect();
 }
