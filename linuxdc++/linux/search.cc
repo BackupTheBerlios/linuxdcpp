@@ -237,7 +237,9 @@ void Search::on(SearchManagerListener::SR, SearchResult *result) throw()
 	TreeModel::iterator it;
 
 	//in case we don't want users with no free slots
-	if (slotCB.get_active() && result->getFreeSlots() < 1)	return;
+	if (slotCB.get_active())
+		if (result->getFreeSlots() < 1)
+			return;
 
 	it = resultsStore->append();
 
