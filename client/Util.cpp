@@ -3,7 +3,7 @@
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
+ * the Free Software Foundation; either §sion 2 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -167,11 +167,19 @@ string Util::validateMessage(string tmp, bool reverse, bool checkNewLines) {
 	return tmp;
 }
 
+#ifdef _WIN32
 static const char badChars[] = { 
 	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 		17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
 		31, '<', '>', '/', '"', '|', '?', '*', 0
 };
+#else
+static const char badChars[] = { 
+	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+		17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+		31, '<', '>', '\', '"', '|', '?', '*', 0
+};
+#endif
 
 /**
  * Replaces all strange characters in a file with '_'
@@ -802,6 +810,6 @@ int Util::getOsMinor()
 }
 /**
  * @file
- * $Id: Util.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
+ * $Id: Util.cpp,v 1.3 2004/10/29 11:40:57 paskharen Exp $
  */
 
