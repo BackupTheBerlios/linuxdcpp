@@ -20,7 +20,7 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	hubs(0),
 	filter(""),
 	WIDTH_NAME(200),
-	WIDTH_DESC(290),
+	WIDTH_DESC(350),
 	WIDTH_USERS(50),
 	WIDTH_ADDRESS(100)
 {
@@ -60,8 +60,6 @@ PublicHubs::PublicHubs(GCallback closeCallback):
     g_signal_connect(o, "clicked", G_CALLBACK(connect_callback), (gpointer)this);
 	
 	pthread_mutex_init(&hubLock, NULL);
-	Func0<PublicHubs> *func = new Func0<PublicHubs>(this, &PublicHubs::downloadList_client);
-	WulforManager::get()->dispatchClientFunc(func);
 }
 
 PublicHubs::~PublicHubs() {

@@ -40,8 +40,7 @@ class Hub:
 {
 	public:
 		//constructor should be called by gui thread
-		Hub(std::string address, GCallback closeCallback,
-			std::string nick="", string desc="", string password="");
+		Hub(std::string address, GCallback closeCallback);
 		~Hub();
 
 		//from bookentry
@@ -49,9 +48,9 @@ class Hub:
 
 		//to be called from gui thread
 		void setStatus_gui(GtkStatusbar *status, std::string text);
-		void updateUser_gui(const User::Ptr &user);
+		void updateUser_gui(std::string nick, long shared, std::string iconFile);
 		void findUser_gui(std::string nick, GtkTreeIter *iter);
-		void removeUser_gui(const User::Ptr &user);
+		void removeUser_gui(std::string nick);
 		void clearNickList_gui();
 		void getPassword_gui();
 		void addMessage_gui(std::string msg);
@@ -60,6 +59,7 @@ class Hub:
 		void connectClient_client(string address, 
 			string nick="", string desc="", string password="");
 		void setPassword_client(std::string password);
+		void updateUser_client(const User::Ptr &user);
 
 		//all this from ClientListener...
 		void on(ClientListener::Connecting, Client *client) throw();

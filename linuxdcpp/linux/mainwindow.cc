@@ -28,9 +28,6 @@ void MainWindow::pubHubs_callback(GtkWidget *widget, gpointer data) {
 MainWindow::MainWindow() {
 	QueueManager::getInstance()->addListener(this);
 	TimerManager::getInstance()->addListener(this);
-	
-	Func0<MainWindow> *func = new Func0<MainWindow>(this, &MainWindow::createWindow_gui);
-	WulforManager::get()->dispatchGuiFunc(func);
 }
 
 MainWindow::~MainWindow() {

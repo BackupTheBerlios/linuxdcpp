@@ -6,9 +6,9 @@
 
 using namespace std;
 
-Hub::Hub(std::string address, GCallback closeCallback, string nick, string desc, string password):
+Hub::Hub(std::string address, GCallback closeCallback):
 	BookEntry(WulforManager::HUB, address, address, closeCallback),
-	WIDTH_ICON(16),
+	WIDTH_ICON(20),
 	WIDTH_NICK(100),
 	WIDTH_SHARED(50)
 {
@@ -39,10 +39,6 @@ Hub::Hub(std::string address, GCallback closeCallback, string nick, string desc,
 	gtk_text_view_set_buffer(chatText, chatBuffer);
 
 	client = NULL;
-
-	typedef Func4<Hub, string, string, string, string> F4;
-	F4 *func = new F4(this, &Hub::connectClient_client, address, nick, desc, password);
-	WulforManager::get()->dispatchClientFunc(func);
 }
 
 Hub::~Hub() {
@@ -68,6 +64,18 @@ void Hub::connectClient_client(string address, string nick, string desc, string 
 	client->connect();
 }
 
+void Hub::updateUser_client(const User::Ptr &user) {
+	typedef Func3<Hub, string, long, string> F3;
+	F3 * func;
+	string nick = user->getNick();
+	long shared = user->getBytesShared();
+	//TODO: fixa så denna sätts ordentligt
+	string icon = WulforManager::get()->getPath() + "/pixmaps/normal.png";
+
+	func = new F3(this, &Hub::updateUser_gui, nick, shared, icon);
+	WulforManager::get()->dispatchGuiFunc(func);
+}
+
 void Hub::setStatus_gui(GtkStatusbar *status, std::string text) {
 	gtk_statusbar_pop(status, 0);
 	gtk_statusbar_push(status, 0, text.c_str());
@@ -84,23 +92,22 @@ void Hub::findUser_gui(string nick, GtkTreeIter *iter) {
 	}
 }
 
-void Hub::updateUser_gui(const User::Ptr &user) {
+void Hub::updateUser_gui(string nick, long shared, string iconFile) {
 	GtkTreeIter iter;
 	GdkPixbuf *icon;
 	string file;
 	ostringstream userStream;
 
-	findUser_gui(user->getNick(), &iter);
+	findUser_gui(nick, &iter);
 	if (!gtk_list_store_iter_is_valid(nickStore, &iter)) {
 		gtk_list_store_append(nickStore, &iter);
 	}
 
-	file = WulforManager::get()->getPath() + "/pixmaps/normal.png";
-	icon = gdk_pixbuf_new_from_file(file.c_str(), NULL);
+	icon = gdk_pixbuf_new_from_file(iconFile.c_str(), NULL);
 	gtk_list_store_set(nickStore, &iter, 
 		COLUMN_ICON, icon,
-		COLUMN_NICK, user->getNick().c_str(),
-		COLUMN_SHARED, Util::formatBytes(user->getBytesShared()).c_str(),
+		COLUMN_NICK, nick.c_str(),
+		COLUMN_SHARED, 	Util::formatBytes(shared).c_str(),
 		-1);
 	g_object_unref(G_OBJECT(icon));
 
@@ -109,10 +116,10 @@ void Hub::updateUser_gui(const User::Ptr &user) {
 	setStatus_gui(sharedStatus, Util::formatBytes(client->getAvailable()));
 }
 
-void Hub::removeUser_gui(const User::Ptr &user) {
+void Hub::removeUser_gui(string nick) {
 	GtkTreeIter iter;
 	
-	findUser_gui(user->getNick(), &iter);
+	findUser_gui(nick, &iter);
 	if (gtk_list_store_iter_is_valid(nickStore, &iter)) {
 		gtk_list_store_remove(nickStore, &iter);
 	}
@@ -187,9 +194,7 @@ void Hub::on(ClientListener::UserUpdated, Client *client,
 	const User::Ptr &user) throw() 
 {
 	if (!user->isSet(User::HIDDEN)) {
-		typedef Func1<Hub, const User::Ptr&> F1;
-		F1 *func = new F1(this, &Hub::updateUser_gui, user);
-		WulforManager::get()->dispatchGuiFunc(func);
+		updateUser_client(user);
 	}
 }
 	
@@ -199,9 +204,7 @@ void Hub::on(ClientListener::UsersUpdated,
 	User::List::const_iterator it;
 	for (it = list.begin (); it != list.begin (); it++)	{
 		if (!(*it)->isSet(User::HIDDEN)) {
-			typedef Func1<Hub, const User::Ptr&> F1;
-			F1 *func = new F1(this, &Hub::updateUser_gui, *it);
-			WulforManager::get()->dispatchGuiFunc(func);
+			updateUser_client(*it);
 		}
 	}
 }
@@ -217,8 +220,8 @@ void Hub::on(ClientListener::UserRemoved,
 		msg->addMsg(user->getNick() + " left the hub.");
 	}
 	*/
-	typedef Func1<Hub, const User::Ptr&> F1;
-	F1 *remove = new F1(this, &Hub::removeUser_gui, user);
+	typedef Func1<Hub, string> F1;
+	F1 *remove = new F1(this, &Hub::removeUser_gui, user->getNick());
 	WulforManager::get()->dispatchGuiFunc(remove);
 
 	ostringstream userStream;

@@ -34,34 +34,67 @@ void WulforManager::processGuiQueue() {
 void WulforManager::processClientQueue() {
 	while (true) {
 		sem_wait(&clientSem);
+
+		if (clientFuncs.size() == 0) continue;
+
 		pthread_mutex_lock(&clientLock);
-		assert(clientFuncs.size() > 0);
 		clientFuncs.front()->call();
 		delete clientFuncs.front();
-		clientFuncs.pop();
+		clientFuncs.erase(clientFuncs.begin());
 		pthread_mutex_unlock(&clientLock);
 	}
 }
 
 void WulforManager::callGuiFunc() {
+	if (guiFuncs.size() == 0) return;
+
 	pthread_mutex_lock(&guiLock);
-	assert(guiFuncs.size() > 0);
 	guiFuncs.front()->call();
 	delete guiFuncs.front();
-	guiFuncs.pop();
+	guiFuncs.erase(guiFuncs.begin());
 	pthread_mutex_unlock(&guiLock);
 }
 
 void WulforManager::dispatchGuiFunc(FuncBase *func) {
+	bool found = false;
+	vector<BookEntry *>::iterator it;
+
 	pthread_mutex_lock(&guiLock);
-	guiFuncs.push(func);
+
+	//make sure we're not adding functions to deleted objects
+	if (func->comparePointer((void *)mainWin)) {
+		found = true;
+	} else {
+	for (it = bookEntrys.begin(); it != bookEntrys.end(); it++)
+		if (func->comparePointer((void *)*it)) {
+			found = true;
+			break;
+		}
+	}
+	if (found) guiFuncs.push_back(func);
+
 	pthread_mutex_unlock(&guiLock);
 	sem_post(&guiSem);
 }
 
 void WulforManager::dispatchClientFunc(FuncBase *func) {
+	bool found = false;
+	vector<BookEntry *>::iterator it;
+
 	pthread_mutex_lock(&clientLock);
-	clientFuncs.push(func);
+
+	//make sure we're not adding functions to deleted objects
+	if (func->comparePointer((void *)mainWin)) {
+		found = true;
+	} else {
+		for (it = bookEntrys.begin(); it != bookEntrys.end(); it++)
+			if (func->comparePointer((void *)*it)) {
+				found = true;
+				break;
+			}
+	}
+	if (found) clientFuncs.push_back(func);
+
 	pthread_mutex_unlock(&clientLock);
 	sem_post(&clientSem);
 }
@@ -83,6 +116,8 @@ WulforManager *WulforManager::get() {
 
 void WulforManager::createMainWindow() {
 	mainWin = new MainWindow;
+	Func0<MainWindow> *func = new Func0<MainWindow>(mainWin, &MainWindow::createWindow_gui);
+	dispatchGuiFunc(func);
 }
 
 void WulforManager::closeEntry_callback(GtkWidget *widget, gpointer data) {
@@ -137,16 +172,44 @@ BookEntry *WulforManager::getBookEntry(int type, string id, bool raise) {
 }
 
 void WulforManager::deleteBookEntry_gui(BookEntry *entry) {
+	vector<FuncBase *>::iterator fIt;
+	
+	pthread_mutex_lock(&clientLock);
+	pthread_mutex_lock(&guiLock);
+
+	//erase any pending calls to this bookentry
+	fIt = clientFuncs.begin();
+	while (fIt != clientFuncs.end())
+		for (fIt = clientFuncs.begin(); fIt != clientFuncs.end(); fIt++)
+			if ((*fIt)->comparePointer((void *)entry)) {
+				delete *fIt;
+				clientFuncs.erase(fIt);
+				break;
+			}
+
+	fIt = guiFuncs.begin();
+	while (fIt != guiFuncs.end())
+		for (fIt = guiFuncs.begin(); fIt != guiFuncs.end(); fIt++)
+			if ((*fIt)->comparePointer((void *)entry)) {
+				delete *fIt;
+				guiFuncs.erase(fIt);
+				break;
+			}
+
+	//remove the flap from the notebook
 	mainWin->removePage_gui(entry->getWidget());
 	
-	vector<BookEntry *>::iterator it;
-	for (it = bookEntrys.begin(); it != bookEntrys.end(); it++)
-		if ((*it)->isEqual(entry)) {
-			bookEntrys.erase(it);
-			return;
+	//remove the bookentry from the list
+	vector<BookEntry *>::iterator bIt;
+	for (bIt = bookEntrys.begin(); bIt != bookEntrys.end(); bIt++)
+		if ((*bIt)->isEqual(entry)) {
+			delete *bIt;
+			bookEntrys.erase(bIt);
+			break;
 		}
-		
-	assert(it != bookEntrys.end());
+
+	pthread_mutex_unlock(&guiLock);
+	pthread_mutex_unlock(&clientLock);
 }
 
 void WulforManager::addPublicHubs_gui() {
@@ -156,14 +219,21 @@ void WulforManager::addPublicHubs_gui() {
 	mainWin->addPage_gui(pubHubs->getWidget(), pubHubs->getTitle(), true);
 	gtk_widget_unref(pubHubs->getWidget());
 	bookEntrys.push_back(pubHubs);
+	
+	Func0<PublicHubs> *func = new Func0<PublicHubs>(pubHubs, &PublicHubs::downloadList_client);
+	dispatchClientFunc(func);
 }
 
-void WulforManager::addHub_gui(string address) {
+void WulforManager::addHub_gui(string address, string nick, string desc, string password) {
 	if (getBookEntry(HUB, address, true)) return;
 
 	Hub *hub = new Hub(address, G_CALLBACK(closeEntry_callback));
 	mainWin->addPage_gui(hub->getWidget(), hub->getTitle(), true);
 	gtk_widget_unref(hub->getWidget());
 	bookEntrys.push_back(hub);
+
+	typedef Func4<Hub, string, string, string, string> F4;
+	F4 *func = new F4(hub, &Hub::connectClient_client, address, nick, desc, password);
+	WulforManager::get()->dispatchClientFunc(func);
 }
 

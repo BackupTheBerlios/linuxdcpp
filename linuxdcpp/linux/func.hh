@@ -21,7 +21,8 @@
 
 class FuncBase {
 	public:
-		virtual void call() {};
+		virtual void call() {}
+		virtual bool comparePointer(void *ptr) {return true;}
 };
 
 template<class c>
@@ -34,6 +35,10 @@ class Func0: public FuncBase {
 
 		void call() {
 			(*obj.*func)();
+		}
+
+		bool comparePointer(void *ptr) {
+			return ptr == (void *)obj;
 		}
 
 	private:
@@ -53,6 +58,10 @@ class Func1: public FuncBase {
 
 		void call() {
 			(*obj.*func)(_param1);
+		}
+
+		bool comparePointer(void *ptr) {
+			return ptr == (void *)obj;
 		}
 
 	private:
@@ -76,6 +85,10 @@ class Func2: public FuncBase {
 			(*obj.*func)(_param1, _param2);
 		}
 
+		bool comparePointer(void *ptr) {
+			return ptr == (void *)obj;
+		}
+
 	private:
 		c *obj;
 		void (c::*func)(p1, p2);
@@ -97,6 +110,10 @@ class Func3: public FuncBase {
 
 		void call() {
 			(*obj.*func)(_param1, _param2, _param3);
+		}
+
+		bool comparePointer(void *ptr) {
+			return ptr == (void *)obj;
 		}
 
 	private:
@@ -125,6 +142,10 @@ class Func4: public FuncBase {
 			(*obj.*func)(_param1, _param2, _param3, _param4);
 		}
 
+		bool comparePointer(void *ptr) {
+			return ptr == (void *)obj;
+		}
+
 	private:
 		c *obj;
 		void (c::*func)(p1, p2, p3, p4);
@@ -151,6 +172,10 @@ class Func5: public FuncBase {
 
 		void call() {
 			(*obj.*func)(_param1, _param2, _param3, _param4, _param5);
+		}
+
+		bool comparePointer(void *ptr) {
+			return ptr == (void *)obj;
 		}
 
 	private:
@@ -182,6 +207,10 @@ class Func6: public FuncBase {
 
 		void call() {
 			(*obj.*func)(_param1, _param2, _param3, _param4, _param5, _param6);
+		}
+
+		bool comparePointer(void *ptr) {
+			return ptr == (void *)obj;
 		}
 
 	private:

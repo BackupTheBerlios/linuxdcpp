@@ -23,7 +23,6 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <string>
-#include <queue>
 #include <vector>
 
 #include "func.hh"
@@ -47,7 +46,8 @@ class WulforManager {
 		MainWindow *getMainWindow();
 
 		void addPublicHubs_gui();
-		void addHub_gui(std::string address);
+		void addHub_gui(std::string address, 
+			std::string nick="", std::string desc="", std::string password="");
 
 		BookEntry *getBookEntry(int type, string id, bool raise);
 		void deleteBookEntry_gui(BookEntry *entry);
@@ -73,8 +73,8 @@ class WulforManager {
 
 		static WulforManager *manager;
 
-		std::queue<FuncBase *> guiFuncs;
-		std::queue<FuncBase *> clientFuncs;
+		std::vector<FuncBase *> guiFuncs;
+		std::vector<FuncBase *> clientFuncs;
 
 		pthread_mutex_t guiLock, clientLock;
 		sem_t guiSem, clientSem;
