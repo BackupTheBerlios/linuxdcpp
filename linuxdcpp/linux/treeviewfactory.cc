@@ -50,6 +50,12 @@ void TreeViewFactory::addColumn_gui(int id, std::string title, type_t type, int 
 			col = gtk_tree_view_column_new_with_attributes(
 				title.c_str(), gtk_cell_renderer_pixbuf_new(), "pixbuf", id, NULL);
 			break;
+		case EDIT_STRING:
+			GtkCellRenderer *r = gtk_cell_renderer_text_new();
+ 			g_object_set(r, "editable", TRUE, NULL);
+			col = gtk_tree_view_column_new_with_attributes(
+				title.c_str(), r, "text", id, NULL);
+			break;
 		/*
 		case PROGRESS:
 			col = gtk_tree_view_column_new_with_attributes(

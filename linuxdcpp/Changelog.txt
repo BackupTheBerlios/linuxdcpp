@@ -1,3 +1,10 @@
+2005-02-27 - paskharen
+* New and improved publichubs with context menu and stuff.
+* Added separate connect dialog to connect to a hub by address.
+* Fixed double click in share browser.
+* Fixed unicode problems in transferview.
+* Code cleanup in mainwindow.
+
 2005-02-23 - phase
 * Added multiple selections to Download Queue and Search.
 * Fixed a separator related bug.

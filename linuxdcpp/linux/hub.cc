@@ -170,7 +170,7 @@ void Hub::findUser_gui(string nick, GtkTreeIter *iter) {
 		string text;
 		gtk_tree_model_get(GTK_TREE_MODEL(nickStore), iter, COLUMN_NICK, &t, -1);
 		text = t;
-		delete[] t;
+		g_free(t);
 		
 		if (nick == text) return;
 		gtk_tree_model_iter_next(GTK_TREE_MODEL(nickStore), iter);
@@ -316,7 +316,7 @@ void Hub::browseItemClicked_gui(GtkMenuItem *, gpointer) {
 	F1 *func = new F1(this, &Hub::getFileList_client, string(text));
 	WulforManager::get()->dispatchClientFunc(func);
 	
-	delete[] text;
+	g_free(text);
 }
 
 void Hub::msgItemClicked_gui(GtkMenuItem *, gpointer) {
@@ -334,7 +334,7 @@ void Hub::msgItemClicked_gui(GtkMenuItem *, gpointer) {
 	}
 	pthread_mutex_unlock(&clientLock);
 	
-	delete[] text;
+	g_free(text);
 }
 
 void Hub::grantItemClicked_gui(GtkMenuItem *, gpointer) {
@@ -349,7 +349,7 @@ void Hub::grantItemClicked_gui(GtkMenuItem *, gpointer) {
 	F1 *func = new F1(this, &Hub::grantSlot_client, string(text));
 	WulforManager::get()->dispatchClientFunc(func);
 	
-	delete[] text;
+	g_free(text);
 }
 
 void Hub::grantSlot_client(string userName) {

@@ -43,11 +43,27 @@ class PublicHubs:
 		GtkWidget *getWidget();
 
 		//only to be called from client thread
-		void PublicHubs::downloadList_client();
+		void downloadList_client();
+		void refresh_client();
+		void addFav_client(FavoriteHubEntry entry);
 
 		//only to be called from the gui thread
 		void filterHubs_gui(GtkWidget *widget, gpointer data);
 		void connect_gui(GtkWidget *widget, gpointer data);
+		void refresh_gui(GtkWidget *widget, gpointer data);
+		void configure_gui(GtkWidget *widget, gpointer data);
+
+		void moveUp_gui(GtkWidget *widget, gpointer data);
+		void moveDown_gui(GtkWidget *widget, gpointer data);
+		void add_gui(GtkWidget *widget, gpointer data);
+		void remove_gui(GtkWidget *widget, gpointer data);
+
+		void cellEdited_gui(GtkCellRendererText *cell, 
+			char *path, char *text, gpointer data);
+		gboolean buttonEvent_gui(
+			GtkWidget *widget, GdkEventButton *event, gpointer);
+		void addFav_gui(GtkMenuItem *i, gpointer d);
+
 		void updateList_gui();
 		void setStatus_gui(GtkStatusbar *status, std::string text);
 
@@ -58,30 +74,35 @@ class PublicHubs:
 			const string &file) throw();
 		void on(HubManagerListener::DownloadFinished, 
 			const string &file) throw();
-		void on(HubManagerListener::FavoriteAdded, 
-			const FavoriteHubEntry *fav) throw();
-		void on(HubManagerListener::FavoriteRemoved, 
-			const FavoriteHubEntry *fav) throw();
-		void on(HubManagerListener::UserAdded, 
-			const User::Ptr &user) throw();
-		void on(HubManagerListener::UserRemoved, 
-			const User::Ptr &user) throw();
 
 	private:
-		Callback2<PublicHubs, void, GtkWidget *> filterCallback, connectCallback;
-
+		Callback2<PublicHubs, void, GtkWidget *> 
+			filterCallback, connectCallback, refreshCallback, configureCallback;
+		Callback2<PublicHubs, void, GtkWidget *> 
+			upCallback, downCallback, addCallback, removeCallback;
+		Callback4<PublicHubs, void, GtkCellRendererText *, char *, char *>
+			editCallback;
+		Callback3<PublicHubs, gboolean, GtkWidget *, GdkEventButton *> 
+			mouseButtonCallback;
+		Callback2<PublicHubs, void, GtkMenuItem *> addFavCallback;
+		
 		pthread_mutex_t hubLock;
 
 		HubEntry::List hubs;
 		StringSearch filter;
 
+		GtkDialog *configureDialog;
+		GtkComboBox *combo;
+		GtkListStore *comboStore, *listsStore;
 		GtkWidget *mainBox;
-		GtkEntry *filterEntry, *connectEntry;
-		GtkTreeView *hubView;
+		GtkEntry *filterEntry;
+		GtkTreeView *hubView, *listsView;
 		GtkListStore *hubStore;
-		GtkTreeViewColumn *nameColumn, *descColumn, *usersColumn, *addressColumn;
 		GtkStatusbar *statusMain, *statusHubs, *statusUsers;
 		
+		GtkMenu *menu;
+		GtkMenuItem *conItem, *favItem;
+
 		enum {
 			COLUMN_NAME,
 			COLUMN_DESC,

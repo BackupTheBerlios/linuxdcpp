@@ -262,6 +262,11 @@ gboolean ShareBrowser::buttonPressed_gui(
 gboolean ShareBrowser::buttonReleased_gui(
 	GtkWidget *widget, GdkEventButton *event, gpointer)
 {
+	GtkTreeIter iter;
+	DirectoryListing::File *file;
+	gpointer ptr;
+	string target;
+
 	if (oldButton != event->button) return FALSE;
 
 	if (GTK_TREE_VIEW(widget) == fileView) {
@@ -288,8 +293,21 @@ gboolean ShareBrowser::buttonReleased_gui(
 
 	//double click left button
 	if (event->button == 1 && oldType == GDK_2BUTTON_PRESS)
-		if (GTK_TREE_VIEW(widget) == fileView)
-			;
+		if (GTK_TREE_VIEW(widget) == fileView) {
+			gtk_tree_selection_get_selected(fileSelection, NULL, &iter);
+			gtk_tree_model_get(GTK_TREE_MODEL(fileStore), &iter,
+				COLUMN_DL_FILE, &ptr, -1);
+			file = (DirectoryListing::File *)ptr;
+		
+			if (listing.getUtf8())
+				target += Text::utf8ToAcp(Util::getFileName(file->getName()));
+			else
+				target += Util::getFileName(file->getName());
+			
+			typedef Func2<ShareBrowser, DirectoryListing::File *, string> F2;
+			F2 * func = new F2(this, &ShareBrowser::downloadFile_client, file, target);
+			WulforManager::get()->dispatchClientFunc(func);
+		}
 
 	return FALSE;
 }

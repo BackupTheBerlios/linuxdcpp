@@ -21,10 +21,10 @@
 
   <child>
     <widget class="GtkVBox" id="mainBox">
-      <property name="border_width">5</property>
+      <property name="border_width">4</property>
       <property name="visible">True</property>
       <property name="homogeneous">False</property>
-      <property name="spacing">5</property>
+      <property name="spacing">4</property>
 
       <child>
 	<widget class="GtkHBox" id="hbox1">
@@ -116,7 +116,7 @@
 		    <widget class="GtkHBox" id="hbox2">
 		      <property name="visible">True</property>
 		      <property name="homogeneous">False</property>
-		      <property name="spacing">5</property>
+		      <property name="spacing">4</property>
 
 		      <child>
 			<widget class="GtkComboBox" id="comboboxSize">

@@ -30,6 +30,7 @@ class TreeViewFactory {
 			INT,
 			BOOL,
 			PIXBUF,
+			EDIT_STRING
 			//PROGRESS
 		} type_t;
 	

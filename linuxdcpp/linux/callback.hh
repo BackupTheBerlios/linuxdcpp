@@ -133,6 +133,43 @@ class Callback3 {
 		gpointer data;
 };
 
+template <class C, typename Ret, typename P1, typename P2, typename P3>
+class Callback4 {
+	public:
+		Callback4(C *obj, Ret (C::*func)(P1, P2, P3, gpointer)):
+			_obj(obj),
+			_func(func)
+		{
+			
+		}
+		
+		void connect(GObject *obj, std::string signal, gpointer data) {
+			this->data = data;
+		    g_signal_connect(obj, signal.c_str(), 
+				G_CALLBACK(callFunc), (gpointer)this);
+		}
+
+		void connect_after(GObject *obj, std::string signal, gpointer data) {
+			this->data = data;
+		    g_signal_connect_after(obj, signal.c_str(), 
+				G_CALLBACK(callFunc), (gpointer)this);
+		}
+
+	private:
+		static Ret callFunc(P1 param1, P2 param2, P3 param3, gpointer data) {
+			Callback4<C, Ret, P1, P2, P3> *c = (Callback4<C, Ret, P1, P2, P3> *)data;
+			return c->call(param1, param2, param3);
+		}
+		
+		Ret call(P1 param1, P2 param2, P3 param3) {
+			return (*_obj.*_func)(param1, param2, param3, data);
+		}
+		
+		C *_obj;
+		Ret (C::*_func)(P1, P2, P3, gpointer);
+		gpointer data;
+};
+
 #else
 template <class C, typename Ret>
 class Callback1;
@@ -140,4 +177,6 @@ template <class C, typename Ret, typename P1>
 class Callback2;
 template <class C, typename Ret, typename P1, typename P2>
 class Callback3;
+template <class C, typename Ret, typename P1, typename P2, typename P3>
+class Callback4;
 #endif

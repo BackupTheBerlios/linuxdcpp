@@ -33,6 +33,7 @@
 #include <client/ConnectionManager.h>
 
 #include "func.hh"
+#include "callback.hh"
 
 class MainWindow:
 	public QueueManagerListener,
@@ -58,10 +59,10 @@ class MainWindow:
 		void addPage_gui(GtkWidget *page, GtkWidget *label, bool raise);
 		void removePage_gui(GtkWidget *page);
 		void raisePage_gui(GtkWidget *page);
-		GtkWidget *currentPage_gui ();
+		GtkWidget *currentPage_gui();
 		
-		void autoOpen_gui ();
-		void openHub_gui (string server, string nick, string desc, string password);
+		void autoOpen_gui();
+		void openHub_gui(string server, string nick, string desc, string password);
 		
 		typedef enum {
 			CONNECTION_UL,
@@ -73,6 +74,20 @@ class MainWindow:
 			std::string time, std::string speed, std::string file, std::string size, std::string path);
 		void removeTransfer_gui(std::string id);
 		void findId_gui(std::string id, GtkTreeIter *iter);
+
+		void connectClicked_gui(GtkWidget *widget, gpointer data);
+		void pubHubsClicked_gui(GtkWidget *widget, gpointer data);
+		void dlQueueClicked_gui(GtkWidget *widget, gpointer data);
+		void settingsClicked_gui(GtkWidget *widget, gpointer data);
+		void favHubsClicked_gui(GtkWidget *widget, gpointer data);
+		void searchClicked_gui(GtkWidget *widget, gpointer data);
+		void hashClicked_gui(GtkWidget *widget, gpointer data);
+		void quitClicked_gui(GtkWidget *widget, gpointer data);
+
+		gboolean deleteWindow_gui(
+			GtkWidget *widget, GdkEvent *event, gpointer data);
+		void switchPage_gui (GtkNotebook *notebook, 
+			GtkNotebookPage *page, guint page_num, gpointer user_data);
 
 		//client functions
 		void autoConnect_client();
@@ -105,27 +120,25 @@ class MainWindow:
 		virtual void on(UploadManagerListener::Complete, Upload *ul) throw();
 
 	private:
-		//callbacks (to be called from the gui)
-		static void pubHubs_callback(GtkWidget *widget, gpointer data);
-		static void dlQueue_callback(GtkWidget *widget, gpointer data);
-		static void settings_callback(GtkWidget *widget, gpointer data);
-		static void favHubs_callback(GtkWidget *widget, gpointer data);
-		static void search_callback(GtkWidget *widget, gpointer data);
-		static void hash_callback(GtkWidget *widget, gpointer data);
-		static void quit_callback(GtkWidget *widget, gpointer data);
+		Callback2<MainWindow, void, GtkWidget *>
+			connectCallback, pubHubsCallback, dlQueueCallback,
+			settingsCallback, favHubsCallback, searchCallback,
+			hashCallback, quitCallback;
 		
-		static void exit_callback(GtkWidget *widget, gpointer data);
-		static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data);
-		static void switchPage_callback (GtkNotebook *notebook, GtkNotebookPage *page, guint page_num, gpointer user_data);
-
+		Callback3<MainWindow, gboolean, GtkWidget *, GdkEvent *>
+			deleteCallback;
+		Callback4<MainWindow, void, GtkNotebook *, GtkNotebookPage *, guint>
+			switchPageCallback;
+			
 		int64_t lastUpdate, lastUp, lastDown;
 		int emptyStatusWidth;
 
 		GtkWindow *window;
-		GtkDialog *exitDialog;
+		GtkDialog *exitDialog, *connectDialog;
+		GtkEntry *connectEntry;
 		GtkStatusbar *mainStatus, *hubStatus, *slotStatus, 
 			*dTotStatus, *uTotStatus, *dlStatus, *ulStatus;
-		GtkToolButton *pubHubsButton, *searchButton, *settingsButton, 
+		GtkToolButton *connectButton, *pubHubsButton, *searchButton, *settingsButton, 
 			*hashButton, *queueButton, *favHubsButton, *quitButton;
 		GtkNotebook *book;
 		GtkTreeView *transferView;

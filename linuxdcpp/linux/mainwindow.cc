@@ -34,81 +34,19 @@
 
 using namespace std;
 
-void MainWindow::quit_callback(GtkWidget *widget, gpointer data) {
-	MainWindow *m = (MainWindow*)data;
-	if (BOOLSETTING (CONFIRM_EXIT))
-	{
-		gtk_widget_show_all (GTK_WIDGET (m->exitDialog));
-		gint response = gtk_dialog_run (m->exitDialog);
-		gtk_widget_hide (GTK_WIDGET (m->exitDialog));
-		if (response != GTK_RESPONSE_OK)	
-			return;
-	}
-	gtk_main_quit();
-}
-
-void MainWindow::exit_callback(GtkWidget *widget, gpointer data) {
-	gtk_main_quit();
-}
-
-gboolean MainWindow::delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
-	MainWindow *m = (MainWindow*)data;
-	if (!BOOLSETTING (CONFIRM_EXIT))
-		return FALSE;
-	gtk_widget_show_all (GTK_WIDGET (m->exitDialog));
-	gint response = gtk_dialog_run (m->exitDialog);
-	gtk_widget_hide (GTK_WIDGET (m->exitDialog));
-	if (response == GTK_RESPONSE_OK)
-		return FALSE;
-	else
-		return TRUE;
-}
-
-void MainWindow::pubHubs_callback(GtkWidget *widget, gpointer data) {
-	//no need to dispatch, already in gui thread
-	WulforManager::get()->addPublicHubs_gui();
-}
-
-void MainWindow::dlQueue_callback(GtkWidget *widget, gpointer data) {
-	WulforManager::get()->addDownloadQueue_gui();
-}
-
-void MainWindow::favHubs_callback(GtkWidget *widget, gpointer data) {
-	WulforManager::get()->addFavoriteHubs_gui();
-}
-
-void MainWindow::search_callback(GtkWidget *widget, gpointer data) {
-	WulforManager::get()->addSearch_gui();
-}
-
-void MainWindow::settings_callback(GtkWidget *widget, gpointer data) {
-	Settings *s = WulforManager::get()->openSettingsDialog_gui();
-
-	short lastPort = (short)SETTING(IN_PORT);
-	int lastConn = SETTING(CONNECTION_TYPE);	
-	
-	if (gtk_dialog_run(GTK_DIALOG (s->getDialog ())) == GTK_RESPONSE_OK)
-	{
-		s->saveSettings_client ();
-		SettingsManager::getInstance()->save();
-		if (SETTING(CONNECTION_TYPE) != lastConn || SETTING(IN_PORT) != lastPort) 
-		{
-			Selecter::quit();
-			WulforManager::get()->dispatchClientFunc(new Func0<MainWindow>(((MainWindow*)data), &MainWindow::startSocket_client));
-		}		
-	}
-
-	gtk_widget_hide (s->getDialog());
-}
-
-void MainWindow::hash_callback (GtkWidget *widget, gpointer data) {
-	Hash *h = WulforManager::get ()->openHashDialog_gui();
-	
-	gtk_dialog_run (GTK_DIALOG (h->getDialog ()));
-	WulforManager::get ()->deleteDialogEntry_gui ();
-}
-
 MainWindow::MainWindow():
+	connectCallback(this, &MainWindow::connectClicked_gui),
+	pubHubsCallback(this, &MainWindow::pubHubsClicked_gui),
+	dlQueueCallback(this, &MainWindow::dlQueueClicked_gui),
+	settingsCallback(this, &MainWindow::settingsClicked_gui),
+	favHubsCallback(this, &MainWindow::favHubsClicked_gui),
+	searchCallback(this, &MainWindow::searchClicked_gui),
+	hashCallback(this, &MainWindow::hashClicked_gui),
+	quitCallback(this, &MainWindow::quitClicked_gui),
+		
+	deleteCallback(this, &MainWindow::deleteWindow_gui),
+	switchPageCallback(this, &MainWindow::switchPage_gui),
+
 	WIDTH_TYPE(20), 
 	WIDTH_USER(150), 
 	WIDTH_STATUS(250), 
@@ -134,6 +72,9 @@ MainWindow::~MainWindow() {
 	UploadManager::getInstance()->removeListener(this);
 	ConnectionManager::getInstance()->removeListener(this);
 
+	gtk_widget_destroy(GTK_WIDGET(connectDialog));
+	gtk_widget_destroy(GTK_WIDGET(exitDialog));
+
 	//this makes sure the pixmaps are freed (using gtk:s ref counting)
 	g_object_unref(G_OBJECT(uploadPic));
 	g_object_unref(G_OBJECT(downloadPic));
@@ -151,6 +92,7 @@ void MainWindow::createWindow_gui() {
 	ulStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "status6"));
 	dlStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "status7"));
 
+	connectButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "connect"));
 	pubHubsButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "publicHubs"));
 	searchButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "search"));
 	settingsButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "settings"));
@@ -159,12 +101,13 @@ void MainWindow::createWindow_gui() {
 	favHubsButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "favHubs"));
 	quitButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "quit"));
 
+	exitDialog = GTK_DIALOG(glade_xml_get_widget(xml, "exitDialog"));
+	connectDialog = GTK_DIALOG(glade_xml_get_widget(xml, "connectDialog"));
+
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "mainWindow"));
-	g_signal_connect (G_OBJECT (window), "destroy", G_CALLBACK (exit_callback), (gpointer)this);
-	g_signal_connect (G_OBJECT (window), "delete_event", G_CALLBACK (delete_callback), (gpointer)this);
-	exitDialog = GTK_DIALOG (glade_xml_get_widget (xml, "exitDialog"));
 	book = GTK_NOTEBOOK(glade_xml_get_widget(xml, "book"));
 	transferView = GTK_TREE_VIEW(glade_xml_get_widget(xml, "transfers"));
+	connectEntry = GTK_ENTRY(glade_xml_get_widget(xml, "connectEntry"));
 
 	transferStore = gtk_list_store_new(9, GDK_TYPE_PIXBUF, G_TYPE_STRING, G_TYPE_STRING, 
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
@@ -189,7 +132,6 @@ void MainWindow::createWindow_gui() {
 	//All notebooks created in glade need one page.
 	//In our case, this is just a placeholder, so we remove it.
 	gtk_notebook_remove_page(book, -1);
-	g_signal_connect (G_OBJECT (book), "switch_page", G_CALLBACK (switchPage_callback), NULL);
 
 	//We need to do this in the code and not in the .glade file,
 	//otherwise we won't always find the images using binreloc
@@ -212,21 +154,18 @@ void MainWindow::createWindow_gui() {
 		
 	gtk_widget_show_all(GTK_WIDGET(window));
 
-   	g_signal_connect(G_OBJECT(pubHubsButton), 
-		"clicked", G_CALLBACK(pubHubs_callback), (gpointer)this);
-   	g_signal_connect(G_OBJECT (queueButton), 
-		"clicked", G_CALLBACK(dlQueue_callback), (gpointer)this);
-	g_signal_connect(G_OBJECT (favHubsButton), 
-		"clicked", G_CALLBACK(favHubs_callback), (gpointer)this);
-	g_signal_connect(G_OBJECT (settingsButton),
-		"clicked", G_CALLBACK(settings_callback), (gpointer)this);
-	g_signal_connect(G_OBJECT (searchButton),
-		"clicked", G_CALLBACK(search_callback), (gpointer)this);
-	g_signal_connect(G_OBJECT (hashButton),
-		"clicked", G_CALLBACK(hash_callback), (gpointer)this);    	
-	g_signal_connect(G_OBJECT(quitButton), 
-		"clicked", G_CALLBACK(quit_callback), (gpointer)this);
+   	connectCallback.connect(G_OBJECT(connectButton), "clicked", NULL);
+   	pubHubsCallback.connect(G_OBJECT(pubHubsButton), "clicked", NULL);
+   	dlQueueCallback.connect(G_OBJECT(queueButton), "clicked", NULL);
+	favHubsCallback.connect(G_OBJECT(favHubsButton), "clicked", NULL);
+	settingsCallback.connect(G_OBJECT(settingsButton), "clicked", NULL);
+	searchCallback.connect(G_OBJECT(searchButton), "clicked", NULL);
+	hashCallback.connect(G_OBJECT(hashButton), "clicked", NULL);
+	quitCallback.connect(G_OBJECT(quitButton), "clicked", NULL);
 
+	deleteCallback.connect(G_OBJECT(window), "delete-event", NULL);
+	switchPageCallback.connect(G_OBJECT(book), "switch-page", NULL);
+	
 	GtkWidget *dummy;
 	GtkRequisition req;
 	dummy = gtk_statusbar_new();
@@ -235,22 +174,120 @@ void MainWindow::createWindow_gui() {
 	emptyStatusWidth = req.width;
 	
 	gtk_statusbar_push(mainStatus, 0, "Welcome to Wulfor - Reloaded");
-	autoOpen_gui ();
+	autoOpen_gui();
 }
 
 GtkWindow *MainWindow::getWindow() {
 	return window;
 }
 
-void MainWindow::openHub_gui (string server, string nick, string desc, string password)
+void MainWindow::connectClicked_gui(GtkWidget *widget, gpointer data) {
+	int response;
+	string address;
+	
+	gtk_widget_show_all(GTK_WIDGET(connectDialog));
+	response = gtk_dialog_run(connectDialog);
+	gtk_widget_hide(GTK_WIDGET(connectDialog));
+	
+	if (response == GTK_RESPONSE_OK) {
+		address = gtk_entry_get_text(connectEntry);
+		WulforManager::get()->addHub_gui(address);
+	}
+}
+
+void MainWindow::pubHubsClicked_gui(GtkWidget *widget, gpointer data) {
+	WulforManager::get()->addPublicHubs_gui();
+}
+
+void MainWindow::searchClicked_gui(GtkWidget *widget, gpointer data) {
+	WulforManager::get()->addSearch_gui();
+}
+
+void MainWindow::hashClicked_gui(GtkWidget *widget, gpointer data) {
+	Hash *h = WulforManager::get()->openHashDialog_gui();
+	gtk_dialog_run(GTK_DIALOG(h->getDialog()));
+	WulforManager::get()->deleteDialogEntry_gui();
+}
+
+void MainWindow::dlQueueClicked_gui(GtkWidget *widget, gpointer data) {
+	WulforManager::get()->addDownloadQueue_gui();
+}
+
+void MainWindow::favHubsClicked_gui(GtkWidget *widget, gpointer data) {
+	WulforManager::get()->addFavoriteHubs_gui();
+}
+
+void MainWindow::settingsClicked_gui(GtkWidget *widget, gpointer data) {
+	Settings *s = WulforManager::get()->openSettingsDialog_gui();
+	typedef Func0<MainWindow> F0;
+	F0 *func;
+
+	short lastPort = (short)SETTING(IN_PORT);
+	int lastConn = SETTING(CONNECTION_TYPE);	
+	
+	if (gtk_dialog_run(GTK_DIALOG(s->getDialog())) == GTK_RESPONSE_OK) {
+		s->saveSettings_client();
+		SettingsManager::getInstance()->save();
+
+		if (SETTING(CONNECTION_TYPE) != lastConn || SETTING(IN_PORT) != lastPort) {
+			Selecter::quit();
+			
+			func = new F0(this, &MainWindow::startSocket_client);
+			WulforManager::get()->dispatchClientFunc(func);
+		}		
+	}
+
+	gtk_widget_destroy(s->getDialog());
+	delete s;
+}
+
+void MainWindow::quitClicked_gui(GtkWidget *widget, gpointer data) {
+	gboolean retVal;		// Not interested in the value though.
+	g_signal_emit_by_name(G_OBJECT(window), "delete-event", NULL, &retVal);
+}
+
+gboolean MainWindow::deleteWindow_gui(
+	GtkWidget *widget, GdkEvent *event, gpointer data)
 {
-	WulforManager::get ()->addHub_gui (server, nick, desc, password);
+	int response;
+	
+	if (!BOOLSETTING(CONFIRM_EXIT)) {
+		gtk_main_quit();
+		return FALSE;
+	}
+	
+	gtk_widget_show_all(GTK_WIDGET(exitDialog));
+	response = gtk_dialog_run(exitDialog);
+	gtk_widget_hide(GTK_WIDGET(exitDialog));
+
+	if (response == GTK_RESPONSE_OK) {
+		gtk_main_quit();
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+void MainWindow::switchPage_gui(GtkNotebook *notebook, 
+	GtkNotebookPage *page, guint page_num, gpointer user_data)
+{
+	BookEntry *b = WulforManager::get()->getBookEntry_gui(page_num);
+	if (b)
+		b->switchedPage();
+}
+
+void MainWindow::openHub_gui(
+	string server, string nick, string desc, string password)
+{
+	WulforManager::get()->addHub_gui(server, nick, desc, password);
 }
 
 void MainWindow::autoConnect_client() {
 	FavoriteHubEntry::List &l = HubManager::getInstance()->getFavoriteHubs();
 	FavoriteHubEntry::List::const_iterator it;
-	
+	typedef Func4<MainWindow, string, string, string, string> F4;
+	F4 *func;
+
 	for (it = l.begin(); it != l.end(); it++) {
 		FavoriteHubEntry *entry = *it;
 		if (entry->getConnect())
@@ -262,22 +299,22 @@ void MainWindow::autoConnect_client() {
 				else
 					nick = entry->getNick();
 			
-				WulforManager::get()->dispatchGuiFunc (new Func4<MainWindow, string, string, string, string> (this, &MainWindow::openHub_gui,
+				func = new F4(this, &MainWindow::openHub_gui,
 					entry->getServer(),
 					nick,
 					entry->getUserDescription(),
-					entry->getPassword()));
+					entry->getPassword());
+				WulforManager::get()->dispatchGuiFunc(func);
 			}
 	}
 }
 
-void MainWindow::autoOpen_gui ()
-{
-	if (SETTING (OPEN_PUBLIC))
+void MainWindow::autoOpen_gui() {
+	if (SETTING(OPEN_PUBLIC))
 		WulforManager::get()->addPublicHubs_gui();
-	if (SETTING (OPEN_QUEUE))
+	if (SETTING(OPEN_QUEUE))
 		WulforManager::get()->addDownloadQueue_gui();
-	if (SETTING (OPEN_FAVORITE_HUBS))
+	if (SETTING(OPEN_FAVORITE_HUBS))
 		WulforManager::get()->addFavoriteHubs_gui();
 	//if (SETTING (OPEN_FINISHED_DOWNLOADS)) // Can't open since Finished Downloads ain't added yet.
 }
@@ -286,7 +323,7 @@ void MainWindow::startSocket_client() {
 	SearchManager::getInstance()->disconnect();
 	ConnectionManager::getInstance()->disconnect();
 
-	if(SETTING(CONNECTION_TYPE) != SettingsManager::CONNECTION_ACTIVE)
+	if (SETTING(CONNECTION_TYPE) != SettingsManager::CONNECTION_ACTIVE)
 		return;
 
 	short lastPort = (short)SETTING(IN_PORT);
@@ -395,22 +432,15 @@ void MainWindow::raisePage_gui(GtkWidget *page) {
 	gtk_notebook_set_current_page(book, pageNum);
 }
 
-GtkWidget *MainWindow::currentPage_gui ()
-{
+GtkWidget *MainWindow::currentPage_gui() {
 	int pageNum = gtk_notebook_get_current_page(book);
+
 	if (pageNum == -1)
 		return NULL;
-	else
+	else 
 		return gtk_notebook_get_nth_page(book, pageNum);
 }
 
-void MainWindow::switchPage_callback (GtkNotebook *notebook, GtkNotebookPage *page, guint page_num, gpointer user_data)
-{
-	BookEntry *b = WulforManager::get ()->getBookEntry_gui (page_num);
-	if (b)
-		b->switchedPage ();
-}
-	
 void MainWindow::setStatus_gui(GtkStatusbar *status, std::string text) {
 	if (status != mainStatus) {
 		PangoLayout *pango;
@@ -499,7 +529,7 @@ void MainWindow::findId_gui(string id, GtkTreeIter *iter) {
 		gtk_tree_model_get(GTK_TREE_MODEL(transferStore), iter, 
 			COLUMN_ID, &t, -1);
 		text = t;
-		delete[] t;
+		g_free(t);
 
 		if (id == text) return;
 
@@ -610,12 +640,13 @@ void MainWindow::on(ConnectionManagerListener::StatusChanged, ConnectionQueueIte
 
 //From Download manager
 void MainWindow::on(DownloadManagerListener::Starting, Download *dl) throw() {
-	string status, size, path, file;
+	string status, size, path, file, target;
 	string id = getId_client(dl);
 
 	size = Util::formatBytes(dl->getSize());
-	file = Util::getFileName(dl->getTarget());
-	path = Util::getFilePath(dl->getTarget());
+	target = Text::acpToUtf8(dl->getTarget());
+	file = Util::getFileName(target);
+	path = Util::getFilePath(target);
 	status = "Download starting...";
 
 	UFunc *func;
@@ -661,13 +692,14 @@ void MainWindow::on(DownloadManagerListener::Complete, Download *dl) throw() {
 }
 
 void MainWindow::on(DownloadManagerListener::Failed, Download *dl, const string &reason) throw() {
-	string status, size, file, path;
+	string status, size, file, path, target;
 	string id = getId_client(dl); 
 
 	status = reason;
 	size = Util::formatBytes(dl->getSize());
-	file = Util::getFileName(dl->getTarget());
-	path = Util::getFilePath(dl->getTarget());
+	target = Text::acpToUtf8(dl->getTarget());
+	file = Util::getFileName(target);
+	path = Util::getFilePath(target);
 
 	UFunc *func;
 	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, "", 
@@ -677,12 +709,13 @@ void MainWindow::on(DownloadManagerListener::Failed, Download *dl, const string 
 
 //From Upload manager
 void MainWindow::on(UploadManagerListener::Starting, Upload *ul) throw() {
-	string status, size, path, file;
+	string status, size, path, file, target;
 	string id = getId_client(ul);
 
 	size = Util::formatBytes(ul->getSize());
-	file = Util::getFileName(ul->getFileName());
-	path = Util::getFilePath(ul->getFileName());
+	target = Text::acpToUtf8(ul->getFileName());
+	file = Util::getFileName(target);
+	path = Util::getFilePath(target);
 	status = "Upload starting...";
 
 	UFunc *func;
