@@ -330,7 +330,7 @@
 		      <property name="border_width">8</property>
 		      <property name="visible">True</property>
 		      <property name="homogeneous">False</property>
-		      <property name="spacing">0</property>
+		      <property name="spacing">4</property>
 
 		      <child>
 			<widget class="GtkTable" id="table3">
@@ -1214,7 +1214,7 @@
 			  <property name="border_width">8</property>
 			  <property name="visible">True</property>
 			  <property name="homogeneous">False</property>
-			  <property name="spacing">2</property>
+			  <property name="spacing">4</property>
 
 			  <child>
 			    <widget class="GtkVBox" id="vbox8">
@@ -1402,7 +1402,7 @@
 		      <property name="border_width">8</property>
 		      <property name="visible">True</property>
 		      <property name="homogeneous">False</property>
-		      <property name="spacing">8</property>
+		      <property name="spacing">4</property>
 
 		      <child>
 			<widget class="GtkScrolledWindow" id="scrolledwindow2">
@@ -1586,7 +1586,7 @@
 	      <property name="border_width">8</property>
 	      <property name="visible">True</property>
 	      <property name="homogeneous">False</property>
-	      <property name="spacing">0</property>
+	      <property name="spacing">4</property>
 
 	      <child>
 		<widget class="GtkFrame" id="frame8">
@@ -3337,13 +3337,13 @@
 	      <property name="border_width">8</property>
 	      <property name="visible">True</property>
 	      <property name="homogeneous">False</property>
-	      <property name="spacing">8</property>
+	      <property name="spacing">4</property>
 
 	      <child>
 		<widget class="GtkVBox" id="vbox10">
 		  <property name="visible">True</property>
 		  <property name="homogeneous">False</property>
-		  <property name="spacing">8</property>
+		  <property name="spacing">4</property>
 
 		  <child>
 		    <widget class="GtkEntry" id="entryPublicHubs">
@@ -3402,7 +3402,7 @@
 		<widget class="GtkVBox" id="vbox11">
 		  <property name="visible">True</property>
 		  <property name="homogeneous">False</property>
-		  <property name="spacing">8</property>
+		  <property name="spacing">4</property>
 
 		  <child>
 		    <widget class="GtkButton" id="buttonPublicAdd">
@@ -3421,57 +3421,73 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkVButtonBox" id="vbuttonbox1">
+		    <widget class="GtkVBox" id="vbox34">
 		      <property name="visible">True</property>
-		      <property name="layout_style">GTK_BUTTONBOX_START</property>
+		      <property name="homogeneous">False</property>
 		      <property name="spacing">4</property>
 
 		      <child>
 			<widget class="GtkButton" id="buttonPublicMU">
 			  <property name="visible">True</property>
-			  <property name="can_default">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="label" translatable="yes">Move Up</property>
 			  <property name="use_underline">True</property>
 			  <property name="relief">GTK_RELIEF_NORMAL</property>
 			  <property name="focus_on_click">True</property>
 			</widget>
+			<packing>
+			  <property name="padding">0</property>
+			  <property name="expand">False</property>
+			  <property name="fill">False</property>
+			</packing>
 		      </child>
 
 		      <child>
 			<widget class="GtkButton" id="buttonPublicMD">
 			  <property name="visible">True</property>
-			  <property name="can_default">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="label" translatable="yes">Move Down</property>
 			  <property name="use_underline">True</property>
 			  <property name="relief">GTK_RELIEF_NORMAL</property>
 			  <property name="focus_on_click">True</property>
 			</widget>
+			<packing>
+			  <property name="padding">0</property>
+			  <property name="expand">False</property>
+			  <property name="fill">False</property>
+			</packing>
 		      </child>
 
 		      <child>
 			<widget class="GtkButton" id="buttonPublicEdit">
 			  <property name="visible">True</property>
-			  <property name="can_default">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="label" translatable="yes">Edit</property>
 			  <property name="use_underline">True</property>
 			  <property name="relief">GTK_RELIEF_NORMAL</property>
 			  <property name="focus_on_click">True</property>
 			</widget>
+			<packing>
+			  <property name="padding">0</property>
+			  <property name="expand">False</property>
+			  <property name="fill">False</property>
+			</packing>
 		      </child>
 
 		      <child>
 			<widget class="GtkButton" id="buttonPublicRemove">
 			  <property name="visible">True</property>
-			  <property name="can_default">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="label" translatable="yes">Remove</property>
 			  <property name="use_underline">True</property>
 			  <property name="relief">GTK_RELIEF_NORMAL</property>
 			  <property name="focus_on_click">True</property>
 			</widget>
+			<packing>
+			  <property name="padding">0</property>
+			  <property name="expand">False</property>
+			  <property name="fill">False</property>
+			</packing>
 		      </child>
 		    </widget>
 		    <packing>

@@ -43,6 +43,7 @@ public:
 	GtkWidget *getWidget();
 
 	void buildList_gui ();
+	void updateStatus_gui ();
 
 	virtual void on(QueueManagerListener::Added, QueueItem* aQI) throw();
 	virtual void on(QueueManagerListener::Finished, QueueItem* aQI) throw();
@@ -66,6 +67,8 @@ private:
 		COLUMN_ADDED,
 		COLUMN_TTH,
 		COLUMN_INFO,
+		COLUMN_REALSIZE,
+		COLUMN_DOWNLOAD_SIZE,
 		COLUMN_LAST
 	};
 	enum {
@@ -141,7 +144,7 @@ private:
 
 	// Updates
 	void update_gui ();
-	void updateStatus_gui ();
+	void updateItem_gui (QueueItemInfo *i, bool add);
 	void updateFiles_gui (QueueItem *aQI);
 	void removeFile_gui (string target);
 	void removeDir_gui (string path);

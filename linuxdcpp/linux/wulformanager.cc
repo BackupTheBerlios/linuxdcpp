@@ -317,6 +317,7 @@ DownloadQueue *WulforManager::addDownloadQueue_gui() {
 	bookEntrys.push_back(dlQueue);
 	
 	dispatchGuiFunc (new Func0<DownloadQueue>(dlQueue, &DownloadQueue::buildList_gui));
+	dispatchGuiFunc (new Func0<DownloadQueue>(dlQueue, &DownloadQueue::updateStatus_gui));
 
 	return dlQueue;
 }

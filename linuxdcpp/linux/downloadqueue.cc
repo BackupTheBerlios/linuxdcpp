@@ -198,7 +198,6 @@ void DownloadQueue::buildDynamicMenu_gui ()
 
 void DownloadQueue::setPriority_client (string target, QueueItem::Priority p)
 {
-	//Lock l(cs);
 	pthread_mutex_lock (&queueLock);
 	QueueManager::getInstance ()->setPriority(target, p);
 	pthread_mutex_unlock (&queueLock);
@@ -281,9 +280,7 @@ void DownloadQueue::removeDirClicked_gui (GtkMenuItem *menuitem, gpointer user_d
 	vector<string> iters;
 	((DownloadQueue*)user_data)->getChildren (TreeViewFactory::getValue<gchar*,string>(m, &iter, DIRCOLUMN_REALPATH), &iters);
 	for (int i=iters.size ()-1; i>=0; i--)
-	{	
-		 ((DownloadQueue*)user_data)->remove_client(iters[i]);
-	}
+		((DownloadQueue*)user_data)->remove_client (iters[i]);
 }
 void DownloadQueue::removeFileClicked_gui (GtkMenuItem *menuitem, gpointer user_data)
 {
@@ -330,8 +327,8 @@ DownloadQueue::DownloadQueue(GCallback closeCallback):
 	dirView->addColumn_gui (DIRCOLUMN_DIR, "Directory", TreeViewFactory::STRING, -1);
 
 
-	fileStore = gtk_list_store_new (12, 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
-						G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER);
+	fileStore = gtk_list_store_new (14, 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
+						G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_INT64, G_TYPE_INT64);
 	gtk_tree_view_set_model(tfile, GTK_TREE_MODEL(fileStore));
     	g_signal_connect(G_OBJECT (tfile), "button_press_event", G_CALLBACK(file_onButtonPressed_gui), (gpointer)this);
     	g_signal_connect(G_OBJECT (tfile), "button_release_event", G_CALLBACK(file_onButtonReleased_gui), (gpointer)this);
@@ -349,6 +346,9 @@ DownloadQueue::DownloadQueue(GCallback closeCallback):
 	fileView->addColumn_gui(COLUMN_ERRORS, "Error", TreeViewFactory::STRING, columnSize[COLUMN_ERRORS]);
 	fileView->addColumn_gui(COLUMN_ADDED, "Added", TreeViewFactory::STRING, columnSize[COLUMN_ADDED]);
 	fileView->addColumn_gui(COLUMN_TTH, "TTH", TreeViewFactory::STRING, columnSize[COLUMN_TTH]);
+	fileView->setSortColumn_gui (COLUMN_SIZE, COLUMN_REALSIZE);
+	fileView->setSortColumn_gui (COLUMN_EXACT_SIZE, COLUMN_REALSIZE);
+	fileView->setSortColumn_gui (COLUMN_DOWNLOADED, COLUMN_DOWNLOAD_SIZE);
 
 	buildStaticMenu_gui ();
 	pthread_mutex_init(&queueLock, NULL);
@@ -504,7 +504,8 @@ gboolean DownloadQueue::dir_onButtonReleased_gui (GtkWidget *widget, GdkEventBut
 		}
 		if (event->button == 1)
 		{
-			((DownloadQueue*)user_data)->update_gui ();
+			WulforManager::get ()->dispatchGuiFunc (new Func0<DownloadQueue>((DownloadQueue*)user_data, &DownloadQueue::update_gui));
+			WulforManager::get ()->dispatchGuiFunc (new Func0<DownloadQueue>((DownloadQueue*)user_data, &DownloadQueue::updateStatus_gui));
 		}
 	}
 
@@ -561,8 +562,8 @@ void DownloadQueue::file_popup_menu_gui (GdkEventButton *event, gpointer user_da
 void DownloadQueue::buildList_gui ()
 {
 	pthread_mutex_lock (&queueLock);
-	Lock l(cs);
 	const QueueItem::StringMap &ll = QueueManager::getInstance ()->lockQueue ();
+	pthread_mutex_unlock (&queueLock);
 	GtkTreeIter row;
 	queueItems = 0;
 	queueSize = 0;
@@ -592,6 +593,7 @@ void DownloadQueue::buildList_gui ()
 		}
 	}
 	gtk_tree_view_expand_all (dirView->get ());
+	pthread_mutex_lock (&queueLock);
 	QueueManager::getInstance()->unlockQueue();
 	pthread_mutex_unlock (&queueLock);
 }
@@ -763,7 +765,8 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 		// Size
 		{
 			gtk_list_store_set (dq->fileStore, &it,  COLUMN_SIZE, (getSize() == -1) ? "Unkown" : Util::formatBytes(getSize()).c_str (), 
-								COLUMN_EXACT_SIZE, (getSize() == -1) ? "Unkown" : Util::formatExactSize(getSize()).c_str (), -1);
+								COLUMN_EXACT_SIZE, (getSize() == -1) ? "Unkown" : Util::formatExactSize(getSize()).c_str (),
+								COLUMN_REALSIZE, getSize (), -1);
 		}
 		// Downloaded
 		{
@@ -771,6 +774,8 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 				gtk_list_store_set (dq->fileStore, &it, COLUMN_DOWNLOADED, string (Util::formatBytes(getDownloadedBytes()) + " (" + Util::toString((double)getDownloadedBytes()*100.0/(double)getSize()) + "%)").c_str (), -1);
 			else
 				gtk_list_store_set (dq->fileStore, &it, COLUMN_DOWNLOADED, "", -1);
+			
+			gtk_list_store_set (dq->fileStore, &it, COLUMN_DOWNLOAD_SIZE, getSize (), -1);
 		}
 		// Priority
 		{
@@ -883,7 +888,8 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 		// Size
 		{
 			gtk_list_store_set (dq->fileStore, &it,  COLUMN_SIZE, (getSize() == -1) ? "Unkown" : Util::formatBytes(getSize()).c_str (), 
-								COLUMN_EXACT_SIZE, (getSize() == -1) ? "Unkown" : Util::formatExactSize(getSize()).c_str (), -1);
+								COLUMN_EXACT_SIZE, (getSize() == -1) ? "Unkown" : Util::formatExactSize(getSize()).c_str (),
+								COLUMN_REALSIZE, getSize (), -1);
 		}
 		// Downloaded
 		{
@@ -891,6 +897,8 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 				gtk_list_store_set (dq->fileStore, &it, COLUMN_DOWNLOADED, string (Util::formatBytes(getDownloadedBytes()) + " (" + Util::toString((double)getDownloadedBytes()*100.0/(double)getSize()) + "%)").c_str (), -1);
 			else
 				gtk_list_store_set (dq->fileStore, &it, COLUMN_DOWNLOADED, "", -1);
+				
+			gtk_list_store_set (dq->fileStore, &it, COLUMN_DOWNLOAD_SIZE, getSize (), -1);
 		}
 		// Priority
 		{
@@ -1003,15 +1011,14 @@ void DownloadQueue::update_gui ()
 	showingDir = TreeViewFactory::getValue<gchar*,string>(m, &iter, DIRCOLUMN_REALPATH);
 	gtk_list_store_clear (fileStore);
 	if (dirFileMap.find (showingDir) == dirFileMap.end ())
-	{
-		updateStatus_gui ();
 		return;
-	}
+
 	for (vector<QueueItemInfo*>::iterator it=dirFileMap[showingDir].begin (); it != dirFileMap[showingDir].end (); it++)
-	{
-		(*it)->update (this, true);			
-	}
-	updateStatus_gui ();
+		(*it)->update (this, true);
+}
+void DownloadQueue::updateItem_gui (QueueItemInfo *i, bool add)
+{
+	i->update (this, add);
 }
 
 void DownloadQueue::setStatus_gui (string text, int num)
@@ -1087,7 +1094,9 @@ void DownloadQueue::removeFile_gui (string target)
 	}
 	if (dirFileMap[path].empty ())
 		removeDir_gui (path);
-	update_gui ();
+		
+	WulforManager::get ()->dispatchGuiFunc (new Func0<DownloadQueue>(this, &DownloadQueue::update_gui));
+	WulforManager::get ()->dispatchGuiFunc (new Func0<DownloadQueue>(this, &DownloadQueue::updateStatus_gui));
 }
 
 void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
@@ -1125,8 +1134,8 @@ void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 	
-	if (realpath == TreeViewFactory::getValue<gchar*,string>(m, &iter, DIRCOLUMN_REALPATH))
-		i->update (this, true);
+	if (showingDir == TreeViewFactory::getValue<gchar*,string>(m, &iter, DIRCOLUMN_REALPATH))
+		WulforManager::get ()->dispatchGuiFunc (new Func2<DownloadQueue, QueueItemInfo*, bool> (this, &DownloadQueue::updateItem_gui, i, true));
 }
 
 void DownloadQueue::on(QueueManagerListener::Removed, QueueItem* aQI) throw()
@@ -1180,8 +1189,9 @@ void DownloadQueue::updateFiles_gui (QueueItem *aQI)
 	for(QueueItem::Source::Iter j = aQI->getBadSources().begin(); j != aQI->getBadSources().end(); ++j)
 		if(!ii->isBadSource((*j)->getUser()))
 			ii->getBadSources().push_back(QueueItemInfo::SourceInfo(*(*j)));
-	ii->update (this, false);
-	updateStatus_gui ();
+	if (showingDir == path)
+		WulforManager::get ()->dispatchGuiFunc (new Func2<DownloadQueue, QueueItemInfo*, bool> (this, &DownloadQueue::updateItem_gui, ii, false));
+	WulforManager::get ()->dispatchGuiFunc (new Func0<DownloadQueue> (this, &DownloadQueue::updateStatus_gui));
 }
 void DownloadQueue::QueueItemInfo::sendPrivateMessage (string text)
 {

@@ -585,7 +585,7 @@ gboolean Settings::onFavoriteButtonReleased_gui (GtkWidget *widget, GdkEventButt
 void Settings::initSharing_gui ()
 {
 	GtkTreeView *view = GTK_TREE_VIEW (shareItems["Shares"]);
-	shareStore = gtk_list_store_new (3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+	shareStore = gtk_list_store_new (4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT64);
 	gtk_tree_view_set_model (view, GTK_TREE_MODEL (shareStore));
 	g_signal_connect(G_OBJECT (view), "button_release_event", G_CALLBACK(onShareButtonReleased_gui), (gpointer)this);
 	shares = new TreeViewFactory (view);
@@ -593,6 +593,7 @@ void Settings::initSharing_gui ()
 	shares->addColumn_gui (SHARE_NAME, "Virtual name", TreeViewFactory::STRING, 100);
 	shares->addColumn_gui (SHARE_DIR, "Directory", TreeViewFactory::STRING, 200);
 	shares->addColumn_gui (SHARE_SIZE, "Size", TreeViewFactory::STRING, 100);
+	shares->setSortColumn_gui (SHARE_SIZE, SHARE_REALSIZE);
 	gtk_widget_set_sensitive (shareItems["Remove"], FALSE);
 
 	StringPairList directories = ShareManager::getInstance()->getDirectories();
@@ -603,6 +604,7 @@ void Settings::initSharing_gui ()
 		gtk_list_store_set (shareStore, &iter, 	SHARE_NAME, it->first.c_str (),
 										SHARE_DIR, it->second.c_str (),
 										SHARE_SIZE, Util::formatBytes(ShareManager::getInstance()->getShareSize(it->second)).c_str (),
+										SHARE_REALSIZE, ShareManager::getInstance()->getShareSize(it->second),
 										-1);
 	}
 	gtk_label_set_text (GTK_LABEL (shareItems["Size"]), string ("Total size: " +Util::formatBytes(ShareManager::getInstance()->getShareSize())).c_str ());
@@ -651,6 +653,7 @@ void Settings::onAddShare_gui (GtkWidget *widget, gpointer user_data)
 				gtk_list_store_set (s->shareStore, &iter, 	SHARE_NAME, name.c_str (),
 													SHARE_DIR, path.c_str (),
 													SHARE_SIZE, Util::formatBytes(ShareManager::getInstance()->getShareSize(path)).c_str (),
+													SHARE_REALSIZE, ShareManager::getInstance()->getShareSize(path),
 													-1);
 			}
 			catch (const ShareException& e)
@@ -724,6 +727,7 @@ gboolean Settings::onShareHiddenPressed_gui (GtkToggleButton *togglebutton, gpoi
 		gtk_list_store_set (s->shareStore, &iter, 	SHARE_NAME, it->first.c_str (),
 										SHARE_DIR, it->second.c_str (),
 										SHARE_SIZE, Util::formatBytes(ShareManager::getInstance()->getShareSize(it->second)).c_str (),
+										SHARE_REALSIZE, ShareManager::getInstance()->getShareSize(it->second),
 										-1);
 	}
 	gtk_label_set_text (GTK_LABEL (s->shareItems["Size"]), string ("Total size: " +Util::formatBytes(ShareManager::getInstance()->getShareSize())).c_str ());

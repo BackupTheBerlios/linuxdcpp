@@ -95,6 +95,7 @@ private:
 		SHARE_NAME = SHARE_FIRST,
 		SHARE_DIR,
 		SHARE_SIZE,
+		SHARE_REALSIZE,
 		SHARE_LAST
 	};
 	TreeViewFactory *shares;
