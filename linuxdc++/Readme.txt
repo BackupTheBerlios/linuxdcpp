@@ -22,6 +22,7 @@ CXX=g++-3.3 ./configure
 
 Compiling:
 ----------
+./autogen.sh
 ./configure
 make
 cd linux
@@ -30,10 +31,6 @@ cd linux
 The configure script will tell you if something's missing in a clear and
 human-readable way. Hopefully. I'm not sure how well it will work, since this
 is my first attempt at autoconf/automake.
-
-If you want to generate a new configure script, do 
-aclocal && automake --foreign && autoconf.
-Not sure why you want to do that, but like I said I'm new to autoconf.
 
 License:
 --------
