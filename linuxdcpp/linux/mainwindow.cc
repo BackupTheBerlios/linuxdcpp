@@ -355,8 +355,8 @@ void MainWindow::findId_gui(string id, GtkTreeIter *iter) {
 			if (curId.substr(0, curId.find('$', 0)) == 
 				id.substr(0, id.find('$', 0)))
 			{
-				gtk_list_store_set(transferStore, iter, COLUMN_ID, 
-					id.c_str(), -1);
+				gtk_list_store_set(transferStore, iter, 
+					COLUMN_ID, id.c_str(), -1);
 				return;
 			}
 		}
@@ -401,7 +401,7 @@ void MainWindow::transferComplete_client(Transfer *t) {
 
 	UFunc *func;
 	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, "", status,
-		"", "", "", "", "");
+		"Done", " ", "", "", "");
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
