@@ -136,12 +136,6 @@ CTransfer::TransferItem * CTransfer::bruteFindTransfer ()
 
 void CTransfer::on(ConnectionManagerListener::Added, ConnectionQueueItem *item) throw()
 {
-	cout << "Connection added. ";
-	if (item->getConnection () && item->getConnection ()->isSet (UserConnection::FLAG_UPLOAD))
-		cout << "[Upload]" << endl;
-	else
-		cout << "[Download]" << endl;
-
 	TransferItem::Types t = item->getConnection () && item->getConnection ()->isSet (UserConnection::FLAG_UPLOAD) ? TransferItem::TYPE_UPLOAD : TransferItem::TYPE_DOWNLOAD;
 	TransferItem *i = new TransferItem (item->getUser (), t, TransferItem::STATUS_WAITING);
 	Lock l(cs);
@@ -160,12 +154,6 @@ void CTransfer::on(ConnectionManagerListener::Added, ConnectionQueueItem *item) 
 
 void CTransfer::on(ConnectionManagerListener::StatusChanged, ConnectionQueueItem *item) throw()
 {
-	cout << "Connection status chaged. ";
-	if (item->getConnection () && item->getConnection ()->isSet (UserConnection::FLAG_UPLOAD))
-		cout << "[Upload]" << endl;
-	else
-		cout << "[Download]" << endl;
-
 	TransferItem *i;
 	Lock l(cs);
 
@@ -187,12 +175,6 @@ void CTransfer::on(ConnectionManagerListener::StatusChanged, ConnectionQueueItem
 
 void CTransfer::on(ConnectionManagerListener::Removed, ConnectionQueueItem *item) throw()
 {
-	cout << "Connection removed. ";
-	if (item->getConnection () && item->getConnection ()->isSet (UserConnection::FLAG_UPLOAD))
-		cout << "[Upload]" << endl;
-	else
-		cout << "[Download]" << endl;
-
 	TransferItem *i;
 	Lock l(cs);
 	
@@ -217,12 +199,6 @@ void CTransfer::on(ConnectionManagerListener::Removed, ConnectionQueueItem *item
 
 void CTransfer::on(ConnectionManagerListener::Failed, ConnectionQueueItem *item, const string &reason) throw()
 {
-	cout << "Connection failed. Reason: " << reason << ". ";
-	if (item->getConnection () && item->getConnection ()->isSet (UserConnection::FLAG_UPLOAD))
-		cout << "[Upload]" << endl;
-	else
-		cout << "[Download]" << endl;
-
 	TransferItem *i;
 	Lock l(cs);
 
@@ -560,48 +536,41 @@ void CTransfer::showPopupMenu(GdkEventButton* event)
 
 void CTransfer::removeTransferClicked ()
 {
-	RefPtr<TreeSelection> sel = transferList.get_selection();
-	RefPtr<TreeModel> tmp;
-	TreeModel::iterator it;
+	TreeModel::iterator it = transferList.get_selection ()->get_selected ();
 	TransferItem *i;
 
-	sel->get_selected_rows (tmp);
-	
-	for (it = tmp->children ().begin (); it != tmp->children ().end(); it++)
-	{
-		i = findTransfer (it);
-		if (!i)
-			continue;
-	
-		i->disconnect ();
-	}
+	if (!it)
+		return;
+
+	i = findTransfer (it);
+
+	if (!i)
+		return;
+
+	i->disconnect ();
 }
 
 void CTransfer::forceClicked ()
 {
-	RefPtr<TreeSelection> sel = transferList.get_selection();
-	RefPtr<TreeModel> tmp;
-	TreeModel::iterator it;
+	TreeModel::iterator it = transferList.get_selection ()->get_selected ();
 	TransferItem *i;
 
-	sel->get_selected_rows (tmp);
-	
-	for (it = tmp->children ().begin (); it != tmp->children ().end(); it++)
-	{
-		i = findTransfer (it);
-		if (!i)
-			continue;
+	if (!it)
+		return;
 
-		i->user->connect ();
-		(*it)[columns.status] = "Connecting (forced)...";
-	}	
+	i = findTransfer (it);
+
+	if (!i)
+		return;
+
+	i->user->connect ();
+	(*it)[columns.status] = "Connecting (forced)...";
 }
 
 void CTransfer::browseClicked ()
 {
 	ShareBrowser *b;
-	RefPtr<TreeSelection> sel = transferList.get_selection();
-	TreeModel::iterator it = sel->get_selected();
+TreeModel::iterator it = transferList.get_selection ()->get_selected ();
 
 	ClientManager *man = ClientManager::getInstance();
 	
