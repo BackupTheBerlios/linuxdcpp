@@ -68,7 +68,7 @@ class PublicHubs:
 			const User::Ptr &user) throw();
 
 	private:
-		Callback2<PublicHubs, GtkWidget *> filterCallback, connectCallback;
+		Callback2<PublicHubs, void, GtkWidget *> filterCallback, connectCallback;
 
 		pthread_mutex_t hubLock;
 

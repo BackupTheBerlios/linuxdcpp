@@ -101,9 +101,9 @@ class Hub:
 	private:
 		Client *client;
 
-		Callback2<Hub, GtkEntry *> enterCallback;
-		Callback3<Hub, GtkWidget *, GdkEventButton *> nickListCallback;
-		Callback2<Hub, GtkMenuItem *> browseCallback, msgCallback;
+		Callback2<Hub, void, GtkEntry *> enterCallback;
+		Callback3<Hub, void, GtkWidget *, GdkEventButton *> nickListCallback;
+		Callback2<Hub, void, GtkMenuItem *> browseCallback, msgCallback;
 
 		GtkMenu *nickMenu;
 		GtkMenuItem *browseItem, *msgItem;

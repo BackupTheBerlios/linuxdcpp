@@ -46,7 +46,7 @@ class PrivateMessage: public BookEntry {
 		void sendMessage_gui(GtkEntry *entry, gpointer data);
 
 	private:
-		Callback2<PrivateMessage, GtkEntry *> enterCallback;
+		Callback2<PrivateMessage, void, GtkEntry *> enterCallback;
 	
 		User::Ptr user;
 

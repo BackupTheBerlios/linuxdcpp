@@ -29,6 +29,7 @@
 #include <client/DirectoryListing.h>
 
 #include "bookentry.hh"
+#include "callback.hh"
 
 class ShareBrowser:
 	public BookEntry
@@ -44,8 +45,17 @@ class ShareBrowser:
 		void setPosition_gui(std::string pos);
 
 	private:
+		gboolean buttonPressed_gui(GtkWidget *, GdkEventButton *, gpointer);
+		gboolean buttonReleased_gui(GtkWidget *, GdkEventButton *, gpointer);
+
 		void buildDirs_gui(DirectoryListing::Directory::List dir, GtkTreeIter *iter);
+		void updateFiles_gui();
 		void updateStatus_gui();
+
+		Callback3<ShareBrowser, gboolean, GtkWidget *, GdkEventButton *> 
+			pressedCallback, releasedCallback;
+		GdkEventType oldType;
+		guint oldButton;
 
 		DirectoryListing listing;
 		int64_t shareSize;

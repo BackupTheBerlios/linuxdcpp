@@ -11,9 +11,11 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	BookEntry(WulforManager::SHARE_BROWSER, 
 		user->getFullNick(), user->getNick(), closeCallback),
 	listing(user),
-	WIDTH_FILE(500), 
-	WIDTH_SIZE(50), 
-	WIDTH_TYPE(80), 
+	pressedCallback(this, &ShareBrowser::buttonPressed_gui),
+	releasedCallback(this, &ShareBrowser::buttonReleased_gui),
+	WIDTH_FILE(400), 
+	WIDTH_SIZE(80), 
+	WIDTH_TYPE(50), 
 	WIDTH_TTH(100)
 {
 	string gladeFile = WulforManager::get()->getPath() + "/glade/sharebrowser.glade";
@@ -52,6 +54,12 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	f2.addColumn_gui(COLUMN_DIR, "", TreeViewFactory::STRING, 200);
 	gtk_tree_view_insert_column(dirView, gtk_tree_view_column_new(), COLUMN_DL_DIR);
 	dirSelection = gtk_tree_view_get_selection(dirView);
+
+	//connect callbacks
+	pressedCallback.connect(G_OBJECT(fileView), "button-press-event", NULL);
+	pressedCallback.connect(G_OBJECT(dirView), "button-press-event", NULL);
+	releasedCallback.connect_after(G_OBJECT(fileView), "button-release-event", NULL);
+	releasedCallback.connect_after(G_OBJECT(dirView), "button-release-event", NULL);
 	
 	listing.loadFile(file, false);	
 	shareSize = 0;
@@ -95,7 +103,7 @@ void ShareBrowser::buildDirs_gui(
 		}
 		
 		gtk_tree_store_set(dirStore, &newIter, 
-			COLUMN_DL_DIR, (gpointer)&(*it),
+			COLUMN_DL_DIR, (gpointer)*it,
 			-1);
 
 		for (file = (*it)->files.begin(); file != (*it)->files.end(); file++) {
@@ -106,15 +114,67 @@ void ShareBrowser::buildDirs_gui(
 		buildDirs_gui((*it)->directories, &newIter);
 	}
 }
+
+void ShareBrowser::updateFiles_gui() {
+	DirectoryListing::Directory *dir;
+	DirectoryListing::File::List *files;
+	DirectoryListing::File::Iter it;
+	gpointer ptr;
+	GtkTreeIter iter;
+	
+	gtk_tree_selection_get_selected(dirSelection, NULL, &iter);
+	gtk_tree_model_get(GTK_TREE_MODEL(dirStore), &iter,
+		COLUMN_DL_DIR, &ptr,
+		-1);
+	dir = (DirectoryListing::Directory *)ptr;
+	files = &(dir->files);
+
+	gtk_list_store_clear(fileStore);
+
+	currentSize = 0;
+	currentItems = 0;
+	for (it = files->begin(); it != files->end(); it++) {
+		gtk_list_store_append(fileStore, &iter);
+
+		//data needs to be converted to utf8 if it's not in that form
+		if (listing.getUtf8()) {
+			gtk_list_store_set(fileStore, &iter,
+				COLUMN_FILE, Util::getFileName((*it)->getName()).c_str(),
+				COLUMN_TYPE, Util::getFileExt((*it)->getName()).c_str(),
+				-1);
+		} else {
+			gtk_list_store_set(fileStore, &iter,
+				COLUMN_FILE, Text::acpToUtf8(Util::getFileName((*it)->getName())).c_str(),
+				COLUMN_TYPE, Text::acpToUtf8(Util::getFileExt((*it)->getName())).c_str(),
+				-1);
+		}
+
+		gtk_list_store_set(fileStore, &iter,
+			COLUMN_SIZE, Util::formatBytes((*it)->getSize()).c_str(),
+			COLUMN_DL_FILE, (gpointer)(*it),
+			-1);
+
+		TTHValue *tth;
+		if (tth = (*it)->getTTH())
+			gtk_list_store_set(fileStore, &iter, COLUMN_TTH, tth->toBase32().c_str(), -1);
+		else
+			gtk_list_store_set(fileStore, &iter, COLUMN_TTH, "N/A", -1);
+
+		currentSize += (*it)->getSize();
+		currentItems++;
+	}
+
+	updateStatus_gui();
+}
 	
 void ShareBrowser::updateStatus_gui() {
 	string items, files, size, total;
 
 	files = "Files: " + Util::toString(shareItems);
 	total = "Total: " + Util::formatBytes(shareSize);
-	if (gtk_tree_selection_get_selected(fileSelection, NULL, NULL)) {
-		files = "Items: " + Util::toString(currentItems);
-		total = "Size: " + Util::formatBytes(currentSize);
+	if (gtk_tree_selection_get_selected(dirSelection, NULL, NULL)) {
+		items = "Items: " + Util::toString(currentItems);
+		size = "Size: " + Util::formatBytes(currentSize);
 	} else {
 		items = "Items: 0";
 		size = "Size: 0 B";	
@@ -126,4 +186,59 @@ void ShareBrowser::updateStatus_gui() {
 	setStatus_gui(totalStatus, total);
 }
 
+gboolean ShareBrowser::buttonPressed_gui(
+	GtkWidget *widget, GdkEventButton *event, gpointer)
+{
+	oldType = event->type;
+	oldButton = event->button;
 	
+	return FALSE;
+}
+
+gboolean ShareBrowser::buttonReleased_gui(
+	GtkWidget *widget, GdkEventButton *event, gpointer)
+{
+	if (oldButton != event->button) return FALSE;
+
+	if (GTK_TREE_VIEW(widget) == fileView) {
+		if (!gtk_tree_selection_get_selected(fileSelection, NULL, NULL))
+			return FALSE;
+	} else {
+		if (!gtk_tree_selection_get_selected(dirSelection, NULL, NULL))
+			return FALSE;
+	}
+
+	//single click left button
+	if (event->button == 1 && oldType == GDK_BUTTON_PRESS)
+		if (GTK_TREE_VIEW(widget) == dirView) updateFiles_gui();
+
+	//single click right button
+	if (event->button == 3 && oldType == GDK_BUTTON_PRESS)
+		if (GTK_TREE_VIEW(widget) == dirView)
+			;
+		else
+			;
+
+	//double click left button
+	if (event->button == 1 && oldType == GDK_BUTTON2_PRESS)
+		if (GTK_TREE_VIEW(widget) == fileView)
+			;
+
+	return FALSE;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
