@@ -22,6 +22,7 @@
 #include "../client/File.h"
 #include "../client/CryptoManager.h"
 #include "../client/Exception.h"
+#include "../client/QueueItem.h"
 
 #include <iostream>
 #include <assert.h>
@@ -33,9 +34,15 @@ using namespace SigCX;
 //can't import whole namespace, messes with client/Exception
 
 ShareBrowser::ShareBrowser(User::Ptr user, MainWindow *mw):
-	listing(NULL)
+	listing(NULL),
+	downloadItem("Download"),
+	dirItem("Download directory"),
+	dirItem2("Download directory"),
+	viewItem("View as text")
+
 {
 	Slot0<void> callback0;
+	Slot1<void, GdkEventButton *> callback1;
 	Slot2<void, const TreeModel::Path&, TreeViewColumn*> callback2;
 	QueueManager *qmgr = QueueManager::getInstance();
 	GuiProxy *proxy = GuiProxy::getInstance();
@@ -73,9 +80,32 @@ ShareBrowser::ShareBrowser(User::Ptr user, MainWindow *mw):
 	pane.add2(fileScroll);
 	pane.set_position(200);
 
-	callback2 = 
-		open_tunnel(tunnel, slot(*this, &ShareBrowser::dirPressed), false);
-	dirView.signal_row_activated().connect(callback2);
+	//for the popup menu when left-clicking users
+	callback1 = open_tunnel(tunnel, slot(*this, &ShareBrowser::buttonPressedDir), true);
+	dirView.signal_button_press_event().connect_notify(callback1);
+	callback1 = open_tunnel(tunnel, slot(*this, &ShareBrowser::buttonPressedFile), true);
+	fileView.signal_button_press_event().connect_notify(callback1);
+
+	callback1 = open_tunnel(tunnel, slot(*this, &ShareBrowser::buttonReleasedDir), true);
+	dirView.signal_button_release_event().connect_notify(callback1);
+	callback1 = open_tunnel(tunnel, slot(*this, &ShareBrowser::buttonReleasedFile), true);
+	fileView.signal_button_release_event().connect_notify(callback1);
+
+	//for popup menu items
+	callback0 = open_tunnel(tunnel, slot(*this, &ShareBrowser::downloadClicked), true);
+	downloadItem.signal_activate().connect(callback0);
+	callback0 = open_tunnel(tunnel, slot(*this, &ShareBrowser::downloadDirClicked), true);
+	dirItem.signal_activate().connect(callback0);
+	callback0 = open_tunnel(tunnel, slot(*this, &ShareBrowser::viewClicked), true);
+	viewItem.signal_activate().connect(callback0);
+	callback0 = open_tunnel(tunnel, slot(*this, &ShareBrowser::downloadDirClicked), true);
+	dirItem2.signal_activate().connect(callback0);
+
+	fileMenu.append(downloadItem);
+	fileMenu.append(dirItem);
+	fileMenu.append(viewItem);
+
+	dirMenu.append(dirItem2);
 
 	pack_start(pane);
 	show_all();
@@ -91,6 +121,9 @@ void ShareBrowser::on(QueueManagerListener::Finished,
 	if ( item->isSet(QueueItem::FLAG_CLIENT_VIEW) &&
 		item->isSet(QueueItem::FLAG_USER_LIST))
 	{
+		//check so that it's the filelist for the correct user
+		if (item->getCurrent()->getUser()->getFullNick() != user->getFullNick())
+			return;
 		assert(listing == NULL);
 		listing = new DirectoryListing(user);
 		listing->loadFile(item->getListName(), false);
@@ -129,14 +162,14 @@ void ShareBrowser::processDirectory(DirectoryListing::Directory::List dir,
 	}
 }
 
-void ShareBrowser::dirPressed (const Gtk::TreeModel::Path& path,
-	Gtk::TreeViewColumn* column)
-{
+void ShareBrowser::updateSelection () {
 	DirectoryListing::File::List * files;
 	DirectoryListing::File::Iter it;
-	const TreeModel::iterator constIter = dirStore->get_iter(path);
 	TreeRow row;
-	
+	const TreeModel::iterator constIter = 
+		dirView.get_selection()->get_selected();
+
+	//make sure we've actually selected a row...
 	if (!constIter) return;
 	fileStore->clear();
 	files = (*constIter)[dCol.files];
@@ -144,14 +177,15 @@ void ShareBrowser::dirPressed (const Gtk::TreeModel::Path& path,
 	for (it = files->begin(); it != files->end(); it++) {
 		row = *(fileStore->append());
 		row[fCol.name] = WUtil::ConvertToUTF8((*it)->getName());
-		row[fCol.type] = WUtil::ConvertToUTF8((*it)->getName());
-		row[fCol.size] = WUtil::ConvertToUTF8(Util::formatBytes((*it)->getSize()));
+		row[fCol.type] = WUtil::ConvertToUTF8(
+			Util::getFileExt((*it)->getName()));
+		row[fCol.size] = 
+			WUtil::ConvertToUTF8(Util::formatBytes((*it)->getSize()));
 	}
 }
 
 void ShareBrowser::setPosition(string pos) {
-
-
+	//FIXME - this is when selecting goto dir in search
 }
 
 bool ShareBrowser::operator== (BookEntry &b) {
@@ -161,3 +195,65 @@ bool ShareBrowser::operator== (BookEntry &b) {
 	return browser->user->getNick() == user->getNick();
 }
 
+void ShareBrowser::downloadClicked() {
+	cout << "DL clicked" << endl;
+}
+
+void ShareBrowser::downloadDirClicked() {
+	cout << "Dir clicked" << endl;
+}
+
+void ShareBrowser::viewClicked() {
+	cout << "view clicked - Not implemented yet =)" << endl;
+}
+
+void ShareBrowser::buttonPressedDir(GdkEventButton* event) {
+	dirPrevious = event->type;
+}
+
+void ShareBrowser::buttonPressedFile(GdkEventButton* event) {
+	filePrevious = event->type;
+}
+
+void ShareBrowser::buttonReleasedDir(GdkEventButton* event) {
+	//single click
+	if (dirPrevious == GDK_BUTTON_PRESS) {
+		//left button
+		if (event->button == 1) {
+			updateSelection();
+		}
+
+		//right button
+		if (event->button == 3) {
+			dirMenu.popup(event->button, event->time);
+			dirMenu.show_all();
+		}
+	}
+
+	//double click
+	if (dirPrevious == GDK_2BUTTON_PRESS) {
+		//left button
+		if (event->button == 1) {
+			downloadDirClicked();
+		}
+	}
+}
+
+void ShareBrowser::buttonReleasedFile(GdkEventButton* event) {
+	//single click
+	if (filePrevious == GDK_BUTTON_PRESS) {
+		//right button
+		if (event->button == 3) {
+			fileMenu.popup(event->button, event->time);
+			fileMenu.show_all();
+		}
+	}
+
+	//double click
+	if (filePrevious == GDK_2BUTTON_PRESS) {
+		//left button
+		if (event->button == 1) {
+			downloadClicked();
+		}
+	}
+}

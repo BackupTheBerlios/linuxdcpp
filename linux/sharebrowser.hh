@@ -37,8 +37,15 @@ class ShareBrowser: public BookEntry, public QueueManagerListener {
 		~ShareBrowser();
 		
 		void setPosition(std::string pos);
-		void dirPressed (const Gtk::TreeModel::Path& path,
-			Gtk::TreeViewColumn* column);
+		void updateSelection();
+		void downloadClicked();
+		void downloadDirClicked();
+		void viewClicked();
+
+		void buttonPressedDir(GdkEventButton* event);
+		void buttonPressedFile(GdkEventButton* event);
+		void buttonReleasedDir(GdkEventButton* event);
+		void buttonReleasedFile(GdkEventButton* event);
 		
 		bool operator== (BookEntry &b);
 		
@@ -79,13 +86,15 @@ class ShareBrowser: public BookEntry, public QueueManagerListener {
 		DirColumns dCol;
 		FileColumns fCol;
 
+		GdkEventType filePrevious, dirPrevious;
+		
 		Gtk::HPaned pane;
 		Gtk::ScrolledWindow fileScroll, dirScroll;
 		Gtk::TreeView dirView, fileView;
 		Glib::RefPtr<Gtk::TreeStore> dirStore;
 		Glib::RefPtr<Gtk::ListStore> fileStore;
-		Gtk::Menu popupMenu;
-		Gtk::MenuItem dowloadItem, dirItem;
+		Gtk::Menu fileMenu, dirMenu;
+		Gtk::MenuItem downloadItem, dirItem, dirItem2, viewItem;
 };
 
 #else
