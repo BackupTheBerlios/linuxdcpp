@@ -24,6 +24,8 @@
 #include "hub.hh"
 #include "guiproxy.hh"
 
+#include <client/Util.h>
+
 using namespace std;
 using namespace Gtk;
 using namespace SigC;
@@ -76,6 +78,8 @@ PublicHubs::PublicHubs(MainWindow *mw):
 
 	hubs = man->getPublicHubs();
 	if(hubs.empty()) man->refresh();
+
+	man->save();
 	
 	updateList();
 }
@@ -93,7 +97,7 @@ void PublicHubs::updateList() {
 	
 	hubStore->clear();
 			
-	for(i = hubs.begin(); i != hubs.end(); i++)
+	for(i = hubs.begin(); i != hubs.end(); i++) {
 		if( filter.getPattern().empty() ||
 			filter.match(i->getName()) ||
 			filter.match(i->getDescription()) ||
@@ -101,10 +105,15 @@ void PublicHubs::updateList() {
 		{
 			it = hubStore->append();
 			(*it)[columns.name] = locale_to_utf8(i->getName());
+			//(*it)[columns.name] = i->getName();
 			(*it)[columns.description] = locale_to_utf8(i->getDescription());
-			(*it)[columns.users] = locale_to_utf8(i->getUsers());
+			//(*it)[columns.description] = i->getDescription();
+			(*it)[columns.users] = i->getUsers();
 			(*it)[columns.address] = locale_to_utf8(i->getServer());
+			//(*it)[columns.address] = i->getServer();
+			cout << i->getName() << endl;
 		}
+	}
 }
 
 void PublicHubs::on(HubManagerListener::DownloadStarting, 
@@ -164,7 +173,8 @@ bool PublicHubs::operator== (BookEntry &b) {
 }
 
 void PublicHubs::refresh() {
-	filter = locale_from_utf8(filterEntry.get_text());
+	filter = //filterEntry.get_text();
+		locale_from_utf8(filterEntry.get_text());
 	
 	//No reloading - this is nothing but a waist of time
 	//HubManager::getInstance()->refresh(); 
@@ -173,7 +183,8 @@ void PublicHubs::refresh() {
 }
 
 void PublicHubs::connect() {
-	string address = locale_from_utf8(connectEntry.get_text());
+	string address = //connectEntry.get_text();
+		locale_from_utf8(connectEntry.get_text());
 	Hub *hub;
 	TreeModel::iterator it;
 	RefPtr<TreeSelection> selection;

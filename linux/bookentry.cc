@@ -36,7 +36,8 @@ BookEntry::~BookEntry() {
 }
 
 void BookEntry::close() {
-	destroy_();
+	//destroy_();
+	hide();
 }
 
 Label &BookEntry::getLabel() {

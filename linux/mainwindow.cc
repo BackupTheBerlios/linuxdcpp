@@ -176,6 +176,7 @@ bool MainWindow::addPage(BookEntry *page) {
 	
 		if (*page == *e) {
 			book.set_current_page(i);
+			//todo: remove delete from here or from other places...
 			delete page;
 			return false;
 		}

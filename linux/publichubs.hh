@@ -29,23 +29,24 @@
 #include "mainwindow.hh"
 #include "bookentry.hh"
 
-class HubListColumns: public Gtk::TreeModel::ColumnRecord {
-	public:
-		HubListColumns() {
-			add(name);
-			add(description);
-			add(users);
-			add(address);
-		}
-
-		Gtk::TreeModelColumn<Glib::ustring> name, description, users, address;
-};
-
 class PublicHubs:
 	public BookEntry,
 	public HubManagerListener
 {
 	public:
+		class HubListColumns: public Gtk::TreeModel::ColumnRecord {
+			public:
+				HubListColumns() {
+					add(name);
+					add(description);
+					add(users);
+					add(address);
+				}
+
+				Gtk::TreeModelColumn<Glib::ustring> name, description, address;
+				Gtk::TreeModelColumn<int> users;
+		};
+
 		PublicHubs(MainWindow *mw);
 		~PublicHubs();
 		void updateList();

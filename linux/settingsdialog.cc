@@ -168,7 +168,6 @@ void SettingsDialog::createGeneral() {
 	connectionBox.pack_start(sockTable, PACK_EXPAND_WIDGET);
 	connectionBox.pack_start(sock5CB, PACK_EXPAND_WIDGET);
 
-	//callback = slot(*this, &SettingsDialog::activeClicked);
 	callback = open_tunnel(tunnel, slot(*this, &SettingsDialog::activeClicked), false);
 	activeRB.signal_clicked().connect(callback);
 	callback = open_tunnel(tunnel, slot(*this, &SettingsDialog::passiveClicked), false);
@@ -238,8 +237,10 @@ void SettingsDialog::createSharing() {
 
 	dirModel = ListStore::create(columns);
 	dirView.set_model(dirModel);
-	dirView.append_column("Directory", columns.dir);
+	//TODO: make this editable
+	dirView.append_column("Name", columns.virt);
 	dirView.append_column("Size", columns.size);
+	dirView.append_column("Directory", columns.dir);
 
 	shareBox.pack_start(dirView, PACK_EXPAND_WIDGET);
 	shareBox.pack_start(shareOptions, PACK_SHRINK);
@@ -265,8 +266,8 @@ void SettingsDialog::createSharing() {
 void SettingsDialog::setValues() {
 	char temp[10];
 	ShareManager *share = ShareManager::getInstance();
-	StringList directories = share->getDirectories();
-	StringIter it;
+	StringPairList directories = share->getDirectories();
+	StringPairList::iterator it;
 	TreeModel::iterator jt;
 
 	//General tab
@@ -309,9 +310,10 @@ void SettingsDialog::setValues() {
 	//Sharing tab
 	for(it = directories.begin(); it != directories.end(); it++) {
 		jt = dirModel->append();
-		(*jt)[columns.dir] = locale_to_utf8(*it);
+		(*jt)[columns.virt] = locale_to_utf8(it->first);
 		(*jt)[columns.size] = 
-			locale_to_utf8(Util::formatBytes(share->getShareSize(*it)));
+			locale_to_utf8(Util::formatBytes(share->getShareSize(it->second)));
+		(*jt)[columns.dir] = locale_to_utf8(it->second);
 	}
 
 	hiddenCB.set_active(BOOLSETTING(SHARE_HIDDEN));
@@ -405,12 +407,13 @@ void SettingsDialog::sockClicked() {
 }
 
 void SettingsDialog::addDirectory() {
-	string file;
+	string file, name;
 	FileSelection sel(locale_to_utf8("Add directory"));
 	ShareManager *mgr = ShareManager::getInstance();
-	StringList directories;
-	StringIter it;
+	StringPairList directories;
+	StringPairList::iterator it;
 	TreeModel::iterator jt;
+	int start, stop;
 
 	sel.set_select_multiple(false);
 	sel.hide_fileop_buttons();
@@ -420,26 +423,37 @@ void SettingsDialog::addDirectory() {
 	if (sel.run() == -5) {
 		file = sel.get_filename();
 		
+		//find virtual name
+		if (file[file.length() - 1] == PATH_SEPARATOR)
+			stop = file.length() - 2;
+		else
+			stop = file.length() - 1;
+		
+		for (start = stop; 
+			start>=0 && file[start-1] != PATH_SEPARATOR; start--);
+		
+		name = file.substr(start, stop - start + 1);
+		
 		try {
-			mgr->addDirectory(file);
+			mgr->addDirectory(file, name);
 		} catch (ShareException se) {
 			cout << "Could not add " << file << " to share" << endl;
-			return;		
+			return;
 		}
 
-		//ugly but works
 		mgr->refresh(true, true, true);
 		dirModel->clear();
 		directories = mgr->getDirectories();
 		for(it = directories.begin(); it != directories.end(); it++) {
 			jt = dirModel->append();
-			(*jt)[columns.dir] = locale_to_utf8(*it);
-			(*jt)[columns.size] = 
-				locale_to_utf8(Util::formatBytes(mgr->getShareSize(*it)));
+			(*jt)[columns.virt] = locale_to_utf8(it->first);
+			(*jt)[columns.size] = locale_to_utf8(Util::formatBytes(
+				mgr->getShareSize(it->second)));
+			(*jt)[columns.dir] = locale_to_utf8(it->second);
 		}
 
 		totalSize.set_text(locale_to_utf8("Total size: " + 		
-			Util::formatBytes(mgr->getShareSize())));
+			mgr->getShareSizeString()));
 	}
 }
 
@@ -447,10 +461,10 @@ void SettingsDialog::removeDirectory() {
 	RefPtr<TreeSelection> sel = dirView.get_selection(); 
 	TreeModel::iterator it = sel->get_selected();
 	ShareManager *mgr = ShareManager::getInstance();
-	
-	if (it == NULL) return;
-	mgr->removeDirectory(locale_from_utf8((*it)[columns.dir]));
+
+	if (!it) return;
 	dirModel->erase(it);
+	mgr->removeDirectory(locale_from_utf8((*it)[columns.dir]));
 	totalSize.set_text(locale_to_utf8("Total size: " + 		
 		Util::formatBytes(mgr->getShareSize())));
 }

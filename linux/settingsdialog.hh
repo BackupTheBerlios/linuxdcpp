@@ -44,10 +44,11 @@ class SettingsDialog: public Gtk::Dialog {
 			public:
 				DirColumns() {
 					add(dir);
+					add(virt);
 					add(size);
 				}
 
-				Gtk::TreeModelColumn<Glib::ustring> dir, size;
+				Gtk::TreeModelColumn<Glib::ustring> dir, size, virt;
 		};
 
 		void createGeneral();
