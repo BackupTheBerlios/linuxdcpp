@@ -190,7 +190,6 @@ class CTransfer : 	public DownloadManagerListener,
 		Glib::RefPtr<Gtk::ListStore> transferStore;
 		Gtk::TreeModel::iterator findTransfer (TransferItem *t);
 		TransferItem *findTransfer (Gtk::TreeModel::iterator i);
-		TransferItem* bruteFindTransfer ();
 		TransferColumns columns;
 
 		Gtk::Menu popupMenu;

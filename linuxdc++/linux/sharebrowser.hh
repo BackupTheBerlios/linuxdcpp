@@ -41,6 +41,8 @@ class ShareBrowser: public BookEntry  {
 		void downloadClicked();
 		void downloadDirClicked();
 		void viewClicked();
+		void updateStatus ();
+		void setStatus (std::string text, int num);
 
 		void buttonPressedDir(GdkEventButton* event);
 		void buttonPressedFile(GdkEventButton* event);
@@ -48,7 +50,17 @@ class ShareBrowser: public BookEntry  {
 		void buttonReleasedFile(GdkEventButton* event);
 		
 		bool operator== (BookEntry &b);
-
+		
+	enum {
+		STATUS_FIRST,
+		STATUS_MAIN = STATUS_FIRST,
+		STATUS_ITEMS,
+		STATUS_FILE_SIZE,
+		STATUS_FILES,
+		STATUS_TOTAL_SIZE,
+		STATUS_LAST
+	};
+	
 	private:
 		class FileColumns: public Gtk::TreeModel::ColumnRecord {
 			public:
@@ -87,6 +99,14 @@ class ShareBrowser: public BookEntry  {
 
 		GdkEventType filePrevious, dirPrevious;
 
+		int64_t shareSize;
+		int64_t currentSize;
+		int shareItems;
+		int currentItems;
+
+		Gtk::VBox mainBox;
+		Gtk::HBox statusBox;	
+		
 		Gtk::HPaned pane;
 		Gtk::ScrolledWindow fileScroll, dirScroll;
 		Gtk::TreeView dirView, fileView;
@@ -94,6 +114,7 @@ class ShareBrowser: public BookEntry  {
 		Glib::RefPtr<Gtk::ListStore> fileStore;
 		Gtk::Menu fileMenu, dirMenu;
 		Gtk::MenuItem downloadItem, dirItem, dirItem2, viewItem;
+		Gtk::Statusbar statusBar[STATUS_LAST];
 };
 
 #else

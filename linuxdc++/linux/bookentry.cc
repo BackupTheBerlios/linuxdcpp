@@ -25,7 +25,7 @@ using namespace Glib;
 using namespace std;
 using namespace Toolbar_Helpers;
 
-const bool BookEntry::useMultipleTabs[] = {false, false, true, false, true};
+const bool BookEntry::useMultipleTabs[] = {false, false, true, false, true, false};
 
 BookEntry::BookEntry():button("X") {
 	button.signal_clicked().connect(slot(*this, &BookEntry::close));

@@ -116,24 +116,6 @@ CTransfer::TransferItem *CTransfer::findTransfer (TreeModel::iterator i)
 	return NULL;
 }
 
-// This function is useless...
-CTransfer::TransferItem * CTransfer::bruteFindTransfer ()
-{
-	TreeModel::iterator it;
-	TransferItem::MapIter it2;
-
-	for (it = transferStore->children ().begin (); it != transferStore->children().end(); it++)
-		for (it2 = transfer.begin (); it2 != transfer.end (); it2++)
-			if (it2->second->user->getNick () == (*it)[columns.user] && it2->second->type == (*it)[columns.direction])
-				return it2->second;
-
-	return NULL;
-}
-// End useless function.
-
-
-
-
 void CTransfer::on(ConnectionManagerListener::Added, ConnectionQueueItem *item) throw()
 {
 	TransferItem::Types t = item->getConnection () && item->getConnection ()->isSet (UserConnection::FLAG_UPLOAD) ? TransferItem::TYPE_UPLOAD : TransferItem::TYPE_DOWNLOAD;
@@ -158,14 +140,7 @@ void CTransfer::on(ConnectionManagerListener::StatusChanged, ConnectionQueueItem
 	Lock l(cs);
 
 	if (transfer.find(item) == transfer.end())
-	{
-		i = bruteFindTransfer ();
-		if (i == NULL)
-		{
-			cout << "Transfer doesn't exist." << endl;
-			return;
-		}
-	}
+		return;
 	else
 		i = transfer[item];
 	i->statusString = item->getState () == ConnectionQueueItem::CONNECTING ? "Connecting..." : "Waiting to retry...";
@@ -178,15 +153,8 @@ void CTransfer::on(ConnectionManagerListener::Removed, ConnectionQueueItem *item
 	TransferItem *i;
 	Lock l(cs);
 	
-	if (transfer.find (item) == transfer.end())
-	{
-		i = bruteFindTransfer ();
-		if (!i)
-		{
-			cout << "Transfer doesn't exist." << endl;
-			return;
-		}
-	}
+	if (transfer.find(item) == transfer.end())
+		return;
 	else
 		i = transfer[item];
 
@@ -203,14 +171,7 @@ void CTransfer::on(ConnectionManagerListener::Failed, ConnectionQueueItem *item,
 	Lock l(cs);
 
 	if (transfer.find(item) == transfer.end())
-	{
-		i = bruteFindTransfer ();
-		if (i == NULL)
-		{
-			cout << "Transfer doesn't exist." << endl;
-			return;
-		}
-	}
+		return;
 	else
 		i = transfer[item];
 	i->statusString = reason;
@@ -232,29 +193,15 @@ void CTransfer::on(DownloadManagerListener::Starting, Download *dl) throw()
 		if (dl->getUserConnection ()->getCQI ())
 		{
 			if (transfer.find(cqi) == transfer.end())
-			{
-				i = bruteFindTransfer ();
-				if (i == NULL)
-				{
-					cout << "Transfer doesn't exist." << endl;
-					return;
-				}
-			}
+				return;
 			else
-			{
 				i = transfer[cqi];
-			}
 		}
+		else
+			return;
 	}
 	else
-	{
-		i = bruteFindTransfer ();
-		if (i == NULL)
-		{
-			cout << "Transfer doesn't exist." << endl;
-			return;
-		}
-	}
+		return;
 	i->status = TransferItem::STATUS_RUNNING;
 	i->pos = 0;
 	i->start = dl->getPos();
@@ -313,29 +260,15 @@ void CTransfer::on(DownloadManagerListener::Failed, Download* dl, const string& 
 		if (dl->getUserConnection ()->getCQI ())
 		{
 			if (transfer.find(cqi) == transfer.end())
-			{
-				i = bruteFindTransfer ();
-				if (i == NULL)
-				{
-					cout << "Transfer doesn't exist." << endl;
-					return;
-				}
-			}
+				return;
 			else
-			{
 				i = transfer[cqi];
-			}
 		}
+		else
+			return;
 	}
 	else
-	{
-		i = bruteFindTransfer ();
-		if (i == NULL)
-		{
-			cout << "Transfer doesn't exist." << endl;
-			return;
-		}
-	}
+		return;
 	i->status = TransferItem::STATUS_WAITING;
 	i->pos = 0;
 	i->statusString = reason;
@@ -360,29 +293,15 @@ void CTransfer::on(UploadManagerListener::Starting, Upload *ul)throw()
 		if (ul->getUserConnection ()->getCQI ())
 		{
 			if (transfer.find(cqi) == transfer.end())
-			{
-				i = bruteFindTransfer ();
-				if (i == NULL)
-				{
-					cout << "Transfer doesn't exist." << endl;
-					return;
-				}
-			}
+				return;
 			else
-			{
 				i = transfer[cqi];
-			}
 		}
+		else
+			return;
 	}
 	else
-	{
-		i = bruteFindTransfer ();
-		if (i == NULL)
-		{
-			cout << "Transfer doesn't exist." << endl;
-			return;
-		}
-	}
+		return;
 		
 	i->pos = 0;
 	i->start = ul->getPos();
@@ -445,29 +364,15 @@ void CTransfer::onTransferComplete(Transfer* t, bool upload)
 		if (t->getUserConnection ()->getCQI ())
 		{
 			if (transfer.find(cqi) == transfer.end())
-			{
-				i = bruteFindTransfer ();
-				if (i == NULL)
-				{
-					cout << "Transfer doesn't exist." << endl;
-					return;
-				}
-			}
+				return;
 			else
-			{
 				i = transfer[cqi];
-			}
 		}
+		else
+			return;
 	}
 	else
-	{
-		i = bruteFindTransfer ();
-		if (i == NULL)
-		{
-			cout << "Transfer doesn't exist." << endl;
-			return;
-		}
-	}
+		return;
 
 	i->status = TransferItem::STATUS_WAITING;
 	i->pos = 0;

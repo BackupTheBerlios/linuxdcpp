@@ -182,13 +182,14 @@ void PublicHubs::refresh() {
 	updateList();
 }
 
-void PublicHubs::connect() {
-	string address = 
+void PublicHubs::connect()
+{
+	string address =
 		WUtil::ConvertFromUTF8(connectEntry.get_text());
 	Hub *hub;
 	TreeModel::iterator it;
 	RefPtr<TreeSelection> selection;
-	
+
 	if (address == "") {
 		selection = hubList.get_selection();
 		if (selection->count_selected_rows() == 0) return;

@@ -52,6 +52,7 @@ class Search: public BookEntry, public SearchManagerListener {
 		bool operator== (BookEntry &b);
 		
 		void searchPressed();
+		void searchFor (Glib::ustring searchString);
 
 		//from SearchManagerListener
 		void on(SearchManagerListener::SR, SearchResult *result) throw();

@@ -49,6 +49,7 @@ ShareBrowser::ShareBrowser(QueueItem *item, MainWindow *mw):
 		
 	this->user = item->getCurrent()->getUser();
 	this->mw = mw;
+	this->ID = BOOK_FILE_LIST;
 
 	label.set_text(WUtil::ConvertToUTF8(user->getNick()));
 	label.show();
@@ -67,11 +68,32 @@ ShareBrowser::ShareBrowser(QueueItem *item, MainWindow *mw):
 	dirScroll.add(dirView);
 	fileScroll.set_policy(POLICY_AUTOMATIC, POLICY_AUTOMATIC);
 	fileScroll.add(fileView);
+
+	add (mainBox);
 	
 	pane.add1(dirScroll);
 	pane.add2(fileScroll);
 	pane.set_position(200);
 
+	mainBox.pack_start (pane, PACK_EXPAND_WIDGET, 0);
+	mainBox.pack_start (statusBox, PACK_SHRINK, 0);	
+
+	for (int i=0;i<STATUS_LAST;i++)
+	{
+		statusBar[i].set_has_resize_grip (false);
+		if (i==0)
+			statusBox.pack_start (statusBar[i], PACK_EXPAND_WIDGET, 2);
+		else
+			statusBox.pack_start (statusBar[i], PACK_SHRINK, 2);
+		
+		if (i == 1 || i == 3)	
+			statusBar[i].set_size_request (60, -1);
+		else
+			statusBar[i].set_size_request (100, -1);
+	}
+	currentItems =0;
+	currentSize = 0;
+	
 	//for the popup menu when left-clicking users
 	callback1 = open_tunnel(tunnel, slot(*this, &ShareBrowser::buttonPressedDir), true);
 	dirView.signal_button_press_event().connect_notify(callback1);
@@ -99,17 +121,44 @@ ShareBrowser::ShareBrowser(QueueItem *item, MainWindow *mw):
 
 	dirMenu.append(dirItem2);
 
-	pack_start(pane);
 	show_all();
 
 	assert(listing == NULL);
 	listing = new DirectoryListing(user);
 	listing->loadFile(item->getListName (), false);
 	buildList();
+	updateStatus ();
 	setPosition(item->getSearchString());
 	
 }
+void ShareBrowser::setStatus (std::string text, int num)
+{
+	if (num<0 || num>STATUS_LAST-1) return;
 
+	statusBar[num].pop(1);
+	if (num == 0)
+		statusBar[num].push ("[" + Util::getShortTimeString() + "] " + WUtil::ConvertToUTF8 (text), 1);
+	else
+		statusBar[num].push (WUtil::ConvertToUTF8 (text), 1);
+}
+void ShareBrowser::updateStatus ()
+{
+	TreeModel::Row r = *(dirView.get_selection()->get_selected());
+
+	if (!r)
+	{
+		setStatus ("Items: 0", STATUS_ITEMS);
+		setStatus ("Size: 0 B", STATUS_FILE_SIZE);
+		setStatus ("File: " + Util::toString (shareItems), STATUS_FILES);
+		setStatus ("Size: " + Util::formatBytes (shareSize), STATUS_TOTAL_SIZE);
+		return;
+	}
+
+	setStatus ("Items: " + Util::toString (currentItems), STATUS_ITEMS);
+	setStatus ("Size: " + Util::formatBytes (currentSize), STATUS_FILE_SIZE);
+	setStatus ("File: " + Util::toString (shareItems), STATUS_FILES);
+	setStatus ("Size: " + Util::formatBytes (shareSize), STATUS_TOTAL_SIZE);
+}
 ShareBrowser::~ShareBrowser() {
 	if (listing != NULL) delete listing;
 }
@@ -120,12 +169,19 @@ void ShareBrowser::buildList() {
 	TreeRow row;
 
 	dirStore->clear();
-	dirStore->clear();
+
+	shareSize = 0;
+	shareItems = 0;
 	
 	for (it = dirs.begin(); it != dirs.end(); it++) {
 		row = *(dirStore->append());
 		row[dCol.name] = WUtil::ConvertToUTF8((*it)->getName());
 		row[dCol.dir] = *it;
+		for (DirectoryListing::File::Iter file = (*it)->files.begin (); file != (*it)->files.end (); file++)
+		{
+			shareItems++;
+			shareSize += (*file)->getSize ();
+		}		
 		processDirectory((*it)->directories, row);
 	}
 }
@@ -140,6 +196,11 @@ void ShareBrowser::processDirectory(DirectoryListing::Directory::List dir,
 		newRow = *(dirStore->append(row.children()));
 		newRow[dCol.name] = WUtil::ConvertToUTF8((*it)->getName());
 		newRow[dCol.dir] = *it;
+		for (DirectoryListing::File::Iter file = (*it)->files.begin (); file != (*it)->files.end (); file++)
+		{
+			shareItems++;
+			shareSize += (*file)->getSize ();
+		}
 		processDirectory((*it)->directories, newRow);
 	}
 }
@@ -158,6 +219,8 @@ void ShareBrowser::updateSelection () {
 	dir = (*constIter)[dCol.dir];
 	files = &(dir->files);
 
+	currentSize = 0;
+	currentItems = 0;
 	for (it = files->begin(); it != files->end(); it++) {
 		row = *(fileStore->append());
 		row[fCol.name] = WUtil::ConvertToUTF8((*it)->getName());
@@ -166,7 +229,10 @@ void ShareBrowser::updateSelection () {
 		row[fCol.size] = 
 			WUtil::ConvertToUTF8(Util::formatBytes((*it)->getSize()));
 		row[fCol.file] = *it;
+		currentSize += (*it)->getSize ();
+		currentItems++;
 	}
+	updateStatus ();
 }
 
 void ShareBrowser::setPosition(string pos) {

@@ -369,7 +369,7 @@ void SettingsDialog::saveSettings() {
 	mgr->set(SettingsManager::DOWNLOAD_DIRECTORY,
 		WUtil::ConvertFromUTF8(defDirEntry.get_text()));
 	if (unfDirEntry.get_text () == "")
-		mgr->set(SettingsManager::TEMP_DOWNLOAD_DIRECTORY, WUtil::ConvertFromUTF8 (defDirEntry.get_text()));
+		mgr->set(SettingsManager::TEMP_DOWNLOAD_DIRECTORY, SETTING (DOWNLOAD_DIRECTORY));
 	else
 		mgr->set(SettingsManager::TEMP_DOWNLOAD_DIRECTORY, WUtil::ConvertFromUTF8 (unfDirEntry.get_text()));
 	mgr->set(SettingsManager::DOWNLOAD_SLOTS, (int)slotsScale.get_value());

@@ -45,6 +45,8 @@ int main(int argc, char *argv[]) {
 	
 	SettingsManager *smgr = SettingsManager::getInstance();
 	smgr->load();
+	if (SETTING (DOWNLOAD_DIRECTORY) == SETTING (TEMP_DOWNLOAD_DIRECTORY))
+		smgr->set(SettingsManager::TEMP_DOWNLOAD_DIRECTORY, "");
 
 	//start the gui proxy. this must be done in the main gtk thread, this one
 	GuiProxy::startup();
@@ -60,6 +62,8 @@ int main(int argc, char *argv[]) {
 	GuiProxy::getInstance()->shutdown();
 	CTransfer::getInstance()->shutdown();
 	cout << "Shutting down." << endl;
+	if (SETTING (TEMP_DOWNLOAD_DIRECTORY) == "")
+		smgr->set(SettingsManager::TEMP_DOWNLOAD_DIRECTORY, SETTING (DOWNLOAD_DIRECTORY));
 	shutdown();
 	
 	return 0;

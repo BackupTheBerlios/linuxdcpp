@@ -1,3 +1,18 @@
+2004-10-24 16:08 phase
+
+	* linux/sharebrowser.hh/cc: Added statusbar that shows sharesize and such stuff.
+
+2004-10-25 15:02 phase
+
+	* linux/queue.hh/cc: Download queue added. 
+	Bugs: 
+	/ The submenus doesn't work, but the functions are there so we just have to fix that part.
+	/ Doesn't update how much a file has been download.
+	
+2004-10-18 01:37 phase
+
+	* linux/transfer.hh/cc: Removed buggy close/force connection. Removed debug messages. Remove some code that wasn't used.
+
 2004-10-14 21:17 paskharen
 
 	* linux/hub.cc: Changed the password entry to hidden.

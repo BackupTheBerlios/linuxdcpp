@@ -77,6 +77,7 @@ class MainWindow:
 		void settingsClicked();
 		void exitClicked();
 		void hashClicked();
+		void queueClicked();
 		bool on_delete_event(GdkEventAny *e);
 
 		int64_t lastUpdate, lastUp, lastDown;
@@ -88,7 +89,7 @@ class MainWindow:
 		
 		Gtk::Notebook book;
 		Gtk::Statusbar status[NUM_STATUS];
-		Gtk::Image pubHubsIcon, exitIcon, settingsIcon, searchIcon, hashIcon;
+		Gtk::Image pubHubsIcon, exitIcon, settingsIcon, searchIcon, hashIcon, queueIcon;
 
 		HashDialog *hashProgress;
 		bool showingHash;

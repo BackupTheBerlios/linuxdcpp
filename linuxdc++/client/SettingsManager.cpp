@@ -79,8 +79,8 @@ SettingsManager::SettingsManager()
 		int64Settings[k] = 0;
 	}
 	
-	setDefault(DOWNLOAD_DIRECTORY, Util::getAppPath() + "Downloads\\");
-	setDefault(TEMP_DOWNLOAD_DIRECTORY, Util::getAppPath() + "Incomplete\\");
+	setDefault(DOWNLOAD_DIRECTORY, Util::getAppPath() + "Downloads/");
+	setDefault(TEMP_DOWNLOAD_DIRECTORY, Util::getAppPath() + "Incomplete/");
 	setDefault(SLOTS, 1);
 	//setDefault(SERVER, Util::getLocalIp());
 	setDefault(IN_PORT, Util::rand(1025, 32000));
@@ -313,6 +313,6 @@ void SettingsManager::save(string const& aFileName) {
 
 /**
  * @file
- * $Id: SettingsManager.cpp,v 1.2 2004/11/12 16:29:31 phase Exp $
+ * $Id: SettingsManager.cpp,v 1.3 2004/11/25 15:09:55 phase Exp $
  */
 

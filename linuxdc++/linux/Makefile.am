@@ -11,4 +11,4 @@ bookentry.hh    hub.hh         wulfor.cc \
 mainwindow.cc   search.cc      mainwindow.hh  search.hh \
 guilistener.hh  privatemsg.cc  settingsdialog.cc \
 util.hh		util.cc	       transfer.hh	  transfer.cc \
-hashdialog.hh	hashdialog.cc
+hashdialog.hh	hashdialog.cc	queue.hh	queue.cc

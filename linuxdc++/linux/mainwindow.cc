@@ -30,6 +30,7 @@
 #include "../client/SearchManager.h"
 #include "../client/ConnectionManager.h"
 #include "../client/Exception.h"
+#include "queue.hh"
 
 #include <iostream>
 #include <assert.h>
@@ -50,7 +51,8 @@ MainWindow::MainWindow():
 	searchIcon("test.xpm"),
 	settingsIcon("test.xpm"),
 	exitIcon("test.xpm"),
-	hashIcon("test.xpm")
+	hashIcon("test.xpm"),
+	queueIcon("test.xpm")
 {
 	int i;
 	Slot0<void> callback;
@@ -75,7 +77,10 @@ MainWindow::MainWindow():
 		open_tunnel(tunnel, slot(*this, &MainWindow::hashClicked), false);
 	leftBar.tools().push_back(ButtonElem("Hash", hashIcon, callback));
 	callback = 
-		open_tunnel(tunnel, slot(*this, &MainWindow::exitClicked), false);
+		open_tunnel(tunnel, slot(*this, &MainWindow::queueClicked), false);	
+	leftBar.tools().push_back(ButtonElem("Queue", queueIcon, callback));
+	callback =
+		open_tunnel(tunnel, slot(*this, &MainWindow::exitClicked), false);	
 	rightBar.tools().push_back(ButtonElem("Exit", exitIcon, callback));
 
 	add(mainBox);
@@ -250,6 +255,14 @@ void MainWindow::searchClicked()  {
 	if (addPage(s)) manage(s);
 	else delete s;
 }
+void MainWindow::queueClicked ()
+{
+	if (findPage ("Download queue"))
+		return;
+	DownloadQueue *q = new DownloadQueue (this);
+	if (addPage (q)) manage (q);
+	else delete q;
+}
 
 void MainWindow::exitClicked()  {
 	Dialog d("Exit Wulfor?", *this, true);
@@ -270,7 +283,8 @@ void MainWindow::settingsClicked() {
 	int lastConn = SETTING(CONNECTION_TYPE);
 
 	SettingsDialog d(this);
-	if (d.run() == SettingsDialog::OK) {
+	if (d.run() == SettingsDialog::OK)
+	{
 		d.saveSettings();
 		SettingsManager::getInstance()->save();
 	}

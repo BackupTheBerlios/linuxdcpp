@@ -129,6 +129,12 @@ bool Search::operator== (BookEntry &b) {
 	return !(s == NULL);
 }
 
+void Search::searchFor (ustring searchString)
+{
+	search.get_entry ()->set_text (searchString);
+	searchPressed ();
+}
+
 void Search::searchPressed() {
 	string name;
 	int64_t size;
