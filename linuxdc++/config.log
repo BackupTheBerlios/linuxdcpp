@@ -725,12 +725,150 @@ configure:5543: $? = 0
 configure:5554: result: time.h
 configure:5564: checking for ptrdiff_t
 configure:5588: gcc -c -g -O2  conftest.c >&5
-configure:5594: $? = 0
-configure:5597: test -z 			 || test ! -s conftest.err
-configure:5600: $? = 0
-configure:5603: test -s conftest.o
-configure:5606: $? = 0
-configure:5617: result: yes
+/tmp/ccSDffCo.s: Assembler messages:
+/tmp/ccSDffCo.s:2: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:6: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:7: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:8: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:9: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:10: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:11: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:12: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:13: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:14: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:15: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:16: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:17: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:18: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:19: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:20: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:21: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:22: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:23: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:24: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:25: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:26: Error: junk at end of line, first unrecognized character is `"'
+/tmp/ccSDffCo.s:29: Error: bad register name `%e'
+/tmp/ccSDffCo.s:30: Error: bad register name `%e'
+/tmp/ccSDffCo.s:31: Error: bad register name `%e'
+/tmp/ccSDffCo.s:32: Error: missing or invalid immediate expression `' taken as 0
+/tmp/ccSDffCo.s:32: Error: bad register name `%e'
+/tmp/ccSDffCo.s:33: Error: missing or invalid immediate expression `' taken as 0
+/tmp/ccSDffCo.s:33: Error: bad register name `%e'
+/tmp/ccSDffCo.s:34: Error: bad register name `%e'
+/tmp/ccSDffCo.s:35: Error: bad register name `%e'
+/tmp/ccSDffCo.s:39: Error: junk at end of line, first unrecognized character is `-'
+/tmp/ccSDffCo.s:50: Error: junk at end of line, first unrecognized character is `-'
+/tmp/ccSDffCo.s:53: Error: junk at end of line, first unrecognized character is `-'
+/tmp/ccSDffCo.s:55: Error: junk at end of line, first unrecognized character is `-'
+/tmp/ccSDffCo.s:61: Error: junk at end of line, first unrecognized character is `-'
+/tmp/ccSDffCo.s:151: Error: suffix or operands invalid for `int'
+/tmp/ccSDffCo.s:2303: Error: no such instruction: `rem'
+/tmp/ccSDffCo.s:2329: Error: no such instruction: `rem'
+/tmp/ccSDffCo.s:2414: Error: invalid character '_' in mnemonic
+/tmp/ccSDffCo.s:2429: Error: invalid character '_' in mnemonic
+/tmp/ccSDffCo.s:2444: Error: invalid character '_' in mnemonic
+/tmp/ccSDffCo.s:2623: Error: no such instruction: `rem'
+/tmp/ccSDffCo.s:3846: Error: no such instruction: `main'
+/tmp/ccSDffCo.s:3856: Error: junk at end of line, first unrecognized character is `-'
+/tmp/ccSDffCo.s:3860: Error: invalid character '_' in mnemonic
+configure:5594: $? = 1
+configure: failed program was:
+| /* confdefs.h.  */
+| 
+| #define PACKAGE_NAME "LinuxDC++"
+| #define PACKAGE_TARNAME "linuxdc--"
+| #define PACKAGE_VERSION "0.09"
+| #define PACKAGE_STRING "LinuxDC++ 0.09"
+| #define PACKAGE_BUGREPORT ""
+| #define PACKAGE "linuxdc--"
+| #define VERSION "0.09"
+| #ifdef __cplusplus
+| extern "C" void std::exit (int) throw (); using std::exit;
+| #endif
+| #define HAVE_LIBDL 1
+| #define HAVE_LIBM 1
+| #define HAVE_LIBPTHREAD 1
+| #define HAVE_LIBZ 1
+| #define HAVE_LIBBZ2 1
+| #define HAVE_DIRENT_H 1
+| #define STDC_HEADERS 1
+| #define HAVE_SYS_TYPES_H 1
+| #define HAVE_SYS_STAT_H 1
+| #define HAVE_STDLIB_H 1
+| #define HAVE_STRING_H 1
+| #define HAVE_MEMORY_H 1
+| #define HAVE_STRINGS_H 1
+| #define HAVE_INTTYPES_H 1
+| #define HAVE_STDINT_H 1
+| #define HAVE_UNISTD_H 1
+| #define HAVE_ARPA_INET_H 1
+| #define HAVE_FCNTL_H 1
+| #define HAVE_LIMITS_H 1
+| #define HAVE_LOCALE_H 1
+| #define HAVE_MALLOC_H 1
+| #define HAVE_MEMORY_H 1
+| #define HAVE_NETDB_H 1
+| #define HAVE_NETINET_IN_H 1
+| #define HAVE_STDDEF_H 1
+| #define HAVE_STDLIB_H 1
+| #define HAVE_STRING_H 1
+| #define HAVE_SYS_IOCTL_H 1
+| #define HAVE_SYS_SENDFILE_H 1
+| #define HAVE_SYS_SOCKET_H 1
+| #define HAVE_SYS_TIME_H 1
+| #define HAVE_UNISTD_H 1
+| #define HAVE_UTIME_H 1
+| #define HAVE_ASM_ATOMIC_H 1
+| #define HAVE__BOOL 1
+| #define HAVE_STDBOOL_H 1
+| #define TIME_WITH_SYS_TIME 1
+| /* end confdefs.h.  */
+| #include <stdio.h>
+| #if HAVE_SYS_TYPES_H
+| # include <sys/types.h>
+| #endif
+| #if HAVE_SYS_STAT_H
+| # include <sys/stat.h>
+| #endif
+| #if STDC_HEADERS
+| # include <stdlib.h>
+| # include <stddef.h>
+| #else
+| # if HAVE_STDLIB_H
+| #  include <stdlib.h>
+| # endif
+| #endif
+| #if HAVE_STRING_H
+| # if !STDC_HEADERS && HAVE_MEMORY_H
+| #  include <memory.h>
+| # endif
+| # include <string.h>
+| #endif
+| #if HAVE_STRINGS_H
+| # include <strings.h>
+| #endif
+| #if HAVE_INTTYPES_H
+| # include <inttypes.h>
+| #else
+| # if HAVE_STDINT_H
+| #  include <stdint.h>
+| # endif
+| #endif
+| #if HAVE_UNISTD_H
+| # include <unistd.h>
+| #endif
+| int
+| main ()
+| {
+| if ((ptrdiff_t *) 0)
+|   return 0;
+| if (sizeof (ptrdiff_t))
+|   return 0;
+|   ;
+|   return 0;
+| }
+configure:5617: result: no
 configure:5630: checking for uid_t in sys/types.h
 configure:5653: result: yes
 configure:5673: checking for unistd.h
@@ -893,7 +1031,6 @@ configure: failed program was:
 | #define HAVE__BOOL 1
 | #define HAVE_STDBOOL_H 1
 | #define TIME_WITH_SYS_TIME 1
-| #define HAVE_PTRDIFF_T 1
 | #define HAVE_UNISTD_H 1
 | #define HAVE_CHOWN 1
 | #define HAVE_ALLOCA_H 1
@@ -992,7 +1129,7 @@ configure:8113: $? = 0
 configure:8128: result: yes
 configure:8143: checking for vprintf
 configure:8200: gcc -o conftest -g -O2   conftest.c -lbz2 -lz -lpthread -lm -ldl  >&5
-conftest.c:95: warning: conflicting types for built-in function `vprintf'
+conftest.c:94: warning: conflicting types for built-in function `vprintf'
 configure:8206: $? = 0
 configure:8209: test -z 			 || test ! -s conftest.err
 configure:8212: $? = 0
@@ -1001,9 +1138,9 @@ configure:8218: $? = 0
 configure:8230: result: yes
 configure:8237: checking for _doprnt
 configure:8294: gcc -o conftest -g -O2   conftest.c -lbz2 -lz -lpthread -lm -ldl  >&5
-/tmp/cc6hVuXG.o(.text+0x11): In function `main':
-/home/jens/doc/gtk/linuxdcpp/conftest.c:112: undefined reference to `_doprnt'
-/tmp/cc6hVuXG.o(.data+0x0):/home/jens/doc/gtk/linuxdcpp/conftest.c:111: undefined reference to `_doprnt'
+/tmp/cciRfCYl.o(.text+0x11): In function `main':
+/home/jens/doc/gtk/ldpp/linuxdc++/conftest.c:111: undefined reference to `_doprnt'
+/tmp/cciRfCYl.o(.data+0x0):/home/jens/doc/gtk/ldpp/linuxdc++/conftest.c:110: undefined reference to `_doprnt'
 collect2: ld returned 1 exit status
 configure:8300: $? = 1
 configure: failed program was:
@@ -1056,7 +1193,6 @@ configure: failed program was:
 | #define HAVE__BOOL 1
 | #define HAVE_STDBOOL_H 1
 | #define TIME_WITH_SYS_TIME 1
-| #define HAVE_PTRDIFF_T 1
 | #define HAVE_UNISTD_H 1
 | #define HAVE_CHOWN 1
 | #define HAVE_ALLOCA_H 1
@@ -1165,7 +1301,7 @@ configure:8431: $? = 0
 configure:8443: result: yes
 configure:8356: checking for memset
 configure:8413: gcc -o conftest -g -O2   conftest.c -lbz2 -lz -lpthread -lm -ldl  >&5
-conftest.c:101: warning: conflicting types for built-in function `memset'
+conftest.c:100: warning: conflicting types for built-in function `memset'
 configure:8419: $? = 0
 configure:8422: test -z 			 || test ! -s conftest.err
 configure:8425: $? = 0
@@ -1222,7 +1358,7 @@ configure:8431: $? = 0
 configure:8443: result: yes
 configure:8356: checking for strstr
 configure:8413: gcc -o conftest -g -O2   conftest.c -lbz2 -lz -lpthread -lm -ldl  >&5
-conftest.c:108: warning: conflicting types for built-in function `strstr'
+conftest.c:107: warning: conflicting types for built-in function `strstr'
 configure:8419: $? = 0
 configure:8422: test -z 			 || test ! -s conftest.err
 configure:8425: $? = 0
@@ -1382,7 +1518,7 @@ ac_cv_struct_tm=time.h
 ac_cv_type__Bool=yes
 ac_cv_type_mbstate_t=yes
 ac_cv_type_off_t=yes
-ac_cv_type_ptrdiff_t=yes
+ac_cv_type_ptrdiff_t=no
 ac_cv_type_signal=void
 ac_cv_type_size_t=yes
 ac_cv_type_uid_t=yes
@@ -1394,15 +1530,15 @@ am_cv_CXX_dependencies_compiler_type=gcc3
 ## Output variables. ##
 ## ----------------- ##
 
-ACLOCAL='${SHELL} /home/jens/doc/gtk/linuxdcpp/missing --run aclocal-1.8'
+ACLOCAL='${SHELL} /home/jens/doc/gtk/ldpp/linuxdc++/missing --run aclocal-1.8'
 ALLOCA=''
 AMDEPBACKSLASH='\'
 AMDEP_FALSE='#'
 AMDEP_TRUE=''
-AMTAR='${SHELL} /home/jens/doc/gtk/linuxdcpp/missing --run tar'
-AUTOCONF='${SHELL} /home/jens/doc/gtk/linuxdcpp/missing --run autoconf'
-AUTOHEADER='${SHELL} /home/jens/doc/gtk/linuxdcpp/missing --run autoheader'
-AUTOMAKE='${SHELL} /home/jens/doc/gtk/linuxdcpp/missing --run automake-1.8'
+AMTAR='${SHELL} /home/jens/doc/gtk/ldpp/linuxdc++/missing --run tar'
+AUTOCONF='${SHELL} /home/jens/doc/gtk/ldpp/linuxdc++/missing --run autoconf'
+AUTOHEADER='${SHELL} /home/jens/doc/gtk/ldpp/linuxdc++/missing --run autoheader'
+AUTOMAKE='${SHELL} /home/jens/doc/gtk/ldpp/linuxdc++/missing --run automake-1.8'
 AWK='mawk'
 CC='gcc'
 CCDEPMODE='depmode=gcc3'
@@ -1413,7 +1549,7 @@ CXX='g++'
 CXXDEPMODE='depmode=gcc3'
 CXXFLAGS='-g -O2'
 CYGPATH_W='echo'
-DEFS='-DPACKAGE_NAME=\"LinuxDC++\" -DPACKAGE_TARNAME=\"linuxdc--\" -DPACKAGE_VERSION=\"0.09\" -DPACKAGE_STRING=\"LinuxDC++\ 0.09\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE=\"linuxdc--\" -DVERSION=\"0.09\" -DHAVE_LIBDL=1 -DHAVE_LIBM=1 -DHAVE_LIBPTHREAD=1 -DHAVE_LIBZ=1 -DHAVE_LIBBZ2=1 -DHAVE_DIRENT_H=1 -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_ARPA_INET_H=1 -DHAVE_FCNTL_H=1 -DHAVE_LIMITS_H=1 -DHAVE_LOCALE_H=1 -DHAVE_MALLOC_H=1 -DHAVE_MEMORY_H=1 -DHAVE_NETDB_H=1 -DHAVE_NETINET_IN_H=1 -DHAVE_STDDEF_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_SYS_IOCTL_H=1 -DHAVE_SYS_SENDFILE_H=1 -DHAVE_SYS_SOCKET_H=1 -DHAVE_SYS_TIME_H=1 -DHAVE_UNISTD_H=1 -DHAVE_UTIME_H=1 -DHAVE_ASM_ATOMIC_H=1 -DHAVE__BOOL=1 -DHAVE_STDBOOL_H=1 -DTIME_WITH_SYS_TIME=1 -DHAVE_PTRDIFF_T=1 -DHAVE_UNISTD_H=1 -DHAVE_CHOWN=1 -DHAVE_ALLOCA_H=1 -DHAVE_ALLOCA=1 -DHAVE_MBSTATE_T=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_SYS_SELECT_H=1 -DHAVE_SYS_SOCKET_H=1 -DSELECT_TYPE_ARG1=int -DSELECT_TYPE_ARG234=\(fd_set\ \*\) -DSELECT_TYPE_ARG5=\(struct\ timeval\ \*\) -DRETSIGTYPE=void -DLSTAT_FOLLOWS_SLASHED_SYMLINK=1 -DHAVE_DECL_STRERROR_R=1 -DHAVE_STRERROR_R=1 -DSTRERROR_R_CHAR_P=1 -DHAVE_STRFTIME=1 -DHAVE_UTIME_NULL=1 -DHAVE_VPRINTF=1 -DHAVE_FTRUNCATE=1 -DHAVE_GETHOSTBYNAME=1 -DHAVE_GETHOSTNAME=1 -DHAVE_GETTIMEOFDAY=1 -DHAVE_INET_NTOA=1 -DHAVE_MEMSET=1 -DHAVE_MKDIR=1 -DHAVE_POW=1 -DHAVE_SELECT=1 -DHAVE_SETLOCALE=1 -DHAVE_SOCKET=1 -DHAVE_STRERROR=1 -DHAVE_STRSTR=1 -DHAVE_UNAME=1 -DHAVE_UTIME=1 '
+DEFS='-DPACKAGE_NAME=\"LinuxDC++\" -DPACKAGE_TARNAME=\"linuxdc--\" -DPACKAGE_VERSION=\"0.09\" -DPACKAGE_STRING=\"LinuxDC++\ 0.09\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE=\"linuxdc--\" -DVERSION=\"0.09\" -DHAVE_LIBDL=1 -DHAVE_LIBM=1 -DHAVE_LIBPTHREAD=1 -DHAVE_LIBZ=1 -DHAVE_LIBBZ2=1 -DHAVE_DIRENT_H=1 -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_ARPA_INET_H=1 -DHAVE_FCNTL_H=1 -DHAVE_LIMITS_H=1 -DHAVE_LOCALE_H=1 -DHAVE_MALLOC_H=1 -DHAVE_MEMORY_H=1 -DHAVE_NETDB_H=1 -DHAVE_NETINET_IN_H=1 -DHAVE_STDDEF_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_SYS_IOCTL_H=1 -DHAVE_SYS_SENDFILE_H=1 -DHAVE_SYS_SOCKET_H=1 -DHAVE_SYS_TIME_H=1 -DHAVE_UNISTD_H=1 -DHAVE_UTIME_H=1 -DHAVE_ASM_ATOMIC_H=1 -DHAVE__BOOL=1 -DHAVE_STDBOOL_H=1 -DTIME_WITH_SYS_TIME=1 -DHAVE_UNISTD_H=1 -DHAVE_CHOWN=1 -DHAVE_ALLOCA_H=1 -DHAVE_ALLOCA=1 -DHAVE_MBSTATE_T=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_SYS_SELECT_H=1 -DHAVE_SYS_SOCKET_H=1 -DSELECT_TYPE_ARG1=int -DSELECT_TYPE_ARG234=\(fd_set\ \*\) -DSELECT_TYPE_ARG5=\(struct\ timeval\ \*\) -DRETSIGTYPE=void -DLSTAT_FOLLOWS_SLASHED_SYMLINK=1 -DHAVE_DECL_STRERROR_R=1 -DHAVE_STRERROR_R=1 -DSTRERROR_R_CHAR_P=1 -DHAVE_STRFTIME=1 -DHAVE_UTIME_NULL=1 -DHAVE_VPRINTF=1 -DHAVE_FTRUNCATE=1 -DHAVE_GETHOSTBYNAME=1 -DHAVE_GETHOSTNAME=1 -DHAVE_GETTIMEOFDAY=1 -DHAVE_INET_NTOA=1 -DHAVE_MEMSET=1 -DHAVE_MKDIR=1 -DHAVE_POW=1 -DHAVE_SELECT=1 -DHAVE_SETLOCALE=1 -DHAVE_SOCKET=1 -DHAVE_STRERROR=1 -DHAVE_STRSTR=1 -DHAVE_UNAME=1 -DHAVE_UTIME=1 '
 DEPDIR='.deps'
 ECHO_C=''
 ECHO_N='-n'
@@ -1432,7 +1568,7 @@ LDFLAGS=''
 LIBOBJS=''
 LIBS='-lbz2 -lz -lpthread -lm -ldl '
 LTLIBOBJS=''
-MAKEINFO='${SHELL} /home/jens/doc/gtk/linuxdcpp/missing --run makeinfo'
+MAKEINFO='${SHELL} /home/jens/doc/gtk/ldpp/linuxdc++/missing --run makeinfo'
 OBJEXT='o'
 PACKAGE='linuxdc--'
 PACKAGE_BUGREPORT=''
@@ -1466,7 +1602,7 @@ exec_prefix='${prefix}'
 host_alias=''
 includedir='${prefix}/include'
 infodir='${prefix}/info'
-install_sh='/home/jens/doc/gtk/linuxdcpp/install-sh'
+install_sh='/home/jens/doc/gtk/ldpp/linuxdc++/install-sh'
 libdir='${exec_prefix}/lib'
 libexecdir='${exec_prefix}/libexec'
 localstatedir='${prefix}/var'
@@ -1515,7 +1651,6 @@ target_alias=''
 #define HAVE_NETDB_H 1
 #define HAVE_NETINET_IN_H 1
 #define HAVE_POW 1
-#define HAVE_PTRDIFF_T 1
 #define HAVE_SELECT 1
 #define HAVE_SETLOCALE 1
 #define HAVE_SOCKET 1
@@ -1569,20 +1704,3 @@ target_alias=''
 extern "C" void std::exit (int) throw (); using std::exit;
 
 configure: exit 0
-
-## ---------------------- ##
-## Running config.status. ##
-## ---------------------- ##
-
-This file was extended by LinuxDC++ config.status 0.09, which was
-generated by GNU Autoconf 2.59.  Invocation command line was
-
-  CONFIG_FILES    = 
-  CONFIG_HEADERS  = 
-  CONFIG_LINKS    = 
-  CONFIG_COMMANDS = 
-  $ ./config.status Makefile
-
-on Jens-dator
-
-config.status:742: creating Makefile
