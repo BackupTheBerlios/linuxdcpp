@@ -91,7 +91,7 @@ ShareBrowser::ShareBrowser(QueueItem *item, MainWindow *mw):
 		else
 			statusBar[i].set_size_request (100, -1);
 	}
-	currentItems =0;
+	currentItems = 0;
 	currentSize = 0;
 	
 	//for the popup menu when left-clicking users
@@ -179,7 +179,14 @@ void ShareBrowser::buildList() {
 	
 	for (it = dirs.begin(); it != dirs.end(); it++) {
 		row = *(dirStore->append());
-		row[dCol.name] = (*it)->getName();
+		
+		//add the name and check if the name is in UTF8
+		if (listing->getUtf8()) {
+			row[dCol.name] = (*it)->getName();
+		} else {
+			row[dCol.name] = WUtil::ConvertToUTF8((*it)->getName());
+		}
+		
 		row[dCol.dir] = *it;
 		for (file = (*it)->files.begin(); file != (*it)->files.end(); file++)
 		{
@@ -199,7 +206,14 @@ void ShareBrowser::processDirectory(DirectoryListing::Directory::List dir,
 
 	for (it = dir.begin(); it != dir.end(); it++) {
 		newRow = *(dirStore->append(row.children()));
-		newRow[dCol.name] = (*it)->getName();
+
+		//add the name and check if the name is in UTF8
+		if (listing->getUtf8()) {
+			row[dCol.name] = (*it)->getName();
+		} else {
+			row[dCol.name] = WUtil::ConvertToUTF8((*it)->getName());
+		}
+
 		newRow[dCol.dir] = *it;
 		for (file = (*it)->files.begin(); file != (*it)->files.end(); file++)
 		{
@@ -228,8 +242,17 @@ void ShareBrowser::updateSelection () {
 	currentItems = 0;
 	for (it = files->begin(); it != files->end(); it++) {
 		row = *(fileStore->append());
-		row[fCol.name] = (*it)->getName();
-		row[fCol.type] = Util::getFileExt((*it)->getName());
+
+		//data needs to be converted to utf8 if it's not in that form
+		if (listing->getUtf8()) {
+			row[fCol.name] = (*it)->getName();
+			row[fCol.type] = Util::getFileExt((*it)->getName());
+		} else {
+			row[fCol.name] = WUtil::ConvertToUTF8((*it)->getName());
+			row[fCol.type] = 
+				WUtil::ConvertToUTF8(Util::getFileExt((*it)->getName()));
+		}
+
 		row[fCol.size] = Util::formatBytes((*it)->getSize());
 		row[fCol.file] = *it;
 		currentSize += (*it)->getSize ();
@@ -260,10 +283,16 @@ void ShareBrowser::downloadClicked() {
 	DirectoryListing::File *file = (*constIter)[fCol.file];
 	try {
 		//false = prio
-		target = SETTING(DOWNLOAD_DIRECTORY);
+		target = WUtil::ConvertFromUTF8(SETTING(DOWNLOAD_DIRECTORY));
 		assert(target[target.size() - 1] == PATH_SEPARATOR);
-		target += Util::getFileName(file->getName());
-		listing->download(file, WUtil::ConvertFromUTF8(target), false, false);
+		
+		if (listing->getUtf8()) {
+			target += WUtil::ConvertFromUTF8(Util::getFileName(file->getName()));
+		} else {
+			target += Util::getFileName(file->getName());
+		}
+
+		listing->download(file, target, false, false);
 	} catch(const Exception& e) {
 		setStatus (e.getError(), 0);
 	}
@@ -300,10 +329,16 @@ void ShareBrowser::viewClicked() {
 	try {
 		//true = view file, somebody needs to listen to the view though...
 		//false = prio
-		target = SETTING(DOWNLOAD_DIRECTORY);
+		target = WUtil::ConvertFromUTF8(SETTING(DOWNLOAD_DIRECTORY));
 		assert(target[target.size() - 1] == PATH_SEPARATOR);
-		target += Util::getFileName(file->getName());
-		listing->download(file, WUtil::ConvertFromUTF8(target), true, false);
+		
+		if (listing->getUtf8()) {
+			target += WUtil::ConvertFromUTF8(Util::getFileName(file->getName()));
+		} else {
+			target += Util::getFileName(file->getName());
+		}
+
+		listing->download(file, target, true, false);
 	} catch(const Exception& e) {
 		setStatus(e.getError(), 0);
 	}
