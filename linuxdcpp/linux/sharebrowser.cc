@@ -122,6 +122,10 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	updateStatus_gui();
 }
 
+ShareBrowser::~ShareBrowser() {
+	if (posDir) gtk_tree_path_free(posDir);
+}
+
 GtkWidget *ShareBrowser::getWidget() {
 	return box;
 }
@@ -169,14 +173,20 @@ void ShareBrowser::buildDirs_gui(
 	}
 }
 
-void ShareBrowser::updateFiles_gui() {
+void ShareBrowser::updateFiles_gui(bool fromFind) {
 	DirectoryListing::Directory *dir;
 	DirectoryListing::File::List *files;
 	DirectoryListing::File::Iter it;
 	gpointer ptr;
 	GtkTreeIter iter;
 	
-	assert(gtk_tree_selection_get_selected(dirSelection, NULL, &iter));
+	//If this function is called from the find stuff the selection is not
+	//yet updated sometimes. Thus we need to look at posDir.
+	if (fromFind)
+		gtk_tree_model_get_iter(GTK_TREE_MODEL(dirStore), &iter, posDir);
+	else
+		gtk_tree_selection_get_selected(dirSelection, NULL, &iter);
+
 	gtk_tree_model_get(GTK_TREE_MODEL(dirStore), &iter,
 		COLUMN_DL_DIR, &ptr,
 		-1);
@@ -264,7 +274,7 @@ gboolean ShareBrowser::buttonReleased_gui(
 
 	//single click left button
 	if (event->button == 1 && oldType == GDK_BUTTON_PRESS)
-		if (GTK_TREE_VIEW(widget) == dirView) updateFiles_gui();
+		if (GTK_TREE_VIEW(widget) == dirView) updateFiles_gui(false);
 
 	//single click right button
 	if (event->button == 3 && oldType == GDK_BUTTON_PRESS)
@@ -395,104 +405,19 @@ void ShareBrowser::buttonClicked_gui(GtkWidget *widget, gpointer) {
 	}
 }
 
-/*
-void ShareBrowser::findNext_gui(bool firstFile) {
-	DirectoryListing::Directory *dir;
-	DirectoryListing::File::List *files;
-	gpointer ptr;
-	
-	if (search == "") return;
-
-	if (firstFile) {
-		gtk_tree_model_get_iter_first(GTK_TREE_MODEL(dirStore), &posDir);
-		gtk_tree_model_get(GTK_TREE_MODEL(dirStore), &posDir,
-			COLUMN_DL_DIR, &ptr,
-			-1);
-		dir = (DirectoryListing::Directory *)ptr;
-		files = &(dir->files);
-		posFile = files->begin();
-	} else {
-		gtk_tree_model_get(GTK_TREE_MODEL(dirStore), &posDir,
-			COLUMN_DL_DIR, &ptr,
-			-1);
-		dir = (DirectoryListing::Directory *)ptr;
-		files = &(dir->files);
-		posFile++;
-	}
-
-	//This goes through all directories and files to find search
-	while (true) {
-		//This is in case we need to scan next directory
-		//While is in case directories are empty
-		while (posFile == files->end()) {
-			bool bla = gtk_tree_model_iter_next(GTK_TREE_MODEL(dirStore), &posDir);
-
-			if (!gtk_tree_store_iter_is_valid(dirStore, &posDir)) {
-				setStatus_gui(mainStatus, "No files found");
-				return;
-			}
-			if (!bla) cout << "AWAWW" << endl;
-
-			gtk_tree_model_get(GTK_TREE_MODEL(dirStore), &posDir,
-				COLUMN_DL_DIR, &ptr,
-				-1);
-			dir = (DirectoryListing::Directory *)ptr;
-			files = &(dir->files);
-			posFile = files->begin();
-		}
-
-		string filename = (*posFile)->getName();
-		if (!listing.getUtf8())
-			filename = Text::acpToUtf8(filename);
-
-		//cout << filename << endl;
-		
-		//This is if we find the file, we need to select it and 
-		//expand its dir in the dir view
-		if (filename.find(search, 0) != string::npos) {
-			GtkTreePath *path;
-			path = gtk_tree_model_get_path(GTK_TREE_MODEL(dirStore), &posDir);
-			gtk_tree_view_expand_row(dirView, path, FALSE);
-			gtk_tree_view_set_cursor(dirView, path, NULL, FALSE);
-			
-			updateFiles_gui();
-			
-			//Select the file in the file view
-			GtkTreeIter iter;
-			gtk_tree_model_get_iter_first(GTK_TREE_MODEL(fileStore), &iter);
-			while (true) {
-				assert(gtk_list_store_iter_is_valid(fileStore, &iter));
-
-				gtk_tree_model_get(GTK_TREE_MODEL(fileStore), &iter,
-					COLUMN_DL_FILE, &ptr, -1);
-				DirectoryListing::File *file = (DirectoryListing::File *)ptr;
-				if (file == *posFile) {
-					path = gtk_tree_model_get_path(GTK_TREE_MODEL(fileStore), &iter);
-					gtk_tree_view_set_cursor(fileView, path, NULL, FALSE);
-					return;
-				}
-				
-				gtk_tree_model_iter_next(GTK_TREE_MODEL(fileStore), &iter);
-			}
-		}
-
-		posFile++;
-	}
-}
-*/
-
 void ShareBrowser::findNext_gui(bool firstFile) {
 	DirectoryListing::Directory *dir;
 	DirectoryListing::File::List *files;
 	gpointer ptr;
 	GtkTreeIter iter;
-	bool found;
+	bool found, updatedPosDir = false;
 	
 	if (search == "") return;
 
 	if (firstFile) {
 		if (posDir) gtk_tree_path_free(posDir);
 		posDir = gtk_tree_path_new_first();
+		updatedPosDir = true;
 	}
 
 	if (!gtk_tree_model_get_iter(GTK_TREE_MODEL(dirStore), &iter, posDir)) 
@@ -511,6 +436,8 @@ void ShareBrowser::findNext_gui(bool firstFile) {
 		//This is in case we need to scan next directory
 		//While is in case directories are empty
 		while (posFile == files->end()) {
+			updatedPosDir = true;
+
 			//Searching for unvisided nodes, first children, then sibilings 
 			found = true;
 			gtk_tree_path_down(posDir);
@@ -552,19 +479,14 @@ void ShareBrowser::findNext_gui(bool firstFile) {
 		if (!listing.getUtf8())
 			filename = Text::acpToUtf8(filename);
 
-		cout << filename << endl;
-		
 		//This is if we find the file, we need to select it and 
 		//expand its dir in the dir view
 		if (filename.find(search, 0) != string::npos) {
-			gtk_widget_grab_focus(GTK_WIDGET(dirView));
-			gtk_tree_view_expand_row(dirView, posDir, FALSE);
-			gtk_tree_view_set_cursor(dirView, posDir, NULL, FALSE);
-			
-			//Make sure the selection of the tree is actually updated
-			//while (g_main_context_iteration(NULL, FALSE));
-  			
-			updateFiles_gui();
+			if (updatedPosDir) {
+				gtk_tree_view_expand_row(dirView, posDir, FALSE);
+				gtk_tree_view_set_cursor(dirView, posDir, NULL, FALSE);
+				updateFiles_gui(true);
+			}
 			
 			//Select the file in the file view
 			gtk_tree_model_get_iter_first(GTK_TREE_MODEL(fileStore), &iter);

@@ -37,6 +37,7 @@ class ShareBrowser:
 	public:
 		//the constructor is to be called from the gui thread
 		ShareBrowser(User::Ptr user, std::string file, GCallback closeCallback);
+		~ShareBrowser();
 	
 		GtkWidget *getWidget();
 
@@ -56,7 +57,7 @@ class ShareBrowser:
 		void buttonClicked_gui(GtkWidget *widget, gpointer);
 
 		void buildDirs_gui(DirectoryListing::Directory::List dir, GtkTreeIter *iter);
-		void updateFiles_gui();
+		void updateFiles_gui(bool fromFind);
 		void updateStatus_gui();
 
 		//only call these from client thread

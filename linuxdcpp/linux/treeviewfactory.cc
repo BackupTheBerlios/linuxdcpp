@@ -28,6 +28,7 @@ TreeViewFactory::TreeViewFactory(GtkTreeView *view) {
 GtkTreeView *TreeViewFactory::get() {
 	return view;
 }
+
 void TreeViewFactory::addColumn_gui(int id, std::string title, type_t type, int width) {
 	GtkTreeViewColumn *col;
 	
@@ -72,6 +73,7 @@ void TreeViewFactory::addColumn_gui(int id, std::string title, type_t type, int 
 
 	gtk_tree_view_insert_column(view, col, id);
 }
+
 void TreeViewFactory::setSortColumn_gui(int id, int sortColumn) {
 	GtkTreeViewColumn *col;
 	col = gtk_tree_view_get_column(view, id);
