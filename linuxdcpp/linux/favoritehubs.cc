@@ -206,9 +206,7 @@ void FavoriteHubs::popup_menu_gui (GdkEventButton *event, gpointer user_data)
 }
 void FavoriteHubs::remove_client (FavoriteHubEntry *e)
 {
-	pthread_mutex_lock (&favoriteLock);
 	HubManager::getInstance ()->removeFavorite (e);
-	pthread_mutex_unlock (&favoriteLock);
 }
 void FavoriteHubs::remove_gui (GtkWidget *widget, gpointer data)
 {
@@ -361,13 +359,18 @@ void FavoriteHubs::addDialog_gui (bool edit, string uname, string uaddress, stri
 		gtk_entry_set_text (GTK_ENTRY(dialog["User description"]), "");	
 	}
 	gint response = gtk_dialog_run (window);
+	gtk_widget_hide (dialog["Window"]);
 	if (response == GTK_RESPONSE_OK)
 	{
 		if (!edit)
 		{
 			FavoriteHubEntry e;
-			e.setName (gtk_entry_get_text (GTK_ENTRY (dialog["Name"])));
-			e.setServer (gtk_entry_get_text (GTK_ENTRY (dialog["Address"])));
+			string name = gtk_entry_get_text (GTK_ENTRY (dialog["Name"])), server = gtk_entry_get_text (GTK_ENTRY (dialog["Address"]));
+					
+			if (name.empty () || server.empty ())
+				return;
+			e.setName (name);
+			e.setServer (server);
 			e.setDescription (gtk_entry_get_text (GTK_ENTRY (dialog["Description"])));
 			e.setNick (gtk_entry_get_text (GTK_ENTRY (dialog["Nick"])));
 			e.setPassword (gtk_entry_get_text (GTK_ENTRY (dialog["Password"])));
@@ -402,7 +405,6 @@ void FavoriteHubs::addDialog_gui (bool edit, string uname, string uaddress, stri
 			}
 		}
 	}
-	gtk_widget_hide (dialog["Window"]);
 }
 void FavoriteHubs::on(HubManagerListener::FavoriteAdded, const FavoriteHubEntry *entry) throw()
 {
