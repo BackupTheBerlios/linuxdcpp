@@ -49,7 +49,7 @@ class MainWindow:
 
 		//gui functions
 		void createWindow_gui();
-		void setStatus_gui(std::string status);
+		void setStatus_gui(GtkStatusbar *status, std::string text);
 		void setStats_gui(std::string hub, std::string slot, 
 			std::string dTot, std::string uTot, std::string dl, std::string ul);
 		void addShareBrowser_gui(User::Ptr user, 
@@ -71,7 +71,7 @@ class MainWindow:
 		void findId_gui(std::string id, GtkTreeIter *iter);
 
 		//client functions
-		void autoConnect();
+		void autoConnect_client();
 		void startSocket_client();
 		std::string getId_client(ConnectionQueueItem *item);
 		std::string getId_client(Transfer *t);
@@ -114,6 +114,7 @@ class MainWindow:
 		static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data);
 
 		int64_t lastUpdate, lastUp, lastDown;
+		int emptyStatusWidth;
 
 		GtkWindow *window;
 		GtkDialog *exitDialog;

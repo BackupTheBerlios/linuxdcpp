@@ -121,6 +121,7 @@ MainWindow::MainWindow():
 	ConnectionManager::getInstance()->addListener(this);
 	
 	startSocket_client();
+	autoConnect_client();
 }
 
 MainWindow::~MainWindow() {
@@ -207,9 +208,9 @@ void MainWindow::createWindow_gui() {
 		
 	gtk_widget_show_all(GTK_WIDGET(window));
 
-    	g_signal_connect(G_OBJECT(pubHubsButton), 
+   	g_signal_connect(G_OBJECT(pubHubsButton), 
 		"clicked", G_CALLBACK(pubHubs_callback), (gpointer)this);
-    	g_signal_connect(G_OBJECT (queueButton), 
+   	g_signal_connect(G_OBJECT (queueButton), 
 		"clicked", G_CALLBACK(dlQueue_callback), (gpointer)this);
 	g_signal_connect(G_OBJECT (favHubsButton), 
 		"clicked", G_CALLBACK(favHubs_callback), (gpointer)this);
@@ -221,24 +222,42 @@ void MainWindow::createWindow_gui() {
 		"clicked", G_CALLBACK(hash_callback), (gpointer)this);    	
 	g_signal_connect(G_OBJECT(quitButton), 
 		"clicked", G_CALLBACK(quit_callback), (gpointer)this);
+
+	GtkWidget *dummy;
+	GtkRequisition req;
+	dummy = gtk_statusbar_new();
+	gtk_widget_size_request(dummy, &req);
+	gtk_widget_destroy(dummy);
+	emptyStatusWidth = req.width;
 	
 	gtk_statusbar_push(mainStatus, 0, "Welcome to Wulfor - Reloaded");
-	autoConnect ();
 }
 
 GtkWindow *MainWindow::getWindow() {
 	return window;
 }
 
-void MainWindow::autoConnect ()
-{
-	FavoriteHubEntry::List &l = HubManager::getInstance ()->getFavoriteHubs ();
-	for (FavoriteHubEntry::List::const_iterator it=l.begin (); it != l.end (); it++)
-	{
+void MainWindow::autoConnect_client() {
+	FavoriteHubEntry::List &l = HubManager::getInstance()->getFavoriteHubs();
+	FavoriteHubEntry::List::const_iterator it;
+	
+	for (it = l.begin(); it != l.end(); it++) {
 		FavoriteHubEntry *entry = *it;
-		if (entry->getConnect ())
-			if (!entry->getNick ().empty () || !SETTING (NICK).empty ())
-				WulforManager::get()->addHub_gui(entry->getServer (), entry->getNick ().empty () ? SETTING (NICK) : entry->getNick (), entry->getUserDescription (), entry->getPassword ());
+		if (entry->getConnect())
+			if (!entry->getNick().empty () || !SETTING(NICK).empty()) {
+				string nick;
+			
+				if (entry->getNick().empty())
+					nick =  SETTING(NICK);
+				else
+					nick = entry->getNick();
+			
+				WulforManager::get()->addHub_gui(
+					entry->getServer(),
+					nick,
+					entry->getUserDescription(),
+					entry->getPassword());
+			}
 	}
 }
 
@@ -355,26 +374,34 @@ void MainWindow::raisePage_gui(GtkWidget *page) {
 	gtk_notebook_set_current_page(book, pageNum);
 }
 		
-void MainWindow::setStatus_gui(std::string status) {
-	gtk_statusbar_pop(mainStatus, 0);
-	gtk_statusbar_push(mainStatus, 0, status.c_str());
+void MainWindow::setStatus_gui(GtkStatusbar *status, std::string text) {
+	if (status != mainStatus) {
+		PangoLayout *pango;
+		int width;
+		GtkRequisition req;
+
+		pango = gtk_widget_create_pango_layout(GTK_WIDGET(window), text.c_str());
+		pango_layout_get_pixel_size(pango, &width, NULL);
+		g_object_unref(G_OBJECT(pango));
+		gtk_widget_size_request(GTK_WIDGET(status), &req);
+		if (width > req.width - emptyStatusWidth)
+			gtk_widget_set_size_request(GTK_WIDGET(status), 
+				width + emptyStatusWidth, -1);
+	}
+
+	gtk_statusbar_pop(status, 0);
+	gtk_statusbar_push(status, 0, text.c_str());
 }
 
 void MainWindow::setStats_gui(std::string hub, std::string slot, 
 	std::string dTot, std::string uTot, std::string dl, std::string ul)
 {
-	gtk_statusbar_pop(hubStatus, 0);
-	gtk_statusbar_push(hubStatus, 0, hub.c_str());
-	gtk_statusbar_pop(slotStatus, 0);
-	gtk_statusbar_push(slotStatus, 0, slot.c_str());
-	gtk_statusbar_pop(dTotStatus, 0);
-	gtk_statusbar_push(dTotStatus, 0, dTot.c_str());
-	gtk_statusbar_pop(uTotStatus, 0);
-	gtk_statusbar_push(uTotStatus, 0, uTot.c_str());
-	gtk_statusbar_pop(ulStatus, 0);
-	gtk_statusbar_push(ulStatus, 0, ul.c_str());
-	gtk_statusbar_pop(dlStatus, 0);
-	gtk_statusbar_push(dlStatus, 0, dl.c_str());
+	setStatus_gui(hubStatus, hub);
+	setStatus_gui(slotStatus, slot);
+	setStatus_gui(dTotStatus, dTot);
+	setStatus_gui(uTotStatus, uTot);
+	setStatus_gui(ulStatus, ul);
+	setStatus_gui(dlStatus, dl);
 }
 
 void MainWindow::updateTransfer_gui(string id, connection_t type, string user, 
@@ -497,7 +524,6 @@ void MainWindow::transferComplete_client(Transfer *t) {
 		"Done", " ", "", "", "");
 	WulforManager::get()->dispatchGuiFunc(func);
 }
-
 
 //From Connection manager
 void MainWindow::on(ConnectionManagerListener::Added, ConnectionQueueItem *item) throw() {
