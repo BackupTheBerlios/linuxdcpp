@@ -41,20 +41,16 @@ class CTransfer : 	public DownloadManagerListener,
 	public:
 		CTransfer ();
 		~CTransfer ();
+
 		enum {
-			COLUMN_FIRST,
-			COLUMN_USER = COLUMN_FIRST,
-			COLUMN_HUB,
-			COLUMN_STATUS,
-			COLUMN_TIMELEFT,
-			COLUMN_SPEED,
-			COLUMN_FILE,
-			COLUMN_SIZE,
-			COLUMN_PATH,
-			COLUMN_IP,
-			COLUMN_RATIO,
-			COLUMN_LAST
+			MENU_FIRST,
+			MENU_CLOSE_TRANSFER = MENU_FIRST,
+			MENU_BROWSE_FILELIST,
+			MENU_REMOVE_FROM_QUEUE,
+			MENU_LAST
 		};
+			
+			
 
 		static CTransfer *getInstance ();
 		static void startup ();
@@ -80,6 +76,21 @@ class CTransfer : 	public DownloadManagerListener,
 					TYPE_UPLOAD
 				};
 
+				enum {
+					COLUMN_FIRST,
+					COLUMN_USER = COLUMN_FIRST,
+					COLUMN_HUB,
+					COLUMN_STATUS,
+					COLUMN_TIMELEFT,
+					COLUMN_SPEED,
+					COLUMN_FILE,
+					COLUMN_SIZE,
+					COLUMN_PATH,
+					COLUMN_IP,
+					COLUMN_RATIO,
+					COLUMN_LAST
+				};
+				
 				enum {
 					MASK_USER = 1 << COLUMN_USER,
 					MASK_HUB = 1 << COLUMN_HUB,
@@ -176,6 +187,15 @@ class CTransfer : 	public DownloadManagerListener,
 		Gtk::TreeModel::iterator findTransfer (TransferItem *t);
 		TransferItem* bruteFindTransfer ();
 		TransferColumns columns;
+
+		Gtk::Menu popupMenu;
+		Gtk::MenuItem menuRemoveTransfer;
+		Gtk::MenuItem menuRemoveQueue;
+		Gtk::MenuItem menuBrowse;
+  		void showPopupMenu(GdkEventButton* event);
+		void removeTransferClicked ();
+		void browseClicked ();
+		void removeQueueClicked ();
 		
 		u_int32_t itemMask;
 
