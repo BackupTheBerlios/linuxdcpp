@@ -61,8 +61,8 @@ class MainWindow:
 		BookEntry *findPage (Glib::ustring text);
 
 		//TimerManagerListener
-		void on(TimerManagerListener::Second, u_int32_t tics) throw();
-			
+		virtual void on(TimerManagerListener::Second, u_int32_t tics) throw();
+
 	private:	
 		void pubHubsClicked();
 		void searchClicked();

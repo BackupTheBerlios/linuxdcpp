@@ -1,3 +1,7 @@
+2004-10-02 23:41 phase
+
+	* linux/hub.cc: Add initial password support.
+
 2004-10-02 01:36 phase
 
 	* linux/transfer.cc: Forgot to add some checks when a download failed that otherwise caused seg. faults.

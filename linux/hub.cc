@@ -119,6 +119,7 @@ Hub::Hub(string address, MainWindow *mw):
 	proxy->addListener<Hub, ClientListener>(this, client);
 	client->setNick(SETTING(NICK));
 	client->connect();
+
 }
 
 Hub::~Hub() {
@@ -237,7 +238,13 @@ void Hub::on(ClientListener::Failed,
 }
 
 void Hub::on(ClientListener::GetPassword, Client *client) throw() {
-	//TODO: ask user for password
+	if (client->getPassword () > 0)
+		client->password (client->getPassword());
+	else
+	{
+		showPasswordDialog ();
+		client->password (client->getPassword ());	
+	}
 }
 
 void Hub::on(ClientListener::HubUpdated, Client *client) throw() {
@@ -396,4 +403,21 @@ void Hub::close ()
 	client->disconnect ();
 	getParent ()->remove_page (*this);
 	delete this;
+}
+
+void Hub::showPasswordDialog ()
+{
+		Gtk::Dialog window ("Password", *mw, true) ;
+		Gtk::Entry entry;
+
+		window.set_default_size (200, 50);
+
+		window.get_vbox ()->pack_start (entry, PACK_EXPAND_WIDGET);
+		window.add_button (GTK_STOCK_APPLY, 1);
+		
+		window.show_all ();
+		
+		window.run ();
+
+		client->setPassword (entry.get_text ().raw ());
 }

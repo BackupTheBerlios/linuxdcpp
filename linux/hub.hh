@@ -88,6 +88,7 @@ class Hub:
 		void valueChanged();
 		void setStatus (std::string text, int num);
 		void close ();
+		void showPasswordDialog ();
 
 	private:
 		class NickListColumns: public Gtk::TreeModel::ColumnRecord {
