@@ -336,6 +336,15 @@ void FavoriteHubs::addDialog_gui (bool edit, string uname, string uaddress, stri
 		gtk_entry_set_text (GTK_ENTRY(dialog["Password"]), upassword.c_str ());
 		gtk_entry_set_text (GTK_ENTRY(dialog["User description"]), uuserdesc.c_str ());
 	}
+	else
+	{
+		gtk_entry_set_text (GTK_ENTRY(dialog["Name"]), "");
+		gtk_entry_set_text (GTK_ENTRY(dialog["Address"]), "");
+		gtk_entry_set_text (GTK_ENTRY(dialog["Description"]), "");
+		gtk_entry_set_text (GTK_ENTRY(dialog["Nick"]), "");
+		gtk_entry_set_text (GTK_ENTRY(dialog["Password"]), "");
+		gtk_entry_set_text (GTK_ENTRY(dialog["User description"]), "");	
+	}
 	gint response = gtk_dialog_run (window);
 	if (response == GTK_RESPONSE_OK)
 	{
@@ -367,6 +376,7 @@ void FavoriteHubs::addDialog_gui (bool edit, string uname, string uaddress, stri
 			{
 				if (fh[i] == TreeViewFactory::getValue<gpointer,FavoriteHubEntry*>(m, &iter, COLUMN_ENTRY))
 				{
+					pthread_mutex_lock (&favoriteLock);
 					fh[i]->setName (gtk_entry_get_text (GTK_ENTRY (dialog["Name"])));
 					fh[i]->setServer (gtk_entry_get_text (GTK_ENTRY (dialog["Address"])));
 					fh[i]->setDescription (gtk_entry_get_text (GTK_ENTRY (dialog["Description"])));
@@ -374,6 +384,7 @@ void FavoriteHubs::addDialog_gui (bool edit, string uname, string uaddress, stri
 					fh[i]->setPassword (gtk_entry_get_text (GTK_ENTRY (dialog["Password"])));
 					fh[i]->setUserDescription (gtk_entry_get_text (GTK_ENTRY (dialog["User description"])));
 					HubManager::getInstance ()->save ();
+					pthread_mutex_unlock (&favoriteLock);
 					gtk_list_store_set (favoriteStore, &iter, 	COLUMN_NAME, fh[i]->getName ().c_str (),
 																	COLUMN_SERVER, fh[i]->getServer ().c_str (),
 																	COLUMN_DESCRIPTION, fh[i]->getDescription ().c_str (),
