@@ -48,7 +48,8 @@ class WulforManager {
 		std::string getPath();
 
 		MainWindow *getMainWindow();
-		PrivateMessage *getPrivMsg(User::Ptr user);
+		PrivateMessage *getPrivMsg_gui(User::Ptr user);
+		PrivateMessage *getPrivMsg_client(User::Ptr user);
 
 		PublicHubs *addPublicHubs_gui();
 		Hub *addHub_gui(std::string address, 
@@ -56,7 +57,8 @@ class WulforManager {
 		PrivateMessage *addPrivMsg_gui(User::Ptr user);
 		ShareBrowser *addShareBrowser_gui(User::Ptr user, std::string file);
 
-		BookEntry *getBookEntry(int type, string id, bool raise);
+		BookEntry *getBookEntry_gui(int type, string id, bool raise);
+		BookEntry *getBookEntry_client(int type, string id, bool raise);
 		void deleteBookEntry_gui(BookEntry *entry);
 
 		enum {

@@ -45,15 +45,22 @@ class ShareBrowser:
 		void setPosition_gui(std::string pos);
 
 	private:
+		//only call these from gui thread
 		gboolean buttonPressed_gui(GtkWidget *, GdkEventButton *, gpointer);
 		gboolean buttonReleased_gui(GtkWidget *, GdkEventButton *, gpointer);
+		void menuClicked_gui(GtkMenuItem *item, gpointer);
 
 		void buildDirs_gui(DirectoryListing::Directory::List dir, GtkTreeIter *iter);
 		void updateFiles_gui();
 		void updateStatus_gui();
 
+		//only call these from client thread
+		void downloadFile_client(DirectoryListing::File *file, std::string target);
+		void downloadDir_client(DirectoryListing::Directory *dir, std::string target);
+
 		Callback3<ShareBrowser, gboolean, GtkWidget *, GdkEventButton *> 
 			pressedCallback, releasedCallback;
+		Callback2<ShareBrowser, void, GtkMenuItem *> menuCallback;
 		GdkEventType oldType;
 		guint oldButton;
 
@@ -69,6 +76,10 @@ class ShareBrowser:
 		GtkTreeStore *dirStore;
 		GtkTreeSelection *fileSelection, *dirSelection;
 		GtkWidget *box;
+		GtkButton *matchButton, *findButton, *nextButton;
+		
+		GtkMenu *fileMenu, *dirMenu;
+		GtkMenuItem *dlDir, *dlFile, *dlDirTo, *dlFileTo, *dlDirDir, *dlDirToDir;
 		
 		enum {
 			COLUMN_FILE,

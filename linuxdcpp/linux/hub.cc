@@ -203,7 +203,7 @@ void Hub::addMessage_gui(string msg) {
 
 void Hub::addPrivateMessage_gui(const User::Ptr &user, std::string msg) {
 	::PrivateMessage *privMsg = 
-		WulforManager::get()->getPrivMsg(user);
+		WulforManager::get()->getPrivMsg_gui(user);
 		
 	if (!privMsg)
 		privMsg = WulforManager::get()->addPrivMsg_gui(user);
@@ -327,7 +327,7 @@ void Hub::on(ClientListener::UserRemoved,
 	Client *client, const User::Ptr &user) throw()
 {
 	::PrivateMessage *privMsg = 
-		WulforManager::get()->getPrivMsg(user);
+		WulforManager::get()->getPrivMsg_client(user);
 	if (privMsg) {
 		typedef Func1< ::PrivateMessage, string> F1;
 		F1 *func;

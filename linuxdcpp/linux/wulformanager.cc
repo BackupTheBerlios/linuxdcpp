@@ -173,13 +173,33 @@ MainWindow *WulforManager::getMainWindow() {
 	return mainWin;
 }
 
-PrivateMessage *WulforManager::getPrivMsg(User::Ptr user) {
-	BookEntry *entry = getBookEntry(PRIVATE_MSG, user->getFullNick(), false);
+PrivateMessage *WulforManager::getPrivMsg_gui(User::Ptr user) {
+	BookEntry *entry = getBookEntry_gui(PRIVATE_MSG, user->getFullNick(), false);
 	if (!entry) return NULL;
 	return dynamic_cast<PrivateMessage *>(entry);
 }
 
-BookEntry *WulforManager::getBookEntry(int type, string id, bool raise) {
+PrivateMessage *WulforManager::getPrivMsg_client(User::Ptr user) {
+	BookEntry *entry = getBookEntry_client(PRIVATE_MSG, user->getFullNick(), false);
+	if (!entry) return NULL;
+	return dynamic_cast<PrivateMessage *>(entry);
+}
+
+BookEntry *WulforManager::getBookEntry_gui(int type, string id, bool raise) {
+	BookEntry *ret = NULL;
+	vector<BookEntry *>::iterator it;
+	
+	for (it = bookEntrys.begin(); it != bookEntrys.end(); it++)
+		if ((*it)->isEqual(type, id)) ret = *it;
+		
+	if (ret && raise) {
+		mainWin->raisePage_gui(ret->getWidget());
+	}
+
+	return ret;
+}
+
+BookEntry *WulforManager::getBookEntry_client(int type, string id, bool raise) {
 	BookEntry *ret = NULL;
 	vector<BookEntry *>::iterator it;
 	
@@ -237,7 +257,7 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry) {
 }
 
 PublicHubs *WulforManager::addPublicHubs_gui() {
-	BookEntry *entry = getBookEntry(PUBLIC_HUBS, "", true);
+	BookEntry *entry = getBookEntry_gui(PUBLIC_HUBS, "", true);
 	if (entry) return dynamic_cast<PublicHubs *>(entry);
 
 	PublicHubs *pubHubs = new PublicHubs(G_CALLBACK(closeEntry_callback));
@@ -252,7 +272,7 @@ PublicHubs *WulforManager::addPublicHubs_gui() {
 }
 
 Hub *WulforManager::addHub_gui(string address, string nick, string desc, string password) {
-	BookEntry *entry = getBookEntry(HUB, address, true);
+	BookEntry *entry = getBookEntry_gui(HUB, address, true);
 	if (entry) return dynamic_cast<Hub *>(entry);
 
 	Hub *hub = new Hub(address, G_CALLBACK(closeEntry_callback));
@@ -268,7 +288,7 @@ Hub *WulforManager::addHub_gui(string address, string nick, string desc, string 
 }
 
 PrivateMessage *WulforManager::addPrivMsg_gui(User::Ptr user) {
-	BookEntry *entry = getBookEntry(PRIVATE_MSG, user->getFullNick(), true);
+	BookEntry *entry = getBookEntry_gui(PRIVATE_MSG, user->getFullNick(), true);
 	if (entry) return dynamic_cast<PrivateMessage *>(entry);
 
 	PrivateMessage *privMsg = new PrivateMessage(user, G_CALLBACK(closeEntry_callback));
@@ -280,7 +300,7 @@ PrivateMessage *WulforManager::addPrivMsg_gui(User::Ptr user) {
 }
 
 ShareBrowser *WulforManager::addShareBrowser_gui(User::Ptr user, string file) {
-	BookEntry *entry = getBookEntry(SHARE_BROWSER, user->getFullNick(), true);
+	BookEntry *entry = getBookEntry_gui(SHARE_BROWSER, user->getFullNick(), true);
 	if (entry) return dynamic_cast<ShareBrowser *>(entry);
 
 	ShareBrowser *browser = new ShareBrowser(user, file, G_CALLBACK(closeEntry_callback));
