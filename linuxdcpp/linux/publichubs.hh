@@ -21,11 +21,13 @@
 
 #include <gtk/gtk.h>
 #include <glade/glade.h>
+#include <pthread.h>
 #include "bookentry.hh"
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/HubManager.h>
+#include <client/StringSearch.h>
 
 class PublicHubs: 
 	public BookEntry,
@@ -38,19 +40,61 @@ class PublicHubs:
 
 		GtkWidget *getWidget();
 
+		//only to be called from client thread
+		void PublicHubs::downloadList_client();
+
 		//only to be called from the gui thread
 		void filterHubs_gui();
 		void connect_gui();
+		void updateList_gui();
+		void setStatus_gui(int status, std::string text);
 
+		//from HubManagerListener
+		void on(HubManagerListener::DownloadStarting, 
+			const string &file) throw();
+		void on(HubManagerListener::DownloadFailed, 
+			const string &file) throw();
+		void on(HubManagerListener::DownloadFinished, 
+			const string &file) throw();
+		void on(HubManagerListener::FavoriteAdded, 
+			const FavoriteHubEntry *fav) throw();
+		void on(HubManagerListener::FavoriteRemoved, 
+			const FavoriteHubEntry *fav) throw();
+		void on(HubManagerListener::UserAdded, 
+			const User::Ptr &user) throw();
+		void on(HubManagerListener::UserRemoved, 
+			const User::Ptr &user) throw();
 
+		enum {
+			STATUS_MAIN,
+			STATUS_USERS,
+			STATUS_HUBS
+		};
+		
 	private:
 		static void filter_callback(GtkWidget *widget, gpointer data);
 		static void connect_callback(GtkWidget *widget, gpointer data);
 
+		pthread_mutex_t hubLock;
+
+		HubEntry::List hubs;
+		StringSearch filter;
+
 		GtkWidget *mainBox;
 		GtkEntry *filterEntry, *connectEntry;
-		//GtkButton *filterButton, *connectButton;
 		GtkTreeView *hubView;
+		GtkListStore *hubStore;
+		GtkTreeViewColumn *nameColumn, *descColumn, *usersColumn, *addressColumn;
+		GtkStatusbar *statusMain, *statusHubs, *statusUsers;
+		
+		enum {
+			COLUMN_NAME,
+			COLUMN_DESC,
+			COLUMN_USERS,
+			COLUMN_ADDRESS
+		};
+
+		const int WIDTH_NAME, WIDTH_DESC, WIDTH_USERS, WIDTH_ADDRESS;
 };
 
 #else
