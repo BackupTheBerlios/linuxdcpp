@@ -1,5 +1,5 @@
 /* 
-* Copyright (C) 2004 Jens Oknelid, paskharen@spray.se
+* Copyright (C) 2004 Jens Oknelid, paskharen@gmail.com
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -321,7 +321,7 @@ DownloadQueue *WulforManager::addDownloadQueue_gui() {
 	return dlQueue;
 }
 
-FavoriteHubs *WulforManager::addFavoriteHubs_gui () {
+FavoriteHubs *WulforManager::addFavoriteHubs_gui() {
 	BookEntry *entry = getBookEntry_gui (FAVORITE_HUBS, "", true);
 	if (entry) return dynamic_cast<FavoriteHubs*>(entry);
 
@@ -332,8 +332,9 @@ FavoriteHubs *WulforManager::addFavoriteHubs_gui () {
 	
 	return favHubs;
 }
-Settings *WulforManager::openSettingsDialog_gui () {
-	Settings *s = new Settings ();
+
+Settings *WulforManager::openSettingsDialog_gui() {
+	Settings *s = new Settings();
 
 	return s;
 }
@@ -378,22 +379,20 @@ ShareBrowser *WulforManager::addShareBrowser_gui(User::Ptr user, string file) {
 	return browser;
 }
 
-Search *WulforManager::addSearch_gui()
-{
+Search *WulforManager::addSearch_gui() {
 	BookEntry *entry = getBookEntry_gui (SEARCH, "", true);
 	if (entry) return dynamic_cast<Search*>(entry);
 
 	Search *s = new Search (G_CALLBACK(closeEntry_callback));
-	mainWin->addPage_gui(s->getWidget (), s->getTitle (), true);
-	gtk_widget_unref (s->getWidget ());
+	mainWin->addPage_gui(s->getWidget(), s->getTitle(), true);
+	gtk_widget_unref (s->getWidget());
 	bookEntrys.push_back(s);
 
 	return s;
 }
 
-Hash *WulforManager::openHashDialog_gui ()
-{
-	Hash *h = new Hash ();
+Hash *WulforManager::openHashDialog_gui() {
+	Hash *h = new Hash();
 	
 	return h;
 }

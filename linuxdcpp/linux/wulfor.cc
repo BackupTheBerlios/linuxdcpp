@@ -1,5 +1,5 @@
 /* 
-* Copyright (C) 2004 Jens Oknelid, paskharen@spray.se
+* Copyright (C) 2004 Jens Oknelid, paskharen@gmail.com
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -40,8 +40,8 @@ int main(int argc, char *argv[]) {
 	
 	SettingsManager *smgr = SettingsManager::getInstance();
 	smgr->load();
-	if (SETTING (DOWNLOAD_DIRECTORY) == SETTING (TEMP_DOWNLOAD_DIRECTORY))
-		smgr->set(SettingsManager::TEMP_DOWNLOAD_DIRECTORY, "");
+	//if (SETTING(DOWNLOAD_DIRECTORY) == SETTING(TEMP_DOWNLOAD_DIRECTORY))
+	//	smgr->set(SettingsManager::TEMP_DOWNLOAD_DIRECTORY, "");
 	TimerManager::getInstance()->start();
 
 	g_thread_init(NULL);
@@ -58,8 +58,8 @@ int main(int argc, char *argv[]) {
 	WulforManager::stop();
 
 	cout << "Shutting down..." << endl;
-	if (SETTING (TEMP_DOWNLOAD_DIRECTORY) == "")
-		smgr->set(SettingsManager::TEMP_DOWNLOAD_DIRECTORY, SETTING (DOWNLOAD_DIRECTORY));
+	//if (SETTING(TEMP_DOWNLOAD_DIRECTORY) == "")
+	//	smgr->set(SettingsManager::TEMP_DOWNLOAD_DIRECTORY, SETTING(DOWNLOAD_DIRECTORY));
 	shutdown();
 	
 	delete WulforManager::get();

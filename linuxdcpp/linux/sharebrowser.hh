@@ -1,5 +1,5 @@
 /* 
-* Copyright (C) 2004 Jens Oknelid, paskharen@spray.se
+* Copyright (C) 2004 Jens Oknelid, paskharen@gmail.com
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ class ShareBrowser:
 
 		//these functions should only be called from the client thread
 		void matchQueue_client();
+		void findNext_gui(bool firstFile);
 	
 		//these functions should only be called from the gui thread
 		void setStatus_gui(GtkStatusbar *status, std::string msg);
@@ -74,6 +75,9 @@ class ShareBrowser:
 		int64_t currentSize;
 		int shareItems;
 		int currentItems;
+		std::string search;
+		GtkTreePath *posDir;
+		DirectoryListing::File::Iter posFile;
 	
 		GtkStatusbar *mainStatus, *itemsStatus, *sizeStatus, *filesStatus, *totalStatus;
 		GtkTreeView *dirView, *fileView;
