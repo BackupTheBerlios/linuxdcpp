@@ -24,6 +24,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <string>
+#include <set>
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
@@ -55,7 +56,7 @@ class Hub:
 		void getPassword_gui();
 		void addMessage_gui(std::string msg);
 		void sendMessage_gui(GtkEntry *entry, gpointer data);
-		void addPrivateMessage_gui(const User::Ptr &user, std::string msg);
+		void addPrivateMessage_gui(User::Ptr user, std::string msg);
 
 		void popupNickMenu_gui(GtkWidget *, GdkEventButton *, gpointer);
 		void browseItemClicked_gui(GtkMenuItem *, gpointer);
@@ -65,7 +66,7 @@ class Hub:
 		void connectClient_client(string address, 
 			string nick="", string desc="", string password="");
 		void setPassword_client(std::string password);
-		void updateUser_client(const User::Ptr &user);
+		void updateUser_client(User::Ptr user);
 		void sendMessage_client(std::string message);
 		void getFileList_client(std::string nick);
 
@@ -104,6 +105,9 @@ class Hub:
 		Callback2<Hub, void, GtkEntry *> enterCallback;
 		Callback3<Hub, void, GtkWidget *, GdkEventButton *> nickListCallback;
 		Callback2<Hub, void, GtkMenuItem *> browseCallback, msgCallback;
+
+		std::set<std::string> nicks;
+		pthread_mutex_t clientLock;
 
 		GtkMenu *nickMenu;
 		GtkMenuItem *browseItem, *msgItem;

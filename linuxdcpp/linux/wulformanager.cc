@@ -36,62 +36,81 @@ void *WulforManager::threadFunc_client(void *data) {
 	man->processClientQueue();
 }
 
-gboolean WulforManager::guiCallback(gpointer data) {
-	WulforManager *man = (WulforManager *)data;
-	man->callGuiFunc();
-	return FALSE;
-}
-
 void WulforManager::processGuiQueue() {
+	FuncBase *func;
+
 	while (true) {
 		sem_wait(&guiSem);
-		g_timeout_add(0, &guiCallback, (gpointer)this);		
+
+		pthread_mutex_lock(&guiCallLock);
+		pthread_mutex_lock(&guiQueueLock);
+		if (guiFuncs.size() == 0) {
+			pthread_mutex_unlock(&guiQueueLock);
+			pthread_mutex_unlock(&guiCallLock);
+			continue;
+		}
+		func = guiFuncs.front();
+		pthread_mutex_unlock(&guiQueueLock);
+		
+		gdk_threads_enter();
+		func->call();
+		gdk_threads_leave();
+
+		pthread_mutex_lock(&guiQueueLock);
+		delete guiFuncs.front();
+		guiFuncs.erase(guiFuncs.begin());
+		pthread_mutex_unlock(&guiQueueLock);
+		pthread_mutex_unlock(&guiCallLock);
 	}
 }
 
 void WulforManager::processClientQueue() {
+	FuncBase *func;
+
 	while (true) {
 		sem_wait(&clientSem);
 
-		if (clientFuncs.size() == 0) continue;
+		pthread_mutex_lock(&clientCallLock);
+		pthread_mutex_lock(&clientQueueLock);
+		if (clientFuncs.size() == 0) {
+			pthread_mutex_unlock(&clientCallLock);
+			pthread_mutex_unlock(&clientQueueLock);
+			continue;
+		}
+		func = clientFuncs.front();
+		pthread_mutex_unlock(&clientQueueLock);
 
-		pthread_mutex_lock(&clientLock);
-		clientFuncs.front()->call();
+		func->call();
+		
+		pthread_mutex_lock(&clientQueueLock);
 		delete clientFuncs.front();
 		clientFuncs.erase(clientFuncs.begin());
-		pthread_mutex_unlock(&clientLock);
+		pthread_mutex_unlock(&clientQueueLock);
+		pthread_mutex_unlock(&clientCallLock);
 	}
-}
-
-void WulforManager::callGuiFunc() {
-	if (guiFuncs.size() == 0) return;
-
-	pthread_mutex_lock(&guiLock);
-	guiFuncs.front()->call();
-	delete guiFuncs.front();
-	guiFuncs.erase(guiFuncs.begin());
-	pthread_mutex_unlock(&guiLock);
 }
 
 void WulforManager::dispatchGuiFunc(FuncBase *func) {
 	bool found = false;
 	vector<BookEntry *>::iterator it;
 
-	pthread_mutex_lock(&guiLock);
+	pthread_mutex_lock(&guiQueueLock);
 
 	//make sure we're not adding functions to deleted objects
 	if (func->comparePointer((void *)mainWin)) {
 		found = true;
 	} else {
-	for (it = bookEntrys.begin(); it != bookEntrys.end(); it++)
+		pthread_mutex_lock(&bookEntryLock);
+		for (it = bookEntrys.begin(); it != bookEntrys.end(); it++)
 		if (func->comparePointer((void *)*it)) {
 			found = true;
 			break;
 		}
+		pthread_mutex_unlock(&bookEntryLock);
 	}
 	if (found) guiFuncs.push_back(func);
 
-	pthread_mutex_unlock(&guiLock);
+	pthread_mutex_unlock(&guiQueueLock);
 	sem_post(&guiSem);
 }
 
@@ -99,21 +118,23 @@ void WulforManager::dispatchClientFunc(FuncBase *func) {
 	bool found = false;
 	vector<BookEntry *>::iterator it;
 
-	pthread_mutex_lock(&clientLock);
+	pthread_mutex_lock(&clientQueueLock);
 
 	//make sure we're not adding functions to deleted objects
 	if (func->comparePointer((void *)mainWin)) {
 		found = true;
 	} else {
+		pthread_mutex_lock(&bookEntryLock);
 		for (it = bookEntrys.begin(); it != bookEntrys.end(); it++)
 			if (func->comparePointer((void *)*it)) {
 				found = true;
 				break;
 			}
+		pthread_mutex_unlock(&bookEntryLock);
 	}
 	if (found) clientFuncs.push_back(func);
 
-	pthread_mutex_unlock(&clientLock);
+	pthread_mutex_unlock(&clientQueueLock);
 	sem_post(&clientSem);
 }
 
@@ -147,8 +168,12 @@ void WulforManager::closeEntry_callback(GtkWidget *widget, gpointer data) {
 }
 
 WulforManager::WulforManager() {
-	pthread_mutex_init(&guiLock, NULL);
-	pthread_mutex_init(&clientLock, NULL);
+	pthread_mutex_init(&guiQueueLock, NULL);
+	pthread_mutex_init(&guiCallLock, NULL);
+	pthread_mutex_init(&clientQueueLock, NULL);
+	pthread_mutex_init(&clientCallLock, NULL);
+	pthread_mutex_init(&bookEntryLock, NULL);
+
 	sem_init(&guiSem, false, 0);
 	sem_init(&clientSem, false, 0);
 	pthread_create(&clientThread, NULL, &threadFunc_client, (void *)this);
@@ -158,8 +183,12 @@ WulforManager::WulforManager() {
 }
 
 WulforManager::~WulforManager() {
-	pthread_mutex_destroy(&guiLock);
-	pthread_mutex_destroy(&clientLock);
+	pthread_mutex_destroy(&guiQueueLock);
+	pthread_mutex_destroy(&guiCallLock);
+	pthread_mutex_destroy(&clientQueueLock);
+	pthread_mutex_destroy(&clientCallLock);
+	pthread_mutex_destroy(&bookEntryLock);
+	
 	sem_destroy(&guiSem);
 	sem_destroy(&clientSem);
 }
@@ -189,8 +218,10 @@ BookEntry *WulforManager::getBookEntry_gui(int type, string id, bool raise) {
 	BookEntry *ret = NULL;
 	vector<BookEntry *>::iterator it;
 	
+	pthread_mutex_lock(&bookEntryLock);
 	for (it = bookEntrys.begin(); it != bookEntrys.end(); it++)
 		if ((*it)->isEqual(type, id)) ret = *it;
+	pthread_mutex_unlock(&bookEntryLock);
 		
 	if (ret && raise) {
 		mainWin->raisePage_gui(ret->getWidget());
@@ -203,8 +234,10 @@ BookEntry *WulforManager::getBookEntry_client(int type, string id, bool raise) {
 	BookEntry *ret = NULL;
 	vector<BookEntry *>::iterator it;
 	
+	pthread_mutex_lock(&bookEntryLock);
 	for (it = bookEntrys.begin(); it != bookEntrys.end(); it++)
 		if ((*it)->isEqual(type, id)) ret = *it;
+	pthread_mutex_unlock(&bookEntryLock);
 		
 	if (ret && raise) {
 		Func1<MainWindow, GtkWidget *> *func = new Func1<MainWindow, GtkWidget*>
@@ -218,8 +251,8 @@ BookEntry *WulforManager::getBookEntry_client(int type, string id, bool raise) {
 void WulforManager::deleteBookEntry_gui(BookEntry *entry) {
 	vector<FuncBase *>::iterator fIt;
 	
-	pthread_mutex_lock(&clientLock);
-	pthread_mutex_lock(&guiLock);
+	pthread_mutex_lock(&clientCallLock);
+	pthread_mutex_lock(&guiCallLock);
 
 	//erase any pending calls to this bookentry
 	fIt = clientFuncs.begin();
@@ -244,6 +277,7 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry) {
 	mainWin->removePage_gui(entry->getWidget());
 	
 	//remove the bookentry from the list
+	pthread_mutex_lock(&bookEntryLock);
 	vector<BookEntry *>::iterator bIt;
 	for (bIt = bookEntrys.begin(); bIt != bookEntrys.end(); bIt++)
 		if ((*bIt)->isEqual(entry)) {
@@ -251,9 +285,10 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry) {
 			bookEntrys.erase(bIt);
 			break;
 		}
+	pthread_mutex_unlock(&bookEntryLock);
 
-	pthread_mutex_unlock(&guiLock);
-	pthread_mutex_unlock(&clientLock);
+	pthread_mutex_unlock(&guiCallLock);
+	pthread_mutex_unlock(&clientCallLock);
 }
 
 PublicHubs *WulforManager::addPublicHubs_gui() {

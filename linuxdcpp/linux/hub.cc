@@ -68,6 +68,7 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	gtk_menu_shell_append(GTK_MENU_SHELL(nickMenu), GTK_WIDGET(browseItem));
 	gtk_menu_shell_append(GTK_MENU_SHELL(nickMenu), GTK_WIDGET(msgItem));
 
+	pthread_mutex_init(&clientLock, NULL);
 	client = NULL;
 
 	enterCallback.connect(G_OBJECT(chatEntry), "activate", NULL);
@@ -81,6 +82,7 @@ Hub::~Hub() {
 		client->removeListener(this);
 		ClientManager::getInstance()->putClient(client);
 	}
+	pthread_mutex_destroy(&clientLock);
 }
 
 GtkWidget *Hub::getWidget() {
@@ -88,6 +90,7 @@ GtkWidget *Hub::getWidget() {
 }
 
 void Hub::connectClient_client(string address, string nick, string desc, string password) {
+	pthread_mutex_lock(&clientLock);
 	client = ClientManager::getInstance()->getClient(address);
 
 	if (nick.empty()) client->setNick(SETTING(NICK));
@@ -97,9 +100,10 @@ void Hub::connectClient_client(string address, string nick, string desc, string 
 	client->addListener(this);
 	client->setPassword(password);
 	client->connect();
+	pthread_mutex_unlock(&clientLock);
 }
 
-void Hub::updateUser_client(const User::Ptr &user) {
+void Hub::updateUser_client(User::Ptr user) {
 	typedef Func3<Hub, string, int64_t, string> F3;
 	F3 * func;
 	string nick = user->getNick();
@@ -122,6 +126,11 @@ void Hub::setStatus_gui(GtkStatusbar *status, std::string text) {
 }
 
 void Hub::findUser_gui(string nick, GtkTreeIter *iter) {
+	if (nicks.find(nick) == nicks.end()) {
+		iter = NULL;
+		return;
+	}
+
 	gtk_tree_model_get_iter_first(GTK_TREE_MODEL(nickStore), iter);
 	
 	while (gtk_list_store_iter_is_valid(nickStore, iter)) {
@@ -141,6 +150,7 @@ void Hub::updateUser_gui(string nick, int64_t shared, string iconFile) {
 	findUser_gui(nick, &iter);
 	if (!gtk_list_store_iter_is_valid(nickStore, &iter)) {
 		gtk_list_store_append(nickStore, &iter);
+		nicks.insert(nick);
 	}
 
 	icon = gdk_pixbuf_new_from_file(iconFile.c_str(), NULL);
@@ -150,10 +160,14 @@ void Hub::updateUser_gui(string nick, int64_t shared, string iconFile) {
 		COLUMN_SHARED, 	Util::formatBytes(shared).c_str(),
 		-1);
 	g_object_unref(G_OBJECT(icon));
-
-	userStream << client->getUserCount() << " User(s)";
-	setStatus_gui(usersStatus, userStream.str());
-	setStatus_gui(sharedStatus, Util::formatBytes(client->getAvailable()));
+	
+	pthread_mutex_lock(&clientLock);
+	if (client) {
+		userStream << client->getUserCount() << " User(s)";
+		setStatus_gui(usersStatus, userStream.str());
+		setStatus_gui(sharedStatus, Util::formatBytes(client->getAvailable()));
+	}
+	pthread_mutex_unlock(&clientLock);
 }
 
 void Hub::removeUser_gui(string nick) {
@@ -162,11 +176,13 @@ void Hub::removeUser_gui(string nick) {
 	findUser_gui(nick, &iter);
 	if (gtk_list_store_iter_is_valid(nickStore, &iter)) {
 		gtk_list_store_remove(nickStore, &iter);
+		nicks.erase(nick);
 	}
 }
 
 void Hub::clearNickList_gui() {
 	gtk_list_store_clear(nickStore);
+	nicks.clear();
 }
 
 void Hub::getPassword_gui() {
@@ -201,7 +217,7 @@ void Hub::addMessage_gui(string msg) {
 	gtk_text_buffer_insert(chatBuffer, &iter, text.c_str(), text.size());
 }
 
-void Hub::addPrivateMessage_gui(const User::Ptr &user, std::string msg) {
+void Hub::addPrivateMessage_gui(User::Ptr user, std::string msg) {
 	::PrivateMessage *privMsg = 
 		WulforManager::get()->getPrivMsg_gui(user);
 		
@@ -254,12 +270,24 @@ void Hub::msgItemClicked_gui(GtkMenuItem *, gpointer) {
 		COLUMN_NICK, &text,
 		-1);
 
-	User::Ptr user = ClientManager::getInstance()->getUser(text, client);
-	WulforManager::get()->addPrivMsg_gui(user);
+	pthread_mutex_lock(&clientLock);
+	if (client) {
+		User::Ptr user = ClientManager::getInstance()->getUser(text, client);
+		WulforManager::get()->addPrivMsg_gui(user);
+	}
+	pthread_mutex_unlock(&clientLock);
 }
 
 void Hub::getFileList_client(string nick) {
-	User::Ptr user = ClientManager::getInstance()->getUser(nick, client);
+	User::Ptr user = NULL;
+
+	pthread_mutex_lock(&clientLock);
+	if (client) {
+		user = ClientManager::getInstance()->getUser(nick, client);
+	}
+	pthread_mutex_unlock(&clientLock);
+
+	if (!user) return;
 
 	try	{
 		QueueManager::getInstance()->addList(user, QueueItem::FLAG_CLIENT_VIEW);
@@ -272,11 +300,19 @@ void Hub::getFileList_client(string nick) {
 }
 
 void Hub::sendMessage_client(string message) {
-	if (client)	client->getMe()->clientMessage(message);
+	pthread_mutex_lock(&clientLock);
+	if (client) {
+		client->getMe()->clientMessage(message);
+	}
+	pthread_mutex_unlock(&clientLock);
 }
 
 void Hub::setPassword_client(string password) {
-	client->setPassword(password);
+	pthread_mutex_lock(&clientLock);
+	if (client) {
+		client->setPassword(password);
+	}
+	pthread_mutex_unlock(&clientLock);
 }
 
 void Hub::on(ClientListener::Connecting, Client *client) throw() {
@@ -297,11 +333,14 @@ void Hub::on(ClientListener::Connected, Client *client) throw() {
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
-void Hub::on(ClientListener::BadPassword, Client *client) throw() {
+void Hub::on(ClientListener::BadPassword, Client *cl) throw() {
 	Func2<Hub, GtkStatusbar*, string> *func = new Func2<Hub, GtkStatusbar*, string>
 		(this, &Hub::setStatus_gui, mainStatus, "Sorry, wrong password");
 	WulforManager::get()->dispatchGuiFunc(func);
+
+	pthread_mutex_lock(&clientLock);
 	client->setPassword("");
+	pthread_mutex_unlock(&clientLock);
 }
 
 void Hub::on(ClientListener::UserUpdated, Client *client, 
@@ -324,7 +363,7 @@ void Hub::on(ClientListener::UsersUpdated,
 }
 
 void Hub::on(ClientListener::UserRemoved, 
-	Client *client, const User::Ptr &user) throw()
+	Client *cl, const User::Ptr &user) throw()
 {
 	::PrivateMessage *privMsg = 
 		WulforManager::get()->getPrivMsg_client(user);
@@ -340,6 +379,7 @@ void Hub::on(ClientListener::UserRemoved,
 	F1 *remove = new F1(this, &Hub::removeUser_gui, user->getNick());
 	WulforManager::get()->dispatchGuiFunc(remove);
 
+	pthread_mutex_lock(&clientLock);
 	ostringstream userStream;
 	typedef Func2<Hub, GtkStatusbar*, string> F2;
 	F2 *status;
@@ -349,10 +389,11 @@ void Hub::on(ClientListener::UserRemoved,
 	WulforManager::get()->dispatchGuiFunc(status);
 	status = new F2(this, &Hub::setStatus_gui, sharedStatus, Util::formatBytes(client->getAvailable()));
 	WulforManager::get()->dispatchGuiFunc(status);
+	pthread_mutex_unlock(&clientLock);
 }
 
 void Hub::on(ClientListener::Redirect, 
-	Client *client, const string &address) throw()
+	Client *cl, const string &address) throw()
 {
 	if (!address.empty()) {
 		string s, f;
@@ -366,6 +407,7 @@ void Hub::on(ClientListener::Redirect,
 		}
 		
 		// the client is dead, long live the client!
+		pthread_mutex_lock(&clientLock);
 		client->removeListener(this);
 		ClientManager::getInstance()->putClient(client);
 		Func0<Hub> *func = new Func0<Hub>(this, &Hub::clearNickList_gui);
@@ -373,7 +415,8 @@ void Hub::on(ClientListener::Redirect,
 		client = ClientManager::getInstance()->getClient(Text::fromT(address));
 		client->addListener(this);
 		client->connect();
-		
+		pthread_mutex_unlock(&clientLock);
+
 		//for bookentry, when WulforManager searches for pages
 		id = address;
 	}
@@ -388,7 +431,7 @@ void Hub::on(ClientListener::Failed,
 }
 
 void Hub::on(ClientListener::GetPassword, Client *client) throw() {
-	if (!client->getPassword().empty ()) {
+	if (!client->getPassword().empty()) {
 		client->password(client->getPassword());
 	} else {
 		Func0<Hub> *func = new Func0<Hub>(this, &Hub::getPassword_gui);
@@ -413,7 +456,7 @@ void Hub::on(ClientListener::Message,
 void Hub::on(ClientListener::PrivateMessage, 
 	Client *client, const User::Ptr &user, const string &msg) throw()
 {
-	typedef Func2<Hub, const User::Ptr&, string> F2;
+	typedef Func2<Hub, User::Ptr, string> F2;
 	F2 *func = new F2(this, &Hub::addPrivateMessage_gui, user, msg);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
@@ -430,9 +473,12 @@ void Hub::on(ClientListener::HubFull, Client *client) throw() {
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
-void Hub::on(ClientListener::NickTaken, Client *client) throw() {
+void Hub::on(ClientListener::NickTaken, Client *cl) throw() {
+	pthread_mutex_lock(&clientLock);
 	client->removeListener(this);
 	client->disconnect();
+	client = NULL;
+	pthread_mutex_unlock(&clientLock);
 
 	typedef Func2<Hub, GtkStatusbar*, string> F2;
 	F2 *func = new F2(this, &Hub::setStatus_gui, mainStatus, "Nick alredy taken");

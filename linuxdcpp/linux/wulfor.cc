@@ -50,7 +50,9 @@ int main(int argc, char *argv[]) {
 
 	WulforManager::start();
 	WulforManager::get()->createMainWindow();
+	gdk_threads_enter();
 	gtk_main();
+	gdk_threads_leave();
 	WulforManager::stop();
 
 	cout << "Shutting down..." << endl;

@@ -276,6 +276,7 @@ void ShareBrowser::menuClicked_gui(GtkMenuItem *item, gpointer) {
 	DirectoryListing::File *file;
 	DirectoryListing::Directory *dir;
 	GtkTreeIter iter;
+	int ret;
 
 	if (item == dlFileTo || item == dlDirTo || item == dlDirToDir) {
 		GtkWidget *chooser = gtk_file_chooser_dialog_new(
@@ -286,11 +287,10 @@ void ShareBrowser::menuClicked_gui(GtkMenuItem *item, gpointer) {
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			NULL);
 
-			if (gtk_dialog_run(GTK_DIALOG(chooser)) == GTK_RESPONSE_OK) {
-				target = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(chooser));
-			} else {
-				return;
-			}
+		ret = gtk_dialog_run(GTK_DIALOG(chooser));
+		target = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(chooser));
+		gtk_widget_destroy(GTK_WIDGET(chooser));
+		if (ret == GTK_RESPONSE_CANCEL) return;
 	} else {
 		target = Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY));
 	}
