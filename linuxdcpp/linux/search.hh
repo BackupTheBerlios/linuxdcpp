@@ -110,8 +110,8 @@ private:
 	static void onAddFavoriteUserClicked_gui (GtkMenuItem *item, gpointer user_data);
 	static void onGrantExtraSlotClicked_gui (GtkMenuItem *item, gpointer user_data);
 	static void onRemoveUserFromQueueClicked_gui (GtkMenuItem *item, gpointer user_data);
+	static void onRemoveClicked_gui (GtkMenuItem *item, gpointer user_data);
 	static gboolean onButtonPressed_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
-	static gboolean onButtonReleased_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
   	static gboolean onPopupMenu_gui (GtkWidget *widget, gpointer user_data);
 	void popup_menu_gui (GdkEventButton *event, gpointer user_data);
 	

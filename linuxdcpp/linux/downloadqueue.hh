@@ -101,7 +101,6 @@ private:
 	static gboolean dir_onButtonReleased_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
   	static gboolean dir_onPopupMenu_gui (GtkWidget *widget, gpointer user_data);
 	static gboolean file_onButtonPressed_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
-	static gboolean file_onButtonReleased_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
   	static gboolean file_onPopupMenu_gui (GtkWidget *widget, gpointer user_data);
 	void dir_popup_menu_gui (GdkEventButton *event, gpointer user_data);
 	void file_popup_menu_gui (GdkEventButton *event, gpointer user_data);
@@ -168,7 +167,7 @@ private:
 	int queueItems;
 	string showingDir;
 	CriticalSection cs;
-	GdkEventType filePrevious, dirPrevious;
+	GdkEventType dirPrevious;
 	static string getTextFromMenu (GtkMenuItem *item);
 	
 	void contentUpdated ();

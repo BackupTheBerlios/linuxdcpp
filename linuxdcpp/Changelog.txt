@@ -1,3 +1,7 @@
+2005-02-23 - phase
+* Added multiple selections to Download Queue and Search.
+* Fixed a separator related bug.
+
 2005-02-22 - phase
 * Added Streams.h and MerkleCheckOutputStream.h from DC++-cvs, because those
 were missing.

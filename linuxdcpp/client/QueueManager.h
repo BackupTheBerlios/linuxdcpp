@@ -87,7 +87,7 @@ public:
 		string::size_type i = 0;
 		while((i = x.find('\\'), i) != string::npos)
 			x[i] = '_';
-		string file = Util::getAppPath() + "FileLists\\" + x;
+		string file = Util::getAppPath() + "FileLists/" + x;
 		// We use the searchString to store the start viewing directory for file lists
 		add(USER_LIST_NAME, -1, aUser, file, NULL, 
 			QueueItem::FLAG_USER_LIST | aFlags,  QueueItem::DEFAULT, 
@@ -244,6 +244,6 @@ private:
 
 /**
  * @file
- * $Id: QueueManager.h,v 1.3 2005/02/20 22:32:47 paskharen Exp $
+ * $Id: QueueManager.h,v 1.4 2005/02/23 23:04:17 phase Exp $
  */
 

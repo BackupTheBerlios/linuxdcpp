@@ -154,19 +154,58 @@ void DownloadQueue::buildStaticMenu_gui ()
 void DownloadQueue::buildDynamicMenu_gui ()
 {
 	GtkTreeSelection *selection;
-	GtkTreeIter iter;
 	GtkTreeModel *m = GTK_TREE_MODEL (fileStore);
 	selection = gtk_tree_view_get_selection(fileView->get ());
 
-	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
-		return;	
-
-	QueueItemInfo *i = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO);
-
-	if (i->getTTH ())
-		gtk_widget_set_sensitive (fileItems["Search by TTH"], true);
+	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
+	GList *tmp = g_list_first (list);
+	vector<GtkTreeIter> iter;
+	vector<string> names;
+	GtkTreeIter tmpiter;
+	int count=0;
+	
+	if (!tmp)
+		return;
+	
+	while (1)
+	{
+		if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
+		{
+			iter.push_back (tmpiter);
+			count++;	
+		}
+		
+		tmp = g_list_next (tmp);
+		if (!tmp)
+			break;
+	}
+	
+	if (count == 1)
+	{
+		QueueItemInfo *i = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter[0], COLUMN_INFO);
+		if (i->getTTH ())
+			gtk_widget_set_sensitive (fileItems["Search by TTH"], true);
+		else
+			gtk_widget_set_sensitive (fileItems["Search by TTH"], false);
+			
+		gtk_widget_set_sensitive (fileItems["Search for alternates"], true);
+		gtk_widget_set_sensitive (fileItems["Get file list"], true);
+		gtk_widget_set_sensitive (fileItems["Send private message"], true);
+		gtk_widget_set_sensitive (fileItems["Re-add source"], true);
+		gtk_widget_set_sensitive (fileItems["Remove source"], true);
+		gtk_widget_set_sensitive (fileItems["Remove user from queue"], true);		
+	}
 	else
+	{
 		gtk_widget_set_sensitive (fileItems["Search by TTH"], false);
+		gtk_widget_set_sensitive (fileItems["Search for alternates"], false);
+
+		gtk_widget_set_sensitive (fileItems["Get file list"], false);
+		gtk_widget_set_sensitive (fileItems["Send private message"], false);
+		gtk_widget_set_sensitive (fileItems["Re-add source"], false);
+		gtk_widget_set_sensitive (fileItems["Remove source"], false);
+		gtk_widget_set_sensitive (fileItems["Remove user from queue"], false);
+	}
 	
 	for (vector<GtkWidget*>::iterator it=browseItems.begin (); it != browseItems.end (); it++)
 		gtk_container_remove (GTK_CONTAINER (browseMenu), *it);
@@ -177,33 +216,53 @@ void DownloadQueue::buildDynamicMenu_gui ()
 	for (vector<GtkWidget*>::iterator it=removeItems.begin (); it != removeItems.end (); it++)
 		gtk_container_remove (GTK_CONTAINER (removeMenu), *it);
 	for (vector<GtkWidget*>::iterator it=removeallItems.begin (); it != removeallItems.end (); it++)
-		gtk_container_remove (GTK_CONTAINER (removeallMenu), *it);
+		gtk_container_remove (GTK_CONTAINER (removeallMenu), *it);	
+
 	browseItems.clear ();
 	pmItems.clear ();
 	readdItems.clear ();
 	removeItems.clear ();
-	removeallItems.clear ();
-	for (QueueItemInfo::SourceIter it=i->getSources ().begin (); it != i->getSources ().end (); it++)
+	removeallItems.clear ();			
+	
+	for (int i=0;i<iter.size (); i++)
+	{	
+		QueueItemInfo *ii = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter[i], COLUMN_INFO);
+		for (QueueItemInfo::SourceIter it=ii->getSources ().begin (); it != ii->getSources ().end (); it++)
+		{
+			bool found=false;
+			for (int j=0;j<names.size ();j++)
+			{
+				if (names[j] == it->getUser ()->getFullNick ())
+				{
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+				names.push_back (it->getUser ()->getFullNick ());
+		}
+	}
+	for (int i=0;i<names.size ();i++)
 	{
-		browseItems.push_back (gtk_menu_item_new_with_label (string (it->getUser()->getFullNick()).c_str ()));
+		browseItems.push_back (gtk_menu_item_new_with_label (names[i].c_str ()));
 		gtk_menu_shell_append (GTK_MENU_SHELL (browseMenu), browseItems.back ());
 		g_signal_connect (G_OBJECT (browseItems.back ()), "activate", G_CALLBACK (onGetFileListClicked_gui), (gpointer)this);
 
-		pmItems.push_back (gtk_menu_item_new_with_label (string (it->getUser()->getFullNick()).c_str ()));
+		pmItems.push_back (gtk_menu_item_new_with_label (names[i].c_str ()));
 		gtk_menu_shell_append (GTK_MENU_SHELL (pmMenu), pmItems.back ());
 		g_signal_connect (G_OBJECT (pmItems.back ()), "activate", G_CALLBACK (onSendPrivateMessageClicked_gui), (gpointer)this);
 
-		readdItems.push_back (gtk_menu_item_new_with_label (string (it->getUser()->getFullNick()).c_str ()));
+		readdItems.push_back (gtk_menu_item_new_with_label (names[i].c_str ()));
 		gtk_menu_shell_append (GTK_MENU_SHELL (readdMenu), readdItems.back ());
 		g_signal_connect (G_OBJECT (readdItems.back ()), "activate", G_CALLBACK (onReAddSourceClicked_gui), (gpointer)this);
 
-		removeItems.push_back (gtk_menu_item_new_with_label (string (it->getUser()->getFullNick()).c_str ()));
+		removeItems.push_back (gtk_menu_item_new_with_label (names[i].c_str ()));
 		gtk_menu_shell_append (GTK_MENU_SHELL (removeMenu), removeItems.back ());
 		g_signal_connect (G_OBJECT (removeItems.back ()), "activate", G_CALLBACK (onRemoveSourceClicked_gui), (gpointer)this);
 
-		removeallItems.push_back (gtk_menu_item_new_with_label (string (it->getUser()->getFullNick()).c_str ()));
+		removeallItems.push_back (gtk_menu_item_new_with_label (names[i].c_str ()));
 		gtk_menu_shell_append (GTK_MENU_SHELL (removeallMenu), removeallItems.back ());
-	    	g_signal_connect (G_OBJECT (removeallItems.back ()), "activate", G_CALLBACK (onRemoveUserFromQueueClicked_gui), (gpointer)this);
+		g_signal_connect (G_OBJECT (removeallItems.back ()), "activate", G_CALLBACK (onRemoveUserFromQueueClicked_gui), (gpointer)this);
 	}
 	gtk_widget_show_all (GTK_WIDGET (browseMenu));
 	gtk_widget_show_all (GTK_WIDGET (pmMenu));
@@ -232,11 +291,12 @@ void DownloadQueue::setDirPriorityClicked_gui (GtkMenuItem *item, gpointer user_
 	GtkTreeView *v = q->dirView->get ();
 	GtkTreeModel *m = gtk_tree_view_get_model (v);
 	GtkTreeSelection *selection;
-	GtkTreeIter iter;
 	selection = gtk_tree_view_get_selection (v);
-
+	GtkTreeIter iter;
+	
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
+
 	if (item == GTK_MENU_ITEM (q->dirItems["Paused"]))
 		q->setDirPriority_gui (TreeViewFactory::getValue<gchar*,string>(m, &iter, DIRCOLUMN_REALPATH), QueueItem::PAUSED);
 	else if (item == GTK_MENU_ITEM (q->dirItems["Lowest"]))
@@ -257,24 +317,40 @@ void DownloadQueue::setFilePriorityClicked_gui (GtkMenuItem *item, gpointer user
 	GtkTreeView *v = q->fileView->get ();
 	GtkTreeModel *m = gtk_tree_view_get_model (v);
 	GtkTreeSelection *selection;
-	GtkTreeIter iter;
 	selection = gtk_tree_view_get_selection (v);
+	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
+	GList *tmp = g_list_first (list);
+	vector<GtkTreeIter> iter;
+	GtkTreeIter tmpiter;
 	
-	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
+	if (!tmp)
 		return;
+	
+	while (1)
+	{
+		if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
+			iter.push_back (tmpiter);
+		
+		tmp = g_list_next (tmp);
+		if (!tmp)
+			break;
+	}
 
-	if (item == GTK_MENU_ITEM (q->fileItems["Paused"]))
-		q->setPriority_client (TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO)->getTarget (), QueueItem::PAUSED);
-	else if (item == GTK_MENU_ITEM (q->fileItems["Lowest"]))
-		q->setPriority_client (TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO)->getTarget (), QueueItem::LOWEST);
-	else if (item == GTK_MENU_ITEM (q->fileItems["Low"]))
-		q->setPriority_client (TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO)->getTarget (), QueueItem::LOW);
-	else if (item == GTK_MENU_ITEM (q->fileItems["Normal"]))
-		q->setPriority_client (TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO)->getTarget (), QueueItem::NORMAL);
-	else if (item == GTK_MENU_ITEM (q->fileItems["High"]))
-		q->setPriority_client (TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO)->getTarget (), QueueItem::HIGH);
-	else if (item == GTK_MENU_ITEM (q->fileItems["Highest"]))
-		q->setPriority_client (TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO)->getTarget (), QueueItem::HIGHEST);
+	for (int i=0;i<iter.size (); i++)
+	{
+		if (item == GTK_MENU_ITEM (q->fileItems["Paused"]))
+			q->setPriority_client (TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter[i], COLUMN_INFO)->getTarget (), QueueItem::PAUSED);
+		else if (item == GTK_MENU_ITEM (q->fileItems["Lowest"]))
+			q->setPriority_client (TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter[i], COLUMN_INFO)->getTarget (), QueueItem::LOWEST);
+		else if (item == GTK_MENU_ITEM (q->fileItems["Low"]))
+			q->setPriority_client (TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter[i], COLUMN_INFO)->getTarget (), QueueItem::LOW);
+		else if (item == GTK_MENU_ITEM (q->fileItems["Normal"]))
+			q->setPriority_client (TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter[i], COLUMN_INFO)->getTarget (), QueueItem::NORMAL);
+		else if (item == GTK_MENU_ITEM (q->fileItems["High"]))
+			q->setPriority_client (TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter[i], COLUMN_INFO)->getTarget (), QueueItem::HIGH);
+		else if (item == GTK_MENU_ITEM (q->fileItems["Highest"]))
+			q->setPriority_client (TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter[i], COLUMN_INFO)->getTarget (), QueueItem::HIGHEST);
+	}
 }
 
 void DownloadQueue::remove_client (string path)
@@ -301,14 +377,28 @@ void DownloadQueue::removeDirClicked_gui (GtkMenuItem *menuitem, gpointer user_d
 void DownloadQueue::removeFileClicked_gui (GtkMenuItem *menuitem, gpointer user_data)
 {
 	GtkTreeSelection *selection;
-	GtkTreeIter iter;
 	GtkTreeModel *m = GTK_TREE_MODEL (((DownloadQueue*)user_data)->fileStore);
 	selection = gtk_tree_view_get_selection(((DownloadQueue*)user_data)->fileView->get ());
+	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
+	GList *tmp = g_list_first (list);
+	vector<GtkTreeIter> iter;
+	GtkTreeIter tmpiter;
+	
+	if (!tmp)
+		return;
+	
+	while (1)
+	{
+		if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
+			iter.push_back (tmpiter);
+		
+		tmp = g_list_next (tmp);
+		if (!tmp)
+			break;
+	}
 
-	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
-		return;	
-
-	 ((DownloadQueue*)user_data)->remove_client((TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO))->getTarget ());
+	for (int i=0;i<iter.size ();i++)
+		((DownloadQueue*)user_data)->remove_client((TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter[i], COLUMN_INFO))->getTarget ());
 }
 DownloadQueue::DownloadQueue(GCallback closeCallback):
 	BookEntry(WulforManager::DOWNLOAD_QUEUE, "", "Download Queue", closeCallback)
@@ -347,9 +437,8 @@ DownloadQueue::DownloadQueue(GCallback closeCallback):
 						G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_INT64, G_TYPE_INT64);
 	gtk_tree_view_set_model(tfile, GTK_TREE_MODEL(fileStore));
     	g_signal_connect(G_OBJECT (tfile), "button_press_event", G_CALLBACK(file_onButtonPressed_gui), (gpointer)this);
-    	g_signal_connect(G_OBJECT (tfile), "button_release_event", G_CALLBACK(file_onButtonReleased_gui), (gpointer)this);
     	g_signal_connect(G_OBJECT (tfile), "popup_menu", G_CALLBACK(file_onPopupMenu_gui), (gpointer)this);
-   	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(tfile), GTK_SELECTION_SINGLE);
+   	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(tfile), GTK_SELECTION_MULTIPLE);
 	fileView = new TreeViewFactory (tfile);
 	fileView->addColumn_gui(COLUMN_TARGET, "Filename", TreeViewFactory::STRING, columnSize[COLUMN_TARGET]);
 	fileView->addColumn_gui(COLUMN_STATUS, "Status", TreeViewFactory::STRING, columnSize[COLUMN_STATUS]);
@@ -387,13 +476,19 @@ void DownloadQueue::onSearchAlternatesClicked_gui (GtkMenuItem *item, gpointer u
 	GtkTreeView *v = q->fileView->get ();
 	GtkTreeModel *m = gtk_tree_view_get_model (v);
 	GtkTreeSelection *selection;
-	GtkTreeIter iter;
 	selection = gtk_tree_view_get_selection (v);
+	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
+	GList *tmp = g_list_first (list);
+	vector<GtkTreeIter> iter;
+	GtkTreeIter tmpiter;
 	
-	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
+	if (!tmp)
 		return;
-	QueueItemInfo *ii = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO);
-	string target = TreeViewFactory::getValue<gchar*,string>(m, &iter, COLUMN_TARGET);
+	if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
+		iter.push_back (tmpiter);
+	
+	QueueItemInfo *ii = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter[0], COLUMN_INFO);
+	string target = TreeViewFactory::getValue<gchar*,string>(m, &iter[0], COLUMN_TARGET);
 	string searchString = SearchManager::clean(target);
 		
 	if(!searchString.empty()) 
@@ -413,12 +508,18 @@ void DownloadQueue::onSearchByTTHClicked_gui (GtkMenuItem *item, gpointer user_d
 	GtkTreeView *v = q->fileView->get ();
 	GtkTreeModel *m = gtk_tree_view_get_model (v);
 	GtkTreeSelection *selection;
-	GtkTreeIter iter;
 	selection = gtk_tree_view_get_selection (v);
+	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
+	GList *tmp = g_list_first (list);
+	vector<GtkTreeIter> iter;
+	GtkTreeIter tmpiter;
 	
-	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
+	if (!tmp)
 		return;
-	QueueItemInfo *ii = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO);
+	if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
+		iter.push_back (tmpiter);
+		
+	QueueItemInfo *ii = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter[0], COLUMN_INFO);
 		
 	Search *s = WulforManager::get ()->addSearch_gui ();
 	s->putValue (ii->getTTH ()->toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
@@ -429,14 +530,25 @@ void DownloadQueue::onGetFileListClicked_gui (GtkMenuItem *item, gpointer user_d
 	GtkTreeView *v = q->fileView->get ();
 	GtkTreeModel *m = gtk_tree_view_get_model (v);
 	GtkTreeSelection *selection;
-	GtkTreeIter iter;
 	selection = gtk_tree_view_get_selection (v);
+	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
+	GList *tmp = g_list_first (list);
+	GtkTreeIter iter;
+	string name = getTextFromMenu (item);
 	
-	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
+	if (!tmp)
 		return;
-	QueueItemInfo *ii = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO);	
 	
-	ii->getUserList (getTextFromMenu (item));
+	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
+		return;
+		
+	QueueItemInfo *ii = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO);	
+	for (QueueItemInfo::SourceIter it=ii->getSources ().begin (); it != ii->getSources ().end (); it++)
+		if (it->getUser ()->getFullNick () == name)
+		{
+			ii->getUserList (name);
+			break;
+		}
 }
 void DownloadQueue::onSendPrivateMessageClicked_gui (GtkMenuItem *item, gpointer user_data)
 {
@@ -444,14 +556,25 @@ void DownloadQueue::onSendPrivateMessageClicked_gui (GtkMenuItem *item, gpointer
 	GtkTreeView *v = q->fileView->get ();
 	GtkTreeModel *m = gtk_tree_view_get_model (v);
 	GtkTreeSelection *selection;
-	GtkTreeIter iter;
 	selection = gtk_tree_view_get_selection (v);
+	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
+	GList *tmp = g_list_first (list);
+	GtkTreeIter iter;
+	string name = getTextFromMenu (item);
 	
-	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
+	if (!tmp)
 		return;
-	QueueItemInfo *ii = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO);	
 	
-	ii->sendPrivateMessage (getTextFromMenu (item));
+	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
+		return;
+		
+	QueueItemInfo *ii = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO);	
+	for (QueueItemInfo::SourceIter it=ii->getSources ().begin (); it != ii->getSources ().end (); it++)
+		if (it->getUser ()->getFullNick () == name)
+		{
+			ii->sendPrivateMessage (name);
+			break;
+		}
 }
 void DownloadQueue::onReAddSourceClicked_gui (GtkMenuItem *item, gpointer user_data)
 {
@@ -459,14 +582,25 @@ void DownloadQueue::onReAddSourceClicked_gui (GtkMenuItem *item, gpointer user_d
 	GtkTreeView *v = q->fileView->get ();
 	GtkTreeModel *m = gtk_tree_view_get_model (v);
 	GtkTreeSelection *selection;
-	GtkTreeIter iter;
 	selection = gtk_tree_view_get_selection (v);
+	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
+	GList *tmp = g_list_first (list);
+	GtkTreeIter iter;
+	string name = getTextFromMenu (item);
 	
-	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
+	if (!tmp)
 		return;
-	QueueItemInfo *ii = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO);	
 	
-	ii->reAddSource (getTextFromMenu (item), q);
+	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
+		return;
+		
+	QueueItemInfo *ii = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO);	
+	for (QueueItemInfo::SourceIter it=ii->getSources ().begin (); it != ii->getSources ().end (); it++)
+		if (it->getUser ()->getFullNick () == name)
+		{
+			ii->reAddSource (name, q);
+			break;
+		}
 }
 void DownloadQueue::onRemoveSourceClicked_gui (GtkMenuItem *item, gpointer user_data)
 {
@@ -474,14 +608,25 @@ void DownloadQueue::onRemoveSourceClicked_gui (GtkMenuItem *item, gpointer user_
 	GtkTreeView *v = q->fileView->get ();
 	GtkTreeModel *m = gtk_tree_view_get_model (v);
 	GtkTreeSelection *selection;
-	GtkTreeIter iter;
 	selection = gtk_tree_view_get_selection (v);
+	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
+	GList *tmp = g_list_first (list);
+	GtkTreeIter iter;
+	string name = getTextFromMenu (item);
 	
-	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
+	if (!tmp)
 		return;
-	QueueItemInfo *ii = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO);	
 	
-	ii->removeSource (getTextFromMenu (item));
+	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
+		return;
+
+	QueueItemInfo *ii = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO);	
+	for (QueueItemInfo::SourceIter it=ii->getSources ().begin (); it != ii->getSources ().end (); it++)
+		if (it->getUser ()->getFullNick () == name)
+		{
+			ii->removeSource (name);
+			break;
+		}
 }
 void DownloadQueue::onRemoveUserFromQueueClicked_gui (GtkMenuItem *item, gpointer user_data)
 {
@@ -489,14 +634,25 @@ void DownloadQueue::onRemoveUserFromQueueClicked_gui (GtkMenuItem *item, gpointe
 	GtkTreeView *v = q->fileView->get ();
 	GtkTreeModel *m = gtk_tree_view_get_model (v);
 	GtkTreeSelection *selection;
-	GtkTreeIter iter;
 	selection = gtk_tree_view_get_selection (v);
+	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
+	GList *tmp = g_list_first (list);
+	GtkTreeIter iter;
+	string name = getTextFromMenu (item);
 	
-	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
+	if (!tmp)
 		return;
-	QueueItemInfo *ii = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO);	
 	
-	ii->removeSources (getTextFromMenu (item));
+	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
+		return;
+			
+	QueueItemInfo *ii = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter, COLUMN_INFO);	
+		for (QueueItemInfo::SourceIter it=ii->getSources ().begin (); it != ii->getSources ().end (); it++)
+		if (it->getUser ()->getFullNick () == name)
+		{
+			ii->removeSources (name);
+			break;
+		}
 }
 
 gboolean DownloadQueue::dir_onButtonPressed_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
@@ -541,27 +697,22 @@ void DownloadQueue::dir_popup_menu_gui (GdkEventButton *event, gpointer user_dat
 
 gboolean DownloadQueue::file_onButtonPressed_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
 {
-	((DownloadQueue*)user_data)->filePrevious = event->type;
-	return FALSE;
-}
-gboolean DownloadQueue::file_onButtonReleased_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
-{
-	if (((DownloadQueue*)user_data)->filePrevious == GDK_BUTTON_PRESS)
+	if (event->type == GDK_BUTTON_PRESS)
     	{
 		if (event->button == 3)
 		{
         		GtkTreeSelection *selection;
 
         		selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
-		        if (gtk_tree_selection_count_selected_rows(selection)  == 1)
+		        if (gtk_tree_selection_count_selected_rows(selection)  > 0)
 	  		{
 				((DownloadQueue*)user_data)->buildDynamicMenu_gui ();
 				((DownloadQueue*)user_data)->file_popup_menu_gui(event, user_data);			
+				return TRUE;
 			}
 		}
 	}
-
-	return FALSE;
+	return FALSE;	
 }
 gboolean DownloadQueue::file_onPopupMenu_gui (GtkWidget *widget, gpointer user_data)
 {
