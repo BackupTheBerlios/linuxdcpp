@@ -1,3 +1,7 @@
+2004-10-14 21:17 paskharen
+
+	* linux/hub.cc: Changed the password entry to hidden.
+	
 2004-10-14 20:45 phase
 
 	* linux/transfer.hh/cc, linux/hub.hh/cc, linux/publichubs.hh/cc: Added resizeable columns. Joining large hubs is MUCH faster.
