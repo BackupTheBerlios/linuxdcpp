@@ -256,7 +256,7 @@ void Hub::on(ClientListener::Failed,
 }
 
 void Hub::on(ClientListener::GetPassword, Client *client) throw() {
-	if (client->getPassword () > 0)
+	if (!client->getPassword ().empty ())
 		client->password (client->getPassword());
 	else
 	{
