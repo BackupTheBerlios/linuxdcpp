@@ -272,6 +272,7 @@ void MainWindow::settingsClicked() {
 	SettingsDialog d(this);
 	if (d.run() == SettingsDialog::OK) {
 		d.saveSettings();
+		SettingsManager::getInstance()->save();
 	}
 	
 	//maybe we need to restart the socket
