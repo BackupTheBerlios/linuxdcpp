@@ -145,11 +145,11 @@ void Search::searchPressed() {
 
 	resultsStore->clear();
 
-	name = WUtil::ConvertFromUTF8(search.get_entry()->get_text());
+	name = search.get_entry()->get_text();
 	name = SearchManager::clean(name);
 
 	size = pow((double)1024, unitOM.get_history());
-	size *= Util::toInt64(WUtil::ConvertFromUTF8(sizeEntry.get_text()));
+	size *= Util::toInt64(sizeEntry.get_text());
 	fileType = (SearchManager::TypeModes)typeOM.get_history();
 	sizeType = (SearchManager::SizeModes)sizeOM.get_history();
 
@@ -171,11 +171,11 @@ void Search::on(SearchManagerListener::SR, SearchResult *result) throw() {
 	if (slotCB.get_active() && result->getFreeSlots() < 1)	return;
 
 	it = resultsStore->append();
-	(*it)[columns.file] = WUtil::ConvertToUTF8(result->getFile());
-	(*it)[columns.size] = WUtil::ConvertToUTF8(Util::formatBytes(result->getSize()));
-	(*it)[columns.slots] = WUtil::ConvertToUTF8(result->getSlotString());
-	(*it)[columns.user] = WUtil::ConvertToUTF8(result->getUser()->getNick());
-	(*it)[columns.path] = WUtil::ConvertToUTF8(result->getFileName());
+	(*it)[columns.file] = result->getFile();
+	(*it)[columns.size] = Util::formatBytes(result->getSize());
+	(*it)[columns.slots] = result->getSlotString();
+	(*it)[columns.user] = result->getUser()->getNick();
+	(*it)[columns.path] = result->getFileName();
 }
 
 

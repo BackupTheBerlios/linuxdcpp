@@ -113,10 +113,10 @@ void PublicHubs::updateList() {
 			filter.match(i->getServer()) )
 		{
 			it = hubStore->append();
-			(*it)[columns.name] = WUtil::ConvertToUTF8(i->getName());
-			(*it)[columns.description] = WUtil::ConvertToUTF8(i->getDescription());
+			(*it)[columns.name] = i->getName();
+			(*it)[columns.description] = i->getDescription();
 			(*it)[columns.users] = i->getUsers();
-			(*it)[columns.address] = WUtil::ConvertToUTF8(i->getServer());
+			(*it)[columns.address] = i->getServer();
 		}
 	}
 }
@@ -178,23 +178,24 @@ bool PublicHubs::operator== (BookEntry &b) {
 }
 
 void PublicHubs::refresh() {
-	filter = WUtil::ConvertFromUTF8(filterEntry.get_text());
+	filter = filterEntry.get_text();
 	updateList();
 }
 
 void PublicHubs::connect()
 {
-	string address =
-		WUtil::ConvertFromUTF8(connectEntry.get_text());
+	string address = connectEntry.get_text();
 	Hub *hub;
 	TreeModel::iterator it;
 	RefPtr<TreeSelection> selection;
+	ustring tmp;
 
 	if (address == "") {
 		selection = hubList.get_selection();
 		if (selection->count_selected_rows() == 0) return;
 		it = selection->get_selected();
-		address = WUtil::ConvertFromUTF8((*it)[columns.address]);
+		tmp = (*it)[columns.address];
+		address = tmp.raw();
 	}
 	hub = new Hub(address, mw);
 	mw->addPage(hub);

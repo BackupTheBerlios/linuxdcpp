@@ -128,7 +128,7 @@ void CTransfer::on(ConnectionManagerListener::Added, ConnectionQueueItem *item) 
 	if (it == transferStore->children().end())
 		it = transferStore->append();
 
-	(*it)[columns.user] = WUtil::ConvertToUTF8 (item->getUser ()->getNick ());
+	(*it)[columns.user] = item->getUser()->getNick();
 	(*it)[columns.status] = i->statusString = "Connecting...";
 	(*it)[columns.direction] = t;
 	i->update();
@@ -224,9 +224,10 @@ void CTransfer::on(DownloadManagerListener::Tick, const Download::List &list) th
 	for(Download::List::const_iterator j = list.begin(); j != list.end(); ++j)
 	{
 		Download* d = *j;
-		sprintf (buf, "Downloaded %s (%.01f%%) in %s" , 	WUtil::ConvertToUTF8 (Util::formatBytes (d->getPos ())).c_str(),
-				 																	(double)(d->getPos ()*100.0)/(double)(d->getSize()),
-																				WUtil::ConvertToUTF8 (Util::formatSeconds ((GET_TICK() - d->getStart ())/1000)).c_str ());
+		sprintf (buf, "Downloaded %s (%.01f%%) in %s" , 
+			Util::formatBytes (d->getPos ()).c_str(),
+			(double)(d->getPos ()*100.0)/(double)(d->getSize()),
+			Util::formatSeconds ((GET_TICK() - d->getStart ())/1000).c_str ());
 		ConnectionQueueItem *cqi = d->getUserConnection ()->getCQI ();
 		TransferItem *i = transfer[cqi];
 		i->actual = i->start + d->getActual();
@@ -329,9 +330,10 @@ void CTransfer::on(UploadManagerListener::Tick, const Upload::List& list) throw(
 
 		ConnectionQueueItem* cqi = u->getUserConnection()->getCQI();
 		TransferItem* i = transfer[cqi];
-		sprintf (buf, "Uploaded %s (%.01f%%) in %s" , 	WUtil::ConvertToUTF8 (Util::formatBytes (u->getPos ())).c_str(),
-				 (double)(u->getPos ()*100.0)/(double)(u->getSize()),
-				 WUtil::ConvertToUTF8 (Util::formatSeconds ((GET_TICK() - u->getStart ())/1000)).c_str());
+		sprintf (buf, "Uploaded %s (%.01f%%) in %s" , 
+			Util::formatBytes (u->getPos ()).c_str(),
+			(double)(u->getPos ()*100.0)/(double)(u->getSize()),
+			Util::formatSeconds ((GET_TICK() - u->getStart ())/1000).c_str());
 
 		i->actual = i->start + u->getActual();
 		i->pos = i->start + u->getTotal();
@@ -392,16 +394,16 @@ void CTransfer::TransferItem::update ()
 		return;
 	}
 	
-	(*it)[t->columns.user] = WUtil::ConvertToUTF8 (user->getNick ());
-	(*it)[t->columns.hub] = WUtil::ConvertToUTF8 (user->getClientName ());
-	(*it)[t->columns.status] = WUtil::ConvertToUTF8 (statusString);
-	(*it)[t->columns.timeleft] = (status == STATUS_RUNNING) ? WUtil::ConvertToUTF8 (Util::formatSeconds (timeLeft)) : "";
-	(*it)[t->columns.speed] = (status == STATUS_RUNNING) ? WUtil::ConvertToUTF8 (Util::formatBytes (speed) + "/s") : "";
-	(*it)[t->columns.file] = WUtil::ConvertToUTF8 (file);
-	(*it)[t->columns.filesize] = WUtil::ConvertToUTF8 (Util::formatBytes (size));
-	(*it)[t->columns.path] = WUtil::ConvertToUTF8 (path);
-	(*it)[t->columns.ip] = WUtil::ConvertToUTF8 (IP);
-	(*it)[t->columns.ratio] = WUtil::ConvertToUTF8 (Util::toString (getRatio ()));
+	(*it)[t->columns.user] = user->getNick ();
+	(*it)[t->columns.hub] = user->getClientName ();
+	(*it)[t->columns.status] = statusString;
+	(*it)[t->columns.timeleft] = (status == STATUS_RUNNING) ? Util::formatSeconds (timeLeft) : "";
+	(*it)[t->columns.speed] = (status == STATUS_RUNNING) ? Util::formatBytes (speed) + "/s" : "";
+	(*it)[t->columns.file] = file;
+	(*it)[t->columns.filesize] = Util::formatBytes (size);
+	(*it)[t->columns.path] = path;
+	(*it)[t->columns.ip] = IP;
+	(*it)[t->columns.ratio] = Util::toString (getRatio ());
 }
 
 void CTransfer::TransferItem::disconnect ()

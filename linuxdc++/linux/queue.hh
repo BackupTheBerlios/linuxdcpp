@@ -139,10 +139,16 @@ private:
 		typedef vector<SourceInfo> SourceList;
 		typedef SourceList::iterator SourceIter;
 
-		QueueItemInfo(QueueItem* aQI) : Flags(*aQI), target(WUtil::ConvertToUTF8 (aQI->getTarget())),
-			path(WUtil::ConvertToUTF8 (Util::getFilePath(aQI->getTarget()))),
-			size(aQI->getSize()), downloadedBytes(aQI->getDownloadedBytes()), 
-			added(aQI->getAdded()), tth(aQI->getTTH()), priority(aQI->getPriority()), status(aQI->getStatus())
+		QueueItemInfo(QueueItem* aQI) :
+			Flags(*aQI),
+			target(aQI->getTarget()),
+			path(Util::getFilePath(aQI->getTarget())),
+			size(aQI->getSize()), 
+			downloadedBytes(aQI->getDownloadedBytes()), 
+			added(aQI->getAdded()), 
+			tth(aQI->getTTH()), 
+			priority(aQI->getPriority()), 
+			status(aQI->getStatus())
 		{ 
 			for(QueueItem::Source::Iter i = aQI->getSources().begin(); i != aQI->getSources().end(); ++i) {
 				sources.push_back(SourceInfo(*(*i)));
@@ -154,7 +160,7 @@ private:
 
 		~QueueItemInfo() { };
 
-		void remove() { QueueManager::getInstance()->remove(WUtil::ConvertFromUTF8 (getTarget())); }
+		void remove() { QueueManager::getInstance()->remove(getTarget()); }
 		void update (DownloadQueue *dq, bool add);
 		
 

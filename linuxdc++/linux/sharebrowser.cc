@@ -51,7 +51,7 @@ ShareBrowser::ShareBrowser(QueueItem *item, MainWindow *mw):
 	this->mw = mw;
 	this->ID = BOOK_FILE_LIST;
 
-	label.set_text(WUtil::ConvertToUTF8(user->getNick()));
+	label.set_text(user->getNick());
 	label.show();
 
 	dirStore = TreeStore::create(dCol);
@@ -131,16 +131,19 @@ ShareBrowser::ShareBrowser(QueueItem *item, MainWindow *mw):
 	setPosition(item->getSearchString());
 	
 }
+
+
 void ShareBrowser::setStatus (std::string text, int num)
 {
 	if (num<0 || num>STATUS_LAST-1) return;
 
 	statusBar[num].pop(1);
 	if (num == 0)
-		statusBar[num].push ("[" + Util::getShortTimeString() + "] " + WUtil::ConvertToUTF8 (text), 1);
+		statusBar[num].push ("[" + Util::getShortTimeString() + "] " + text, 1);
 	else
-		statusBar[num].push (WUtil::ConvertToUTF8 (text), 1);
+		statusBar[num].push (text, 1);
 }
+
 void ShareBrowser::updateStatus ()
 {
 	TreeModel::Row r = *(dirView.get_selection()->get_selected());
@@ -159,6 +162,7 @@ void ShareBrowser::updateStatus ()
 	setStatus ("File: " + Util::toString (shareItems), STATUS_FILES);
 	setStatus ("Size: " + Util::formatBytes (shareSize), STATUS_TOTAL_SIZE);
 }
+
 ShareBrowser::~ShareBrowser() {
 	if (listing != NULL) delete listing;
 }
@@ -166,6 +170,7 @@ ShareBrowser::~ShareBrowser() {
 void ShareBrowser::buildList() {
 	DirectoryListing::Directory::List dirs = listing->getRoot()->directories;
 	DirectoryListing::Directory::Iter it;
+	DirectoryListing::File::Iter file;
 	TreeRow row;
 
 	dirStore->clear();
@@ -175,9 +180,9 @@ void ShareBrowser::buildList() {
 	
 	for (it = dirs.begin(); it != dirs.end(); it++) {
 		row = *(dirStore->append());
-		row[dCol.name] = WUtil::ConvertToUTF8((*it)->getName());
+		row[dCol.name] = (*it)->getName();
 		row[dCol.dir] = *it;
-		for (DirectoryListing::File::Iter file = (*it)->files.begin (); file != (*it)->files.end (); file++)
+		for (file = (*it)->files.begin(); file != (*it)->files.end(); file++)
 		{
 			shareItems++;
 			shareSize += (*file)->getSize ();
@@ -190,13 +195,14 @@ void ShareBrowser::processDirectory(DirectoryListing::Directory::List dir,
 	const TreeModel::Row &row)
 {
 	DirectoryListing::Directory::Iter it;
+	DirectoryListing::File::Iter file;
 	TreeRow newRow;
 
 	for (it = dir.begin(); it != dir.end(); it++) {
 		newRow = *(dirStore->append(row.children()));
-		newRow[dCol.name] = WUtil::ConvertToUTF8((*it)->getName());
+		newRow[dCol.name] = (*it)->getName();
 		newRow[dCol.dir] = *it;
-		for (DirectoryListing::File::Iter file = (*it)->files.begin (); file != (*it)->files.end (); file++)
+		for (file = (*it)->files.begin(); file != (*it)->files.end(); file++)
 		{
 			shareItems++;
 			shareSize += (*file)->getSize ();
@@ -223,11 +229,9 @@ void ShareBrowser::updateSelection () {
 	currentItems = 0;
 	for (it = files->begin(); it != files->end(); it++) {
 		row = *(fileStore->append());
-		row[fCol.name] = WUtil::ConvertToUTF8((*it)->getName());
-		row[fCol.type] = WUtil::ConvertToUTF8(
-			Util::getFileExt((*it)->getName()));
-		row[fCol.size] = 
-			WUtil::ConvertToUTF8(Util::formatBytes((*it)->getSize()));
+		row[fCol.name] = (*it)->getName();
+		row[fCol.type] = Util::getFileExt((*it)->getName());
+		row[fCol.size] = Util::formatBytes((*it)->getSize());
 		row[fCol.file] = *it;
 		currentSize += (*it)->getSize ();
 		currentItems++;
@@ -247,7 +251,6 @@ bool ShareBrowser::operator== (BookEntry &b) {
 }
 
 void ShareBrowser::downloadClicked() {
-	cout << "DL clicked" << endl;
 	const TreeModel::iterator constIter = 
 		fileView.get_selection()->get_selected();
 	string target;
@@ -257,20 +260,17 @@ void ShareBrowser::downloadClicked() {
 
 	DirectoryListing::File *file = (*constIter)[fCol.file];
 	try {
-		//false = prio, TODO: implement changing this
+		//false = prio
 		target = SETTING(DOWNLOAD_DIRECTORY);
 		assert(target[target.size() - 1] == PATH_SEPARATOR);
 		target += Util::getFileName(file->getName());
 		listing->download(file, target, false, false);
 	} catch(const Exception& e) {
-		cout << "Error: " << e.getError() << endl;
-		//TODO: add a statusbar and print this there instead
-		//ctrlStatus.SetText(0, e.getError().c_str());
+		setStatus (e.getError(), 0);
 	}
 }
 
 void ShareBrowser::downloadDirClicked() {
-	cout << "Dir clicked" << endl;
 	const TreeModel::iterator constIter = 
 		dirView.get_selection()->get_selected();
 
@@ -279,12 +279,10 @@ void ShareBrowser::downloadDirClicked() {
 
 	DirectoryListing::Directory *dir = (*constIter)[dCol.dir];
 	try {
-		//false = prio, TODO: implement changing this
+		//false = prio
 		listing->download(dir, SETTING(DOWNLOAD_DIRECTORY), false);
 	} catch(const Exception& e) {
-		cout << "Error: " << e.getError() << endl;
-		//TODO: add a statusbar and print this there instead
-		//ctrlStatus.SetText(0, e.getError().c_str());
+		setStatus(e.getError(), 0);
 	}
 }
 
@@ -299,17 +297,14 @@ void ShareBrowser::viewClicked() {
 
 	DirectoryListing::File *file = (*constIter)[fCol.file];
 	try {
-		//true = view file
-		//somebody needs to listen to the view though...
-		//false = prio, TODO: implement changing this
+		//true = view file, somebody needs to listen to the view though...
+		//false = prio
 		target = SETTING(DOWNLOAD_DIRECTORY);
 		assert(target[target.size() - 1] == PATH_SEPARATOR);
 		target += Util::getFileName(file->getName());
-		listing->download(file, target, false, false);
+		listing->download(file, target, true, false);
 	} catch(const Exception& e) {
-		cout << "Error: " << e.getError() << endl;
-		//TODO: add a statusbar and print this there instead
-		//ctrlStatus.SetText(0, e.getError().c_str());
+		setStatus(e.getError(), 0);
 	}
 }
 

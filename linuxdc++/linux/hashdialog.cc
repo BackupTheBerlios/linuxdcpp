@@ -76,13 +76,13 @@ void HashDialog::updateStats ()
 	double diff = tick - startTime;
 	if(diff < 1000 || files == 0)
 	{
-		fileSpeed.set_text (WUtil::ConvertToUTF8 ("-.-- files/h, " + Util::toString((u_int32_t)files) + " files left."));
+		fileSpeed.set_text (WUtil::ConvertToUTF8 ("-.-- files/h, ") + Util::toString((u_int32_t)files) + " files left.");
 		timeLeft.set_text (WUtil::ConvertToUTF8 ("-:--:-- left."));
 	}
 	else
 	{
 		double filestat = (((double)(startFiles - files)) * 60 * 60 * 1000) / diff;
-		fileSpeed.set_text (WUtil::ConvertToUTF8 (Util::toString (filestat) + " files/h, " + Util::toString ((u_int32_t)files) + " files left."));
+		fileSpeed.set_text (Util::toString (filestat) + " files/h, " + Util::toString ((u_int32_t)files) + " files left.");
 		if(filestat == 0)
 		{
 			timeLeft.set_text (WUtil::ConvertToUTF8 ("-:--:-- left."));
@@ -90,7 +90,7 @@ void HashDialog::updateStats ()
 		else
 		{
 			double fs = files * 60 * 60 / filestat;
-			timeLeft.set_text (WUtil::ConvertToUTF8 (Util::formatSeconds ((int64_t)fs) + " left."));
+			timeLeft.set_text (Util::formatSeconds ((int64_t)fs) + " left.");
 		}
 	}
 	if(files == 0)

@@ -270,9 +270,9 @@ void SettingsDialog::setValues() {
 	int i;
 
 	//General tab
-	nickEntry.set_text(WUtil::ConvertToUTF8(SETTING(NICK)));
-	emailEntry.set_text(WUtil::ConvertToUTF8(SETTING(EMAIL)));
-	descEntry.set_text(WUtil::ConvertToUTF8(SETTING(DESCRIPTION)));
+	nickEntry.set_text(SETTING(NICK));
+	emailEntry.set_text(SETTING(EMAIL));
+	descEntry.set_text(SETTING(DESCRIPTION));
 	for (i=0;i<SettingsManager::SPEED_LAST;i++)
 		if (SETTING (CONNECTION) == SettingsManager::connectionSpeeds[i])
 		{
@@ -280,14 +280,14 @@ void SettingsDialog::setValues() {
 			break;
 		}
 	
-	ipEntry.set_text(WUtil::ConvertToUTF8(SETTING(SERVER)));
+	ipEntry.set_text(SETTING(SERVER));
 	sprintf(temp, "%d", SETTING(IN_PORT));
-	portEntry.set_text(WUtil::ConvertToUTF8(temp));
-	sockIpEntry.set_text(WUtil::ConvertToUTF8(SETTING(SOCKS_SERVER)));
+	portEntry.set_text(temp);
+	sockIpEntry.set_text(SETTING(SOCKS_SERVER));
 	sprintf(temp, "%d", SETTING(SOCKS_PORT));
-	sockPortEntry.set_text(WUtil::ConvertToUTF8(temp));
-	userEntry.set_text(WUtil::ConvertToUTF8(SETTING(SOCKS_USER)));
-	passEntry.set_text(WUtil::ConvertToUTF8(SETTING(SOCKS_PASSWORD)));
+	sockPortEntry.set_text(temp);
+	userEntry.set_text(SETTING(SOCKS_USER));
+	passEntry.set_text(SETTING(SOCKS_PASSWORD));
 	sock5CB.set_active(BOOLSETTING(SOCKS_RESOLVE));
 
 	if (SETTING(CONNECTION_TYPE) == SettingsManager::CONNECTION_ACTIVE) {
@@ -304,23 +304,22 @@ void SettingsDialog::setValues() {
 	}		
 
 	//Download tab
-	defDirEntry.set_text(WUtil::ConvertToUTF8(SETTING(DOWNLOAD_DIRECTORY)));
-	if (SETTING(DOWNLOAD_DIRECTORY) == SETTING (TEMP_DOWNLOAD_DIRECTORY))
+	defDirEntry.set_text(SETTING(DOWNLOAD_DIRECTORY));
+	if (SETTING(DOWNLOAD_DIRECTORY) == SETTING(TEMP_DOWNLOAD_DIRECTORY))
 		unfDirEntry.set_text ("");
 	else
-		unfDirEntry.set_text(WUtil::ConvertToUTF8(SETTING(TEMP_DOWNLOAD_DIRECTORY)));
+		unfDirEntry.set_text(SETTING(TEMP_DOWNLOAD_DIRECTORY));
 	slotsScale.set_value(SETTING(DOWNLOAD_SLOTS));
 	speedScale.set_value(SETTING(MAX_DOWNLOAD_SPEED));
-	pubHubsEntry.set_text(WUtil::ConvertToUTF8(SETTING(HUBLIST_SERVERS)));
-	httpProxyEntry.set_text(WUtil::ConvertToUTF8(SETTING(HTTP_PROXY)));
+	pubHubsEntry.set_text(SETTING(HUBLIST_SERVERS));
+	httpProxyEntry.set_text(SETTING(HTTP_PROXY));
 
 	//Sharing tab
 	for(it = directories.begin(); it != directories.end(); it++) {
 		jt = dirModel->append();
-		(*jt)[columns.virt] = WUtil::ConvertToUTF8(it->first);
-		(*jt)[columns.size] = 
-			WUtil::ConvertToUTF8(Util::formatBytes(share->getShareSize(it->second)));
-		(*jt)[columns.dir] = WUtil::ConvertToUTF8(it->second);
+		(*jt)[columns.virt] = it->first;
+		(*jt)[columns.size] = Util::formatBytes(share->getShareSize(it->second));
+		(*jt)[columns.dir] = it->second;
 	}
 
 	hiddenCB.set_active(BOOLSETTING(SHARE_HIDDEN));
@@ -336,22 +335,18 @@ void SettingsDialog::saveSettings() {
 	int temp;
 
 	//General tab
-	mgr->set(SettingsManager::NICK, WUtil::ConvertFromUTF8(nickEntry.get_text()));
-	mgr->set(SettingsManager::EMAIL, WUtil::ConvertFromUTF8(emailEntry.get_text()));
-	mgr->set(SettingsManager::DESCRIPTION,
-		WUtil::ConvertFromUTF8(descEntry.get_text()));
+	mgr->set(SettingsManager::NICK, nickEntry.get_text());
+	mgr->set(SettingsManager::EMAIL, emailEntry.get_text());
+	mgr->set(SettingsManager::DESCRIPTION, descEntry.get_text());
 	mgr->set(SettingsManager::CONNECTION, SettingsManager::connectionSpeeds[connectionOption.get_history()]);
 
-	mgr->set(SettingsManager::SERVER, WUtil::ConvertFromUTF8(ipEntry.get_text()));
+	mgr->set(SettingsManager::SERVER, ipEntry.get_text());
 	mgr->set(SettingsManager::IN_PORT, atoi(portEntry.get_text().c_str()));
-	mgr->set(SettingsManager::SOCKS_SERVER,
-		WUtil::ConvertFromUTF8(sockIpEntry.get_text()));
+	mgr->set(SettingsManager::SOCKS_SERVER, sockIpEntry.get_text());
 	mgr->set(SettingsManager::SOCKS_PORT,
 		atoi(sockPortEntry.get_text().c_str()));
-	mgr->set(SettingsManager::SOCKS_USER,
-		WUtil::ConvertFromUTF8(userEntry.get_text()));
-	mgr->set(SettingsManager::SOCKS_PASSWORD,
-		WUtil::ConvertFromUTF8(passEntry.get_text()));
+	mgr->set(SettingsManager::SOCKS_USER, userEntry.get_text());
+	mgr->set(SettingsManager::SOCKS_PASSWORD, passEntry.get_text());
 
 	mgr->set(SettingsManager::SOCKS_RESOLVE, sock5CB.get_active());
 
@@ -366,18 +361,16 @@ void SettingsDialog::saveSettings() {
 		SettingsManager::CONNECTION_SOCKS5);
 
 	//Download tab
-	mgr->set(SettingsManager::DOWNLOAD_DIRECTORY,
-		WUtil::ConvertFromUTF8(defDirEntry.get_text()));
+	mgr->set(SettingsManager::DOWNLOAD_DIRECTORY, 
+		defDirEntry.get_text());
 	if (unfDirEntry.get_text () == "")
 		mgr->set(SettingsManager::TEMP_DOWNLOAD_DIRECTORY, SETTING (DOWNLOAD_DIRECTORY));
 	else
-		mgr->set(SettingsManager::TEMP_DOWNLOAD_DIRECTORY, WUtil::ConvertFromUTF8 (unfDirEntry.get_text()));
+		mgr->set(SettingsManager::TEMP_DOWNLOAD_DIRECTORY, unfDirEntry.get_text());
 	mgr->set(SettingsManager::DOWNLOAD_SLOTS, (int)slotsScale.get_value());
 	mgr->set(SettingsManager::MAX_DOWNLOAD_SPEED, (int)speedScale.get_value());
-	mgr->set(SettingsManager::HUBLIST_SERVERS,
-		WUtil::ConvertFromUTF8(pubHubsEntry.get_text()));
-	mgr->set(SettingsManager::HTTP_PROXY,
-		WUtil::ConvertFromUTF8(httpProxyEntry.get_text()));
+	mgr->set(SettingsManager::HUBLIST_SERVERS, pubHubsEntry.get_text());
+	mgr->set(SettingsManager::HTTP_PROXY, httpProxyEntry.get_text());
 
 	//Sharing tab
 	mgr->set(SettingsManager::SHARE_HIDDEN, hiddenCB.get_active());
@@ -455,14 +448,14 @@ void SettingsDialog::addDirectory() {
 		directories = mgr->getDirectories();
 		for(it = directories.begin(); it != directories.end(); it++) {
 			jt = dirModel->append();
-			(*jt)[columns.virt] = WUtil::ConvertToUTF8(it->first);
-			(*jt)[columns.size] = WUtil::ConvertToUTF8(Util::formatBytes(
-				mgr->getShareSize(it->second)));
-			(*jt)[columns.dir] = WUtil::ConvertToUTF8(it->second);
+			(*jt)[columns.virt] = it->first;
+			(*jt)[columns.size] = Util::formatBytes(
+				mgr->getShareSize(it->second));
+			(*jt)[columns.dir] = it->second;
 		}
 
-		totalSize.set_text(WUtil::ConvertToUTF8("Total size: " +
-			mgr->getShareSizeString()));
+		totalSize.set_text(WUtil::ConvertToUTF8("Total size: ") +
+			mgr->getShareSizeString());
 	}
 }
 
@@ -470,12 +463,15 @@ void SettingsDialog::removeDirectory() {
 	RefPtr<TreeSelection> sel = dirView.get_selection(); 
 	TreeModel::iterator it = sel->get_selected();
 	ShareManager *mgr = ShareManager::getInstance();
+	ustring tmpUstring;
 
 	if (!it) return;
-	mgr->removeDirectory(WUtil::ConvertFromUTF8((*it)[columns.dir]));
+	
+	tmpUstring = (*it)[columns.dir];
+	mgr->removeDirectory(tmpUstring.raw());
 	dirModel->erase(it);
-	totalSize.set_text(WUtil::ConvertToUTF8("Total size: " +
-		Util::formatBytes(mgr->getShareSize())));
+	totalSize.set_text(WUtil::ConvertToUTF8("Total size: ") +
+		Util::formatBytes(mgr->getShareSize()));
 }
 
 void SettingsDialog::defDirClicked() {
@@ -491,7 +487,7 @@ void SettingsDialog::defDirClicked() {
 		dir = sel.get_filename();
 		if (dir[dir.size() - 1] != PATH_SEPARATOR)
 			dir += PATH_SEPARATOR_STR;
-		defDirEntry.set_text(WUtil::ConvertToUTF8(dir));
+		defDirEntry.set_text(dir);
 	}
 }
 
@@ -508,7 +504,7 @@ void SettingsDialog::tempDirClicked() {
 		dir = sel.get_filename();
 		if (dir[dir.size() - 1] != PATH_SEPARATOR)
 			dir += PATH_SEPARATOR_STR;
-		unfDirEntry.set_text(WUtil::ConvertToUTF8(dir));
+		unfDirEntry.set_text(dir);
 	}
 }
 

@@ -40,7 +40,7 @@ PrivateMsg::PrivateMsg(User::Ptr userName, MainWindow *mw) {
 
 	pack_start(box, PACK_EXPAND_WIDGET);
 
-	label.set_text(WUtil::ConvertToUTF8(user->getNick()));
+	label.set_text(user->getNick());
 	label.show();
 	
 	callback0 = open_tunnel(tunnel, slot(*this, &PrivateMsg::enterPressed), true);
@@ -52,7 +52,7 @@ PrivateMsg::PrivateMsg(User::Ptr userName, MainWindow *mw) {
 bool PrivateMsg::operator== (BookEntry &b) {
 	PrivateMsg *msg = dynamic_cast<PrivateMsg *>(&b);
 	
-	if (msg == NULL) return false;
+	if (!msg) return false;
 	return msg->user->getNick() == user->getNick();
 }
 
@@ -61,18 +61,18 @@ bool PrivateMsg::operator== (User::Ptr &otherUser) {
 }
 
 void PrivateMsg::update() {
-	label.set_text(WUtil::ConvertToUTF8(user->getNick()));
+	label.set_text(user->getNick());
 	label.show();
 }
 
 void PrivateMsg::addMsg(std::string msg) {
 	RefPtr<TextBuffer> buffer = text.get_buffer();
-	buffer->insert(buffer->end(), "[" + Util::getShortTimeString() + "] " + WUtil::ConvertToUTF8(msg + "\n"));
+	buffer->insert(buffer->end(), "[" + Util::getShortTimeString() + "] " + msg + "\n");
 }
 
 void PrivateMsg::enterPressed ()
 {
-	user->privateMessage (WUtil::ConvertToUTF8 (entry.get_text()));
-	addMsg ("<" + user->getClientNick () + "> " + WUtil::ConvertToUTF8 (entry.get_text()));
+	user->privateMessage (entry.get_text());
+	addMsg ("<" + user->getClientNick () + "> " + entry.get_text());
 	entry.set_text("");
 }

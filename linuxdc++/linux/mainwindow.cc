@@ -239,9 +239,9 @@ void MainWindow::setStatus(string text, int num)
 
 	status[num].pop(1);
 	if (num == 0)
-		status[num].push ("[" + Util::getShortTimeString() + "] " + WUtil::ConvertToUTF8 (text), 1);
+		status[num].push("[" + Util::getShortTimeString() + "] " + text, 1);
 	else
-		status[num].push (WUtil::ConvertToUTF8 (text), 1);
+		status[num].push(text, 1);
 }
 
 void MainWindow::pubHubsClicked()  {

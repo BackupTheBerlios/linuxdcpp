@@ -176,9 +176,9 @@ void DownloadQueue::setStatus (std::string text, int num)
 
 	statusBar[num].pop(1);
 	if (num == 0)
-		statusBar[num].push ("[" + Util::getShortTimeString() + "] " + WUtil::ConvertToUTF8 (text), 1);
+		statusBar[num].push ("[" + Util::getShortTimeString() + "] " + text, 1);
 	else
-		statusBar[num].push (WUtil::ConvertToUTF8 (text), 1);
+		statusBar[num].push (text, 1);
 }
 void DownloadQueue::searchAlternates ()
 {
@@ -204,10 +204,12 @@ void DownloadQueue::searchAlternates ()
 			s->searchFor (searchString);
 	}
 }
+
 void DownloadQueue::searchTTH ()
 {
 
 }
+
 void DownloadQueue::browseList (QueueItemInfo::SourceInfo *s)
 {
 	try
@@ -219,6 +221,7 @@ void DownloadQueue::browseList (QueueItemInfo::SourceInfo *s)
 		cout << "Couldn't add filelist." << endl;
 	}
 }
+
 void DownloadQueue::sendPM (QueueItemInfo::SourceInfo *s)
 {
 	PrivateMsg *privMsg;
@@ -230,7 +233,7 @@ void DownloadQueue::readdSource (QueueItemInfo *i, QueueItemInfo::SourceInfo *s)
 {
 	try
 	{
-		QueueManager::getInstance()->readd(WUtil::ConvertFromUTF8(i->getTarget()), s->getUser());
+		QueueManager::getInstance()->readd(i->getTarget(), s->getUser());
 	}
 	catch(...)
 	{
@@ -239,12 +242,14 @@ void DownloadQueue::readdSource (QueueItemInfo *i, QueueItemInfo::SourceInfo *s)
 }
 void DownloadQueue::removeSource (QueueItemInfo *i, QueueItemInfo::SourceInfo *s)
 {
-	QueueManager::getInstance()->removeSource(WUtil::ConvertFromUTF8(i->getTarget()), s->getUser(), QueueItem::Source::FLAG_REMOVED);
+	QueueManager::getInstance()->removeSource(i->getTarget(), s->getUser(), QueueItem::Source::FLAG_REMOVED);
 }
+
 void DownloadQueue::removeUser (QueueItemInfo *i, QueueItemInfo::SourceInfo *s)
 {
 	QueueManager::getInstance()->removeSources(s->getUser(), QueueItem::Source::FLAG_REMOVED);
 }
+
 bool DownloadQueue::operator== (BookEntry &b) {
 	DownloadQueue *queue;
 	
@@ -289,14 +294,14 @@ void DownloadQueue::rebuildMenu ()
 	{
 		//if (it->getUser ()->isOnline ())
 		{
-			browse.push_back (MenuElem (WUtil::ConvertToUTF8 (it->getUser()->getFullNick()), open_tunnel(tunnel, bind<QueueItemInfo::SourceInfo*>(slot (*this, &DownloadQueue::browseList), &(*it)), true)));
-			pm.push_back (MenuElem (WUtil::ConvertToUTF8 (it->getUser()->getFullNick())));
+			browse.push_back (MenuElem (it->getUser()->getFullNick(), open_tunnel(tunnel, bind<QueueItemInfo::SourceInfo*>(slot (*this, &DownloadQueue::browseList), &(*it)), true)));
+			pm.push_back (MenuElem (it->getUser()->getFullNick()));
 			pm.back ().signal_activate ().connect (open_tunnel(tunnel, bind<QueueItemInfo::SourceInfo*>(slot (*this, &DownloadQueue::sendPM), &(*it)), true));
-			readd.push_back (MenuElem (WUtil::ConvertToUTF8 (it->getUser()->getFullNick())));
+			readd.push_back (MenuElem (it->getUser()->getFullNick()));
 			readd.back ().signal_activate ().connect (open_tunnel(tunnel, bind<QueueItemInfo*, QueueItemInfo::SourceInfo*>(slot (*this, &DownloadQueue::readdSource), i, &(*it)), true));
-			remove.push_back (MenuElem (WUtil::ConvertToUTF8 (it->getUser()->getFullNick())));
+			remove.push_back (MenuElem (it->getUser()->getFullNick()));
 			remove.back ().signal_activate ().connect (open_tunnel(tunnel, bind<QueueItemInfo*, QueueItemInfo::SourceInfo*>(slot (*this, &DownloadQueue::removeSource), i, &(*it)), true));
-			removeAll.push_back (MenuElem (WUtil::ConvertToUTF8 (it->getUser()->getFullNick())));
+			removeAll.push_back (MenuElem(it->getUser()->getFullNick()));
 			removeAll.back ().signal_activate ().connect (open_tunnel(tunnel, bind<QueueItemInfo*, QueueItemInfo::SourceInfo*>(slot (*this, &DownloadQueue::removeUser), i, &(*it)), true));
 		}	
 	}
@@ -325,7 +330,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 					if(j->getUser()->isOnline())
 						online++;
 	
-					tmp += WUtil::ConvertToUTF8 (j->getUser()->getFullNick());
+					tmp += j->getUser()->getFullNick();
 			}
 			(*item)[dq->fileColumns.users] = tmp.empty() ? "No users" : tmp;
 		}		
@@ -391,7 +396,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 				{
 					if(tmp.size() > 0)
 						tmp += ", ";
-					tmp += WUtil::ConvertToUTF8 (j->getUser()->getNick());
+					tmp += j->getUser()->getNick();
 					tmp += " (";
 					if(j->isSet(QueueItem::Source::FLAG_FILE_NOT_AVAILABLE))
 						tmp += "File not available";
@@ -411,7 +416,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 		// TTH
 		{
 			if (getTTH () != NULL)
-				(*item)[dq->fileColumns.tth] =WUtil::ConvertToUTF8 (getTTH()->toBase32());
+				(*item)[dq->fileColumns.tth] = getTTH()->toBase32();
 		}				
 	}
 	else
@@ -420,7 +425,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 		// Item
 		row[dq->fileColumns.item] = this;
 		// Filename
-		row[dq->fileColumns.target] = WUtil::ConvertToUTF8 (Util::getFileName(getTarget()));
+		row[dq->fileColumns.target] = Util::getFileName(getTarget());
 		// Users
 		int online=0;
 		{
@@ -434,7 +439,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 					if(j->getUser()->isOnline())
 						online++;
 	
-					tmp += WUtil::ConvertToUTF8 (j->getUser()->getFullNick());
+					tmp += j->getUser()->getFullNick();
 			}
 			row[dq->fileColumns.users] = tmp.empty() ? "No users" : tmp;
 		}		
@@ -509,7 +514,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 				{
 					if(tmp.size() > 0)
 						tmp += ", ";
-					tmp += WUtil::ConvertToUTF8 (j->getUser()->getNick());
+					tmp += j->getUser()->getNick();
 					tmp += " (";
 					if(j->isSet(QueueItem::Source::FLAG_FILE_NOT_AVAILABLE))
 						tmp += "File not available";
@@ -528,12 +533,12 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 		}
 		// Added
 		{
-			row[dq->fileColumns.added] = WUtil::ConvertToUTF8 (Util::formatTime("%Y-%m-%d %H:%M", getAdded()));
+			row[dq->fileColumns.added] = Util::formatTime("%Y-%m-%d %H:%M", getAdded());
 		}
 		// TTH
 		{
 			if (getTTH () != NULL)
-				row[dq->fileColumns.tth] =WUtil::ConvertToUTF8 (getTTH()->toBase32());
+				row[dq->fileColumns.tth] = getTTH()->toBase32();
 		}		
 	}
 }
@@ -592,11 +597,11 @@ void DownloadQueue::buildList (const QueueItem::StringMap &l)
 	queueSize = 0;
 	for (QueueItem::StringMap::const_iterator it = l.begin (); it != l.end (); it++)
 	{
-		if (dirMap.find ("/" + WUtil::ConvertToUTF8(getNextSubDir (Util::getFilePath(it->second->getTarget()))) + "/") == dirMap.end ())
+		if (dirMap.find ("/" + getNextSubDir (Util::getFilePath(it->second->getTarget())) + "/") == dirMap.end ())
 		{
 			row = *(dirStore->append());
-			row[dirColumns.name] = WUtil::ConvertToUTF8(getNextSubDir (Util::getFilePath(it->second->getTarget())));
-			row[dirColumns.realpath] = "/" + WUtil::ConvertToUTF8(getNextSubDir (Util::getFilePath(it->second->getTarget()))) + "/";
+			row[dirColumns.name] = getNextSubDir (Util::getFilePath(it->second->getTarget()));
+			row[dirColumns.realpath] = "/" + getNextSubDir (Util::getFilePath(it->second->getTarget())) + "/";
 			dirMap[row[dirColumns.realpath]] = row;
 			ustring tmp;;
 			addDir (getRemainingDir (Util::getFilePath(it->second->getTarget())), row, tmp);
@@ -607,7 +612,7 @@ void DownloadQueue::buildList (const QueueItem::StringMap &l)
 		{
 			ustring tmp;
 			addDir (getRemainingDir (Util::getFilePath(it->second->getTarget())),
-						 dirMap["/" + WUtil::ConvertToUTF8(getNextSubDir (Util::getFilePath(it->second->getTarget()))) + "/"], tmp);
+						 dirMap["/" + getNextSubDir (Util::getFilePath(it->second->getTarget())) + "/"], tmp);
 			fileMap[it->second->getTarget ()] = it->second;
 			addFile (new QueueItemInfo (it->second), tmp);
 		}
@@ -624,16 +629,16 @@ void DownloadQueue::addDir (string path, TreeModel::Row row, ustring &current)
 		return;
 	}
 		
-	if (dirMap.find (row[dirColumns.realpath] + WUtil::ConvertToUTF8(tmp) + "/") == dirMap.end ())
+	if (dirMap.find (row[dirColumns.realpath] + tmp + "/") == dirMap.end ())
 	{
 		newRow = *(dirStore->append(row.children()));
-		newRow[dirColumns.name] = WUtil::ConvertToUTF8(tmp);
-		newRow[dirColumns.realpath] = row[dirColumns.realpath] + WUtil::ConvertToUTF8(tmp) + "/";
+		newRow[dirColumns.name] = tmp;
+		newRow[dirColumns.realpath] = row[dirColumns.realpath] + tmp + "/";
 		dirMap[newRow[dirColumns.realpath]] = newRow;
 		addDir (getRemainingDir (path), newRow, current);
 	}
 	else
-		addDir (getRemainingDir (path), dirMap[row[dirColumns.realpath] + WUtil::ConvertToUTF8(tmp) + "/"], current);
+		addDir (getRemainingDir (path), dirMap[row[dirColumns.realpath] + tmp + "/"], current);
 }
 void DownloadQueue::addFile (QueueItemInfo *i, ustring path)
 {
@@ -778,11 +783,11 @@ void DownloadQueue::removeDir (ustring path)
 }
 void DownloadQueue::removeFile (Glib::ustring target)
 {
-	ustring path = WUtil::ConvertToUTF8 (Util::getFilePath (target.raw ()));
+	ustring path = Util::getFilePath (target.raw ());
 	if (dirFileMap.find (path) == dirFileMap.end ())
 		return;
 	for (vector<QueueItemInfo*>::iterator it=dirFileMap[path].begin (); it != dirFileMap[path].end (); it++)
-		if (WUtil::ConvertToUTF8 ((*it)->getTarget ()) == target)
+		if ((*it)->getTarget() == target)
 		{
 			queueSize-=(*it)->getSize();
 			queueItems--;
@@ -798,7 +803,7 @@ void DownloadQueue::removeFile (Glib::ustring target)
 void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
 {
 	TreeModel::Row row;
-	ustring subdir = WUtil::ConvertToUTF8(getNextSubDir (Util::getFilePath(aQI->getTarget())));
+	ustring subdir = getNextSubDir (Util::getFilePath(aQI->getTarget()));
 	QueueItemInfo *i;
 	if (dirMap.find ("/" +subdir  + "/") == dirMap.end ())
 	{
@@ -840,7 +845,7 @@ void DownloadQueue::on(QueueManagerListener::Moved, QueueItem* aQI) throw()
 void DownloadQueue::on(QueueManagerListener::Removed, QueueItem* aQI) throw()
 {
 	Lock l(cs);
-	removeFile (WUtil::ConvertToUTF8 (aQI->getTarget ()));
+	removeFile (aQI->getTarget());
 	update ();
 }
 
@@ -848,11 +853,11 @@ void DownloadQueue::updateFiles (QueueItem *aQI)
 {
 	QueueItemInfo* ii = NULL;
 	Lock l(cs);
-	ustring path = WUtil::ConvertToUTF8 (Util::getFilePath (aQI->getTarget ()));
+	ustring path = Util::getFilePath (aQI->getTarget ());
 	if (dirFileMap.find (path) == dirFileMap.end ())
 		return;
 	for (vector<QueueItemInfo*>::iterator it=dirFileMap[path].begin (); it != dirFileMap[path].end (); it++)
-		if (WUtil::ConvertToUTF8 ((*it)->getTarget ()) == WUtil::ConvertToUTF8 (aQI->getTarget ()))
+		if ((*it)->getTarget () == aQI->getTarget ())
 		{
 			ii = *it;
 			break;
@@ -892,7 +897,7 @@ void DownloadQueue::updateFiles (QueueItem *aQI)
 
 void DownloadQueue::setFilePriority (Glib::ustring target, QueueItem::Priority p)
 {
-	QueueManager::getInstance ()->setPriority (WUtil::ConvertFromUTF8 (target), p);
+	QueueManager::getInstance ()->setPriority (target.raw(), p);
 }
 void DownloadQueue::setDirPriority (Glib::ustring path, QueueItem::Priority p)
 {
