@@ -24,18 +24,10 @@
 
 using namespace std;
 
-void PublicHubs::filter_callback(GtkWidget *widget, gpointer data) {
-	PublicHubs *pubHubs = (PublicHubs *)data;
-	pubHubs->filterHubs_gui();
-}
-
-void PublicHubs::connect_callback(GtkWidget *widget, gpointer data) {
-	PublicHubs *pubHubs = (PublicHubs *)data;
-	pubHubs->connect_gui();
-}
-
 PublicHubs::PublicHubs(GCallback closeCallback):
 	BookEntry(WulforManager::PUBLIC_HUBS, "", "Public Hubs", closeCallback),
+	filterCallback(this, &PublicHubs::filterHubs_gui),
+	connectCallback(this, &PublicHubs::connect_gui),
 	hubs(0),
 	filter(""),
 	WIDTH_NAME(200),
@@ -74,9 +66,9 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 
 	GObject *o;
 	o = G_OBJECT(glade_xml_get_widget(xml, "filterButton"));
-    g_signal_connect(o, "clicked", G_CALLBACK(filter_callback), (gpointer)this);
+	filterCallback.connect(o, "clicked", NULL);
 	o = G_OBJECT(glade_xml_get_widget(xml, "connectButton"));
-    g_signal_connect(o, "clicked", G_CALLBACK(connect_callback), (gpointer)this);
+	connectCallback.connect(o, "clicked", NULL);
 	
 	pthread_mutex_init(&hubLock, NULL);
 }
@@ -139,12 +131,12 @@ GtkWidget *PublicHubs::getWidget() {
 	return mainBox;
 }
 
-void PublicHubs::filterHubs_gui() {
+void PublicHubs::filterHubs_gui(GtkWidget *e, gpointer d) {
 	filter = gtk_entry_get_text(filterEntry);
 	updateList_gui();
 }
 
-void PublicHubs::connect_gui() {
+void PublicHubs::connect_gui(GtkWidget *e, gpointer d) {
 	string address = gtk_entry_get_text(connectEntry);
 	GtkTreeIter iter;
 	GtkTreeSelection *selection;

@@ -29,6 +29,7 @@
 #include <string>
 
 #include "bookentry.hh"
+#include "callback.hh"
 
 class PrivateMessage: public BookEntry {
 	public:
@@ -42,10 +43,10 @@ class PrivateMessage: public BookEntry {
 		
 		//gui thread functions
 		void addMessage_gui(std::string message);
-		void sendMessage_gui();
+		void sendMessage_gui(GtkEntry *entry, gpointer data);
 
 	private:
-		static void enter_callback(GtkEntry *entry, gpointer data);
+		Callback2<PrivateMessage, GtkEntry *> enterCallback;
 	
 		User::Ptr user;
 

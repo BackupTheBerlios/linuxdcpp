@@ -22,7 +22,9 @@
 #include <gtk/gtk.h>
 #include <glade/glade.h>
 #include <pthread.h>
+
 #include "bookentry.hh"
+#include "callback.hh"
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
@@ -44,8 +46,8 @@ class PublicHubs:
 		void PublicHubs::downloadList_client();
 
 		//only to be called from the gui thread
-		void filterHubs_gui();
-		void connect_gui();
+		void filterHubs_gui(GtkWidget *widget, gpointer data);
+		void connect_gui(GtkWidget *widget, gpointer data);
 		void updateList_gui();
 		void setStatus_gui(GtkStatusbar *status, std::string text);
 
@@ -66,8 +68,7 @@ class PublicHubs:
 			const User::Ptr &user) throw();
 
 	private:
-		static void filter_callback(GtkWidget *widget, gpointer data);
-		static void connect_callback(GtkWidget *widget, gpointer data);
+		Callback2<PublicHubs, GtkWidget *> filterCallback, connectCallback;
 
 		pthread_mutex_t hubLock;
 

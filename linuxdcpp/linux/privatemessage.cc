@@ -23,14 +23,10 @@
 
 using namespace std;
 
-void PrivateMessage::enter_callback(GtkEntry *entry, gpointer data) {
-	PrivateMessage *msg = (PrivateMessage *)data;
-	msg->sendMessage_gui();
-}
-
 PrivateMessage::PrivateMessage(User::Ptr user, GCallback closeCallback):
 	BookEntry(WulforManager::PRIVATE_MSG, user->getFullNick(), 
-		user->getNick(), closeCallback)
+		user->getNick(), closeCallback),
+	enterCallback(this, &PrivateMessage::sendMessage_gui)
 {
 	string file = WulforManager::get()->getPath() + "/glade/privatemessage.glade";
 	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
@@ -48,8 +44,7 @@ PrivateMessage::PrivateMessage(User::Ptr user, GCallback closeCallback):
 	buffer = gtk_text_buffer_new(NULL);
 	gtk_text_view_set_buffer(text, buffer);
 	
-    g_signal_connect(G_OBJECT(entry), "activate", 
-		G_CALLBACK(enter_callback), (gpointer)this);
+	enterCallback.connect(G_OBJECT(entry), "activate", NULL);
 
 	this->user = user;
 }
@@ -70,7 +65,7 @@ void PrivateMessage::addMessage_gui(std::string message) {
 	gtk_text_buffer_insert(buffer, &iter, text.c_str(), text.size());
 }
 
-void PrivateMessage::sendMessage_gui() {
+void PrivateMessage::sendMessage_gui(GtkEntry *e, gpointer d) {
 	string message, text = gtk_entry_get_text(entry);
 	typedef Func1<PrivateMessage, string> F1;
 	F1 *func;

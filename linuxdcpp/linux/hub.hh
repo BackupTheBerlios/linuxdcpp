@@ -32,6 +32,7 @@
 #include <client/User.h>
 
 #include "bookentry.hh"
+#include "callback.hh"
 
 class Hub:
 	public BookEntry,
@@ -53,7 +54,7 @@ class Hub:
 		void clearNickList_gui();
 		void getPassword_gui();
 		void addMessage_gui(std::string msg);
-		void sendMessage_gui();
+		void sendMessage_gui(GtkEntry *entry, gpointer data);
 		void addPrivateMessage_gui(const User::Ptr &user, std::string msg);
 
 		//to be called from client thread
@@ -93,9 +94,9 @@ class Hub:
 			int, int64_t, int, const string&) throw();
 
 	private:
-		static void enter_callback(GtkEntry *entry, gpointer data);
-
 		Client *client;
+
+		Callback2<Hub, GtkEntry *> enterCallback;
 
 		GtkWidget *mainBox;
 		GtkEntry *chatEntry;

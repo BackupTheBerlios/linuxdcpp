@@ -25,13 +25,9 @@
 
 using namespace std;
 
-void Hub::enter_callback(GtkEntry *entry, gpointer data) {
-	Hub *hub = (Hub *)data;
-	hub->sendMessage_gui();
-}
-
 Hub::Hub(std::string address, GCallback closeCallback):
 	BookEntry(WulforManager::HUB, address, address, closeCallback),
+	enterCallback(this, &Hub::sendMessage_gui),
 	WIDTH_ICON(20),
 	WIDTH_NICK(100),
 	WIDTH_SHARED(50)
@@ -64,9 +60,7 @@ Hub::Hub(std::string address, GCallback closeCallback):
 
 	client = NULL;
 
-	//For enter in the chat entry
-    g_signal_connect(G_OBJECT(chatEntry), "activate", 
-		G_CALLBACK(enter_callback), (gpointer)this);
+	enterCallback.connect(G_OBJECT(chatEntry), "activate", NULL);
 }
 
 Hub::~Hub() {
@@ -204,7 +198,7 @@ void Hub::addPrivateMessage_gui(const User::Ptr &user, std::string msg) {
 	privMsg->addMessage_gui(msg);
 }
 
-void Hub::sendMessage_gui() {
+void Hub::sendMessage_gui(GtkEntry *entry, gpointer data) {
 	string text = gtk_entry_get_text(chatEntry);
 	typedef Func1<Hub, string> F1;
 	F1 *func;
