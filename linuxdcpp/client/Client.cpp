@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 Client::Counts Client::counts;
 
 Client::Client(const string& hubURL, char separator, bool usesEscapes) : 
-	registered(false), socket(BufferedSocket::getSocket(separator, usesEscapes)), port(0), countType(COUNT_UNCOUNTED), reconnDelay(120)
+	socket(BufferedSocket::getSocket(separator, usesEscapes)), reconnDelay(120), registered(false), port(0), countType(COUNT_UNCOUNTED)
 {
 	string file;
 	Util::decodeUrl(hubURL, address, port, file);
@@ -36,7 +36,7 @@ Client::Client(const string& hubURL, char separator, bool usesEscapes) :
 	socket->addListener(this);
 }
 
-Client::~Client() {
+Client::~Client() throw() {
 	socket->removeListener(this);
 
 	updateCounts(true);
@@ -100,5 +100,5 @@ string Client::getLocalIp() const {
 
 /**
  * @file
- * $Id: Client.cpp,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: Client.cpp,v 1.2 2005/02/20 22:32:46 paskharen Exp $
  */

@@ -1,5 +1,6 @@
 2005-02-20 - paskharen
 * Added grant slot in user menu in hub.
+* Changed to client 0.670.
 
 2005-02-18 - phase
 * Fixed some things with the Hash-dialog.

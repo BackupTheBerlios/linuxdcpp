@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 #include "Util.h"
 #include "File.h"
 #include "version.h"
+#include "CID.h"
 
 const string SettingsManager::settingTags[] =
 {
@@ -38,7 +39,9 @@ const string SettingsManager::settingTags[] =
 	"LogFormatPostUpload", "LogFormatMainChat", "LogFormatPrivateChat", "FinishedOrder", "FinishedWidths",	
 	"TempDownloadDirectory", "SocksServer", "SocksUser", "SocksPassword", "ConfigVersion",
 	"DefaultAwayMessage", "TimeStampsFormat", "ADLSearchFrameOrder", "ADLSearchFrameWidths", 
-	"FinishedULWidths", "FinishedULOrder", "CID", "SpyFrameWidths", "SpyFrameOrder",
+	"FinishedULWidths", "FinishedULOrder", "CID", "SpyFrameWidths", "SpyFrameOrder", "LogFileMainChat", 
+	"LogFilePrivateChat", "LogFileStatus", "LogFileUpload", "LogFileDownload", "LogFileSystem", 
+	"LogFormatSystem", "LogFormatStatus", "DirectoryListingFrameOrder", "DirectoryListingFrameWidths",
 	"SENTRY", 
 	// Ints
 	"ConnectionType", "InPort", "Slots", "Rollback", "AutoFollow", "ClearSearch",
@@ -57,7 +60,8 @@ const string SettingsManager::settingTags[] =
 	"GetUserCountry", "FavShowJoins", "LogStatusMessages", "ShowStatusbar",
 	"ShowToolbar", "ShowTransferview", "PopunderPm", "PopunderFilelist", "MagnetAsk", "MagnetAction", "MagnetRegister",
 	"AddFinishedInstantly", "UseUPnP", "DontDLAlreadyShared", "UseCTRLForLineHistory", "ConfirmHubRemoval", 
-	"OpenNewWindow", "UDPPort",
+	"OpenNewWindow", "UDPPort", "SearchOnlyTTH", "ShowLastLinesLog", "ConfirmItemRemoval",
+	"AdvancedResume", "AdcDebug", "ToggleActiveWindow", "SearchHistory", 
 	"SENTRY",
 	// Int64
 	"TotalUpload", "TotalDownload",
@@ -123,6 +127,14 @@ SettingsManager::SettingsManager()
 	setDefault(LOG_FORMAT_POST_UPLOAD, "%Y-%m-%d %H:%M: %[source]" + STRING(UPLOADED_TO) + "%[user], %[size] (%[chunksize]), %[speed], %[time]");
 	setDefault(LOG_FORMAT_MAIN_CHAT, "[%Y-%m-%d %H:%M] %[message]");
 	setDefault(LOG_FORMAT_PRIVATE_CHAT, "[%Y-%m-%d %H:%M] %[message]");
+	setDefault(LOG_FORMAT_STATUS, "[%Y-%m-%d %H:%M] %[message]");
+	setDefault(LOG_FORMAT_SYSTEM, "[%Y-%m-%d %H:%M] %[message]");
+	setDefault(LOG_FILE_MAIN_CHAT, "%[hubaddr].log");
+	setDefault(LOG_FILE_STATUS, "%[hubaddr]_status.log");
+	setDefault(LOG_FILE_PRIVATE_CHAT, "%[user].log");
+	setDefault(LOG_FILE_UPLOAD, "Uploads.log");
+	setDefault(LOG_FILE_DOWNLOAD, "Downloads.log");
+	setDefault(LOG_FILE_SYSTEM, "system.log");
 	setDefault(GET_USER_INFO, true);
 	setDefault(URL_HANDLER, false);
 	setDefault(AUTO_AWAY, false);
@@ -136,7 +148,7 @@ SettingsManager::SettingsManager()
 	setDefault(COMPRESS_TRANSFERS, true);
 	setDefault(SHOW_PROGRESS_BARS, true);
 	setDefault(SFV_CHECK, false);
-	setDefault(DEFAULT_AWAY_MESSAGE, "I'm away. I might answer later if you're lucky.");
+	setDefault(DEFAULT_AWAY_MESSAGE, "I'm away. State your business and I might answer later if you're lucky.");
 	setDefault(TIME_STAMPS_FORMAT, "%H:%M");
 	setDefault(MAX_TAB_ROWS, 2);
 	setDefault(AUTO_UPDATE_LIST, true);
@@ -175,7 +187,14 @@ SettingsManager::SettingsManager()
 	setDefault(CONFIRM_HUB_REMOVAL, false);
 	setDefault(SETTINGS_USE_CTRL_FOR_LINE_HISTORY, true);
 	setDefault(SETTINGS_OPEN_NEW_WINDOW, false);
-
+	setDefault(SEARCH_ONLY_TTH, false);
+	setDefault(SHOW_LAST_LINES_LOG, 0);
+	setDefault(CONFIRM_ITEM_REMOVAL, 0);
+	setDefault(ADVANCED_RESUME, true);
+	setDefault(ADC_DEBUG, false);
+	setDefault(TOGGLE_ACTIVE_WINDOW, true);
+	setDefault(SEARCH_HISTORY, 10);
+	
 #ifdef _WIN32
 	setDefault(MAIN_WINDOW_STATE, SW_SHOWNORMAL);
 	setDefault(MAIN_WINDOW_SIZE_X, CW_USEDEFAULT);
@@ -191,23 +210,10 @@ SettingsManager::SettingsManager()
 
 void SettingsManager::load(string const& aFileName)
 {
-	string xmltext;
-	try {
-		File f(aFileName, File::READ, File::OPEN);
-		xmltext = f.read();		
-	} catch(const FileException&) {
-		// ...
-		return;
-	}
-
-	if(xmltext.empty()) {
-		// Nothing to load...
-		return;
-	}
-
 	try {
 		SimpleXML xml;
-		xml.fromXML(xmltext);
+		
+		xml.fromXML(File(aFileName, File::READ, File::OPEN).read());
 		
 		xml.resetCurrentChild();
 		
@@ -256,14 +262,21 @@ void SettingsManager::load(string const& aFileName)
 			set(UDP_PORT, SETTING(IN_PORT));
 		}
 
-		setDefault(UDP_PORT, SETTING(IN_PORT));
+		if(CID(SETTING(CLIENT_ID)).isZero())
+			set(CLIENT_ID, CID::generate().toBase32());
 
+#ifdef _DEBUG
+		set(CLIENT_ID, CID::generate().toBase32());
+#endif
+		setDefault(UDP_PORT, SETTING(IN_PORT));
+		
 		fire(SettingsManagerListener::Load(), &xml);
 
 		xml.stepOut();
 
 	} catch(const Exception&) {
-		// Oops, bad...
+		if(CID(SETTING(CLIENT_ID)).isZero())
+			set(CLIENT_ID, CID::generate().toBase32());
 	}
 }
 
@@ -326,6 +339,6 @@ void SettingsManager::save(string const& aFileName) {
 
 /**
  * @file
- * $Id: SettingsManager.cpp,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: SettingsManager.cpp,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */
 

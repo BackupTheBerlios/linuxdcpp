@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@
 #endif // _MSC_VER > 1000
 
 #include "SettingsManager.h"
-#include "ResourceManager.h"
 
 #include "Exception.h"
 #include "Singleton.h"
@@ -128,5 +127,5 @@ private:
 
 /**
  * @file
- * $Id: CryptoManager.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: CryptoManager.h,v 1.2 2005/02/20 22:32:46 paskharen Exp $
  */

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,14 +33,14 @@ short Socket::udpPort;
 
 #ifdef _DEBUG
 
-SocketException::SocketException(int aError) {
+SocketException::SocketException(int aError) throw() {
 	error = "SocketException: " + errorToString(aError);
 	dcdebug("Thrown: %s\n", error.c_str());
 }
 
 #else // _DEBUG
 
-SocketException::SocketException(int aError) {
+SocketException::SocketException(int aError) throw() {
 	error = errorToString(aError);
 }
 
@@ -48,18 +48,7 @@ SocketException::SocketException(int aError) {
 
 Socket::Stats Socket::stats = { 0, 0 };
 
-string Socket::getRemoteIp() const {
-	sockaddr_in sock_addr_rem = { 0 };
-	if(type == TYPE_TCP) {
-		socklen_t len = sizeof(sock_addr_rem);
-		if(getpeername(sock, (sockaddr*)&sock_addr_rem, &len) == SOCKET_ERROR)
-			return Util::emptyString;
-	}
-
-	return string(inet_ntoa(sock_addr_rem.sin_addr));	// + ":" + string(Util::toString((sock_addr_rem.sin_port >> 8) | (sock_addr_rem.sin_port << 8 & 0xffff)));
-}
-
-string SocketException::errorToString(int aError) {
+string SocketException::errorToString(int aError) throw() {
 	switch(aError) {
 	case EWOULDBLOCK:
 		return STRING(OPERATION_WOULD_BLOCK_EXECUTION);
@@ -98,6 +87,23 @@ string SocketException::errorToString(int aError) {
 	}
 }
 
+void Socket::create(int aType /* = TYPE_TCP */) throw(SocketException) {
+	if(sock != INVALID_SOCKET)
+		Socket::disconnect();
+
+	switch(aType) {
+	case TYPE_TCP:
+		checksocket(sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP));
+		break;
+	case TYPE_UDP:
+		checksocket(sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP));
+		break;
+	default:
+		dcasserta(0);
+	}
+	type = aType;
+}
+
 /**
  * Binds an UDP socket to a certain local port.
  */
@@ -119,7 +125,11 @@ void Socket::accept(const ServerSocket& aSocket) throw(SocketException){
 	}
 	type = TYPE_TCP;
 	dcassert(!isConnected());
-	checksockerr(sock=::accept(aSocket.getSocket(), NULL, NULL));
+
+	sockaddr_in sock_addr;
+	socklen_t sz = sizeof(sock_addr);
+
+	checksockerr(sock=::accept(aSocket.getSocket(), (sockaddr*)&sock_addr, &sz));
 #ifdef _WIN32
 	// Make sure we disable any inherited windows message things for this socket.
 	::WSAAsyncSelect(sock, NULL, 0, 0);
@@ -127,6 +137,7 @@ void Socket::accept(const ServerSocket& aSocket) throw(SocketException){
 	setBlocking(true);
 	connected = true;
 	
+	setIp(inet_ntoa(sock_addr.sin_addr));
 }
 
 /**
@@ -159,7 +170,7 @@ void Socket::connect(const string& aAddr, short aPort) throw(SocketException) {
     }
 
 	setIp(inet_ntoa(serv_addr.sin_addr));
-	
+
     if(::connect(sock,(sockaddr*)&serv_addr,sizeof(serv_addr)) == SOCKET_ERROR) {
 		// EWOULDBLOCK is ok, the attempt is still being made, and FD_CONNECT will be signaled...
 		if(errno != EWOULDBLOCK) {
@@ -253,7 +264,7 @@ void Socket::write(const char* aBuffer, size_t aLen) throw(SocketException) {
 					// Uhm, two blocks in a row...try making the send window smaller...
 					if(sendSize >= 256) {
 						sendSize /= 2;
-						dcdebug("Reducing send window size to %d\n", sendSize);
+						dcdebug("Reducing send window size to %lu\n", sendSize);
 					} else {
 						Thread::sleep(10);
 					}
@@ -266,7 +277,7 @@ void Socket::write(const char* aBuffer, size_t aLen) throw(SocketException) {
 			} else if(errno == ENOBUFS) {
 				if(sendSize > 32) {
 					sendSize /= 2;
-					dcdebug("Reducing send window size to %d\n", sendSize);
+					dcdebug("Reducing send window size to %lu\n", sendSize);
 				} else {
 					throw SocketException(STRING(OUT_OF_BUFFER_SPACE));
 				}
@@ -289,7 +300,7 @@ void Socket::write(const char* aBuffer, size_t aLen) throw(SocketException) {
 * @param aLen Data length
 * @throw SocketExcpetion Send failed.
 */
-void Socket::writeTo(const string& ip, short port, const char* aBuffer, size_t aLen) throw(SocketException) {
+void Socket::writeTo(const string& aIp, short aPort, const char* aBuffer, size_t aLen) throw(SocketException) {
 	if(sock == INVALID_SOCKET) {
 		create(TYPE_UDP);
 	}
@@ -302,7 +313,7 @@ void Socket::writeTo(const string& ip, short port, const char* aBuffer, size_t a
 	sockaddr_in  serv_addr;
 	hostent* host;
 
-	if(ip.empty() || port == 0) {
+	if(aIp.empty() || aPort == 0) {
 		throw SocketException(STRING(ADDRESS_NOT_AVAILABLE));
 	}
 
@@ -334,12 +345,12 @@ void Socket::writeTo(const string& ip, short port, const char* aBuffer, size_t a
 			connStr[3] = 3;		// Address type: domain name
 			connStr[4] = slen;
 			strncpy((char*)(u_int8_t*)connStr + 5, s.c_str(), slen);
-			*((u_int16_t*)(&connStr[5 + slen])) = htons(port);
+			*((u_int16_t*)(&connStr[5 + slen])) = htons(aPort);
 			connLen = 7 + slen;
 		} else {
 			connStr[3] = 1;		// Address type: IPv4;
 			*((long*)(&connStr[4])) = inet_addr(s.c_str());
-			*((u_int16_t*)(&connStr[8])) = htons(port);	
+			*((u_int16_t*)(&connStr[8])) = htons(aPort);	
 			connLen = 10;
 		}
 
@@ -350,13 +361,13 @@ void Socket::writeTo(const string& ip, short port, const char* aBuffer, size_t a
 		
 		stats.totalUp += i;
 	} else {
-		serv_addr.sin_port = htons(port);
+		serv_addr.sin_port = htons(aPort);
 		serv_addr.sin_family = AF_INET;
 		
-		serv_addr.sin_addr.s_addr = inet_addr(ip.c_str());
+		serv_addr.sin_addr.s_addr = inet_addr(aIp.c_str());
 		
 		if (serv_addr.sin_addr.s_addr == INADDR_NONE) {   /* server address is a name or invalid */
-			host = gethostbyname(ip.c_str());
+			host = gethostbyname(aIp.c_str());
 			if (host == NULL) {
 				throw SocketException(STRING(UNKNOWN_ADDRESS));
 			}
@@ -372,6 +383,7 @@ void Socket::writeTo(const string& ip, short port, const char* aBuffer, size_t a
 
 /**
  * Blocks until timeout is reached one of the specified conditions have been fulfilled
+ * @param millis Max milliseconds to block.
  * @param waitFor WAIT_*** flags that set what we're waiting for, set to the combination of flags that
  *				  triggered the wait stop on return (==WAIT_NONE on timeout)
  * @return WAIT_*** ored together of the current state.
@@ -392,7 +404,7 @@ int Socket::wait(u_int32_t millis, int waitFor) throw(SocketException) {
 
 		FD_SET(sock, &wfd);
 		FD_SET(sock, &efd);
-		checksockerr(select((int)sock+1, NULL, &wfd, &efd, &tv));
+		checksockerr(select((int)(sock+1), NULL, &wfd, &efd, &tv));
 
 		if(FD_ISSET(sock, &wfd) || FD_ISSET(sock, &efd)) {
 			int y = 0;
@@ -420,7 +432,7 @@ int Socket::wait(u_int32_t millis, int waitFor) throw(SocketException) {
 		FD_SET(sock, wfdp);
 	}
 	waitFor = WAIT_NONE;
-	checksockerr(select((int)sock+1, rfdp, wfdp, NULL, &tv));
+	checksockerr(select((int)(sock+1), rfdp, wfdp, NULL, &tv));
 
 	if(rfdp && FD_ISSET(sock, rfdp)) {
 		waitFor |= WAIT_READ;
@@ -547,8 +559,17 @@ void Socket::socksUpdated() {
 	}
 }
 
+void Socket::disconnect() throw() {
+	if(sock != INVALID_SOCKET) {
+		::shutdown(sock, 1); // Make sure we send FIN (SD_SEND shutdown type...)
+		closesocket(sock);
+	}
+	connected = false;
+
+	sock = INVALID_SOCKET;
+}
+
 /**
  * @file
- * $Id: Socket.cpp,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: Socket.cpp,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */
-

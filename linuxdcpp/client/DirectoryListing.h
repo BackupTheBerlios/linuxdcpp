@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -89,8 +89,8 @@ public:
 		List directories;
 		File::List files;
 		
-		Directory(Directory* aParent = NULL, const string& aName = Util::emptyString, bool _adls = false) 
-			: name(aName), parent(aParent), adls(_adls) { };
+		Directory(Directory* aParent = NULL, const string& aName = Util::emptyString, bool _adls = false, bool aComplete = true) 
+			: name(aName), parent(aParent), adls(_adls), complete(aComplete) { };
 		
 		virtual ~Directory() {
 			for_each(directories.begin(), directories.end(), DeleteFunction<Directory*>());
@@ -113,6 +113,7 @@ public:
 		GETSET(string, name, Name);
 		GETSET(Directory*, parent, Parent);		
 		GETSET(bool, adls, Adls);
+		GETSET(bool, complete, Complete);
 
 	private:
 		Directory(const Directory&);
@@ -133,10 +134,10 @@ public:
 		delete root;
 	};
 
-	void loadFile(const string& name, bool doAdl);
+	void loadFile(const string& name);
 
-	void load(const string& i, bool doAdl);
-	void loadXML(const string& xml, bool doAdl);
+	void load(const string& i);
+	void loadXML(const string& xml);
 
 	void download(const string& aDir, const string& aTarget, bool highPrio);
 	void download(Directory* aDir, const string& aTarget, bool highPrio);
@@ -172,5 +173,5 @@ inline bool operator==(DirectoryListing::File::Ptr a, const string& b) { return 
 
 /**
  * @file
- * $Id: DirectoryListing.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: DirectoryListing.h,v 1.2 2005/02/20 22:32:46 paskharen Exp $
  */

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -91,7 +91,7 @@ public:
 	}
 
 	/** @internal */
-	Command getCommand(bool zlib, bool tthf);
+	AdcCommand getCommand(bool zlib, bool tthf);
 
 	typedef CalcOutputStream<CRC32Filter, true> CrcOS;
 	GETSET(string, source, Source);
@@ -99,9 +99,8 @@ public:
 	GETSET(string, tempTarget, TempTarget);
 	GETSET(OutputStream*, file, File);
 	GETSET(CrcOS*, crcCalc, CrcCalc);
-	GETSET(bool, treeValid, TreeValid);
-	GETSET(Download*, oldDownload, OldDownload);
 	GETSET(TTHValue*, tth, TTH);
+	GETSET(bool, treeValid, TreeValid);
 
 private:
 	Download(const Download&);
@@ -227,15 +226,23 @@ private:
 	Download::List downloads;
 	
 	bool checkRollback(Download* aDownload, const u_int8_t* aBuf, int aLen) throw(FileException);
-	void removeConnection(UserConnection::Ptr aConn, bool reuse = false);
-	void removeDownload(Download* aDown, bool full, bool finished = false);
-	
+	void removeConnection(UserConnection::Ptr aConn, bool reuse = false, bool ntd = false);
+	void removeDownload(Download* aDown);
+	void fileNotAvailable(UserConnection* aSource);
+	void noSlots(UserConnection* aSource);
+
+	void moveFile(const string& source, const string&target);
+	void logDownload(UserConnection* aSource, Download* d);
+	u_int32_t calcCrc32(const string& file) throw(FileException);
+	bool checkSfv(UserConnection* aSource, Download* d, u_int32_t crc);
+	int64_t getResumePos(const string& file, const TigerTree& tt, int64_t startPos);
+
 	friend class Singleton<DownloadManager>;
 	DownloadManager() { 
 		TimerManager::getInstance()->addListener(this);
 	};
 
-	virtual ~DownloadManager() {
+	virtual ~DownloadManager() throw() {
 		TimerManager::getInstance()->removeListener(this);
 		while(true) {
 			{
@@ -258,9 +265,10 @@ private:
 	virtual void on(MaxedOut, UserConnection*) throw();
 	virtual	void on(FileNotAvailable, UserConnection*) throw();
 
-	virtual void on(Command::SND, UserConnection*, const Command&) throw();
-	
-	bool prepareFile(UserConnection* aSource, int64_t newSize = -1);
+	virtual void on(AdcCommand::SND, UserConnection*, const AdcCommand&) throw();
+	virtual void on(AdcCommand::STA, UserConnection*, const AdcCommand&) throw();
+
+	bool prepareFile(UserConnection* aSource, int64_t newSize, bool z);
 	// TimerManagerListener
 	virtual void on(TimerManagerListener::Second, u_int32_t aTick) throw();
 };
@@ -269,5 +277,5 @@ private:
 
 /**
  * @file
- * $Id: DownloadManager.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: DownloadManager.h,v 1.2 2005/02/20 22:32:46 paskharen Exp $
  */

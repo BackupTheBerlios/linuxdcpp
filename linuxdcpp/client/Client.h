@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -79,7 +79,7 @@ public:
 	typedef List::iterator Iter;
 
 	Client(const string& hubURL, char separator, bool usesEscapes = false);
-	virtual ~Client();
+	virtual ~Client() throw();
 
 	virtual void connect(const User* user) = 0;
 	virtual void hubMessage(const string& aMessage) = 0;
@@ -163,8 +163,8 @@ protected:
 
 	GETSET(string, nick, Nick);
 	GETSET(string, defpassword, Password);
-	GETSET(bool, registered, Registered);
 	GETSET(u_int32_t, reconnDelay, ReconnDelay);
+	GETSET(bool, registered, Registered);
 private:
 
 	enum CountType {
@@ -181,7 +181,7 @@ private:
 
 	string address;
 	string addressPort;
-	short port;
+	u_int16_t port;
 
 	CountType countType;
 
@@ -195,5 +195,5 @@ private:
 #endif // _CLIENT_H
 /**
  * @file
- * $Id: Client.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: Client.h,v 1.2 2005/02/20 22:32:46 paskharen Exp $
  */

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,34 @@
 
 #include "Text.h"
 
+template<typename T, bool flag> struct ReferenceSelector {
+	typedef T ResultType;
+};
+template<typename T> struct ReferenceSelector<T,true> {
+	typedef const T& ResultType;
+};
+
+template<typename T> class IsOfClassType {
+public:
+	template<typename U> static char check(int U::*);
+	template<typename U> static float check(...);
+public:
+	enum { Result = sizeof(check<T>(0)) };
+};
+
+template<typename T> struct TypeTraits {
+	typedef IsOfClassType<T> ClassType;
+	typedef ReferenceSelector<T, ((ClassType::Result == 1) || (sizeof(T) > sizeof(char*)) ) > Selector;
+	typedef typename Selector::ResultType ParameterType;
+};
+
+#define GETSET(type, name, name2) \
+private: type name; \
+public: TypeTraits<type>::ParameterType get##name2() const { return name; }; \
+	void set##name2(TypeTraits<type>::ParameterType a##name2) { name = a##name2; };
+
+#define LIT(x) x, (sizeof(x)-1)
+
 /** Evaluates op(pair<T1, T2>.first, compareTo) */
 template<class T1, class T2, class op = equal_to<T1> >
 class CompareFirst {
@@ -39,6 +67,7 @@ public:
 	CompareFirst(const T1& compareTo) : a(compareTo) { };
 	bool operator()(const pair<T1, T2>& p) { return op()(p.first, a); };
 private:
+	CompareFirst& operator=(const CompareFirst&);
 	const T1& a;
 };
 
@@ -49,6 +78,7 @@ public:
 	CompareSecond(const T2& compareTo) : a(compareTo) { };
 	bool operator()(const pair<T1, T2>& p) { return op()(p.second, a); };
 private:
+	CompareSecond& operator=(const CompareSecond&);
 	const T2& a;
 };
 
@@ -198,9 +228,9 @@ public:
 		string tmp = Text::fromT((LPCTSTR)lpMsgBuf);
 		// Free the buffer.
 		LocalFree( lpMsgBuf );
-		string::size_type i;
+		string::size_type i = 0;
 
-		while( (i = tmp.find_last_of("\r\n")) != string::npos) {
+		while( (i = tmp.find_first_of("\r\n", i)) != string::npos) {
 			tmp.erase(i, 1);
 		}
 		return tmp;
@@ -249,7 +279,7 @@ public:
 		return (j != wstring::npos) ? path.substr(j+1, i-j-1) : path;
 	}
 
-	static void decodeUrl(const string& aUrl, string& aServer, short& aPort, string& aFile);
+	static void decodeUrl(const string& aUrl, string& aServer, u_int16_t& aPort, string& aFile);
 	static string validateFileName(string aFile);
 	
 	static string formatBytes(const string& aString) {
@@ -274,6 +304,9 @@ public:
 	}
 
 	static string toAdcFile(const string& file) {
+		if(file == "files.xml.bz2" || file == "MyList.DcLst")
+			return file;
+
 		string ret;
 		ret.reserve(file.length() + 1);
 		ret += '/';
@@ -304,11 +337,7 @@ public:
 
 	static string formatSeconds(int64_t aSec) {
 		char buf[64];
-#ifdef _WIN32
-		sprintf(buf, "%01I64d:%02d:%02d", aSec / (60*60), (int)((aSec / 60) % 60), (int)(aSec % 60));
-#else
-		sprintf(buf, "%01lld:%02d:%02d", aSec / (60*60), (int)((aSec / 60) % 60), (int)(aSec % 60));
-#endif		
+		sprintf(buf, "%01lu:%02d:%02d", (unsigned long)(aSec / (60*60)), (int)((aSec / 60) % 60), (int)(aSec % 60));
 		return buf;
 	}
 
@@ -335,10 +364,11 @@ public:
 
 	static double toDouble(const string& aString) {
 		// Work-around for atof and locales...
-		string::size_type i = aString.rfind(',');
-		if(i != string::npos) {
+		lconv* lv = localeconv();
+		string::size_type i = aString.find_last_of(".,");
+		if(i != string::npos && aString[i] != lv->decimal_point[0]) {
 			string tmp(aString);
-			tmp[i] = '.';
+			tmp[i] = lv->decimal_point[0];
 			return atof(tmp.c_str());
 		}
 		return atof(aString.c_str());
@@ -380,7 +410,7 @@ public:
 	}
 	static string toString(long long val) {
 		char buf[32];
-#ifdef WIN32
+#ifdef _MSC_VER
 		sprintf(buf, "%I64d", val);
 #else
 		sprintf(buf, "%lld", val);
@@ -389,7 +419,7 @@ public:
 	}
 	static string toString(unsigned long long val) {
 		char buf[32];
-#ifdef WIN32
+#ifdef _MSC_VER
 		sprintf(buf, "%I64u", val);
 #else
 		sprintf(buf, "%llu", val);
@@ -447,9 +477,6 @@ public:
 	static string getOsVersion();
 
 	static string getIpCountry (string IP);
-
-	static int getOsMinor();
-	static int getOsMajor(); 
 
 	static bool getAway() { return away; };
 	static void setAway(bool aAway) {
@@ -556,10 +583,9 @@ struct noCaseStringLess {
 	}
 };
 
-
-#endif // !defined(AFX_UTIL_H__1758F242_8D16_4C50_B40D_E59B3DD63913__INCLUDED_)
+#endif // UTIL_H
 
 /**
  * @file
- * $Id: Util.h,v 1.1 2004/12/29 23:21:22 paskharen Exp $
+ * $Id: Util.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */

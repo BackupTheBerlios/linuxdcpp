@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,8 @@ const string UserConnection::FEATURE_ADCGET = "ADCGet";
 const string UserConnection::FEATURE_ZLIB_GET = "ZLIG";
 const string UserConnection::FEATURE_TTHL = "TTHL";
 const string UserConnection::FEATURE_TTHF = "TTHF";
+
+const string UserConnection::FILE_NOT_AVAILABLE = "File Not Available";
 
 const string UserConnection::UPLOAD = "Upload";
 const string UserConnection::DOWNLOAD = "Download";
@@ -95,7 +97,7 @@ void UserConnection::on(BufferedSocketListener::Line, const string& aLine) throw
 			fire(UserConnectionListener::Direction(), this, param.substr(0, x), param.substr(x+1));
 		}
 	} else if(cmd == "$Error") {
-		if(Util::stricmp(param.c_str(), "File Not Available") == 0 || 
+		if(Util::stricmp(param.c_str(), FILE_NOT_AVAILABLE) == 0 || 
 			param.rfind(/*path/file*/" no more exists") != string::npos) { 
 			fire(UserConnectionListener::FileNotAvailable(), this);
 		} else {
@@ -179,5 +181,5 @@ void UserConnection::on(BufferedSocketListener::Failed, const string& aLine) thr
 
 /**
  * @file
- * $Id: UserConnection.cpp,v 1.1 2004/12/29 23:21:22 paskharen Exp $
+ * $Id: UserConnection.cpp,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */

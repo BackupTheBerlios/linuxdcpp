@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,9 @@
 
 class ZFilter {
 public:
+	/** Compression will automatically be turned off if below this... */
+	static const double MIN_COMPRESSION_LEVEL;
+
 	ZFilter();
 	~ZFilter();
 	/**
@@ -44,6 +47,9 @@ public:
 	bool operator()(const void* in, size_t& insize, void* out, size_t& outsize);
 private:
 	z_stream zs;
+	int64_t totalIn;
+	int64_t totalOut;
+	bool compressing;
 };
 
 class UnZFilter {
@@ -77,5 +83,5 @@ private:
 
 /**
  * @file
- * $Id: ZUtils.h,v 1.1 2004/12/29 23:21:22 paskharen Exp $
+ * $Id: ZUtils.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */

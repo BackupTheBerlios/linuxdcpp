@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,11 @@
 
 #include "BufferedSocket.h"
 
+#include "ResourceManager.h"
 #include "TimerManager.h"
-#include "CryptoManager.h"
+#include "SettingsManager.h"
 
-#include "File.h"
+#include "Streams.h"
 
 #define SMALL_BUFFER_SIZE 1024
 
@@ -32,8 +33,8 @@
 #define POLL_TIMEOUT 250
 
 BufferedSocket::BufferedSocket(char aSeparator, bool aUsesEscapes) throw(SocketException) : 
-separator(aSeparator), usesEscapes(aUsesEscapes), escaped(false), port(0), mode(MODE_LINE), 
-dataBytes(0), inbufSize(64*1024), curBuf(0), file(NULL) {
+separator(aSeparator), usesEscapes(aUsesEscapes), port(0), mode(MODE_LINE), 
+dataBytes(0), escaped(false), inbufSize(64*1024), curBuf(0), file(NULL) {
 
 	inbuf = new u_int8_t[inbufSize];
 
@@ -54,7 +55,7 @@ dataBytes(0), inbufSize(64*1024), curBuf(0), file(NULL) {
 	}
 }
 
-BufferedSocket::~BufferedSocket() {
+BufferedSocket::~BufferedSocket() throw() {
 	delete[] inbuf;
 	for(int i = 0; i < BUFFERS; i++) {
 		delete[] outbuf[i];
@@ -290,6 +291,16 @@ void BufferedSocket::threadRead() {
 		int bufpos = 0;
 		string l;
 		while(i > 0) {
+			// Special to autodetect nmdc connections...
+			if(separator == 0) {
+				if(inbuf[0] == '$') {
+					separator = '|';
+					usesEscapes = false;
+				} else {
+					separator = '\n';
+					usesEscapes = true;
+				}
+			}
 			if(mode == MODE_LINE) {
 				string::size_type pos = 0;
 
@@ -366,7 +377,7 @@ void BufferedSocket::write(const char* aBuf, size_t aLen) throw() {
 
 		if(newSize > outbufSize[curBuf]) {
 			// Need to grow...
-			dcdebug("Growing outbuf[%d] to %d bytes\n", curBuf, newSize);
+			dcdebug("Growing outbuf[%d] to %lu bytes\n", curBuf, newSize);
 			u_int8_t* newbuf = new u_int8_t[newSize];
 			memcpy(newbuf, outbuf[curBuf], outbufPos[curBuf]);
 			delete[] outbuf[curBuf];
@@ -448,5 +459,5 @@ int BufferedSocket::run() {
 
 /**
  * @file
- * $Id: BufferedSocket.cpp,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: BufferedSocket.cpp,v 1.2 2005/02/20 22:32:46 paskharen Exp $
  */

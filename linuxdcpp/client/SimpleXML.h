@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,12 +31,8 @@ STANDARD_EXCEPTION(SimpleXMLException);
 
 /**
  * This class reads an XML and calls a callback for each
- * element encountered. T is a functor with two overloads,
- * void operator()(const string& name, StringPairList& attribs, bool simple)
- * void operator()(const string& data);
- * The first will be called on every tag encountered, the second when exiting
- * from a non-simple tag.
- * It is in now way a full XML parser.
+ * element encountered.
+ * It is in no way a full XML parser.
  */
 class SimpleXMLReader {
 public:
@@ -45,7 +41,8 @@ public:
 		virtual void startTag(const string& name, StringPairList& attribs, bool simple) = 0;
 		virtual void endTag(const string& name, const string& data) = 0;
 
-		const string& getAttrib(StringPairList& attribs, const string& name, size_t hint) {
+	protected:
+		static const string& getAttrib(StringPairList& attribs, const string& name, size_t hint) {
 			hint = min(hint, attribs.size());
 
 			StringPairIter i = find_if(attribs.begin() + hint, attribs.end(), CompareFirst<string, string>(name));
@@ -56,6 +53,8 @@ public:
 				return i->second;
 			}
 		}
+	private:
+		CallBack& operator=(const CallBack&);
 	};
 
 	SimpleXMLReader(CallBack* callback) : cb(callback), utf8(true) { }
@@ -285,6 +284,6 @@ private:
 
 /**
  * @file
- * $Id: SimpleXML.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: SimpleXML.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */
 

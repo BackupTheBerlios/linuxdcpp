@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,8 +38,8 @@ public:
 	typedef List::iterator Iter;
 	
 	HubEntry(const string& aName, const string& aServer, const string& aDescription, const string& aUsers) throw() : 
-	name(aName), server(aServer), description(aDescription), users(Util::toInt(aUsers)), country(Util::emptyString), 
-	rating(Util::emptyString), reliability(0.0), shared(0), minShare(0), minSlots(0), maxHubs(0), maxUsers(0) { };
+	name(aName), server(aServer), description(aDescription), country(Util::emptyString), 
+	rating(Util::emptyString), reliability(0.0), shared(0), minShare(0), users(Util::toInt(aUsers)), minSlots(0), maxHubs(0), maxUsers(0) { };
 
 	HubEntry(const string& aName, const string& aServer, const string& aDescription, const string& aUsers, const string& aCountry,
 		const string& aShared, const string& aMinShare, const string& aMinSlots, const string& aMaxHubs, const string& aMaxUsers,
@@ -220,12 +220,12 @@ private:
 
 	friend class Singleton<HubManager>;
 	
-	HubManager() : running(false), c(NULL), lastServer(0), lastId(0), dontSave(false), listType(TYPE_NORMAL) {
+	HubManager() : lastId(0), running(false), c(NULL), lastServer(0), listType(TYPE_NORMAL), dontSave(false) {
 		SettingsManager::getInstance()->addListener(this);
 	}
 
-	virtual ~HubManager() {
-		SettingsManager::getInstance()->addListener(this);
+	virtual ~HubManager() throw() {
+		SettingsManager::getInstance()->removeListener(this);
 		if(c) {
 			c->removeListener(this);
 			delete c;
@@ -269,6 +269,6 @@ private:
 
 /**
  * @file
- * $Id: HubManager.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: HubManager.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */
 

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -128,11 +128,9 @@ private:
 	friend class Singleton<ClientManager>;
 	ClientManager() { 
 		TimerManager::getInstance()->addListener(this); 
-		if(SETTING(CLIENT_ID).empty())
-			SettingsManager::getInstance()->set(SettingsManager::CLIENT_ID, CID::generate().toBase32());
 	};
 
-	virtual ~ClientManager() { TimerManager::getInstance()->removeListener(this); };
+	virtual ~ClientManager() throw() { TimerManager::getInstance()->removeListener(this); };
 
 	// ClientListener
 	virtual void on(Connected, Client* c) throw() { fire(ClientManagerListener::ClientConnected(), c); }
@@ -151,6 +149,6 @@ private:
 
 /**
  * @file
- * $Id: ClientManager.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: ClientManager.h,v 1.2 2005/02/20 22:32:46 paskharen Exp $
  */
 

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #endif // _MSC_VER > 1000
 
 #include "Exception.h"
+#include "ResourceManager.h"
 
 STANDARD_EXCEPTION(BitStreamException);
 
@@ -34,7 +35,7 @@ STANDARD_EXCEPTION(BitStreamException);
 class BitInputStream  
 {
 public:
-	BitInputStream(const u_int8_t* aStream, size_t aStart, size_t aEnd) : endPos(aEnd*8), bitPos(aStart*8), is(aStream) { };
+	BitInputStream(const u_int8_t* aStream, size_t aStart, size_t aEnd) : bitPos(aStart*8), endPos(aEnd*8), is(aStream) { };
 	~BitInputStream() { };
 	
 	bool get() throw(BitStreamException) {
@@ -65,5 +66,5 @@ private:
 
 /**
  * @file
- * $Id: BitInputStream.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: BitInputStream.h,v 1.2 2005/02/20 22:32:46 paskharen Exp $
  */

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,10 +39,43 @@ public:
 class LogManager : public Singleton<LogManager>, public Speaker<LogManagerListener>
 {
 public:
+	enum LogArea { CHAT, PM, DOWNLOAD, UPLOAD, SYSTEM, STATUS, LAST };
+	enum {FILE, FORMAT};
+
+	void log(LogArea area, StringMap& params) throw() {
+		string path = SETTING(LOG_DIRECTORY);
+		string msg;
+	
+		path += Util::formatParams(getSetting(area, FILE), params);
+		msg = Util::formatParams(getSetting(area, FORMAT), params);
+
+		log(path, msg);
+	}
+
+	void message(const string& msg) {
+		if(BOOLSETTING(LOG_SYSTEM)) {
+			StringMap params;
+			params["message"] = msg;
+			log(LogManager::SYSTEM, params);
+		}
+		fire(LogManagerListener::Message(), msg);
+	}
+
+	const string& getSetting(int area, int sel) {
+		return SettingsManager::getInstance()->get(static_cast<SettingsManager::StrSetting>(logOptions[area][sel]), true);
+	}
+
+	void saveSetting(int area, int sel, const string& setting) {
+		SettingsManager::getInstance()->set(static_cast<SettingsManager::StrSetting>(logOptions[area][sel]), setting);
+	}
+
+private:
 	void log(const string& area, const string& msg) throw() {
 		Lock l(cs);
 		try {
-			File f(Util::validateFileName(SETTING(LOG_DIRECTORY) + area + ".log"), File::WRITE, File::OPEN | File::CREATE);
+			string aArea = Util::validateFileName(area);
+			File::ensureDirectory(aArea);
+			File f(aArea, File::WRITE, File::OPEN | File::CREATE);
 			f.setEndPos(0);
 			f.write(msg + "\r\n");
 		} catch (const FileException&) {
@@ -50,32 +83,34 @@ public:
 		}
 	}
 
-	void logDateTime(const string& area, const string& msg) throw() {
-		log(area, Util::formatTime("%Y-%m-%d %H:%M: ", TimerManager::getInstance()->getTime()) + msg);
-	}
-
-	void message(const string& msg) {
-		if(BOOLSETTING(LOG_SYSTEM)) {
-			log("system", Util::formatTime("%Y-%m-%d %H:%M:%S: ", TimerManager::getInstance()->getTime()) + msg);
-		}
-		fire(LogManagerListener::Message(), msg);
-	}
-
-private:
 	friend class Singleton<LogManager>;
 	CriticalSection cs;
-	
-	LogManager() { };
-	virtual ~LogManager() { };
-	
+
+	int logOptions[LAST][2];
+
+	LogManager() {
+		logOptions[UPLOAD][FILE]		= SettingsManager::LOG_FILE_UPLOAD;
+		logOptions[UPLOAD][FORMAT]		= SettingsManager::LOG_FORMAT_POST_UPLOAD;
+        	logOptions[DOWNLOAD][FILE]		= SettingsManager::LOG_FILE_DOWNLOAD;
+		logOptions[DOWNLOAD][FORMAT]		= SettingsManager::LOG_FORMAT_POST_DOWNLOAD;
+		logOptions[CHAT][FILE]			= SettingsManager::LOG_FILE_MAIN_CHAT;
+		logOptions[CHAT][FORMAT]		= SettingsManager::LOG_FORMAT_MAIN_CHAT;
+		logOptions[PM][FILE]			= SettingsManager::LOG_FILE_PRIVATE_CHAT;
+		logOptions[PM][FORMAT]			= SettingsManager::LOG_FORMAT_PRIVATE_CHAT;
+		logOptions[SYSTEM][FILE]		= SettingsManager::LOG_FILE_SYSTEM;
+		logOptions[SYSTEM][FORMAT]		= SettingsManager::LOG_FORMAT_SYSTEM;
+		logOptions[STATUS][FILE]		= SettingsManager::LOG_FILE_STATUS;
+		logOptions[STATUS][FORMAT]		= SettingsManager::LOG_FORMAT_STATUS;
+	};
+	virtual ~LogManager() throw() { };
+
 };
 
 #define LOG(area, msg) LogManager::getInstance()->log(area, msg)
-#define LOGDT(area, msg) LogManager::getInstance()->logDateTime(area, msg)
 
 #endif // !defined(AFX_LOGMANAGER_H__73C7E0F5_5C7D_4A2A_827B_53267D0EF4C5__INCLUDED_)
 
 /**
  * @file
- * $Id: LogManager.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: LogManager.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */

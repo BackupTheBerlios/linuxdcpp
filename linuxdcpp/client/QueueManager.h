@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -79,19 +79,19 @@ public:
 	void add(const string& aFile, int64_t aSize, User::Ptr aUser, 
 		const string& aTarget, const TTHValue* root, 
 		int aFlags = QueueItem::FLAG_RESUME, QueueItem::Priority p = QueueItem::DEFAULT, 
-		const string& aTempTarget = Util::emptyString, bool addBad = true) throw(QueueException, FileException);
+		bool addBad = true) throw(QueueException, FileException);
 	
 	/** Add a user's filelist to the queue. */
 	void addList(const User::Ptr& aUser, int aFlags) throw(QueueException, FileException) {
 		string x = aUser->getNick();
 		string::size_type i = 0;
-		while((i = x.find('/'), i) != string::npos)
+		while((i = x.find('\\'), i) != string::npos)
 			x[i] = '_';
-		string file = Util::getAppPath() + "FileLists/" + x;
+		string file = Util::getAppPath() + "FileLists\\" + x;
 		// We use the searchString to store the start viewing directory for file lists
 		add(USER_LIST_NAME, -1, aUser, file, NULL, 
 			QueueItem::FLAG_USER_LIST | aFlags,  QueueItem::DEFAULT, 
-			Util::emptyString, true);
+			true);
 	}
 
 	/** Readd a source that was removed */
@@ -108,32 +108,16 @@ public:
 	void remove(const string& aTarget) throw();
 	void removeSource(const string& aTarget, User::Ptr& aUser, int reason, bool removeConn = true) throw();
 	void removeSources(User::Ptr& aUser, int reason) throw();
-	
+
 	void setPriority(const string& aTarget, QueueItem::Priority p) throw();
 	
-	void getTargetsBySize(StringList& sl, int64_t aSize, const string& suffix) throw() {
-		Lock l(cs);
-		QueueItem::List ql;
-		fileQueue.find(ql, aSize, suffix);
-		for(QueueItem::Iter i = ql.begin(); i != ql.end(); ++i) {
-			sl.push_back((*i)->getTarget());
-		}
-	}
-
-	void getTargetsByRoot(StringList& sl, const TTHValue& tth) {
-		Lock l(cs);
-		QueueItem::List ql;
-		fileQueue.find(ql, &tth);
-		for(QueueItem::Iter i = ql.begin(); i != ql.end(); ++i) {
-			sl.push_back((*i)->getTarget());
-		}
-	}
-
+	void getTargetsBySize(StringList& sl, int64_t aSize, const string& suffix) throw();
+	void getTargetsByRoot(StringList& sl, const TTHValue& tth);
 	QueueItem::StringMap& lockQueue() throw() { cs.enter(); return fileQueue.getQueue(); } ;
 	void unlockQueue() throw() { cs.leave(); };
 
-	Download* getDownload(User::Ptr& aUser) throw();
-	void putDownload(Download* aDownload, bool finished = false) throw();
+	Download* getDownload(User::Ptr& aUser, bool supportsTrees) throw();
+	void putDownload(Download* aDownload, bool finished) throw();
 
 	bool hasDownload(const User::Ptr& aUser, QueueItem::Priority minPrio = QueueItem::LOWEST) throw() {
 		Lock l(cs);
@@ -162,7 +146,7 @@ private:
 
 		QueueItem* find(const string& target);
 		void find(QueueItem::List& sl, int64_t aSize, const string& ext);
-		void find(QueueItem::List& ql, const TTHValue* tth);
+		void find(QueueItem::List& ql, const TTHValue& tth);
 
 		QueueItem* findAutoSearch(StringList& recent);
 		size_t getSize() { return queue.size(); };
@@ -209,7 +193,7 @@ private:
 	friend class Singleton<QueueManager>;
 	
 	QueueManager();
-	virtual ~QueueManager();
+	virtual ~QueueManager() throw();
 	
 	CriticalSection cs;
 	
@@ -227,8 +211,6 @@ private:
 	u_int32_t nextSearch;
 	
 	static const string USER_LIST_NAME;
-	static const string TEMP_EXTENSION;
-	static string getTempName(const string& /*aFileName*/, const TTHValue* /*aRoot*/);
 
 	/** Sanity check for the target filename */
 	static string checkTarget(const string& aTarget, int64_t aSize, int& flags) throw(QueueException, FileException);
@@ -236,8 +218,8 @@ private:
 	bool addSource(QueueItem* qi, const string& aFile, User::Ptr aUser, Flags::MaskType addBad, bool utf8) throw(QueueException, FileException);
 
 	int QueueManager::matchFiles(DirectoryListing::Directory* dir) throw();
+	void processList(const string& name, User::Ptr& user, int flags);
 
-	void removeAll(QueueItem* q);
 	void load(SimpleXML* aXml);
 
 	void setDirty() {
@@ -262,6 +244,6 @@ private:
 
 /**
  * @file
- * $Id: QueueManager.h,v 1.2 2005/02/02 22:51:32 phase Exp $
+ * $Id: QueueManager.h,v 1.3 2005/02/20 22:32:47 paskharen Exp $
  */
 

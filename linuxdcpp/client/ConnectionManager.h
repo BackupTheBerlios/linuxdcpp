@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,11 +65,11 @@ class ConnectionManager : public Speaker<ConnectionManagerListener>,
 	public Singleton<ConnectionManager>
 {
 public:
-	void connect(const string& aServer, short aPort, const string& aNick);
-	void connect(const string& aServer, short aPort, const CID& cid, const string& aToken);
+	void nmdcConnect(const string& aServer, short aPort, const string& aNick);
+	void adcConnect(const string& aServer, short aPort, const string& aToken);
 	void getDownloadConnection(const User::Ptr& aUser);
-	void putDownloadConnection(UserConnection* aSource, bool reuse = false);
-	void putUploadConnection(UserConnection* aSource);
+	void putDownloadConnection(UserConnection* aSource, bool reuse = false, bool ntd = false);
+	void putUploadConnection(UserConnection* aSource, bool ntd);
 	
 	void removeConnection(const User::Ptr& aUser, int isDownload);
 	void shutdown();	
@@ -119,7 +119,7 @@ private:
 	friend class Singleton<ConnectionManager>;
 	ConnectionManager();
 
-	virtual ~ConnectionManager() { shutdown(); };
+	virtual ~ConnectionManager() throw() { shutdown(); };
 	
 	UserConnection* getConnection(bool aNmdc) throw(SocketException) {
 		UserConnection* uc = new UserConnection();
@@ -146,10 +146,10 @@ private:
 	virtual void on(MyNick, UserConnection*, const string&) throw();
 	virtual void on(Supports, UserConnection*, const StringList&) throw();
 
-	virtual void on(Command::SUP, UserConnection*, const Command&) throw();
-	virtual void on(Command::INF, UserConnection*, const Command&) throw();
-	virtual void on(Command::NTD, UserConnection*, const Command&) throw();
-	virtual void on(Command::STA, UserConnection*, const Command&) throw();
+	virtual void on(AdcCommand::SUP, UserConnection*, const AdcCommand&) throw();
+	virtual void on(AdcCommand::INF, UserConnection*, const AdcCommand&) throw();
+	virtual void on(AdcCommand::NTD, UserConnection*, const AdcCommand&) throw();
+	virtual void on(AdcCommand::STA, UserConnection*, const AdcCommand&) throw();
 
 	// TimerManagerListener
 	virtual void on(TimerManagerListener::Second, u_int32_t aTick) throw();	
@@ -161,5 +161,5 @@ private:
 
 /**
  * @file
- * $Id: ConnectionManager.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: ConnectionManager.h,v 1.2 2005/02/20 22:32:46 paskharen Exp $
  */

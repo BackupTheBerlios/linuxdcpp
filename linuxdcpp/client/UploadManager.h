@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,28 +28,32 @@
 
 #include "ClientManagerListener.h"
 #include "File.h"
+#include "MerkleTree.h"
 
 class Upload : public Transfer, public Flags {
 public:
 	enum Flags {
 		FLAG_USER_LIST = 0x01,
 		FLAG_TTH_LEAVES = 0x02,
-		FLAG_ZUPLOAD = 0x04
+		FLAG_ZUPLOAD = 0x04,
+		FLAG_PARTIAL_LIST = 0x08
 	};
 
 	typedef Upload* Ptr;
 	typedef vector<Ptr> List;
 	typedef List::iterator Iter;
 	
-	Upload() : file(NULL) { };
+	Upload() : tth(NULL), file(NULL) { };
 	virtual ~Upload() { 
 		delete file;
+		delete tth;
 	};
 	
 	User::Ptr& getUser() { dcassert(getUserConnection() != NULL); return getUserConnection()->getUser(); };
 	
 	GETSET(string, fileName, FileName);
 	GETSET(string, localFileName, LocalFileName);
+	GETSET(TTHValue*, tth, TTH);
 	GETSET(InputStream*, file, File);
 };
 
@@ -103,17 +107,20 @@ public:
 	
 	/** @internal */
 	bool getAutoSlot() {
+		/** A 0 in settings means disable */
 		if(SETTING(MIN_UPLOAD_SPEED) == 0)
 			return false;
-		if(getLastGrant() + 30*1000 < GET_TICK())
+		/** Only grant one slot per 30 sec */
+		if(GET_TICK() < getLastGrant() + 30*1000)
 			return false;
-		return (SETTING(MIN_UPLOAD_SPEED)*1024) < UploadManager::getInstance()->getAverageSpeed();
+		/** Grant if uploadspeed is less than the threshold speed */
+		return UploadManager::getInstance()->getAverageSpeed() < (SETTING(MIN_UPLOAD_SPEED)*1024);
 	}
 
 	/** @internal */
 	int getFreeExtraSlots() { return max(3 - getExtra(), 0); };
 	
-	/** @param aUser Reserve an upload slot for this user. */
+	/** @param aUser Reserve an upload slot for this user and connect. */
 	void reserveSlot(User::Ptr& aUser) {
 		{
 			Lock l(cs);
@@ -122,6 +129,15 @@ public:
 		if(aUser->isOnline())
 			aUser->connect();
 	}
+
+	/** @param aUser Reserve an upload slot for this user. */
+	void reserveSlot(const User::Ptr& aUser) {
+		{
+			Lock l(cs);
+			reservedSlots[aUser] = GET_TICK();
+		}
+	}
+
 
 	/** @internal */
 	void addConnection(UserConnection::Ptr conn) {
@@ -144,7 +160,7 @@ private:
 	UploadManager() throw();
 	virtual ~UploadManager() throw();
 
-	void removeConnection(UserConnection::Ptr aConn);
+	void removeConnection(UserConnection::Ptr aConn, bool ntd);
 	void removeUpload(Upload* aUpload) {
 		Lock l(cs);
 		dcassert(find(uploads.begin(), uploads.end(), aUpload) != uploads.end());
@@ -154,7 +170,7 @@ private:
 	}
 
 	// ClientManagerListener
-	virtual void on(ClientManagerListener::UserUpdated, User::Ptr& aUser) throw();
+	virtual void on(ClientManagerListener::UserUpdated, const User::Ptr& aUser) throw();
 	
 	// TimerManagerListener
 	virtual void on(TimerManagerListener::Minute, u_int32_t aTick) throw();
@@ -170,16 +186,17 @@ private:
 	virtual void on(GetListLength, UserConnection* conn) throw();
 	virtual void on(TransmitDone, UserConnection*) throw();
 	
-	virtual void on(Command::GET, UserConnection*, const Command&) throw();
-	//virtual void on(Command::STA, UserConnection*, const Command&) throw();
+	virtual void on(AdcCommand::GET, UserConnection*, const AdcCommand&) throw();
+	virtual void on(AdcCommand::GFI, UserConnection*, const AdcCommand&) throw();
+	virtual void on(AdcCommand::NTD, UserConnection*, const AdcCommand&) throw();
 
 	void onGetBlock(UserConnection* aSource, const string& aFile, int64_t aResume, int64_t aBytes, bool z);
-	bool prepareFile(UserConnection* aSource, const string& aType, const string& aFile, int64_t aResume, int64_t aBytes, bool adc);
+	bool prepareFile(UserConnection* aSource, const string& aType, const string& aFile, int64_t aResume, int64_t aBytes, bool listRecursive = false);
 };
 
 #endif // !defined(AFX_UPLOADMANAGER_H__B0C67119_3445_4208_B5AA_938D4A019703__INCLUDED_)
 
 /**
  * @file
- * $Id: UploadManager.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: UploadManager.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */

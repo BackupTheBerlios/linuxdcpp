@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,9 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-
-#if !defined(AFX_STDINC_H__65559042_5D04_44EF_9ECF_E0A7FA6E1348__INCLUDED_)
-#define AFX_STDINC_H__65559042_5D04_44EF_9ECF_E0A7FA6E1348__INCLUDED_
+#ifndef STDINC_H
+#define STDINC_H
 
 #include "config.h"
 
@@ -38,6 +37,7 @@
 #include <windows.h>
 #include <crtdbg.h>
 #include <tchar.h>
+
 #else
 #include <unistd.h>
 #endif
@@ -46,18 +46,47 @@
 #include <stdarg.h>
 #include <memory.h>
 #include <sys/types.h>
-
 #include <time.h>
+#include <locale.h>
 
 #include <algorithm>
 #include <vector>
 #include <string>
 #include <map>
-#include <list>
-#include <deque>
 #include <set>
-
+#include <deque>
+#include <list>
 #include <utility>
+
+// Use maps if hash_maps aren't available
+#ifdef HAVE_HASH
+# ifdef HAVE_STLPORT
+#  define HASH_MAP_X(key, type, hfunc, eq, order) hash_map<key, type, hfunc, eq >
+#  define HASH_MULTIMAP_X(key, type, hfunc, eq, order) hash_multimap<key, type, hfunc, eq >
+# elif defined(__GLIBCPP__) || defined(__GLIBCXX__)  // Using GNU C++ library?
+#  define HASH_MAP_X(key, type, hfunc, eq, order) hash_map<key, type, hfunc, eq >
+#  define HASH_MULTIMAP_X(key, type, hfunc, eq, order) hash_multimap<key, type, hfunc, eq >
+# elif defined(_MSC_VER)  // Assume the msvc 7.x stl
+#  define HASH_MAP_X(key, type, hfunc, eq, order) hash_map<key, type, hfunc >
+#  define HASH_MULTIMAP_X(key, type, hfunc, eq, order) hash_multimap<key, type, hfunc >
+# else
+#  error Unknown STL, hashes need to be configured
+# endif
+
+# define HASH_SET hash_set
+# define HASH_MAP hash_map
+# define HASH_MULTIMAP hash_multimap
+
+#else // HAVE_HASH
+
+# define HASH_SET set
+# define HASH_MAP map
+# define HASH_MAP_X(key, type, hfunc, eq, order) map<key, type, order >
+# define HASH_MULTIMAP multimap
+# define HASH_MULTIMAP_X(key, type, hfunc, eq, order) multimap<key, type, order >
+
+#endif // HAVE_HASH
+
 
 #ifdef HAVE_STLPORT
 using namespace _STL;
@@ -81,15 +110,15 @@ namespace __gnu_cxx {
 }
 #else // __GLIBCPP__
 
-using namespace std;
 #include <hash_map>
+using namespace std;
 using namespace stdext;
 
 #endif // __GLIBCPP__
 
-#endif // !defined(AFX_STDINC_H__65559042_5D04_44EF_9ECF_E0A7FA6E1348__INCLUDED_)
+#endif // STDINC_H
 
 /**
  * @file
- * $Id: stdinc.h,v 1.1 2004/12/29 23:21:22 paskharen Exp $
+ * $Id: stdinc.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */

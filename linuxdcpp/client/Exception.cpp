@@ -23,6 +23,6 @@
 
 /**
  * @file
- * $Id: Exception.cpp,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: Exception.cpp,v 1.2 2005/02/20 22:32:46 paskharen Exp $
  */
 

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -131,7 +131,7 @@ public:
 	GETSET(CID, cid, CID);
 	GETSET(int64_t, bytesShared, BytesShared);
 private:
-	mutable RWLock cs;
+	mutable RWLock<> cs;
 
 	User(const User&);
 	User& operator=(const User&);
@@ -144,5 +144,5 @@ private:
 
 /**
  * @file
- * $Id: User.h,v 1.1 2004/12/29 23:21:22 paskharen Exp $
+ * $Id: User.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "File.h"
+#include "Streams.h"
 
 template<class Filter, bool managed>
 class CalcOutputStream : public OutputStream {
@@ -31,7 +31,7 @@ public:
 	using OutputStream::write;
 
 	CalcOutputStream(OutputStream* aStream) : s(aStream) { }
-	virtual ~CalcOutputStream() { if(managed) delete s; }
+	virtual ~CalcOutputStream() throw() { if(managed) delete s; }
 
 	size_t flush() throw(Exception) {
 		return s->flush();
@@ -53,7 +53,7 @@ template<class Filter, bool managed>
 class CalcInputStream : public InputStream {
 public:
 	CalcInputStream(InputStream* aStream) : s(aStream) { }
-	virtual ~CalcInputStream() { if(managed) delete s; }
+	virtual ~CalcInputStream() throw() { if(managed) delete s; }
 
 	size_t read(void* buf, size_t& len) throw(Exception) {
 		size_t x = s->read(buf, len);
@@ -73,7 +73,7 @@ public:
 	using OutputStream::write;
 
 	FilteredOutputStream(OutputStream* aFile) : f(aFile), flushed(false) { }
-	~FilteredOutputStream() { if(manage) delete f; }
+	~FilteredOutputStream() throw() { if(manage) delete f; }
 
 	size_t flush() throw(Exception) {
 		if(flushed)
@@ -115,6 +115,7 @@ public:
 				if(len > 0) {
 					throw Exception("Garbage data after end of stream");
 				}
+				flushed = true;
 				return written;
 			}
 		}
@@ -135,7 +136,7 @@ template<class Filter, bool managed>
 class FilteredInputStream : public InputStream {
 public:
 	FilteredInputStream(InputStream* aFile) : f(aFile), pos(0), valid(0), more(true) { }
-	virtual ~FilteredInputStream() { if(managed) delete f; }
+	virtual ~FilteredInputStream() throw() { if(managed) delete f; }
 
 	/**
 	* Read data through filter, keep calling until len returns 0.
@@ -186,5 +187,5 @@ private:
 
 /**
 * @file
-* $Id: FilteredFile.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+* $Id: FilteredFile.h,v 1.2 2005/02/20 22:32:46 paskharen Exp $
 */

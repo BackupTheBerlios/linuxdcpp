@@ -1,5 +1,5 @@
 /* 
-* Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+* Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -41,7 +41,8 @@ public:
 		CONTEXT_HUB = 0x01,
 		CONTEXT_CHAT = 0x02,
 		CONTEXT_SEARCH = 0x04,
-		CONTEXT_MASK = CONTEXT_HUB | CONTEXT_CHAT | CONTEXT_SEARCH,
+		CONTEXT_FILELIST = 0x08,
+		CONTEXT_MASK = CONTEXT_HUB | CONTEXT_CHAT | CONTEXT_SEARCH | CONTEXT_FILELIST,
 	};
 
 	enum {
@@ -77,6 +78,6 @@ public:
 
 /**
  * @file
- * $Id: UserCommand.h,v 1.1 2004/12/29 23:21:22 paskharen Exp $
+ * $Id: UserCommand.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */
 

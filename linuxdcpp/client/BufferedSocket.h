@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -99,7 +99,7 @@ public:
 		addTask(ACCEPTED);
 	}
 
-	virtual void disconnect() {
+	virtual void disconnect() throw() {
 		Lock l(cs);
 		addTask(DISCONNECT);
 	}
@@ -154,7 +154,7 @@ private:
 	BufferedSocket(const BufferedSocket&);
 	BufferedSocket& operator=(const BufferedSocket&);
 
-	virtual ~BufferedSocket();
+	virtual ~BufferedSocket() throw();
 
 	bool fillBuffer(char* buf, int bufLen, u_int32_t timeout = 0) throw(SocketException);
 	
@@ -215,5 +215,5 @@ private:
 
 /**
  * @file
- * $Id: BufferedSocket.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: BufferedSocket.h,v 1.2 2005/02/20 22:32:46 paskharen Exp $
  */

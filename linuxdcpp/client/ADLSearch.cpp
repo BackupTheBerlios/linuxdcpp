@@ -1,5 +1,5 @@
 /* 
-* Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+* Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 
 /*
 * Automatic Directory Listing Search
-* Henrik Engström, henrikengstrom at home se
+* Henrik Engstrï¿½m, henrikengstrom at home se
 */
 
 #include "stdinc.h"
@@ -207,7 +207,7 @@ void ADLSearchManager::MatchesFile(DestDirList& destDirVector, DirectoryListing:
 			destDirVector[is->ddIndex].fileAdded = true;
 
 			if(is->isAutoQueue){
-				QueueManager::getInstance()->add(currentFile->getName(), currentFile->getSize(), getUser(), Util::getTempPath() + currentFile->getName(), currentFile->getTTH());
+				QueueManager::getInstance()->add(currentFile->getName(), currentFile->getSize(), getUser(), SETTING(DOWNLOAD_DIRECTORY) + currentFile->getName(), currentFile->getTTH());
 			}
 
 			if(breakOnFirst) {
@@ -293,8 +293,35 @@ void ADLSearchManager::PrepareDestinationDirectories(DestDirList& destDirVector,
 	}
 }
 
+void ADLSearchManager::matchListing(DirectoryListing* aDirList) throw() {
+	StringMap params;
+	params["nick"] = aDirList->getUser()->getNick();
+	setUser(aDirList->getUser());
+
+	DestDirList destDirs;
+	PrepareDestinationDirectories(destDirs, aDirList->getRoot(), params);
+	setBreakOnFirst(BOOLSETTING(ADLS_BREAK_ON_FIRST));
+
+	string path(aDirList->getRoot()->getName());
+	matchRecurse(destDirs, aDirList->getRoot(), path);
+
+	FinalizeDestinationDirectories(destDirs, aDirList->getRoot());
+}
+
+void ADLSearchManager::matchRecurse(DestDirList &aDestList, DirectoryListing::Directory* aDir, string &aPath) {
+	for(DirectoryListing::Directory::Iter dirIt = aDir->directories.begin(); dirIt != aDir->directories.end(); ++dirIt) {
+		string tmpPath = aPath + "\\" + (*dirIt)->getName();
+		MatchesDirectory(aDestList, *dirIt, tmpPath);
+		matchRecurse(aDestList, *dirIt, tmpPath);
+	}
+	for(DirectoryListing::File::Iter fileIt = aDir->files.begin(); fileIt != aDir->files.end(); ++fileIt) {
+		MatchesFile(aDestList, *fileIt, aPath);
+	}
+	StepUpDirectory(aDestList);
+}
+
 /**
 * @file
-* $Id: ADLSearch.cpp,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+* $Id: ADLSearch.cpp,v 1.2 2005/02/20 22:32:46 paskharen Exp $
 */
 

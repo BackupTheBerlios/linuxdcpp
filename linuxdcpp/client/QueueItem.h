@@ -1,5 +1,5 @@
 /* 
-* Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+* Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -101,8 +101,10 @@ public:
 			FLAG_CRC_WARN = 0x20,
 			FLAG_UTF8 = 0x40,
 			FLAG_BAD_TREE = 0x80,
+			FLAG_NO_TREE = 0x100,
 			FLAG_MASK = FLAG_FILE_NOT_AVAILABLE | FLAG_ROLLBACK_INCONSISTENCY 
-				| FLAG_PASSIVE | FLAG_REMOVED | FLAG_CRC_FAILED | FLAG_CRC_WARN | FLAG_UTF8 | FLAG_BAD_TREE
+				| FLAG_PASSIVE | FLAG_REMOVED | FLAG_CRC_FAILED | FLAG_CRC_WARN | FLAG_UTF8 
+				| FLAG_BAD_TREE | FLAG_NO_TREE
 		};
 
 		Source(const User::Ptr& aUser, const string& aPath) : path(aPath), user(aUser) { };
@@ -205,8 +207,12 @@ public:
 
 	string getSearchString() const;
 
+	const string& getTempTarget();
+	void setTempTarget(const string& aTempTarget) {
+		tempTarget = aTempTarget;
+	}
 	GETSET(string, target, Target);
-	GETSET(string, tempTarget, TempTarget);
+	string tempTarget;
 	GETSET(int64_t, size, Size);
 	GETSET(int64_t, downloadedBytes, DownloadedBytes);
 	GETSET(Status, status, Status);
@@ -276,5 +282,5 @@ private:
 
 /**
 * @file
-* $Id: QueueItem.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+* $Id: QueueItem.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
 */

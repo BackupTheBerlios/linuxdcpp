@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,8 +38,8 @@ public:
 	 */
 	void load(const string& fileName) throw();
 
-	bool hasCRC() throw() { return crcFound; };
-	u_int32_t getCRC() throw() { return crc32; };
+	bool hasCRC() const throw() { return crcFound; };
+	u_int32_t getCRC() const throw() { return crc32; };
 	
 private:
 
@@ -52,5 +52,5 @@ private:
 
 /**
  * @file
- * $Id: SFVReader.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: SFVReader.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */

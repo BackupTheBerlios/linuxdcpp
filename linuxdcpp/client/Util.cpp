@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -281,7 +281,7 @@ string Util::getShortTimeString() {
  * http:// -> port 80
  * dchub:// -> port 411
  */
-void Util::decodeUrl(const string& url, string& aServer, short& aPort, string& aFile) {
+void Util::decodeUrl(const string& url, string& aServer, u_int16_t& aPort, string& aFile) {
 	// First, check for a protocol: xxxx://
 	string::size_type i = 0, j, k;
 	
@@ -330,13 +330,13 @@ string Util::formatBytes(int64_t aBytes) {
 	if(aBytes < 1024) {
 		sprintf(buf, "%d %s", (int)(aBytes&0xffffffff), CSTRING(B));
 	} else if(aBytes < 1024*1024) {
-		sprintf(buf, "%.02f %s", (double)aBytes/(1024.0), CSTRING(KB));
+		sprintf(buf, "%.02f %s", (double)aBytes/(1024.0), CSTRING(KiB));
 	} else if(aBytes < 1024*1024*1024) {
-		sprintf(buf, "%.02f %s", (double)aBytes/(1024.0*1024.0), CSTRING(MB));
+		sprintf(buf, "%.02f %s", (double)aBytes/(1024.0*1024.0), CSTRING(MiB));
 	} else if(aBytes < (int64_t)1024*1024*1024*1024) {
-		sprintf(buf, "%.02f %s", (double)aBytes/(1024.0*1024.0*1024.0), CSTRING(GB));
+		sprintf(buf, "%.02f %s", (double)aBytes/(1024.0*1024.0*1024.0), CSTRING(GiB));
 	} else if(aBytes < (int64_t)1024*1024*1024*1024*1024) {
-		sprintf(buf, "%.02f %s", (double)aBytes/(1024.0*1024.0*1024.0*1024.0), CSTRING(TB));
+		sprintf(buf, "%.02f %s", (double)aBytes/(1024.0*1024.0*1024.0*1024.0), CSTRING(TiB));
 	} else {
 		sprintf(buf, "%.02f %s", (double)aBytes/(1024.0*1024.0*1024.0*1024.0*1024.0), CSTRING(PIB));
 	}
@@ -413,8 +413,6 @@ bool Util::isPrivateIp(string const& ip) {
 	}
 	return false;
 }
-
-
 
 typedef const u_int8_t* ccp;
 static wchar_t utf8ToLC(ccp& str) {
@@ -621,7 +619,7 @@ string fixedftime(const string& format, struct tm* t) {
 
 	StringMap sm;
 	AutoArray<char> buf(1024);
-	for(int i = 0; i < sizeof(codes); ++i) {
+	for(size_t i = 0; i < sizeof(codes); ++i) {
 		tmp[1] = codes[i];
 		tmp[2] = 0;
 		strftime(buf, 1024-1, tmp, t);
@@ -860,37 +858,8 @@ string Util::toDOS(const string& tmp) {
 	return tmp2;
 }
 
-int Util::getOsMajor() 
-{
-#ifdef _WIN32
-	OSVERSIONINFOEX ver;
-	memset(&ver, 0, sizeof(OSVERSIONINFOEX));
-	if(!GetVersionEx((OSVERSIONINFO*)&ver)) 
-	{
-		ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-	}
-	GetVersionEx((OSVERSIONINFO*)&ver);
-	ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-	return ver.dwMajorVersion;
-#endif //_WIN32
-}
-
-int Util::getOsMinor() 
-{
-#ifdef _WIN32
-	OSVERSIONINFOEX ver;
-	memset(&ver, 0, sizeof(OSVERSIONINFOEX));
-	if(!GetVersionEx((OSVERSIONINFO*)&ver)) 
-	{
-		ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-	}
-	GetVersionEx((OSVERSIONINFO*)&ver);
-	ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-	return ver.dwMinorVersion;
-#endif //_WIN32
-}
 /**
  * @file
- * $Id: Util.cpp,v 1.1 2004/12/29 23:21:22 paskharen Exp $
+ * $Id: Util.cpp,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */
 

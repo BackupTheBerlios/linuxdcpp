@@ -241,7 +241,7 @@ void Hub::getPassword_gui() {
 
 	ret = gtk_dialog_run(GTK_DIALOG(dialog));
 	gtk_widget_destroy(dialog);
-	if (ret == GTK_RESPONSE_CANCEL) return;
+	if (ret != GTK_RESPONSE_ACCEPT) return;
 	password = gtk_entry_get_text(GTK_ENTRY(entry));
 
 	typedef Func1<Hub, string> F1;
@@ -481,7 +481,7 @@ void Hub::on(ClientListener::Redirect,
 {
 	if (!address.empty()) {
 		string s, f;
-		short p = 411;
+		u_int16_t p = 411;
 		Util::decodeUrl(Text::fromT(address), s, p, f);
 		if (ClientManager::getInstance()->isConnected(s, p)) {
 			Func2<Hub, GtkStatusbar*, string> *func = new Func2<Hub, GtkStatusbar*, string> (

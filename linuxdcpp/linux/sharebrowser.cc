@@ -115,7 +115,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	buttonCallback.connect(G_OBJECT(findButton), "clicked", NULL);
 	buttonCallback.connect(G_OBJECT(nextButton), "clicked", NULL);
 	
-	listing.loadFile(file, false);	
+	listing.loadFile(file);
 	shareSize = 0;
 	shareItems = 0;
 	buildDirs_gui(listing.getRoot()->directories, NULL);

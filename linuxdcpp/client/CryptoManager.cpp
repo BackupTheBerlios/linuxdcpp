@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 
 #include "BitInputStream.h"
 #include "BitOutputStream.h"
-#include "File.h"
+#include "ResourceManager.h"
 
 #ifdef _WIN32
 #include "../bzip2/bzlib.h"
@@ -389,7 +389,7 @@ void CryptoManager::encodeHuffman(const string& is, string& os) {
 		}
 	}
 	
-	dcdebug("u_int8_ts: %d\n", os.size());
+	dcdebug("u_int8_ts: %lu\n", os.size());
 	bos.skipToByte();
 
 	for(string::size_type j=0; j<is.size(); j++) {
@@ -401,5 +401,5 @@ void CryptoManager::encodeHuffman(const string& is, string& os) {
 
 /**
  * @file
- * $Id: CryptoManager.cpp,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: CryptoManager.cpp,v 1.2 2005/02/20 22:32:46 paskharen Exp $
  */

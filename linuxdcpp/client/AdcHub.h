@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,12 +17,8 @@
  */
 
 #include "Client.h"
-#include "BufferedSocket.h"
-#include "CID.h"
 #include "AdcCommand.h"
-#include "TigerHash.h"
 
-class AdcHub;
 class ClientManager;
 
 class AdcHub : public Client, public CommandHandler<AdcHub> {
@@ -48,21 +44,21 @@ public:
 	virtual User::NickMap& lockUserList() { return nickMap; };
 	virtual void unlockUserList() { };
 
-	template<typename T> void handle(T, Command&) { 
+	template<typename T> void handle(T, AdcCommand&) { 
 		//Speaker<AdcHubListener>::fire(t, this, c);
 	}
 
-	void send(const Command& cmd) { socket->write(cmd.toString(false)); };
+	void send(const AdcCommand& cmd) { socket->write(cmd.toString(false)); };
 
-	void handle(Command::SUP, Command& c) throw();
-	void handle(Command::MSG, Command& c) throw();
-	void handle(Command::INF, Command& c) throw();
-	void handle(Command::GPA, Command& c) throw();
-	void handle(Command::QUI, Command& c) throw();
-	void handle(Command::CTM, Command& c) throw();
-	void handle(Command::RCM, Command& c) throw();
+	void handle(AdcCommand::SUP, AdcCommand& c) throw();
+	void handle(AdcCommand::MSG, AdcCommand& c) throw();
+	void handle(AdcCommand::INF, AdcCommand& c) throw();
+	void handle(AdcCommand::GPA, AdcCommand& c) throw();
+	void handle(AdcCommand::QUI, AdcCommand& c) throw();
+	void handle(AdcCommand::CTM, AdcCommand& c) throw();
+	void handle(AdcCommand::RCM, AdcCommand& c) throw();
 
-	virtual string escape(string const& str) const { return Command::escape(str); };
+	virtual string escape(string const& str) const { return AdcCommand::escape(str); };
 
 private:
 	friend class ClientManager;
@@ -78,7 +74,7 @@ private:
 
 	AdcHub(const AdcHub&);
 	AdcHub& operator=(const AdcHub&);
-
+	virtual ~AdcHub() throw() { }
 	User::NickMap nickMap;
 	User::Ptr hub;
 	StringMap lastInfoMap;
@@ -92,14 +88,11 @@ private:
 
 	virtual void on(Connecting) throw() { fire(ClientListener::Connecting(), this); }
 	virtual void on(Connected) throw();
-	virtual void on(Line, const string& aLine) throw() { 
-		fire(ClientListener::Message(), this, "<ADC>" + aLine + "</ADC>");
-		dispatch(aLine); 
-	}
+	virtual void on(Line, const string& aLine) throw();
 	virtual void on(Failed, const string& aLine) throw();
 };
 
 /**
  * @file
- * $Id: AdcHub.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: AdcHub.h,v 1.2 2005/02/20 22:32:46 paskharen Exp $
  */

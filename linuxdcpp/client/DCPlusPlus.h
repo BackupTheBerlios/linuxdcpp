@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,19 +16,14 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef _DCPLUSPLUS_H
-#define _DCPLUSPLUS_H
+#ifndef DCPLUSPLUS_H
+#define DCPLUSPLUS_H
 
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
 
 #ifdef _DEBUG
-
-#ifdef _WIN32
-// Warning C4130: '==' : logical operation on address of string constant
-#pragma warning (disable: 4130)
-#endif
 
 inline void CDECL debugTrace(const char* format, ...)
 {
@@ -129,38 +124,9 @@ typedef StringMapIter TStringMapIter;
 extern void startup(void (*f)(void*, const string&), void* p);
 extern void shutdown();
 
-template<typename T, bool flag> struct ReferenceSelector {
-	typedef T ResultType;
-};
-template<typename T> struct ReferenceSelector<T,true> {
-	typedef const T& ResultType;
-};
-
-template<typename T> class IsOfClassType {
-public:
-	template<typename U> static char check(int U::*);
-	template<typename U> static float check(...);
-public:
-	enum { Result = sizeof(check<T>(0)) };
-};
-
-template<typename T> struct TypeTraits {
-	typedef IsOfClassType<T> ClassType;
-	typedef ReferenceSelector<T, ((ClassType::Result == 1) || (sizeof(T) > sizeof(char*)) ) > Selector;
-	typedef typename Selector::ResultType ParameterType;
-};
-
-#define GETSET(type, name, name2) \
-private: type name; \
-public: TypeTraits<type>::ParameterType get##name2() const { return name; }; \
-	void set##name2(TypeTraits<type>::ParameterType a##name2) { name = a##name2; };
-
-#define LIT(x) x, (sizeof(x)-1)
-
-#endif // _DCPLUSPLUS_H
+#endif // DCPLUSPLUS_H
 
 /**
  * @file
- * $Id: DCPlusPlus.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: DCPlusPlus.h,v 1.2 2005/02/20 22:32:46 paskharen Exp $
  */
-

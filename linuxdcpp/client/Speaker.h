@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,8 +27,8 @@ class Speaker {
 	typedef typename ListenerList::iterator ListenerIter;
 
 public:
-	Speaker() { };
-	virtual ~Speaker() { };
+	Speaker() throw() { };
+	virtual ~Speaker() throw() { };
 
 	template<typename T0>
 	void fire(T0 type) throw() {
@@ -101,15 +101,16 @@ public:
 
 	void removeListener(Listener* aListener) {
 		Lock l(listenerCS);
-		ListenerIter i = find(listeners.begin(), listeners.end(), aListener);
-		if(i != listeners.end())
-			listeners.erase(i);
+		ListenerIter it = find(listeners.begin(), listeners.end(), aListener);
+		if(it != listeners.end())
+			listeners.erase(it);
 	}
 
 	void removeListeners() {
 		Lock l(listenerCS);
 		listeners.clear();
 	}
+	
 protected:
 	ListenerList listeners;
 	ListenerList tmp;
@@ -119,5 +120,5 @@ protected:
 #endif // SPEAKER_H
 /**
  * @file
- * $Id: Speaker.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: Speaker.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */

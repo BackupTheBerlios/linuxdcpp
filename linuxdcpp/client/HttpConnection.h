@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ class HttpConnection : BufferedSocketListener, public Speaker<HttpConnectionList
 public:
 	void downloadFile(const string& aUrl);
 	HttpConnection() : ok(false), port(80), size(-1), moved302(false), socket(NULL) { };
-	virtual ~HttpConnection() { 
+	virtual ~HttpConnection() throw() { 
 		if(socket) {
 			socket->removeListener(this); 
 			BufferedSocket::putSocket(socket);
@@ -67,7 +67,7 @@ private:
 	string file;
 	string server;
 	bool ok;
-	short port;
+	u_int16_t port;
 	int64_t size;
 	bool moved302;
 
@@ -89,6 +89,6 @@ private:
 
 /**
  * @file
- * $Id: HttpConnection.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: HttpConnection.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */
 

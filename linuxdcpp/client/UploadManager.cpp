@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ UploadManager::~UploadManager() throw() {
 	}
 }
 
-bool UploadManager::prepareFile(UserConnection* aSource, const string& aType, const string& aFile, int64_t aStartPos, int64_t aBytes, bool adc) {
+bool UploadManager::prepareFile(UserConnection* aSource, const string& aType, const string& aFile, int64_t aStartPos, int64_t aBytes, bool listRecursive) {
 	if(aSource->getState() != UserConnection::STATE_GET) {
 		dcdebug("UM:prepFile Wrong state, ignoring\n");
 		return false;
@@ -65,68 +65,81 @@ bool UploadManager::prepareFile(UserConnection* aSource, const string& aType, co
 	bool userlist = false;
 	bool free = false;
 	bool leaves = false;
+	bool partList = false;
 
 	string file;
 	try {
-		file = ShareManager::getInstance()->translateFileName(aFile, adc);
+		if(aType == "file") {
+			file = ShareManager::getInstance()->translateFileName(aFile);
+			userlist = (Util::stricmp(aFile.c_str(), "files.xml.bz2") == 0);
+
+			try {
+				File* f = new File(file, File::READ, File::OPEN);
+
+				size = f->getSize();
+
+				free = userlist || (size <= (int64_t)(64 * 1024) );
+
+				if(aBytes == -1) {
+					aBytes = size - aStartPos;
+				}
+
+				if((aBytes < 0) || ((aStartPos + aBytes) > size)) {
+					aSource->fileNotAvail();
+					delete f;
+					return false;
+				}
+
+				f->setPos(aStartPos);
+
+				is = f;
+
+				if((aStartPos + aBytes) < size) {
+					is = new LimitedInputStream<true>(is, aBytes);
+				}
+
+			} catch(const Exception&) {
+				aSource->fileNotAvail();
+				return false;
+			}
+
+		} else if(aType == "tthl") {
+			// TTH Leaves...
+			MemoryInputStream* mis = ShareManager::getInstance()->getTree(aFile);
+			file = ShareManager::getInstance()->translateFileName(aFile);
+			if(mis == NULL) {
+				aSource->fileNotAvail();
+				return false;
+			}
+
+			size = mis->getSize();
+			aStartPos = 0;
+			is = mis;
+			leaves = true;
+			free = true;
+		} else if(aType == "list") {
+			// Partial file list
+			MemoryInputStream* mis = ShareManager::getInstance()->generatePartialList(aFile, listRecursive);
+			if(mis == NULL) {
+				aSource->fileNotAvail();
+				return false;
+			}
+			// Some old dc++ clients err here...
+			aBytes = -1;
+			size = mis->getSize();
+			aStartPos = 0;
+			is = mis;
+			free = true;
+			partList = true;
+		} else {
+			aSource->fileNotAvail();
+			return false;
+		}
 	} catch(const ShareException&) {
 		aSource->fileNotAvail();
 		return false;
 	}
 
-	if(aType == "file") {
-		userlist = (Util::stricmp(aFile.c_str(), "files.xml.bz2") == 0);
-
-		try {
-			File* f = new File(file, File::READ, File::OPEN);
-
-			size = f->getSize();
-
-			free = userlist || (size <= (int64_t)(64 * 1024) );
-
-			if(aBytes == -1) {
-				aBytes = size - aStartPos;
-			}
-
-			if((aBytes < 0) || ((aStartPos + aBytes) > size)) {
-				aSource->fileNotAvail();
-				delete f;
-				return false;
-			}
-
-			f->setPos(aStartPos);
-
-			is = f;
-
-			if((aStartPos + aBytes) < size) {
-				is = new LimitedInputStream<true>(is, aBytes);
-			}
-
-		} catch(const Exception&) {
-			aSource->fileNotAvail();
-			return false;
-		}
-
-	} else if(aType == "tthl") {
-		// TTH Leaves...
-		TigerTree tree;
-		if(!HashManager::getInstance()->getTree(file, NULL, tree)) {
-			aSource->fileNotAvail();
-			return false;
-		}
-
-		size = tree.getLeaves().size() * TTHValue::SIZE;
-		aStartPos = 0;
-
-		is = new TreeInputStream<TigerHash>(tree);	
-		leaves = true;
-
-		free = true;
-
-	} else {
-		aSource->fileNotAvail();
-		return false;
-	}
 
 	Lock l(cs);
 
@@ -155,7 +168,11 @@ bool UploadManager::prepareFile(UserConnection* aSource, const string& aType, co
 	Upload* u = new Upload();
 	u->setUserConnection(aSource);
 	u->setFile(is);
-	u->setSize(size);
+	if(aBytes == -1)
+		u->setSize(size);
+	else
+		u->setSize(aStartPos + aBytes);
+
 	u->setStartPos(aStartPos);
 	u->setFileName(file);
 	u->setLocalFileName(file);
@@ -164,6 +181,8 @@ bool UploadManager::prepareFile(UserConnection* aSource, const string& aType, co
 		u->setFlag(Upload::FLAG_USER_LIST);
 	if(leaves)
 		u->setFlag(Upload::FLAG_TTH_LEAVES);
+	if(partList)
+		u->setFlag(Upload::FLAG_PARTIAL_LIST);
 
 	dcassert(aSource->getUpload() == NULL);
 	aSource->setUpload(u);
@@ -189,7 +208,7 @@ bool UploadManager::prepareFile(UserConnection* aSource, const string& aType, co
 }
 
 void UploadManager::on(UserConnectionListener::Get, UserConnection* aSource, const string& aFile, int64_t aResume) throw() {
-	if(prepareFile(aSource, "file", aFile, aResume, -1, false)) {
+	if(prepareFile(aSource, "file", Util::toAdcFile(aFile), aResume, -1)) {
 		aSource->setState(UserConnection::STATE_SEND);
 		aSource->fileLength(Util::toString(aSource->getUpload()->getSize()));
 	}
@@ -197,7 +216,7 @@ void UploadManager::on(UserConnectionListener::Get, UserConnection* aSource, con
 
 void UploadManager::onGetBlock(UserConnection* aSource, const string& aFile, int64_t aStartPos, int64_t aBytes, bool z) {
 	if(!z || BOOLSETTING(COMPRESS_TRANSFERS)) {
-		if(prepareFile(aSource, "file", aFile, aStartPos, aBytes, false)) {
+		if(prepareFile(aSource, "file", Util::toAdcFile(aFile), aStartPos, aBytes)) {
 			Upload* u = aSource->getUpload();
 			dcassert(u != NULL);
 			if(aBytes == -1)
@@ -253,7 +272,7 @@ void UploadManager::on(UserConnectionListener::Failed, UserConnection* aSource, 
 		removeUpload(u);
 	}
 
-	removeConnection(aSource);
+	removeConnection(aSource, false);
 }
 
 void UploadManager::on(UserConnectionListener::TransmitDone, UserConnection* aSource) throw() {
@@ -268,6 +287,7 @@ void UploadManager::on(UserConnectionListener::TransmitDone, UserConnection* aSo
 		StringMap params;
 		params["source"] = u->getFileName();
 		params["user"] = aSource->getUser()->getNick();
+		params["userip"] = aSource->getRemoteIp();
 		params["hub"] = aSource->getUser()->getLastHubName();
 		params["hubip"] = aSource->getUser()->getLastHubAddress();
 		params["size"] = Util::toString(u->getSize());
@@ -278,21 +298,18 @@ void UploadManager::on(UserConnectionListener::TransmitDone, UserConnection* aSo
 		params["actualsizeshort"] = Util::formatBytes(u->getActual());
 		params["speed"] = Util::formatBytes(u->getAverageSpeed()) + "/s";
 		params["time"] = Util::formatSeconds((GET_TICK() - u->getStart()) / 1000);
-		if(!u->isSet(Upload::FLAG_USER_LIST)) {
-			// work-around, getTTH will queue the file for hashing if it gets a NULL TTH
-			try {
-                params["tth"] = HashManager::getInstance()->getTTH(u->getFileName(), u->getSize()).toBase32();
-			} catch(const HashException&) {
-			}
+
+		if(u->getTTH() != NULL) {
+			params["tth"] = u->getTTH()->toBase32();
 		}
-		LOG(UPLOAD_AREA, Util::formatParams(SETTING(LOG_FORMAT_POST_UPLOAD), params));
+		LOG(LogManager::UPLOAD, params);
 	}
 
 	fire(UploadManagerListener::Complete(), u);
 	removeUpload(u);
 }
 
-void UploadManager::removeConnection(UserConnection::Ptr aConn) {
+void UploadManager::removeConnection(UserConnection::Ptr aConn, bool ntd) {
 	dcassert(aConn->getUpload() == NULL);
 	aConn->removeListener(this);
 	if(aConn->isSet(UserConnection::FLAG_HASSLOT)) {
@@ -303,7 +320,7 @@ void UploadManager::removeConnection(UserConnection::Ptr aConn) {
 		extra--;
 		aConn->unsetFlag(UserConnection::FLAG_HASEXTRASLOT);
 	}
-	ConnectionManager::getInstance()->putUploadConnection(aConn);
+	ConnectionManager::getInstance()->putUploadConnection(aConn, ntd);
 }
 
 void UploadManager::on(TimerManagerListener::Minute, u_int32_t aTick) throw() {
@@ -315,24 +332,24 @@ void UploadManager::on(TimerManagerListener::Minute, u_int32_t aTick) throw() {
 			++j;
 		}
 	}
-}	
+}
 
 void UploadManager::on(GetListLength, UserConnection* conn) throw() { 
 	conn->listLen(ShareManager::getInstance()->getListLenString()); 
 }
 
-//void UploadManager::on(Command::STA, UserConnection* conn, const Command& c) throw() {
+void UploadManager::on(AdcCommand::NTD, UserConnection* aConn, const AdcCommand&) throw() {
+	removeConnection(aConn, true);
+}
 
-//}
-
-void UploadManager::on(Command::GET, UserConnection* aSource, const Command& c) throw() {
+void UploadManager::on(AdcCommand::GET, UserConnection* aSource, const AdcCommand& c) throw() {
 	int64_t aBytes = Util::toInt64(c.getParam(3));
 	int64_t aStartPos = Util::toInt64(c.getParam(2));
 	const string& fname = c.getParam(1);
 	const string& type = c.getParam(0);
 	string tmp;
 
-	if(prepareFile(aSource, type, fname, aStartPos, aBytes, true)) {
+	if(prepareFile(aSource, type, fname, aStartPos, aBytes, c.hasFlag("RE", 4))) {
 		Upload* u = aSource->getUpload();
 		dcassert(u != NULL);
 		if(aBytes == -1)
@@ -342,11 +359,11 @@ void UploadManager::on(Command::GET, UserConnection* aSource, const Command& c) 
 
 		u->setStart(GET_TICK());
 
-		Command cmd = Command(Command::SND());
+		AdcCommand cmd(AdcCommand::CMD_SND);
 		cmd.addParam(c.getParam(0));
 		cmd.addParam(c.getParam(1));
-		cmd.addParam(c.getParam(2));
-		cmd.addParam(Util::toString(aBytes));
+		cmd.addParam(Util::toString(u->getPos()));
+		cmd.addParam(Util::toString(u->getSize() - u->getPos()));
 
 		if(c.hasFlag("ZL", 4)) {
 			u->setFile(new FilteredInputStream<ZFilter, true>(u->getFile()));
@@ -359,6 +376,11 @@ void UploadManager::on(Command::GET, UserConnection* aSource, const Command& c) 
 		aSource->transmitFile(u->getFile());
 		fire(UploadManagerListener::Starting(), u);
 	}
+}
+
+/** @todo fixme */
+void UploadManager::on(AdcCommand::GFI, UserConnection* aSource, const AdcCommand& c) throw() {
+
 }
 
 // TimerManagerListener
@@ -375,7 +397,7 @@ void UploadManager::on(TimerManagerListener::Second, u_int32_t) throw() {
 
 }
 
-void UploadManager::on(ClientManagerListener::UserUpdated, User::Ptr& aUser) throw() {
+void UploadManager::on(ClientManagerListener::UserUpdated, const User::Ptr& aUser) throw() {
 	if( (!aUser->isOnline()) && 
 		(aUser->isSet(User::QUIT_HUB)) && 
 		(BOOLSETTING(AUTO_KICK)) ){
@@ -397,5 +419,5 @@ void UploadManager::on(ClientManagerListener::UserUpdated, User::Ptr& aUser) thr
 
 /**
  * @file
- * $Id: UploadManager.cpp,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: UploadManager.cpp,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
+ * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,6 @@
 #include "TigerHash.h"
 #include "Encoder.h"
 #include "HashValue.h"
-#include "File.h"
 
 /**
  * A class that represents a Merkle Tree hash. Storing
@@ -47,23 +46,27 @@ public:
 	typedef vector<MerkleValue> MerkleList;
 	typedef typename MerkleList::iterator MerkleIter;
 
-	MerkleTree() : fileSize(0), timeStamp(0), blockSize(baseBlockSize) { }
-	MerkleTree(int64_t aBlockSize, u_int32_t aTimeStamp = 0) : fileSize(0), timeStamp(aTimeStamp), blockSize(aBlockSize) {
-	}
+	MerkleTree() : fileSize(0), blockSize(baseBlockSize) { }
+	MerkleTree(int64_t aBlockSize) : fileSize(0), blockSize(aBlockSize) { }
 
 	/**
 	 * Loads a set of leaf hashes, calculating the root
 	 * @param data Pointer to (aFileSize + aBlockSize - 1) / aBlockSize) hash values,
 	 *             stored consecutively left to right
 	 */
-	MerkleTree(int64_t aFileSize, u_int32_t aTimeStamp, int64_t aBlockSize, u_int8_t* aData) : 
-		fileSize(aFileSize), timeStamp(aTimeStamp), blockSize(aBlockSize) 
+	MerkleTree(int64_t aFileSize, int64_t aBlockSize, u_int8_t* aData) : 
+		fileSize(aFileSize), blockSize(aBlockSize) 
 	{
 		size_t n = calcBlocks(aFileSize, aBlockSize);
 		for(size_t i = 0; i < n; i++)
 			leaves.push_back(MerkleValue(aData + i * Hasher::HASH_SIZE));
 
 		calcRoot();
+	}
+
+	/** Initialise a single root tree */
+	MerkleTree(int64_t aFileSize, int64_t aBlockSize, const MerkleValue& aRoot) : root(aRoot), fileSize(aFileSize), blockSize(aBlockSize) {
+		leaves.push_back(root);
 	}
 
 	~MerkleTree() {
@@ -76,6 +79,7 @@ public:
 			tmp *= 2;
 		return tmp;
 	}
+
 	static size_t calcBlocks(int64_t aFileSize, int64_t aBlockSize) {
 		return max((size_t)((aFileSize + aBlockSize - 1) / aBlockSize), (size_t)1);
 	}
@@ -99,7 +103,7 @@ public:
 			Hasher h;
 			h.update(&zero, 1);
 			h.update(buf + i, n);
-			if(baseBlockSize < blockSize) {
+			if((int64_t)baseBlockSize < blockSize) {
 				blocks.push_back(make_pair(MerkleValue(h.finalize()), baseBlockSize));
 				reduceBlocks();
 			} else {
@@ -136,18 +140,25 @@ public:
 	int64_t getFileSize() const { return fileSize; }
 	void setFileSize(int64_t aSize) { fileSize = aSize; }
 
-	u_int32_t getTimeStamp() const { return timeStamp; }
-
 	bool verifyRoot(const u_int8_t* aRoot) {
-		return memcmp(aRoot, getRoot().data(), Hasher::HASH_SIZE) == 0;
+		return memcmp(aRoot, getRoot().data(), HASH_SIZE) == 0;
 	}
 
 	void calcRoot() {
 		root = getHash(0, fileSize);
 	}
 
+	vector<u_int8_t> getLeafData() {
+		vector<u_int8_t> buf(getLeaves().size() * HASH_SIZE);
+		u_int8_t* p = &buf[0];
+		for(size_t i = 0; i < getLeaves().size(); ++i) {
+			memcpy(p + i * HASH_SIZE, &getLeaves()[i], HASH_SIZE);
+		}
+		return buf;
+	}
+
 private:	
-	typedef pair<MerkleValue, size_t> MerkleBlock;
+	typedef pair<MerkleValue, int64_t> MerkleBlock;
 	typedef vector<MerkleBlock> MBList;
 
 	MBList blocks;
@@ -157,15 +168,13 @@ private:
 	MerkleValue root;
 	/** Total size of hashed data */
 	int64_t fileSize;
-	/** Last modification date of data */
-	u_int32_t timeStamp;
 	/** Final block size */
 	int64_t blockSize;
 	
 	MerkleValue getHash(int64_t start, int64_t length) {
 		dcassert((start % blockSize) == 0);
 		if(length <= blockSize) {
-			dcassert((start / blockSize) < leaves.size());
+			dcassert((start / blockSize) < (int64_t)leaves.size());
 			return leaves[(u_int32_t)(start / blockSize)];
 		} else {
 			int64_t l = blockSize;
@@ -208,33 +217,8 @@ private:
 typedef MerkleTree<TigerHash> TigerTree;
 typedef TigerTree::MerkleValue TTHValue;
 
-template<class T>
-class TreeInputStream : public InputStream {
-public:
-	
-	TreeInputStream(const MerkleTree<T>& aTree) : leaves(aTree.getLeaves().size() * Value::SIZE, 0),  pos(0) {
-		u_int8_t* p = &leaves[0];
-		for(size_t i = 0; i < aTree.getLeaves().size(); ++i) {
-			memcpy(p + i * Value::SIZE, &aTree.getLeaves()[i], Value::SIZE);
-		}
-	}
-
-	virtual ~TreeInputStream() {
-	}
-
-	virtual size_t read(void* buf, size_t& len) throw(Exception) {
-		len = min(len, leaves.size() - pos);
-		memcpy(buf, &leaves[pos], len);
-		pos += len;
-		return len;
-	}
-private:
-	typedef typename MerkleTree<T>::MerkleValue Value;
-	vector<u_int8_t> leaves;
-	size_t pos;
-};
 struct TTFilter {
-	TTFilter(int64_t aBlockSize, u_int32_t aTimeStamp = 0) : tt(aBlockSize, aTimeStamp) { };
+	TTFilter(int64_t aBlockSize) : tt(aBlockSize) { };
 	void operator()(const void* data, size_t len) { tt.update(data, len); }
 	TigerTree& getTree() { tt.finalize(); return tt; }
 private:
@@ -245,5 +229,5 @@ private:
 
 /**
  * @file
- * $Id: MerkleTree.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: MerkleTree.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
  */
