@@ -78,6 +78,7 @@ private:
 	void addDialog_gui (bool edit, const string uname="", const string uaddress="", const string udesc="", const string unick="", const string upassword="", const string uuserdesc="");
 	static void preNew_gui (GtkWidget *widget, gpointer data);
 	static void preEdit_gui (GtkWidget *widget, gpointer data);
+	void edit_client (FavoriteHubEntry *e);
 	void remove_client (FavoriteHubEntry *e);
 	static void remove_gui (GtkWidget *widget, gpointer data);
 	static void moveUp_gui (GtkWidget *widget, gpointer data);

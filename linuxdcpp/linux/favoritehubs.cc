@@ -113,10 +113,8 @@ FavoriteHubs::FavoriteHubs (GCallback closeCallback):
 }
 void FavoriteHubs::setConnect_client (FavoriteHubEntry *e, bool a)
 {
-	pthread_mutex_lock (&favoriteLock);
 	e->setConnect (a);
 	HubManager::getInstance ()->save ();
-	pthread_mutex_unlock (&favoriteLock);
 }
 void FavoriteHubs::onToggledClicked_gui (GtkCellRendererToggle *cell,
 	       gchar                 *path_str,
@@ -324,6 +322,16 @@ void FavoriteHubs::connect_gui (GtkWidget *widget, gpointer data)
 																TreeViewFactory::getValue<gchar*,string>(m, &iter, COLUMN_USERDESCRIPTION),
 																TreeViewFactory::getValue<gchar*,string>(m, &iter, COLUMN_PASSWORD));
 }
+void FavoriteHubs::edit_client (FavoriteHubEntry *e)
+{
+	e->setName (gtk_entry_get_text (GTK_ENTRY (dialog["Name"])));
+	e->setServer (gtk_entry_get_text (GTK_ENTRY (dialog["Address"])));
+	e->setDescription (gtk_entry_get_text (GTK_ENTRY (dialog["Description"])));
+	e->setNick (gtk_entry_get_text (GTK_ENTRY (dialog["Nick"])));
+	e->setPassword (gtk_entry_get_text (GTK_ENTRY (dialog["Password"])));
+	e->setUserDescription (gtk_entry_get_text (GTK_ENTRY (dialog["User description"])));
+	HubManager::getInstance ()->save ();	
+}
 void FavoriteHubs::addDialog_gui (bool edit, string uname, string uaddress, string udesc, string unick, string upassword, string uuserdesc)
 {
 	GtkDialog *window = GTK_DIALOG (dialog["Window"]);
@@ -376,15 +384,7 @@ void FavoriteHubs::addDialog_gui (bool edit, string uname, string uaddress, stri
 			{
 				if (fh[i] == TreeViewFactory::getValue<gpointer,FavoriteHubEntry*>(m, &iter, COLUMN_ENTRY))
 				{
-					pthread_mutex_lock (&favoriteLock);
-					fh[i]->setName (gtk_entry_get_text (GTK_ENTRY (dialog["Name"])));
-					fh[i]->setServer (gtk_entry_get_text (GTK_ENTRY (dialog["Address"])));
-					fh[i]->setDescription (gtk_entry_get_text (GTK_ENTRY (dialog["Description"])));
-					fh[i]->setNick (gtk_entry_get_text (GTK_ENTRY (dialog["Nick"])));
-					fh[i]->setPassword (gtk_entry_get_text (GTK_ENTRY (dialog["Password"])));
-					fh[i]->setUserDescription (gtk_entry_get_text (GTK_ENTRY (dialog["User description"])));
-					HubManager::getInstance ()->save ();
-					pthread_mutex_unlock (&favoriteLock);
+					WulforManager::get ()->dispatchClientFunc (new Func1<FavoriteHubs, FavoriteHubEntry*> (this, &FavoriteHubs::edit_client, fh[i]));
 					gtk_list_store_set (favoriteStore, &iter, 	COLUMN_NAME, fh[i]->getName ().c_str (),
 																	COLUMN_SERVER, fh[i]->getServer ().c_str (),
 																	COLUMN_DESCRIPTION, fh[i]->getDescription ().c_str (),
