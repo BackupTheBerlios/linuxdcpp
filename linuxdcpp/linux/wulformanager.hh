@@ -31,6 +31,7 @@
 #include "hub.hh"
 #include "publichubs.hh"
 #include "privatemessage.hh"
+#include "sharebrowser.hh"
 
 class WulforManager {
 	public:
@@ -53,6 +54,7 @@ class WulforManager {
 		Hub *addHub_gui(std::string address, 
 			std::string nick="", std::string desc="", std::string password="");
 		PrivateMessage *addPrivMsg_gui(User::Ptr user);
+		ShareBrowser *addShareBrowser_gui(User::Ptr user, std::string file);
 
 		BookEntry *getBookEntry(int type, string id, bool raise);
 		void deleteBookEntry_gui(BookEntry *entry);
@@ -62,7 +64,7 @@ class WulforManager {
 			HUB,
 			SEARCH,
 			PRIVATE_MSG,
-			SHAREBROWSER,
+			SHARE_BROWSER,
 			DOWNLOAD_QUEUE,
 			FAVOURITE_HUBS
 		};

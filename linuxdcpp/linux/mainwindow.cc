@@ -149,11 +149,22 @@ void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw() {
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
-//QueueManagerListener
+//From QueueManagerListener
 void MainWindow::on(QueueManagerListener::Finished, QueueItem *item) throw() {
+	User::Ptr user = item->getCurrent()->getUser();
+	string searchString = item->getSearchString();
+	string listName = item->getListName();
 
+	typedef Func3<MainWindow, User::Ptr, string, string> F3;
+	F3 *func = new F3(this, &MainWindow::addShareBrowser_gui, 
+		user, searchString, listName);
+	WulforManager::get()->dispatchGuiFunc(func);
+}
 
-
+void MainWindow::addShareBrowser_gui(User::Ptr user, string searchString, string listName) {
+	ShareBrowser *browser;
+	browser = WulforManager::get()->addShareBrowser_gui(user, listName);
+	browser->setPosition_gui(searchString);
 }
 
 void MainWindow::addPage_gui(GtkWidget *page, GtkWidget *label, bool raise) {

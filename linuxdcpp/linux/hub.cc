@@ -28,6 +28,9 @@ using namespace std;
 Hub::Hub(std::string address, GCallback closeCallback):
 	BookEntry(WulforManager::HUB, address, address, closeCallback),
 	enterCallback(this, &Hub::sendMessage_gui),
+	nickListCallback(this, &Hub::popupNickMenu_gui),
+	browseCallback(this, &Hub::browseItemClicked_gui),
+	msgCallback(this, &Hub::msgItemClicked_gui),
 	WIDTH_ICON(20),
 	WIDTH_NICK(100),
 	WIDTH_SHARED(50)
@@ -50,6 +53,7 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	
 	nickStore = gtk_list_store_new(3, GDK_TYPE_PIXBUF, G_TYPE_STRING, G_TYPE_STRING);
 	gtk_tree_view_set_model(nickView, GTK_TREE_MODEL(nickStore));
+	nickSelection = gtk_tree_view_get_selection(nickView);
 	TreeViewFactory factory(nickView);
 	factory.addColumn_gui(COLUMN_ICON, "", TreeViewFactory::PIXBUF, WIDTH_ICON);
 	factory.addColumn_gui(COLUMN_NICK, "Nick", TreeViewFactory::STRING, WIDTH_NICK);
@@ -58,9 +62,18 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	chatBuffer = gtk_text_buffer_new(NULL);
 	gtk_text_view_set_buffer(chatText, chatBuffer);
 
+	nickMenu = GTK_MENU(gtk_menu_new());
+	browseItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Browse files"));
+	msgItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Private message"));
+	gtk_menu_shell_append(GTK_MENU_SHELL(nickMenu), GTK_WIDGET(browseItem));
+	gtk_menu_shell_append(GTK_MENU_SHELL(nickMenu), GTK_WIDGET(msgItem));
+
 	client = NULL;
 
 	enterCallback.connect(G_OBJECT(chatEntry), "activate", NULL);
+	nickListCallback.connect_after(G_OBJECT(nickView), "button-release-event", NULL);
+	browseCallback.connect(G_OBJECT(browseItem), "activate", NULL);
+	msgCallback.connect(G_OBJECT(msgItem), "activate", NULL);
 }
 
 Hub::~Hub() {
@@ -207,6 +220,54 @@ void Hub::sendMessage_gui(GtkEntry *entry, gpointer data) {
 		gtk_entry_set_text(chatEntry, "");
 		func = new F1(this, &Hub::sendMessage_client, text);
 		WulforManager::get()->dispatchClientFunc(func);		
+	}
+}
+
+void Hub::popupNickMenu_gui(GtkWidget *, GdkEventButton *button, gpointer) {
+	//only for right mouse button
+	if (button->button != 3) return;
+	//return if no nick is selected
+	if (!gtk_tree_selection_get_selected(nickSelection, NULL, NULL)) return;
+
+	gtk_menu_popup(nickMenu, NULL, NULL, NULL, NULL, 3, button->time);
+	gtk_widget_show_all(GTK_WIDGET(nickMenu));
+}
+
+void Hub::browseItemClicked_gui(GtkMenuItem *, gpointer) {
+	GtkTreeIter iter;
+	char *text;
+	gtk_tree_selection_get_selected(nickSelection, NULL, &iter);
+	gtk_tree_model_get(GTK_TREE_MODEL(nickStore), &iter,
+		COLUMN_NICK, &text,
+		-1);
+		
+	typedef Func1<Hub, string> F1;
+	F1 *func = new F1(this, &Hub::getFileList_client, string(text));
+	WulforManager::get()->dispatchClientFunc(func);
+}
+
+void Hub::msgItemClicked_gui(GtkMenuItem *, gpointer) {
+	GtkTreeIter iter;
+	char *text;
+	gtk_tree_selection_get_selected(nickSelection, NULL, &iter);
+	gtk_tree_model_get(GTK_TREE_MODEL(nickStore), &iter,
+		COLUMN_NICK, &text,
+		-1);
+
+	User::Ptr user = ClientManager::getInstance()->getUser(text, client);
+	WulforManager::get()->addPrivMsg_gui(user);
+}
+
+void Hub::getFileList_client(string nick) {
+	User::Ptr user = ClientManager::getInstance()->getUser(nick, client);
+
+	try	{
+		QueueManager::getInstance()->addList(user, QueueItem::FLAG_CLIENT_VIEW);
+	} catch (...) {
+		string text = "Could get filelist from: " + nick;
+		typedef Func2<Hub, GtkStatusbar *, string> F2;
+		F2 *func = new F2(this, &Hub::setStatus_gui, mainStatus, text);
+		WulforManager::get()->dispatchGuiFunc(func);
 	}
 }
 

@@ -58,5 +58,7 @@ int main(int argc, char *argv[]) {
 		smgr->set(SettingsManager::TEMP_DOWNLOAD_DIRECTORY, SETTING (DOWNLOAD_DIRECTORY));
 	shutdown();
 	
+	delete WulforManager::get();
+	
 	return 0;
 }

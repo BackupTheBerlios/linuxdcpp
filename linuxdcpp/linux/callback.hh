@@ -38,6 +38,12 @@ class Callback1 {
 				G_CALLBACK(callFunc), (gpointer)this);
 		}
 
+		void connect_after(GObject *obj, std::string signal, gpointer data) {
+			this->data = data;
+		    g_signal_connect_after(obj, signal.c_str(), 
+				G_CALLBACK(callFunc), (gpointer)this);
+		}
+
 	private:
 		static void callFunc(gpointer data) {
 			Callback1<C> *c = (Callback1<C> *)data;
@@ -69,6 +75,12 @@ class Callback2 {
 				G_CALLBACK(callFunc), (gpointer)this);
 		}
 
+		void connect_after(GObject *obj, std::string signal, gpointer data) {
+			this->data = data;
+		    g_signal_connect_after(obj, signal.c_str(), 
+				G_CALLBACK(callFunc), (gpointer)this);
+		}
+
 	private:
 		static void callFunc(P1 param1, gpointer data) {
 			Callback2<C, P1> *c = (Callback2<C, P1> *)data;
@@ -87,7 +99,7 @@ class Callback2 {
 template <class C, typename P1, typename P2>
 class Callback3 {
 	public:
-		Callback3(C *obj, void (C::*func)(P1, P2, gpointer), gpointer data):
+		Callback3(C *obj, void (C::*func)(P1, P2, gpointer)):
 			_obj(obj),
 			_func(func)
 		{
@@ -97,6 +109,12 @@ class Callback3 {
 		void connect(GObject *obj, std::string signal, gpointer data) {
 			this->data = data;
 		    g_signal_connect(obj, signal.c_str(), 
+				G_CALLBACK(callFunc), (gpointer)this);
+		}
+
+		void connect_after(GObject *obj, std::string signal, gpointer data) {
+			this->data = data;
+		    g_signal_connect_after(obj, signal.c_str(), 
 				G_CALLBACK(callFunc), (gpointer)this);
 		}
 

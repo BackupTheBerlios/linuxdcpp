@@ -124,8 +124,12 @@ void WulforManager::start() {
 
 void WulforManager::stop() {
 	assert(manager);
-	delete manager;
-	manager = NULL;
+	pthread_detach(manager->guiThread);
+	pthread_detach(manager->clientThread);
+
+	if (manager->mainWin) delete manager->mainWin;
+	for (int i=0; i<manager->bookEntrys.size(); i++)
+		delete manager->bookEntrys[i];
 }
 
 WulforManager *WulforManager::get() {
@@ -158,10 +162,6 @@ WulforManager::~WulforManager() {
 	pthread_mutex_destroy(&clientLock);
 	sem_destroy(&guiSem);
 	sem_destroy(&clientSem);
-	pthread_detach(guiThread);
-	pthread_detach(clientThread);
-	
-	if (mainWin) delete mainWin;
 }
 
 string WulforManager::getPath() {
@@ -278,3 +278,16 @@ PrivateMessage *WulforManager::addPrivMsg_gui(User::Ptr user) {
 	
 	return privMsg;
 }
+
+ShareBrowser *WulforManager::addShareBrowser_gui(User::Ptr user, string file) {
+	BookEntry *entry = getBookEntry(SHARE_BROWSER, user->getFullNick(), true);
+	if (entry) return dynamic_cast<ShareBrowser *>(entry);
+
+	ShareBrowser *browser = new ShareBrowser(user, file, G_CALLBACK(closeEntry_callback));
+	mainWin->addPage_gui(browser->getWidget(), browser->getTitle(), true);
+	gtk_widget_unref(browser->getWidget());
+	bookEntrys.push_back(browser);
+	
+	return browser;
+}
+

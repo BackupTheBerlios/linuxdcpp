@@ -57,12 +57,17 @@ class Hub:
 		void sendMessage_gui(GtkEntry *entry, gpointer data);
 		void addPrivateMessage_gui(const User::Ptr &user, std::string msg);
 
+		void popupNickMenu_gui(GtkWidget *, GdkEventButton *, gpointer);
+		void browseItemClicked_gui(GtkMenuItem *, gpointer);
+		void msgItemClicked_gui(GtkMenuItem *, gpointer);
+
 		//to be called from client thread
 		void connectClient_client(string address, 
 			string nick="", string desc="", string password="");
 		void setPassword_client(std::string password);
 		void updateUser_client(const User::Ptr &user);
 		void sendMessage_client(std::string message);
+		void getFileList_client(std::string nick);
 
 		//all this from ClientListener...
 		void on(ClientListener::Connecting, Client *client) throw();
@@ -97,6 +102,11 @@ class Hub:
 		Client *client;
 
 		Callback2<Hub, GtkEntry *> enterCallback;
+		Callback3<Hub, GtkWidget *, GdkEventButton *> nickListCallback;
+		Callback2<Hub, GtkMenuItem *> browseCallback, msgCallback;
+
+		GtkMenu *nickMenu;
+		GtkMenuItem *browseItem, *msgItem;
 
 		GtkWidget *mainBox;
 		GtkEntry *chatEntry;
@@ -105,6 +115,7 @@ class Hub:
 		GtkStatusbar *mainStatus, *usersStatus, *sharedStatus;
 		GtkTreeView *nickView;
 		GtkListStore *nickStore;
+		GtkTreeSelection *nickSelection;
 
 		const int WIDTH_ICON, WIDTH_NICK, WIDTH_SHARED;
 		
