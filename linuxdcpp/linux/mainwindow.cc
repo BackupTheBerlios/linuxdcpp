@@ -83,6 +83,14 @@ void MainWindow::createWindow_gui() {
 	ulStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "status6"));
 	dlStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "status7"));
 
+	pubHubsButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "publicHubs"));
+	searchButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "search"));
+	settingsButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "settings"));
+	hashButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "hash"));
+	queueButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "queue"));
+	favHubsButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "favHubs"));
+	quitButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "quit"));
+
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "mainWindow"));
 	book = GTK_NOTEBOOK(glade_xml_get_widget(xml, "book"));
 	transferView = GTK_TREE_VIEW(glade_xml_get_widget(xml, "transfers"));
@@ -111,11 +119,31 @@ void MainWindow::createWindow_gui() {
 	//In our case, this is just a placeholder, so we remove it.
 	gtk_notebook_remove_page(book, -1);
 
-	GObject *o;
-	o = G_OBJECT(glade_xml_get_widget(xml, "publicHubs"));
-    g_signal_connect(o, "clicked", G_CALLBACK(pubHubs_callback), (gpointer)this);
-	o = G_OBJECT(glade_xml_get_widget(xml, "quit"));
-    g_signal_connect(o, "clicked", G_CALLBACK(quit_callback), (gpointer)this);
+	//We need to do this in the code and not in the .glade file,
+	//otherwise we won't always find the images using binreloc
+	file = WulforManager::get()->getPath() + "/pixmaps/publichubs.png";
+	gtk_tool_button_set_icon_widget(pubHubsButton, 
+		gtk_image_new_from_file(file.c_str()));
+	file = WulforManager::get()->getPath() + "/pixmaps/search.png";
+	gtk_tool_button_set_icon_widget(searchButton, 
+		gtk_image_new_from_file(file.c_str()));
+	file = WulforManager::get()->getPath() + "/pixmaps/settings.png";
+	gtk_tool_button_set_icon_widget(settingsButton, 
+		gtk_image_new_from_file(file.c_str()));
+
+	file = WulforManager::get()->getPath() + "/pixmaps/queue.png";
+	gtk_tool_button_set_icon_widget(queueButton, 
+		gtk_image_new_from_file(file.c_str()));
+	file = WulforManager::get()->getPath() + "/pixmaps/favhubs.png";
+	gtk_tool_button_set_icon_widget(favHubsButton, 
+		gtk_image_new_from_file(file.c_str()));
+		
+	gtk_widget_show_all(GTK_WIDGET(window));
+
+    g_signal_connect(G_OBJECT(pubHubsButton), 
+		"clicked", G_CALLBACK(pubHubs_callback), (gpointer)this);
+    g_signal_connect(G_OBJECT(quitButton), 
+		"clicked", G_CALLBACK(quit_callback), (gpointer)this);
 	
 	gtk_statusbar_push(mainStatus, 0, "Welcome to Wulfor - Reloaded");
 }
@@ -366,18 +394,15 @@ string MainWindow::getId_client(ConnectionQueueItem *item) {
 	return ret;
 }
 
-bool MainWindow::getId_client(Transfer *t, string *id) {
-	if (!t->getUserConnection()) return false;
-	if (!t->getUserConnection()->getCQI()) return false;
+string MainWindow::getId_client(Transfer *t) {
+	assert (t->getUserConnection());
+	assert (t->getUserConnection()->getCQI());
 
-	*id = getId_client(t->getUserConnection()->getCQI());
-	return true;
+	return getId_client(t->getUserConnection()->getCQI());
 }
 
 void MainWindow::transferComplete_client(Transfer *t) {
-	string id, status;
-	
-	if (!getId_client(t, &id)) return;
+	string status, id = getId_client(t);
 
 	if (t->getUserConnection()->isSet(UserConnection::FLAG_UPLOAD)) {
 		status = "Upload finished, idle...";
@@ -440,9 +465,8 @@ void MainWindow::on(ConnectionManagerListener::StatusChanged, ConnectionQueueIte
 
 //From Download manager
 void MainWindow::on(DownloadManagerListener::Starting, Download *dl) throw() {
-	string id, status, size, path, file;
-	
-	if (!getId_client(dl, &id)) return;
+	string status, size, path, file;
+	string id = getId_client(dl);
 
 	size = Util::formatBytes(dl->getSize());
 	file = Util::getFileName(dl->getTarget());
@@ -463,7 +487,7 @@ void MainWindow::on(DownloadManagerListener::Tick, const Download::List &list) t
 	for (it = list.begin(); it != list.end(); it++) {
 		Download* dl = *it;
 
-		if (!getId_client(dl, &id)) continue; 
+		id = getId_client(dl); 
 
 		string bytes = Util::formatBytes(dl->getPos());
 		double percent = (double)(dl->getPos() * 100.0) / dl->getSize();
@@ -492,9 +516,8 @@ void MainWindow::on(DownloadManagerListener::Complete, Download *dl) throw() {
 }
 
 void MainWindow::on(DownloadManagerListener::Failed, Download *dl, const string &reason) throw() {
-	string id, status, size, file, path;
-
-	if (!getId_client(dl, &id)) return; 
+	string status, size, file, path;
+	string id = getId_client(dl); 
 
 	status = reason;
 	size = Util::formatBytes(dl->getSize());
@@ -509,9 +532,8 @@ void MainWindow::on(DownloadManagerListener::Failed, Download *dl, const string 
 
 //From Upload manager
 void MainWindow::on(UploadManagerListener::Starting, Upload *ul) throw() {
-	string id, status, size, path, file;
-	
-	if (!getId_client(ul, &id)) return;
+	string status, size, path, file;
+	string id = getId_client(ul);
 
 	size = Util::formatBytes(ul->getSize());
 	file = Util::getFileName(ul->getFileName());
@@ -532,7 +554,7 @@ void MainWindow::on(UploadManagerListener::Tick, const Upload::List &list) throw
 	for (it = list.begin(); it != list.end(); it++) {
 		Upload* ul = *it;
 
-		if (!getId_client(ul, &id)) continue; 
+		id = getId_client(ul); 
 
 		string bytes = Util::formatBytes(ul->getPos());
 		double percent = (double)(ul->getPos() * 100.0) / ul->getSize();

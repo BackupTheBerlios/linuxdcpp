@@ -62,6 +62,8 @@ class Hub:
 		void browseItemClicked_gui(GtkMenuItem *, gpointer);
 		void msgItemClicked_gui(GtkMenuItem *, gpointer);
 
+		void updateScroll_gui(GtkAdjustment *adj, gpointer data);
+
 		//to be called from client thread
 		void connectClient_client(string address, 
 			string nick="", string desc="", string password="");
@@ -105,9 +107,11 @@ class Hub:
 		Callback2<Hub, void, GtkEntry *> enterCallback;
 		Callback3<Hub, void, GtkWidget *, GdkEventButton *> nickListCallback;
 		Callback2<Hub, void, GtkMenuItem *> browseCallback, msgCallback;
+		Callback2<Hub, void, GtkAdjustment *> scrollCallback;
 
 		std::set<std::string> nicks;
 		pthread_mutex_t clientLock;
+		bool setBottom;
 
 		GtkMenu *nickMenu;
 		GtkMenuItem *browseItem, *msgItem;
@@ -120,6 +124,7 @@ class Hub:
 		GtkTreeView *nickView;
 		GtkListStore *nickStore;
 		GtkTreeSelection *nickSelection;
+		GtkScrolledWindow *chatScroll;
 
 		const int WIDTH_ICON, WIDTH_NICK, WIDTH_SHARED;
 		

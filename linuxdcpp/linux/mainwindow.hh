@@ -71,7 +71,7 @@ class MainWindow:
 		//client functions
 		void startSocket();
 		std::string getId_client(ConnectionQueueItem *item);
-		bool getId_client(Transfer *t, std::string *id);
+		std::string getId_client(Transfer *t);
 		void transferComplete_client(Transfer *t);
 
 		//From Timer manager
@@ -107,6 +107,8 @@ class MainWindow:
 		GtkWindow *window;
 		GtkStatusbar *mainStatus, *hubStatus, *slotStatus, 
 			*dTotStatus, *uTotStatus, *dlStatus, *ulStatus;
+		GtkToolButton *pubHubsButton, *searchButton, *settingsButton, 
+			*hashButton, *queueButton, *favHubsButton, *quitButton;
 		GtkNotebook *book;
 		GtkTreeView *transferView;
 		GtkListStore *transferStore;

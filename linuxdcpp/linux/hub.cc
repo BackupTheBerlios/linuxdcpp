@@ -31,6 +31,7 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	nickListCallback(this, &Hub::popupNickMenu_gui),
 	browseCallback(this, &Hub::browseItemClicked_gui),
 	msgCallback(this, &Hub::msgItemClicked_gui),
+	scrollCallback(this, &Hub::updateScroll_gui),
 	WIDTH_ICON(20),
 	WIDTH_NICK(100),
 	WIDTH_SHARED(50)
@@ -46,6 +47,7 @@ Hub::Hub(std::string address, GCallback closeCallback):
 
 	chatEntry = GTK_ENTRY(glade_xml_get_widget(xml, "chatEntry"));
 	chatText = GTK_TEXT_VIEW(glade_xml_get_widget(xml, "chatText"));
+	chatScroll = GTK_SCROLLED_WINDOW(glade_xml_get_widget(xml, "chatScroll"));
 	nickView = GTK_TREE_VIEW(glade_xml_get_widget(xml, "nickView"));
 	mainStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusMain"));
 	usersStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusUsers"));
@@ -71,11 +73,14 @@ Hub::Hub(std::string address, GCallback closeCallback):
 
 	pthread_mutex_init(&clientLock, NULL);
 	client = NULL;
+	setBottom = false;
 
 	enterCallback.connect(G_OBJECT(chatEntry), "activate", NULL);
 	nickListCallback.connect_after(G_OBJECT(nickView), "button-release-event", NULL);
 	browseCallback.connect(G_OBJECT(browseItem), "activate", NULL);
 	msgCallback.connect(G_OBJECT(msgItem), "activate", NULL);
+	scrollCallback.connect(G_OBJECT(gtk_scrolled_window_get_vadjustment(chatScroll)), 
+		"changed", NULL);
 }
 
 Hub::~Hub() {
@@ -211,9 +216,20 @@ void Hub::getPassword_gui() {
 	WulforManager::get()->dispatchClientFunc(func);
 }
 
+void Hub::updateScroll_gui(GtkAdjustment *adj, gpointer data) {
+	if (setBottom) {
+		gtk_adjustment_set_value(adj, adj->upper - adj->page_size);
+		setBottom = false;
+	}
+}
+
 void Hub::addMessage_gui(string msg) {
 	GtkTextIter iter;
 	string text = "[" + Util::getShortTimeString() + "] " + msg + "\n";
+	GtkAdjustment *adj;
+
+	adj = gtk_scrolled_window_get_vadjustment(chatScroll);
+	setBottom = gtk_adjustment_get_value(adj) >= (adj->upper - adj->page_size);
 	
 	gtk_text_buffer_get_end_iter(chatBuffer, &iter);
 	gtk_text_buffer_insert(chatBuffer, &iter, text.c_str(), text.size());
