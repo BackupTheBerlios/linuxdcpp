@@ -127,6 +127,8 @@ class Hub:
 		MainWindow *mw;
 		double scrollVal;
 		std::map<Glib::ustring, Gtk::TreeModel::iterator> userMap;
+
+		static int columnSize[];
 };
 
 #else

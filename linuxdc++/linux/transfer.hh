@@ -142,7 +142,7 @@ class CTransfer : 	public DownloadManagerListener,
 					add(timeleft);
 					add(speed);
 					add(file);
-					add(size);
+					add(filesize);
 					add(path);
 					add(ip);
 					add(ratio);
@@ -155,7 +155,7 @@ class CTransfer : 	public DownloadManagerListener,
 				timeleft,
 				speed,
 				file,
-				size,
+				filesize,
 				path,
 				ip,
 				ratio;
@@ -210,6 +210,7 @@ class CTransfer : 	public DownloadManagerListener,
 		CriticalSection cs;
 		
 		static CTransfer *instance;
+		static int columnSize[];
 };
 
 #endif

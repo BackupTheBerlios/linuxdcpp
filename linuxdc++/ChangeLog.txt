@@ -1,3 +1,7 @@
+2004-10-14 20:45 phase
+
+	* linux/transfer.hh/cc, linux/hub.hh/cc, linux/publichubs.hh/cc: Added resizeable columns. Joining large hubs is MUCH faster.
+
 2004-10-14 12:25 phase
 
 	* linux/transfer.hh/cc: The client doesn't resize after the connection lister.

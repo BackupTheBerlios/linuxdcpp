@@ -88,6 +88,8 @@ class PublicHubs:
 		Gtk::ScrolledWindow listScroll;
 		Gtk::HBox fieldBox;
 		Gtk::VButtonBox buttonBox;
+
+		static int columnSize[];
 		
 };
 

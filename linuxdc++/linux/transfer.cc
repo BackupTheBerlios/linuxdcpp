@@ -26,6 +26,7 @@ using namespace SigCX;
 using namespace Glib;
 
 CTransfer *CTransfer::instance;
+int CTransfer::columnSize[] = { 150, 100, 250, 75, 75, 175, 100, 200, 50, 75 };
 
 ScrolledWindow &CTransfer::getTransferScroll ()
 {
@@ -50,14 +51,22 @@ CTransfer::CTransfer () : 	menuRemoveTransfer("Close transfer"),
 	transferStore = ListStore::create(columns);
 	transferList.set_model(transferStore);
 	transferList.append_column("User", columns.user);
+	transferList.append_column("Hub", columns.hub);
 	transferList.append_column("Status", columns.status);
 	transferList.append_column("Timeleft", columns.timeleft);
 	transferList.append_column("Speed", columns.speed);
 	transferList.append_column("File", columns.file);
-	transferList.append_column("Size", columns.size);
+	transferList.append_column("Size", columns.filesize);
 	transferList.append_column("Path", columns.path);
 	transferList.append_column("IP", columns.ip);
 	transferList.append_column("Ratio", columns.ratio);
+
+	for (int i=0;i<columns.size ()-1;i++)
+	{
+		transferList.get_column (i)->set_sizing (TREE_VIEW_COLUMN_FIXED);
+		transferList.get_column (i)->set_resizable (true);
+		transferList.get_column (i)->set_fixed_width (columnSize[i]);
+	}
 
 	transferScroll.add (transferList);
 	
@@ -508,7 +517,7 @@ void CTransfer::TransferItem::update ()
 	(*it)[t->columns.timeleft] = (status == STATUS_RUNNING) ? WUtil::ConvertToUTF8 (Util::formatSeconds (timeLeft)) : "";
 	(*it)[t->columns.speed] = (status == STATUS_RUNNING) ? WUtil::ConvertToUTF8 (Util::formatBytes (speed) + "/s") : "";
 	(*it)[t->columns.file] = WUtil::ConvertToUTF8 (file);
-	(*it)[t->columns.size] = WUtil::ConvertToUTF8 (Util::formatBytes (size));
+	(*it)[t->columns.filesize] = WUtil::ConvertToUTF8 (Util::formatBytes (size));
 	(*it)[t->columns.path] = WUtil::ConvertToUTF8 (path);
 	(*it)[t->columns.ip] = WUtil::ConvertToUTF8 (IP);
 	(*it)[t->columns.ratio] = WUtil::ConvertToUTF8 (Util::toString (getRatio ()));

@@ -31,6 +31,8 @@ using namespace Gtk;
 using namespace SigC;
 using namespace Glib;
 
+int PublicHubs::columnSize[] = { 200, 290, 50, 100 };
+
 PublicHubs::PublicHubs(MainWindow *mw):
 	hubs(0),
 	filter(""),
@@ -49,6 +51,13 @@ PublicHubs::PublicHubs(MainWindow *mw):
 	hubList.append_column("Description", columns.description);
 	hubList.append_column("Users", columns.users);
 	hubList.append_column("Address", columns.address);
+
+	for (int i=0;i<columns.size ();i++)
+	{
+		hubList.get_column (i)->set_sizing (TREE_VIEW_COLUMN_FIXED);
+		hubList.get_column (i)->set_resizable (true);
+		hubList.get_column (i)->set_fixed_width (columnSize[i]);
+	}	
 
 	//BookEntry inherits from VBox
 	pack_start(listScroll, PACK_EXPAND_WIDGET);
@@ -186,7 +195,6 @@ void PublicHubs::connect() {
 		it = selection->get_selected();
 		address = WUtil::ConvertFromUTF8((*it)[columns.address]);
 	}
-
 	hub = new Hub(address, mw);
 	mw->addPage(hub);
 }

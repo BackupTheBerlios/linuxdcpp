@@ -30,6 +30,8 @@ using namespace SigC;
 using namespace SigCX;
 using namespace Glib;
 
+int Hub::columnSize[] = {100, 50 };
+
 Hub::Hub(string address, MainWindow *mw):
 	browseItem("Browse files"),
 	pmItem("Personal message"),
@@ -40,16 +42,14 @@ Hub::Hub(string address, MainWindow *mw):
 	GuiProxy *proxy = GuiProxy::getInstance();
 	ThreadTunnel *tunnel = proxy->getTunnel();
 	Adjustment *adj = chatScroll.get_vadjustment();
-	
+		
 	this->address = address;
 	this->mw = mw;
 	
 	this->ID = BOOK_HUB;
-
 	add (mainBox);
 	
 	pane.set_position(600);
-
 	chat.set_editable(false);
 	chat.set_cursor_visible(false);
 	
@@ -57,7 +57,14 @@ Hub::Hub(string address, MainWindow *mw):
 	nickView.set_model(nickStore);
 	nickView.append_column("Nick", columns.nick);
 	nickView.append_column("Shared", columns.shared);
-	
+
+	for (int i=0;i<columns.size ();i++)
+	{
+		nickView.get_column (i)->set_sizing (TREE_VIEW_COLUMN_FIXED);
+		nickView.get_column (i)->set_resizable (true);
+		nickView.get_column (i)->set_fixed_width (columnSize[i]);
+	}
+
 	nickScroll.add(nickView);
 	chatScroll.add(chat);
 	
@@ -116,7 +123,6 @@ Hub::Hub(string address, MainWindow *mw):
 	proxy->addListener<Hub, ClientListener>(this, client);
 	client->setNick(SETTING(NICK));
 	client->connect();
-
 }
 
 Hub::~Hub() {
