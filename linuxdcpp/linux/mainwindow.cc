@@ -471,10 +471,10 @@ void MainWindow::on(DownloadManagerListener::Starting, Download *dl) throw() {
 void MainWindow::on(DownloadManagerListener::Tick, const Download::List &list) throw() {
 	string id, status, timeLeft, speed;
 	Download::List::const_iterator it;
-	ostringstream stream;
 	
 	for (it = list.begin(); it != list.end(); it++) {
 		Download* dl = *it;
+		ostringstream stream;
 
 		id = getId_client(dl); 
 
@@ -538,10 +538,10 @@ void MainWindow::on(UploadManagerListener::Starting, Upload *ul) throw() {
 void MainWindow::on(UploadManagerListener::Tick, const Upload::List &list) throw() {
 	string id, status, timeLeft, speed;
 	Upload::List::const_iterator it;
-	ostringstream stream;
 	
 	for (it = list.begin(); it != list.end(); it++) {
 		Upload* ul = *it;
+		ostringstream stream;
 
 		id = getId_client(ul); 
 
