@@ -155,6 +155,12 @@ MainWindow *WulforManager::getMainWindow() {
 	return mainWin;
 }
 
+PrivateMessage *WulforManager::getPrivMsg(User::Ptr user) {
+	BookEntry *entry = getBookEntry(PRIVATE_MSG, user->getFullNick(), false);
+	if (!entry) return NULL;
+	return dynamic_cast<PrivateMessage *>(entry);
+}
+
 BookEntry *WulforManager::getBookEntry(int type, string id, bool raise) {
 	BookEntry *ret = NULL;
 	vector<BookEntry *>::iterator it;
@@ -212,8 +218,9 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry) {
 	pthread_mutex_unlock(&clientLock);
 }
 
-void WulforManager::addPublicHubs_gui() {
-	if (getBookEntry(PUBLIC_HUBS, "", true)) return;
+PublicHubs *WulforManager::addPublicHubs_gui() {
+	BookEntry *entry = getBookEntry(PUBLIC_HUBS, "", true);
+	if (entry) return dynamic_cast<PublicHubs *>(entry);
 
 	PublicHubs *pubHubs = new PublicHubs(G_CALLBACK(closeEntry_callback));
 	mainWin->addPage_gui(pubHubs->getWidget(), pubHubs->getTitle(), true);
@@ -222,10 +229,13 @@ void WulforManager::addPublicHubs_gui() {
 	
 	Func0<PublicHubs> *func = new Func0<PublicHubs>(pubHubs, &PublicHubs::downloadList_client);
 	dispatchClientFunc(func);
+	
+	return pubHubs;
 }
 
-void WulforManager::addHub_gui(string address, string nick, string desc, string password) {
-	if (getBookEntry(HUB, address, true)) return;
+Hub *WulforManager::addHub_gui(string address, string nick, string desc, string password) {
+	BookEntry *entry = getBookEntry(HUB, address, true);
+	if (entry) return dynamic_cast<Hub *>(entry);
 
 	Hub *hub = new Hub(address, G_CALLBACK(closeEntry_callback));
 	mainWin->addPage_gui(hub->getWidget(), hub->getTitle(), true);
@@ -235,5 +245,18 @@ void WulforManager::addHub_gui(string address, string nick, string desc, string 
 	typedef Func4<Hub, string, string, string, string> F4;
 	F4 *func = new F4(hub, &Hub::connectClient_client, address, nick, desc, password);
 	WulforManager::get()->dispatchClientFunc(func);
+	
+	return hub;
 }
 
+PrivateMessage *WulforManager::addPrivMsg_gui(User::Ptr user) {
+	BookEntry *entry = getBookEntry(PRIVATE_MSG, user->getFullNick(), true);
+	if (entry) return dynamic_cast<PrivateMessage *>(entry);
+
+	PrivateMessage *privMsg = new PrivateMessage(user, G_CALLBACK(closeEntry_callback));
+	mainWin->addPage_gui(privMsg->getWidget(), privMsg->getTitle(), true);
+	gtk_widget_unref(privMsg->getWidget());
+	bookEntrys.push_back(privMsg);
+	
+	return privMsg;
+}

@@ -28,6 +28,9 @@
 #include "func.hh"
 #include "mainwindow.hh"
 #include "bookentry.hh"
+#include "hub.hh"
+#include "publichubs.hh"
+#include "privatemessage.hh"
 
 class WulforManager {
 	public:
@@ -44,10 +47,12 @@ class WulforManager {
 		std::string getPath();
 
 		MainWindow *getMainWindow();
+		PrivateMessage *getPrivMsg(User::Ptr user);
 
-		void addPublicHubs_gui();
-		void addHub_gui(std::string address, 
+		PublicHubs *addPublicHubs_gui();
+		Hub *addHub_gui(std::string address, 
 			std::string nick="", std::string desc="", std::string password="");
+		PrivateMessage *addPrivMsg_gui(User::Ptr user);
 
 		BookEntry *getBookEntry(int type, string id, bool raise);
 		void deleteBookEntry_gui(BookEntry *entry);

@@ -6,6 +6,11 @@
 
 using namespace std;
 
+void Hub::enter_callback(GtkEntry *entry, gpointer data) {
+	Hub *hub = (Hub *)data;
+	hub->sendMessage_gui();
+}
+
 Hub::Hub(std::string address, GCallback closeCallback):
 	BookEntry(WulforManager::HUB, address, address, closeCallback),
 	WIDTH_ICON(20),
@@ -39,6 +44,10 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	gtk_text_view_set_buffer(chatText, chatBuffer);
 
 	client = NULL;
+
+	//For enter in the chat entry
+    g_signal_connect(G_OBJECT(chatEntry), "activate", 
+		G_CALLBACK(enter_callback), (gpointer)this);
 }
 
 Hub::~Hub() {
@@ -65,11 +74,12 @@ void Hub::connectClient_client(string address, string nick, string desc, string 
 }
 
 void Hub::updateUser_client(const User::Ptr &user) {
-	typedef Func3<Hub, string, long, string> F3;
+	typedef Func3<Hub, string, int64_t, string> F3;
 	F3 * func;
 	string nick = user->getNick();
-	long shared = user->getBytesShared();
-	//TODO: fixa så denna sätts ordentligt
+	int64_t shared = user->getBytesShared();
+
+	//TODO: Make this set the correct picture
 	string icon = WulforManager::get()->getPath() + "/pixmaps/normal.png";
 
 	func = new F3(this, &Hub::updateUser_gui, nick, shared, icon);
@@ -92,7 +102,7 @@ void Hub::findUser_gui(string nick, GtkTreeIter *iter) {
 	}
 }
 
-void Hub::updateUser_gui(string nick, long shared, string iconFile) {
+void Hub::updateUser_gui(string nick, int64_t shared, string iconFile) {
 	GtkTreeIter iter;
 	GdkPixbuf *icon;
 	string file;
@@ -161,6 +171,34 @@ void Hub::addMessage_gui(string msg) {
 	gtk_text_buffer_insert(chatBuffer, &iter, text.c_str(), text.size());
 }
 
+void Hub::addPrivateMessage_gui(const User::Ptr &user, std::string msg) {
+	::PrivateMessage *privMsg = 
+		WulforManager::get()->getPrivMsg(user);
+		
+	if (!privMsg)
+		privMsg = WulforManager::get()->addPrivMsg_gui(user);
+	
+	typedef Func1< ::PrivateMessage, string> F1;
+	F1 *func = new F1(privMsg, &::PrivateMessage::addMessage_gui,	msg);
+	WulforManager::get()->dispatchGuiFunc(func);
+}
+
+void Hub::sendMessage_gui() {
+	string text = gtk_entry_get_text(chatEntry);
+	typedef Func1<Hub, string> F1;
+	F1 *func;
+	
+	if (!text.empty()) {
+		gtk_entry_set_text(chatEntry, "");
+		func = new F1(this, &Hub::sendMessage_client, text);
+		WulforManager::get()->dispatchClientFunc(func);		
+	}
+}
+
+void Hub::sendMessage_client(string message) {
+	if (client)	client->getMe()->clientMessage(message);
+}
+
 void Hub::setPassword_client(string password) {
 	client->setPassword(password);
 }
@@ -212,14 +250,16 @@ void Hub::on(ClientListener::UsersUpdated,
 void Hub::on(ClientListener::UserRemoved, 
 	Client *client, const User::Ptr &user) throw()
 {
-	/*
-	PrivateMsg temp(user, mw);
-	BookEntry *e = mw->getPage(&temp);
-	if (e) {
-		PrivateMsg *msg = dynamic_cast<PrivateMsg*>(e);
-		msg->addMsg(user->getNick() + " left the hub.");
+	::PrivateMessage *privMsg = 
+		WulforManager::get()->getPrivMsg(user);
+	if (privMsg) {
+		typedef Func1< ::PrivateMessage, string> F1;
+		F1 *func;
+		func = new F1(privMsg, &::PrivateMessage::addMessage_gui,
+			user->getNick() + " left the hub.");
+		WulforManager::get()->dispatchGuiFunc(func);
 	}
-	*/
+
 	typedef Func1<Hub, string> F1;
 	F1 *remove = new F1(this, &Hub::removeUser_gui, user->getNick());
 	WulforManager::get()->dispatchGuiFunc(remove);
@@ -238,7 +278,7 @@ void Hub::on(ClientListener::UserRemoved,
 void Hub::on(ClientListener::Redirect, 
 	Client *client, const string &address) throw()
 {
-	if(!address.empty()) {
+	if (!address.empty()) {
 		string s, f;
 		short p = 411;
 		Util::decodeUrl(Text::fromT(address), s, p, f);
@@ -297,18 +337,9 @@ void Hub::on(ClientListener::Message,
 void Hub::on(ClientListener::PrivateMessage, 
 	Client *client, const User::Ptr &user, const string &msg) throw()
 {
-	/*
-	PrivateMsg privMsg(user, mw);
-	BookEntry *pos;
-
-	pos = mw->getPage(new PrivateMsg(user, mw));
-	if (!pos) {
-		mw->addPage(new PrivateMsg(user, mw));
-		pos = mw->getPage(new PrivateMsg(user, mw));
-	}
-
-	dynamic_cast<PrivateMsg *>(pos)->addMsg(msg);
-	*/
+	typedef Func2<Hub, const User::Ptr&, string> F2;
+	F2 *func = new F2(this, &Hub::addPrivateMessage_gui, user, msg);
+	WulforManager::get()->dispatchGuiFunc(func);
 }
 
 void Hub::on(ClientListener::UserCommand, Client *client, 

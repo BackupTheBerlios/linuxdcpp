@@ -48,18 +48,21 @@ class Hub:
 
 		//to be called from gui thread
 		void setStatus_gui(GtkStatusbar *status, std::string text);
-		void updateUser_gui(std::string nick, long shared, std::string iconFile);
+		void updateUser_gui(std::string nick, int64_t shared, std::string iconFile);
 		void findUser_gui(std::string nick, GtkTreeIter *iter);
 		void removeUser_gui(std::string nick);
 		void clearNickList_gui();
 		void getPassword_gui();
 		void addMessage_gui(std::string msg);
+		void sendMessage_gui();
+		void addPrivateMessage_gui(const User::Ptr &user, std::string msg);
 
 		//to be called from client thread
 		void connectClient_client(string address, 
 			string nick="", string desc="", string password="");
 		void setPassword_client(std::string password);
 		void updateUser_client(const User::Ptr &user);
+		void sendMessage_client(std::string message);
 
 		//all this from ClientListener...
 		void on(ClientListener::Connecting, Client *client) throw();
@@ -91,6 +94,7 @@ class Hub:
 			int, int64_t, int, const string&) throw();
 
 	private:
+		static void enter_callback(GtkEntry *entry, gpointer data);
 
 		Client *client;
 

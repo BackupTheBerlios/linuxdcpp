@@ -32,6 +32,8 @@ GtkWidget *BookEntry::getTitle() {
 }
 
 void BookEntry::setLabel_gui(std::string text) {
+	if (text.size() > 15) 
+		text = text.substr(0, 15) + "...";
 	gtk_label_set_text(label, text.c_str());
 }
 
