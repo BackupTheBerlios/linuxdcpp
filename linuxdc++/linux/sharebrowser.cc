@@ -132,7 +132,6 @@ ShareBrowser::ShareBrowser(QueueItem *item, MainWindow *mw):
 	
 }
 
-
 void ShareBrowser::setStatus (std::string text, int num)
 {
 	if (num<0 || num>STATUS_LAST-1) return;
@@ -264,7 +263,7 @@ void ShareBrowser::downloadClicked() {
 		target = SETTING(DOWNLOAD_DIRECTORY);
 		assert(target[target.size() - 1] == PATH_SEPARATOR);
 		target += Util::getFileName(file->getName());
-		listing->download(file, target, false, false);
+		listing->download(file, WUtil::ConvertFromUTF8(target), false, false);
 	} catch(const Exception& e) {
 		setStatus (e.getError(), 0);
 	}
@@ -273,6 +272,7 @@ void ShareBrowser::downloadClicked() {
 void ShareBrowser::downloadDirClicked() {
 	const TreeModel::iterator constIter = 
 		dirView.get_selection()->get_selected();
+	string target;
 
 	if (!constIter) return;
 	if (!listing) return;
@@ -280,7 +280,8 @@ void ShareBrowser::downloadDirClicked() {
 	DirectoryListing::Directory *dir = (*constIter)[dCol.dir];
 	try {
 		//false = prio
-		listing->download(dir, SETTING(DOWNLOAD_DIRECTORY), false);
+		target = SETTING(DOWNLOAD_DIRECTORY);
+		listing->download(dir, WUtil::ConvertFromUTF8(target), false);
 	} catch(const Exception& e) {
 		setStatus(e.getError(), 0);
 	}
@@ -302,7 +303,7 @@ void ShareBrowser::viewClicked() {
 		target = SETTING(DOWNLOAD_DIRECTORY);
 		assert(target[target.size() - 1] == PATH_SEPARATOR);
 		target += Util::getFileName(file->getName());
-		listing->download(file, target, true, false);
+		listing->download(file, WUtil::ConvertFromUTF8(target), true, false);
 	} catch(const Exception& e) {
 		setStatus(e.getError(), 0);
 	}

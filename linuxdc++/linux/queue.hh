@@ -93,17 +93,18 @@ private:
 				add (tth);
 				add (item); // Hidden from user.
 			}
-			Gtk::TreeModelColumn<Glib::ustring> 	target,
-																			status,
-																			filesize,
-																			downloaded,
-																			priority,
-																			users,
-																			path,
-																			exactsize,
-																			added,
-																			errors,
-																			tth;
+			Gtk::TreeModelColumn<Glib::ustring>	
+				target,
+				status,
+				filesize,
+				downloaded,
+				priority,
+				users,
+				path,
+				exactsize,
+				added,
+				errors,
+				tth;
 			Gtk::TreeModelColumn<QueueItemInfo*> item; // Hidden from user.
 	};
 
@@ -150,10 +151,11 @@ private:
 			priority(aQI->getPriority()), 
 			status(aQI->getStatus())
 		{ 
-			for(QueueItem::Source::Iter i = aQI->getSources().begin(); i != aQI->getSources().end(); ++i) {
+			QueueItem::Source::Iter i;
+			for(i = aQI->getSources().begin(); i != aQI->getSources().end(); ++i) {
 				sources.push_back(SourceInfo(*(*i)));
 			}
-			for(QueueItem::Source::Iter i = aQI->getBadSources().begin(); i != aQI->getBadSources().end(); ++i) {
+			for(i = aQI->getBadSources().begin(); i != aQI->getBadSources().end(); ++i) {
 				badSources.push_back(SourceInfo(*(*i)));
 			}
 		};

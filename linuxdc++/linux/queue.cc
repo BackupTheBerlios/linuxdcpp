@@ -32,14 +32,13 @@ DownloadQueue::~DownloadQueue ()
 }
 
 DownloadQueue::DownloadQueue (MainWindow *mw) :
-smDirPrio ("Set priority"),
-smFilePrio ("Set priority"),
-smBrowse ("Get file list"),
-smPM ("Send private message"),
-smReAdd ("Re-add source"),
-smRemove ("Remove source"),
-smRemoveAll ("Remove user from queue")
-	
+	smDirPrio ("Set priority"),
+	smFilePrio ("Set priority"),
+	smBrowse ("Get file list"),
+	smPM ("Send private message"),
+	smReAdd ("Re-add source"),
+	smRemove ("Remove source"),
+	smRemoveAll ("Remove user from queue")
 {
 	Slot0<void> callback0;
 	Slot1<void, GdkEventButton *> callback1;
@@ -323,7 +322,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 
 		if (!found)
 			return;
-// Users
+		// Users
 		int online=0;
 		{
 			ustring tmp;
@@ -431,7 +430,8 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 		// Item
 		row[dq->fileColumns.item] = this;
 		// Filename
-		row[dq->fileColumns.target] = Util::getFileName(getTarget());
+		row[dq->fileColumns.target] = 
+			WUtil::ConvertToUTF8(Util::getFileName(getTarget()));
 		// Users
 		int online=0;
 		{
@@ -508,7 +508,8 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 		}
 		// Path
 		{
-			row[dq->fileColumns.path] = Util::getFilePath(getTarget());
+			row[dq->fileColumns.path] = 
+				WUtil::ConvertToUTF8(Util::getFilePath(getTarget()));
 		}
 		// Errors
 		{
@@ -606,8 +607,10 @@ void DownloadQueue::buildList (const QueueItem::StringMap &l)
 		if (dirMap.find ("/" + getNextSubDir (Util::getFilePath(it->second->getTarget())) + "/") == dirMap.end ())
 		{
 			row = *(dirStore->append());
-			row[dirColumns.name] = getNextSubDir (Util::getFilePath(it->second->getTarget()));
-			row[dirColumns.realpath] = "/" + getNextSubDir (Util::getFilePath(it->second->getTarget())) + "/";
+			row[dirColumns.name] = 
+				WUtil::ConvertToUTF8(getNextSubDir (Util::getFilePath(it->second->getTarget())));
+			row[dirColumns.realpath] = 
+				WUtil::ConvertToUTF8("/" + getNextSubDir (Util::getFilePath(it->second->getTarget())) + "/");
 			dirMap[row[dirColumns.realpath]] = row;
 			ustring tmp;;
 			addDir (getRemainingDir (Util::getFilePath(it->second->getTarget())), row, tmp);
@@ -638,8 +641,9 @@ void DownloadQueue::addDir (string path, TreeModel::Row row, ustring &current)
 	if (dirMap.find (row[dirColumns.realpath] + tmp + "/") == dirMap.end ())
 	{
 		newRow = *(dirStore->append(row.children()));
-		newRow[dirColumns.name] = tmp;
-		newRow[dirColumns.realpath] = row[dirColumns.realpath] + tmp + "/";
+		newRow[dirColumns.name] = WUtil::ConvertToUTF8(tmp);
+		newRow[dirColumns.realpath] = row[dirColumns.realpath] + 
+			WUtil::ConvertToUTF8(tmp) + "/";
 		dirMap[newRow[dirColumns.realpath]] = newRow;
 		addDir (getRemainingDir (path), newRow, current);
 	}
@@ -704,13 +708,11 @@ string DownloadQueue::getTrailingSubDir (string path)
 }
 void DownloadQueue::removeFiles (ustring path)
 {
-	vector<string> target;
-	for (vector<QueueItemInfo*>::iterator it=dirFileMap[path].begin();it != dirFileMap[path].end (); it++)
+	vector<QueueItemInfo*>::iterator it;
+	for (it = dirFileMap[path].begin(); it != dirFileMap[path].end(); it++)
 	{
-		target.push_back ((*it)->getTarget ());
+		QueueManager::getInstance ()->remove ((*it)->getTarget());
 	}
-	for (vector<string>::iterator it=target.begin (); it != target.end (); it++)
-		QueueManager::getInstance ()->remove ((*it));
 }
 void DownloadQueue::getChildren (ustring path, vector<TreeModel::iterator> *iter)
 {
@@ -789,7 +791,7 @@ void DownloadQueue::removeDir (ustring path)
 }
 void DownloadQueue::removeFile (Glib::ustring target)
 {
-	ustring path = Util::getFilePath (target.raw ());
+	ustring path = Util::getFilePath(target.raw());
 	if (dirFileMap.find (path) == dirFileMap.end ())
 		return;
 	for (vector<QueueItemInfo*>::iterator it=dirFileMap[path].begin (); it != dirFileMap[path].end (); it++)
@@ -814,8 +816,8 @@ void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
 	if (dirMap.find ("/" +subdir  + "/") == dirMap.end ())
 	{
 		row = *(dirStore->append());
-		row[dirColumns.name] = subdir;
-		row[dirColumns.realpath] = "/" + subdir + "/";
+		row[dirColumns.name] = WUtil::ConvertToUTF8(subdir);
+		row[dirColumns.realpath] = "/" + WUtil::ConvertToUTF8(subdir) + "/";
 		dirMap[row[dirColumns.realpath]] = row;
 		ustring tmp;
 		addDir (getRemainingDir (Util::getFilePath(aQI->getTarget())), row, tmp);
@@ -904,7 +906,7 @@ void DownloadQueue::updateFiles (QueueItem *aQI)
 
 void DownloadQueue::setFilePriority (Glib::ustring target, QueueItem::Priority p)
 {
-	QueueManager::getInstance ()->setPriority (target.raw(), p);
+	QueueManager::getInstance ()->setPriority(WUtil::ConvertFromUTF8(target), p);
 }
 void DownloadQueue::setDirPriority (Glib::ustring path, QueueItem::Priority p)
 {

@@ -400,9 +400,9 @@ void CTransfer::TransferItem::update ()
 	(*it)[t->columns.status] = statusString;
 	(*it)[t->columns.timeleft] = (status == STATUS_RUNNING) ? Util::formatSeconds (timeLeft) : "";
 	(*it)[t->columns.speed] = (status == STATUS_RUNNING) ? Util::formatBytes (speed) + "/s" : "";
-	(*it)[t->columns.file] = file;
+	(*it)[t->columns.file] = WUtil::ConvertToUTF8(file);
 	(*it)[t->columns.filesize] = Util::formatBytes (size);
-	(*it)[t->columns.path] = path;
+	(*it)[t->columns.path] = WUtil::ConvertToUTF8(path);
 	(*it)[t->columns.ip] = IP;
 	(*it)[t->columns.ratio] = Util::toString (getRatio ());
 }

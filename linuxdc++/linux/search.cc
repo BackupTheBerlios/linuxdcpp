@@ -111,14 +111,6 @@ Search::Search(MainWindow *mw):
 
 	barBox.pack_start(barTable, PACK_SHRINK);
 
-	/*	
-	pane.add1(barBox);
-	pane.add2(scroll);
-	pane.set_position(300);
-
-	pack_start(pane);
-	*/
-
 	using namespace Gtk::Menu_Helpers;
 	MenuList items = popupMenu.items();
 	items.push_back (MenuElem ("Download", open_tunnel (tunnel, slot (*this, &Search::download), true)));
@@ -264,11 +256,32 @@ void Search::SearchInfo::download ()
 {
 	try
 	{
-		if(sr->getType () == SearchResult::TYPE_FILE)
-			QueueManager::getInstance()->add(	sr->getFile (), sr->getSize(), sr->getUser(), SETTING(DOWNLOAD_DIRECTORY) +Util::getFileName (WUtil::linuxSeparator (sr->getFile ())),
-																		sr->getTTH(), QueueItem::FLAG_RESUME | (sr->getUtf8() ? QueueItem::FLAG_SOURCE_UTF8 : 0), QueueItem::DEFAULT);
-		else
-			QueueManager::getInstance()->addDirectory(sr->getFile(), sr->getUser(), SETTING(DOWNLOAD_DIRECTORY), 	QueueItem::DEFAULT);
+		if(sr->getType () == SearchResult::TYPE_FILE) {
+			string target = WUtil::ConvertFromUTF8(SETTING(DOWNLOAD_DIRECTORY));
+			
+			if (sr->getUtf8()) {
+				target += WUtil::ConvertFromUTF8(
+					Util::getFileName (WUtil::linuxSeparator (sr->getFile ())));
+			} else {
+				target += 
+					Util::getFileName (WUtil::linuxSeparator (sr->getFile ()));
+			}
+			
+			QueueManager::getInstance()->add(
+				sr->getFile (), 
+				sr->getSize(), 
+				sr->getUser(), 
+				target,
+				sr->getTTH(), 
+				QueueItem::FLAG_RESUME | (sr->getUtf8() ? QueueItem::FLAG_SOURCE_UTF8 : 0), 
+				QueueItem::DEFAULT);
+		} else {
+			QueueManager::getInstance()->addDirectory(
+				sr->getFile(), 
+				sr->getUser(), 
+				WUtil::ConvertFromUTF8(SETTING(DOWNLOAD_DIRECTORY)), 
+				QueueItem::DEFAULT);
+		}
 	}
 	catch(...)
 	{
@@ -280,11 +293,19 @@ void Search::SearchInfo::downloadDir ()
 {
 	try
 	{
-		if(sr->getType() == SearchResult::TYPE_FILE)
-			QueueManager::getInstance()->addDirectory(	WUtil::windowsSeparator (Util::getFilePath (WUtil::linuxSeparator (sr->getFile ()))), sr->getUser(),
- 																						SETTING (DOWNLOAD_DIRECTORY), QueueItem::DEFAULT);
-		else
-			QueueManager::getInstance()->addDirectory(sr->getFile (), sr->getUser(), SETTING (DOWNLOAD_DIRECTORY), QueueItem::DEFAULT);
+		if(sr->getType() == SearchResult::TYPE_FILE) {
+			QueueManager::getInstance()->addDirectory(
+				WUtil::windowsSeparator (Util::getFilePath (WUtil::linuxSeparator (sr->getFile ()))),
+				sr->getUser(),
+				WUtil::ConvertFromUTF8(SETTING (DOWNLOAD_DIRECTORY)), 
+				QueueItem::DEFAULT);
+		} else {
+			QueueManager::getInstance()->addDirectory(
+				sr->getFile (),
+				sr->getUser(),
+				WUtil::ConvertFromUTF8(SETTING (DOWNLOAD_DIRECTORY)), 
+				QueueItem::DEFAULT);
+		}
 	}
 	catch(...)
 	{
