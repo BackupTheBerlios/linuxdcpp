@@ -198,23 +198,23 @@ void PublicHubs::on(HubManagerListener::DownloadFinished,
 void PublicHubs::on(HubManagerListener::FavoriteAdded, 
 	const FavoriteHubEntry *fav) throw()
 {
-	cout << "Added favourite" << endl;
+	//cout << "Added favourite" << endl;
 }
 
 void PublicHubs::on(HubManagerListener::FavoriteRemoved, 
 	const FavoriteHubEntry *fav) throw()
 {
-	cout << "Removed favourite" << endl;
+	//cout << "Removed favourite" << endl;
 }
 
 void PublicHubs::on(HubManagerListener::UserAdded, 
 	const User::Ptr &user) throw()
 {
-	cout << "Added user" << endl;
+	//cout << "Added user" << endl;
 }
 
 void PublicHubs::on(HubManagerListener::UserRemoved, 
 	const User::Ptr &user) throw()
 {	
-	cout << "Removed user" << endl;
+	//cout << "Removed user" << endl;
 }

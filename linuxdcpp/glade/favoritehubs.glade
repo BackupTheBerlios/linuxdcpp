@@ -2,6 +2,7 @@
 <!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
 
 <glade-interface>
+<requires lib="gnome"/>
 
 <widget class="GtkWindow" id="favoriteHubsWindow">
   <property name="width_request">640</property>
@@ -60,7 +61,6 @@
 	  <property name="spacing">4</property>
 
 	  <child>
-
 	    <widget class="GtkButton" id="buttonNew">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
@@ -109,7 +109,6 @@
 	      <property name="fill">False</property>
 	    </packing>
 	  </child>
-
 
 	  <child>
 	    <widget class="GtkButton" id="buttonMoveUp">
@@ -398,9 +397,9 @@
 	      <child>
 		<widget class="GtkLabel" id="label1">
 		  <property name="visible">True</property>
-		  <property name="label" translatable="yes">Hub</property>
+		  <property name="label" translatable="yes">&lt;b&gt;Hub&lt;/b&gt;</property>
 		  <property name="use_underline">False</property>
-		  <property name="use_markup">False</property>
+		  <property name="use_markup">True</property>
 		  <property name="justify">GTK_JUSTIFY_LEFT</property>
 		  <property name="wrap">False</property>
 		  <property name="selectable">False</property>
@@ -578,9 +577,9 @@
 	      <child>
 		<widget class="GtkLabel" id="label5">
 		  <property name="visible">True</property>
-		  <property name="label" translatable="yes">Identification (leave blank for defaults)</property>
+		  <property name="label" translatable="yes">&lt;b&gt;Identification (leave blank for defaults)&lt;/b&gt;</property>
 		  <property name="use_underline">False</property>
-		  <property name="use_markup">False</property>
+		  <property name="use_markup">True</property>
 		  <property name="justify">GTK_JUSTIFY_LEFT</property>
 		  <property name="wrap">False</property>
 		  <property name="selectable">False</property>

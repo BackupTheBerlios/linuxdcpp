@@ -44,6 +44,8 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	gtk_container_remove(GTK_CONTAINER(window), mainBox);
 	gtk_widget_destroy(window);
 
+	passwordDialog = GTK_DIALOG (glade_xml_get_widget(xml, "passwordDialog"));
+	passwordEntry = GTK_ENTRY (glade_xml_get_widget(xml, "entryPassword"));
 	chatEntry = GTK_ENTRY(glade_xml_get_widget(xml, "chatEntry"));
 	chatText = GTK_TEXT_VIEW(glade_xml_get_widget(xml, "chatText"));
 	chatScroll = GTK_SCROLLED_WINDOW(glade_xml_get_widget(xml, "chatScroll"));
@@ -216,23 +218,13 @@ void Hub::clearNickList_gui() {
 }
 
 void Hub::getPassword_gui() {
-	MainWindow *mainWin = WulforManager::get()->getMainWindow();
-	GtkEntry *entry;
 	string password;
 
-	GtkWidget *dialog = gtk_dialog_new_with_buttons ("Enter password",
-		mainWin->getWindow(),
-		(GtkDialogFlags)(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
-		GTK_STOCK_OK,
-		GTK_RESPONSE_ACCEPT,
-		NULL);
-
-	entry = GTK_ENTRY(gtk_entry_new());
-	gtk_entry_set_visibility(entry, FALSE);
-	gtk_container_add(GTK_CONTAINER(dialog), GTK_WIDGET(entry));
-
-	gtk_dialog_run(GTK_DIALOG(dialog));
-	password = gtk_entry_get_text(entry);
+	gint response = gtk_dialog_run(passwordDialog);
+	if (response == GTK_RESPONSE_OK)
+		password = gtk_entry_get_text(passwordEntry);
+	else
+		return;
 
 	typedef Func1<Hub, string> F1;
 	F1 *func = new F1(this, &Hub::setPassword_client, password);

@@ -116,6 +116,8 @@ class Hub:
 		std::map<std::string, GdkPixbuf *> userIcons;
 
 		GtkWidget *mainBox;
+		GtkDialog *passwordDialog;
+		GtkEntry *passwordEntry;
 		GtkEntry *chatEntry;
 		GtkTextView *chatText;
 		GtkTextBuffer *chatBuffer;
