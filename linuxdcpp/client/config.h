@@ -82,7 +82,8 @@
 #define HASH_MAP_X(key, type, hfunc, eq, order) hash_map<key, type, hfunc, eq >
 #define HASH_MULTIMAP_X(key, type, hfunc, eq, order) hash_multimap<key, type, hfunc, eq >
 
-#elif defined(__GLIBCPP__) || defined(__GLIBCXX__)  // Using GNU C++ library?
+//#elif defined(__GLIBCPP__) || defined(__GLIBCXX__)  // Using GNU C++ library?
+#elif defined (__GNUC__) // Using GNU C++ library?
 
 #define HASH_MAP_X(key, type, hfunc, eq, order) hash_map<key, type, hfunc, eq >
 #define HASH_MULTIMAP_X(key, type, hfunc, eq, order) hash_multimap<key, type, hfunc, eq >
@@ -132,5 +133,5 @@ typedef unsigned __int64 u_int64_t;
 
 /**
  * @file
- * $Id: config.h,v 1.1 2004/12/29 23:21:22 paskharen Exp $
+ * $Id: config.h,v 1.2 2005/02/02 22:51:32 phase Exp $
  */

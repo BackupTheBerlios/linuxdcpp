@@ -19,6 +19,7 @@
 #include "mainwindow.hh"
 #include "wulformanager.hh"
 #include "selecter.hh"
+#include "settingsdialog.hh"
 #include "treeviewfactory.hh"
 
 #include <client/Socket.h>
@@ -40,6 +41,47 @@ void MainWindow::quit_callback(GtkWidget *widget, gpointer data) {
 void MainWindow::pubHubs_callback(GtkWidget *widget, gpointer data) {
 	//no need to dispatch, already in gui thread
 	WulforManager::get()->addPublicHubs_gui();
+}
+void MainWindow::dlQueue_callback(GtkWidget *widget, gpointer data)
+{
+	WulforManager::get()->addDownloadQueue_gui();
+}
+void MainWindow::favHubs_callback(GtkWidget *widget, gpointer data)
+{
+	WulforManager::get()->addFavoriteHubs_gui();
+}
+void MainWindow::search_callback(GtkWidget *widget, gpointer data)
+{
+	WulforManager::get()->addSearch_gui();
+}
+void MainWindow::settings_callback(GtkWidget *widget, gpointer data)
+{
+	Settings *s = WulforManager::get()->openSettingsDialog_gui();
+
+	short lastPort = (short)SETTING(IN_PORT);
+	int lastConn = SETTING(CONNECTION_TYPE);	
+	
+	if (gtk_dialog_run(GTK_DIALOG (s->getDialog ())) == GTK_RESPONSE_OK)
+	{
+		s->saveSettings_client ();
+		SettingsManager::getInstance()->save();
+		if (SETTING(CONNECTION_TYPE) != lastConn || SETTING(IN_PORT) != lastPort) 
+		{
+			Selecter::quit();
+			((MainWindow*)data)->startSocket_client();
+		}		
+	}
+
+	gtk_widget_hide (s->getDialog());
+}
+void MainWindow::hash_callback (GtkWidget *widget, gpointer data)
+{
+	/*Hash *h = WulforManager::get ()->openHashDialog_gui();
+	
+	if (gtk_dialog_run (GTK_DIALOG (h->getDialog ())) == GTK_RESPONSE_OK)
+		cout << "yay" << endl;
+		
+	gtk_widget_hide (h->getDialog ());*/
 }
 
 MainWindow::MainWindow():
@@ -142,25 +184,47 @@ void MainWindow::createWindow_gui() {
 		
 	gtk_widget_show_all(GTK_WIDGET(window));
 
-    g_signal_connect(G_OBJECT(pubHubsButton), 
+    	g_signal_connect(G_OBJECT(pubHubsButton), 
 		"clicked", G_CALLBACK(pubHubs_callback), (gpointer)this);
-    g_signal_connect(G_OBJECT(quitButton), 
+    	g_signal_connect(G_OBJECT (queueButton), 
+		"clicked", G_CALLBACK(dlQueue_callback), (gpointer)this);
+	g_signal_connect(G_OBJECT (favHubsButton), 
+		"clicked", G_CALLBACK(favHubs_callback), (gpointer)this);
+	g_signal_connect(G_OBJECT (settingsButton),
+		"clicked", G_CALLBACK(settings_callback), (gpointer)this);
+	g_signal_connect(G_OBJECT (searchButton),
+		"clicked", G_CALLBACK(search_callback), (gpointer)this);
+	g_signal_connect(G_OBJECT (hashButton),
+		"clicked", G_CALLBACK(hash_callback), (gpointer)this);    	
+	g_signal_connect(G_OBJECT(quitButton), 
 		"clicked", G_CALLBACK(quit_callback), (gpointer)this);
 	
 	gtk_statusbar_push(mainStatus, 0, "Welcome to Wulfor - Reloaded");
+	autoConnect ();
 }
 
 GtkWindow *MainWindow::getWindow() {
 	return window;
 }
 
+void MainWindow::autoConnect ()
+{
+	FavoriteHubEntry::List &l = HubManager::getInstance ()->getFavoriteHubs ();
+	for (FavoriteHubEntry::List::const_iterator it=l.begin (); it != l.end (); it++)
+	{
+		FavoriteHubEntry *entry = *it;
+		if (entry->getConnect ())
+			if (!entry->getNick ().empty () || !SETTING (NICK).empty ())
+				WulforManager::get()->addHub_gui(entry->getServer (), entry->getNick ().empty () ? SETTING (NICK) : entry->getNick (), entry->getUserDescription (), entry->getPassword ());
+	}
+}
+
 void MainWindow::startSocket_client() {
 	SearchManager::getInstance()->disconnect();
 	ConnectionManager::getInstance()->disconnect();
 
-	if (SETTING(CONNECTION_TYPE) != SettingsManager::CONNECTION_ACTIVE)	{
+	if(SETTING(CONNECTION_TYPE) != SettingsManager::CONNECTION_ACTIVE)
 		return;
-	}	
 
 	short lastPort = (short)SETTING(IN_PORT);
 	short firstPort = lastPort;
@@ -227,10 +291,14 @@ void MainWindow::on(QueueManagerListener::Finished, QueueItem *item) throw() {
 	string searchString = item->getSearchString();
 	string listName = item->getListName();
 
-	typedef Func3<MainWindow, User::Ptr, string, string> F3;
-	F3 *func = new F3(this, &MainWindow::addShareBrowser_gui, 
-		user, searchString, listName);
-	WulforManager::get()->dispatchGuiFunc(func);
+	
+	if ( item->isSet(QueueItem::FLAG_CLIENT_VIEW) && item->isSet(QueueItem::FLAG_USER_LIST))
+	{
+		typedef Func3<MainWindow, User::Ptr, string, string> F3;
+		F3 *func = new F3(this, &MainWindow::addShareBrowser_gui, 
+			user, searchString, listName);
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
 }
 
 void MainWindow::addShareBrowser_gui(User::Ptr user, string searchString, string listName) {

@@ -26,6 +26,7 @@
 
 #include "wulformanager.hh"
 #include <iostream>
+#include <signal.h>
 
 using namespace std;
 
@@ -48,6 +49,7 @@ int main(int argc, char *argv[]) {
 	gtk_init(&argc, &argv);
 	glade_init();
 
+	signal(SIGPIPE,SIG_IGN);
 	WulforManager::start();
 	WulforManager::get()->createMainWindow();
 	gdk_threads_enter();

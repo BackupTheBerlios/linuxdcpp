@@ -27,6 +27,7 @@
 #include <client/DCPlusPlus.h>
 #include <client/QueueManager.h>
 #include <client/TimerManager.h>
+#include <client/HubManager.h>
 #include <client/DownloadManager.h>
 #include <client/UploadManager.h>
 #include <client/ConnectionManager.h>
@@ -70,6 +71,7 @@ class MainWindow:
 		void findId_gui(std::string id, GtkTreeIter *iter);
 
 		//client functions
+		void autoConnect();
 		void startSocket_client();
 		std::string getId_client(ConnectionQueueItem *item);
 		std::string getId_client(Transfer *t);
@@ -101,6 +103,11 @@ class MainWindow:
 	private:
 		//callbacks (to be called from the gui)
 		static void pubHubs_callback(GtkWidget *widget, gpointer data);
+		static void dlQueue_callback(GtkWidget *widget, gpointer data);
+		static void settings_callback(GtkWidget *widget, gpointer data);
+		static void favHubs_callback(GtkWidget *widget, gpointer data);
+		static void search_callback(GtkWidget *widget, gpointer data);
+		static void hash_callback(GtkWidget *widget, gpointer data);
 		static void quit_callback(GtkWidget *widget, gpointer data);
 
 		int64_t lastUpdate, lastUp, lastDown;

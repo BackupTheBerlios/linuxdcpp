@@ -16,35 +16,47 @@
 * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-#ifndef WULFOR_BOOK_ENTRY_HH
-#define WULFOR_BOOK_ENTRY_HH
+#ifndef WULFOR_HASH_HH
+#define WULFOR_HASH_HH
 
 #include <gtk/gtk.h>
-#include <string>
+#include <glade/glade.h>
+#include <iostream>
 
-class BookEntry {
-	public:
-		BookEntry(int type, std::string id, std::string title, GCallback closeCallback);
-		virtual ~BookEntry();
-		bool isEqual(int type, std::string id);
-		bool isEqual(BookEntry *entry);
+#include <client/stdinc.h>
+#include <client/DCPlusPlus.h>
+#include <client/HashManager.h>
+#include <client/TimerManager.h>
+#include <client/CriticalSection.h>
 
-		//only to be called by gui thread
-		void setLabel_gui(std::string text);
-		GtkWidget *getTitle();
-		virtual GtkWidget *getWidget() = 0;
-		int getType () { return type; };
-
-	protected:
-		std::string id;
-
-	private:
-		int type;
-		GtkWidget *box;
-		GtkButton *button;
-		GtkLabel *label;
+class Hash : public TimerManagerListener
+{
+public:
+	Hash ();
+	~Hash ();
+	
+	GtkWidget *getDialog () { return dialog; }
+	
+	void updateStats ();
+	
+	virtual void on(TimerManagerListener::Second, u_int32_t tics) throw();
+	
+private:
+	bool autoClose;
+	int64_t startBytes;
+	size_t startFiles;
+	u_int32_t startTime;
+	
+	GtkWidget *dialog;
+	GtkLabel *lFile;
+	GtkLabel *lFiles;
+	GtkLabel *lSpeed;
+	GtkLabel *lTime;
+	GtkProgressBar *pProgress;
+	
+	CriticalSection cs;
 };
 
 #else
-class BookEntry;
+class Hash;
 #endif

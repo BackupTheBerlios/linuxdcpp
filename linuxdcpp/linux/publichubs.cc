@@ -58,6 +58,7 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	
 	hubStore = gtk_list_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_STRING);
 	gtk_tree_view_set_model(hubView, GTK_TREE_MODEL(hubStore));
+
 	TreeViewFactory factory(hubView);
 	factory.addColumn_gui(COLUMN_NAME, "Name", TreeViewFactory::STRING, WIDTH_NAME);
 	factory.addColumn_gui(COLUMN_DESC, "Description", TreeViewFactory::STRING, WIDTH_DESC);

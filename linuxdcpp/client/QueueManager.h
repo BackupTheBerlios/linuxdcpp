@@ -85,9 +85,9 @@ public:
 	void addList(const User::Ptr& aUser, int aFlags) throw(QueueException, FileException) {
 		string x = aUser->getNick();
 		string::size_type i = 0;
-		while((i = x.find('\\'), i) != string::npos)
+		while((i = x.find('/'), i) != string::npos)
 			x[i] = '_';
-		string file = Util::getAppPath() + "FileLists\\" + x;
+		string file = Util::getAppPath() + "FileLists/" + x;
 		// We use the searchString to store the start viewing directory for file lists
 		add(USER_LIST_NAME, -1, aUser, file, NULL, 
 			QueueItem::FLAG_USER_LIST | aFlags,  QueueItem::DEFAULT, 
@@ -262,6 +262,6 @@ private:
 
 /**
  * @file
- * $Id: QueueManager.h,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: QueueManager.h,v 1.2 2005/02/02 22:51:32 phase Exp $
  */
 

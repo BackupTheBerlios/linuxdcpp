@@ -142,19 +142,14 @@ string ShareManager::translateFileName(const string& aFile, bool adc) throw(Shar
 			}
 			// Remove initial '/'
 			file.erase(0, 1);
-
-			// Change to NMDC path separators
-			for(string::size_type i = 0; i < file.length(); ++i) {
-				if(file[i] == '/') {
-					file[i] = '\\';
-				}
-			}
-			// Ok, we now should have an nmdc equivalent name
 		} else {
 			file = aFile;
 		}
 
-		string::size_type i = file.find('\\');
+		for (string::iterator it=file.begin (); it != file.end (); it++)
+			if ((*it) == '\\')
+				(*it) = '/';
+		string::size_type i = file.find('/');
 		if(i == string::npos)
 			throw ShareException("File Not Available");
 		
@@ -200,7 +195,7 @@ bool ShareManager::checkFile(const string& dir, const string& aFile) {
 								  
 	string::size_type i;
 	string::size_type j = 0;
-	while( (i = aFile.find('\\', j)) != string::npos) {
+	while( (i = aFile.find('/', j)) != string::npos) {
 		mi = d->directories.find(aFile.substr(j, i-j));
 		j = i + 1;
 		if(mi == d->directories.end())
@@ -1286,6 +1281,6 @@ void ShareManager::on(TimerManagerListener::Minute, u_int32_t tick) throw() {
 
 /**
  * @file
- * $Id: ShareManager.cpp,v 1.1 2004/12/29 23:21:21 paskharen Exp $
+ * $Id: ShareManager.cpp,v 1.2 2005/02/02 22:51:32 phase Exp $
  */
 

@@ -28,7 +28,6 @@ TreeViewFactory::TreeViewFactory(GtkTreeView *view) {
 GtkTreeView *TreeViewFactory::get() {
 	return view;
 }
-
 void TreeViewFactory::addColumn_gui(int id, std::string title, type_t type, int width) {
 	GtkTreeViewColumn *col;
 	
@@ -40,6 +39,11 @@ void TreeViewFactory::addColumn_gui(int id, std::string title, type_t type, int 
 		case INT:
 			col = gtk_tree_view_column_new_with_attributes(
 				title.c_str(), gtk_cell_renderer_text_new(), "text", id, NULL);
+			break;
+		case BOOL:
+		  	GtkCellRenderer *renderer;
+  			renderer = gtk_cell_renderer_toggle_new ();
+  			col = gtk_tree_view_column_new_with_attributes (title.c_str (), renderer, "active", id, NULL);
 			break;
 		case PIXBUF:
 			col = gtk_tree_view_column_new_with_attributes(
@@ -68,7 +72,6 @@ void TreeViewFactory::addColumn_gui(int id, std::string title, type_t type, int 
 
 	gtk_tree_view_insert_column(view, col, id);
 }
-
 void TreeViewFactory::setSortColumn_gui(int id, int sortColumn) {
 	GtkTreeViewColumn *col;
 	col = gtk_tree_view_get_column(view, id);

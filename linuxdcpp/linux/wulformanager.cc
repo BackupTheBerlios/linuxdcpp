@@ -19,6 +19,7 @@
 #include "wulformanager.hh"
 #include "prefix.hh"
 #include "publichubs.hh"
+#include "downloadqueue.hh"
 #include "hub.hh"
 #include <iostream>
 
@@ -306,6 +307,37 @@ PublicHubs *WulforManager::addPublicHubs_gui() {
 	return pubHubs;
 }
 
+DownloadQueue *WulforManager::addDownloadQueue_gui() {
+	BookEntry *entry = getBookEntry_gui (DOWNLOAD_QUEUE, "", true);
+	if (entry) return dynamic_cast<DownloadQueue*>(entry);
+
+	DownloadQueue *dlQueue = new DownloadQueue(G_CALLBACK(closeEntry_callback));
+	mainWin->addPage_gui(dlQueue->getWidget(), dlQueue->getTitle(), true);
+	gtk_widget_unref(dlQueue->getWidget());
+	bookEntrys.push_back(dlQueue);
+	
+	dispatchGuiFunc (new Func0<DownloadQueue>(dlQueue, &DownloadQueue::buildList_gui));
+
+	return dlQueue;
+}
+
+FavoriteHubs *WulforManager::addFavoriteHubs_gui () {
+	BookEntry *entry = getBookEntry_gui (FAVORITE_HUBS, "", true);
+	if (entry) return dynamic_cast<FavoriteHubs*>(entry);
+
+	FavoriteHubs *favHubs = new FavoriteHubs (G_CALLBACK(closeEntry_callback));
+	mainWin->addPage_gui(favHubs->getWidget (), favHubs->getTitle (), true);
+	gtk_widget_unref (favHubs->getWidget ());
+	bookEntrys.push_back(favHubs);
+	
+	return favHubs;
+}
+Settings *WulforManager::openSettingsDialog_gui () {
+	Settings *s = new Settings ();
+
+	return s;
+}
+
 Hub *WulforManager::addHub_gui(string address, string nick, string desc, string password) {
 	BookEntry *entry = getBookEntry_gui(HUB, address, true);
 	if (entry) return dynamic_cast<Hub *>(entry);
@@ -344,5 +376,25 @@ ShareBrowser *WulforManager::addShareBrowser_gui(User::Ptr user, string file) {
 	bookEntrys.push_back(browser);
 	
 	return browser;
+}
+
+Search *WulforManager::addSearch_gui()
+{
+	BookEntry *entry = getBookEntry_gui (SEARCH, "", true);
+	if (entry) return dynamic_cast<Search*>(entry);
+
+	Search *s = new Search (G_CALLBACK(closeEntry_callback));
+	mainWin->addPage_gui(s->getWidget (), s->getTitle (), true);
+	gtk_widget_unref (s->getWidget ());
+	bookEntrys.push_back(s);
+
+	return s;
+}
+
+Hash *WulforManager::openHashDialog_gui ()
+{
+	Hash *h = new Hash ();
+	
+	return h;
 }
 

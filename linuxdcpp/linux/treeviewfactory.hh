@@ -21,12 +21,14 @@
 
 #include <gtk/gtk.h>
 #include <string>
+#include <vector>
 
 class TreeViewFactory {
 	public:
 		typedef enum {
 			STRING,
 			INT,
+			BOOL,
 			PIXBUF,
 			//PROGRESS
 		} type_t;
@@ -36,6 +38,46 @@ class TreeViewFactory {
 		void addColumn_gui(int id, std::string title, type_t type, int width);
 		void setSortColumn_gui(int id, int sortColumn);
 
+		template<class T, class C>
+		static C getValue (GtkTreeModel *m, GtkTreeIter *i, gint c)
+		{
+			T value;
+			gtk_tree_model_get (m, i, c, &value, -1);
+			return C (value);
+		}
+		template<class T>
+		static T getValue (GtkTreeModel *m, GtkTreeIter *i, gint c)
+		{
+			T value;
+			gtk_tree_model_get (m, i, c, &value, -1);
+			return value;
+		}
+		static int getCount (GtkTreeModel *m)
+		{
+			GtkTreeIter it;
+			if (!gtk_tree_model_get_iter_first (m, &it))
+				return 0;
+			int count=0;
+			while (1)
+			{
+				count++;
+				if (!gtk_tree_model_iter_next (m, &it))
+					return count;
+			}
+		}
+		static void getColumn (GtkTreeModel *m, gint c, std::vector<std::string> *l)
+		{
+			GtkTreeIter it;
+			if (!gtk_tree_model_get_iter_first (m, &it))
+				return;
+		
+			while (1)
+			{
+				l->push_back (getValue<gchar*,std::string>(m, &it, c));
+				if (!gtk_tree_model_iter_next (m, &it))
+					break;
+			}
+		}
 	private:
 		GtkTreeView *view;
 };

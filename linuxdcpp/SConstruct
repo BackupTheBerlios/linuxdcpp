@@ -25,10 +25,12 @@ def CheckDefine(context, symbol, header, library):
 	context.Result(result)
 	return result
  
-env = Environment(CXX='g++-3.4')
+env = Environment(CXX='g++')
 conf = Configure(env, custom_tests = {'CheckPKGConfig' : CheckPKGConfig, 
 	'CheckDefine' : CheckDefine,
 	'CheckPKG' : CheckPKG }) 
+
+conf.env.Append(CXXFLAGS = '-D_GNU_SOURCE')
 
 if not conf.CheckPKGConfig(): 
      print 'pkg-config not found.' 
@@ -89,13 +91,7 @@ if not conf.CheckHeader('asm/atomic.h'):
 else:
 	conf.env.Append(CXXFLAGS = '-DHAVE_ASM_ATOMIC_H')
 
-if not conf.CheckDefine('PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP', 'pthread.h', 'pthread'):
-	print 'PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP not declared, it is needed'
-	print 'Something is strange with your pthread.h'
-	Exit(1)
-else:
-	conf.env.Append(CXXFLAGS = '-DHAVE_DECL_PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP')
-
+conf.env.Append(CXXFLAGS = '-DHAVE_DECL_PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP')
 env = conf.Finish()
 env.ParseConfig('pkg-config --cflags --libs libglade-2.0') 
 env.ParseConfig('pkg-config --cflags --libs gthread-2.0') 

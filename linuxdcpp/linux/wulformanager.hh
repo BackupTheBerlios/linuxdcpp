@@ -31,7 +31,12 @@
 #include "hub.hh"
 #include "publichubs.hh"
 #include "privatemessage.hh"
+#include "downloadqueue.hh"
+#include "favoritehubs.hh"
+#include "settingsdialog.hh"
 #include "sharebrowser.hh"
+#include "search.hh"
+#include "hashdialog.hh"
 
 class WulforManager {
 	public:
@@ -52,9 +57,13 @@ class WulforManager {
 		PrivateMessage *getPrivMsg_client(User::Ptr user);
 
 		PublicHubs *addPublicHubs_gui();
-		Hub *addHub_gui(std::string address, 
-			std::string nick="", std::string desc="", std::string password="");
+		Hub *addHub_gui(std::string address, std::string nick="", std::string desc="", std::string password="");
 		PrivateMessage *addPrivMsg_gui(User::Ptr user);
+		DownloadQueue *addDownloadQueue_gui ();
+		FavoriteHubs *addFavoriteHubs_gui ();
+		Settings *openSettingsDialog_gui ();
+		Hash *openHashDialog_gui ();
+		Search *addSearch_gui();
 		ShareBrowser *addShareBrowser_gui(User::Ptr user, std::string file);
 
 		BookEntry *getBookEntry_gui(int type, string id, bool raise);
@@ -68,7 +77,7 @@ class WulforManager {
 			PRIVATE_MSG,
 			SHARE_BROWSER,
 			DOWNLOAD_QUEUE,
-			FAVOURITE_HUBS
+			FAVORITE_HUBS
 		};
 
 	private:
