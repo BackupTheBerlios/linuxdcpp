@@ -42,12 +42,13 @@ private:
 	int64_t startBytes;
 	size_t startFiles;
 	u_int32_t startTime;
+	Gtk::Frame frame;
+	Gtk::VBox box;
+	Gtk::Table table;
+	Gtk::Label fileLabel, file;
+	Gtk::Label speedLabel, speed;
+	Gtk::Label timeleftLabel, timeleft;
 	Gtk::ProgressBar progressBar;
-	Gtk::Alignment alignmentSpeed;
-	Gtk::Alignment alignmentTime;
-	Gtk::Label fileSpeed;
-	Gtk::Label timeLeft;
-	Gtk::Label currentFile;
 
 	MainWindow *mw;
 };

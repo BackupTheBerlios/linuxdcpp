@@ -22,19 +22,21 @@
 using namespace Gtk;
 
 HashDialog::HashDialog (MainWindow *m) : 	Dialog ("Hash progress", *m, true), startBytes (0), startTime (GET_TICK ()), startFiles (0),
-																		alignmentSpeed (ALIGN_LEFT, ALIGN_CENTER, 0.0, 0.0),
-																		alignmentTime (ALIGN_LEFT, ALIGN_CENTER, 0.0, 0.0)
+																		frame ("Hashprogress"),
+																		table (3, 2),
+																		fileLabel ("File:", 0.0, 0.5), file ("", 1.0, 0.5),
+																		speedLabel ("Speed:", 0.0, 0.5), speed ("", 1.0, 0.5),
+																		timeleftLabel ("Timeleft:", 0.0, 0.5), timeleft ("", 1.0, 0.5)
 {
 	GuiProxy *proxy = GuiProxy::getInstance();
 	string tmp;
-	int64_t bytes=0;
-	
+
 	mw = m;
 
 	set_has_separator (true);
 	
 	startTime = GET_TICK();
-	HashManager::getInstance()->getStats(tmp, bytes, startFiles);
+	HashManager::getInstance()->getStats(tmp, startBytes, startFiles);
 
 	updateStats();
 
@@ -42,18 +44,23 @@ HashDialog::HashDialog (MainWindow *m) : 	Dialog ("Hash progress", *m, true), st
 
 	proxy->addListener<HashDialog, TimerManagerListener>(this, TimerManager::getInstance ());
 
-	get_vbox()->pack_start (currentFile, PACK_EXPAND_WIDGET);
-	get_vbox()->pack_start (alignmentSpeed, PACK_EXPAND_WIDGET);
-	get_vbox()->pack_start (alignmentTime, PACK_EXPAND_WIDGET);
-	alignmentSpeed.add (fileSpeed);
-	alignmentTime.add (timeLeft);
-	//alignment.add (progressBar);
-	/*get_vbox()->pack_start (currentFile, PACK_EXPAND_WIDGET);
-	get_vbox()->pack_start (fileSpeed, PACK_SHRINK);
-	get_vbox()->pack_start (timeLeft, PACK_SHRINK);*/
-	get_vbox()->pack_start (progressBar, PACK_EXPAND_WIDGET);
+	file.set_justify (JUSTIFY_LEFT);
+	speed.set_justify (JUSTIFY_LEFT);
+	timeleft.set_justify (JUSTIFY_LEFT);
 
-	add_button (GTK_STOCK_OK, 1);
+	set_border_width (8);
+	get_vbox()->pack_start (frame, PACK_EXPAND_WIDGET);
+	frame.add (box);
+	box.pack_start (table, PACK_EXPAND_WIDGET);
+	table.set_spacings (2);
+	table.attach(fileLabel, 0, 1, 0, 1);
+	table.attach(file, 1, 2, 0, 1, FILL, SHRINK);
+	table.attach(speedLabel, 0, 1, 1, 2);
+	table.attach(speed, 1, 2, 1, 2, FILL, SHRINK);
+	table.attach(timeleftLabel, 0, 1, 2, 3);
+	table.attach(timeleft, 1, 2, 2, 3, FILL, SHRINK);
+	box.pack_start (progressBar, PACK_EXPAND_WIDGET);
+	add_button (GTK_STOCK_CLOSE, 1);
 }
 
 HashDialog::~HashDialog ()
@@ -64,50 +71,55 @@ HashDialog::~HashDialog ()
 
 void HashDialog::updateStats ()
 {
-	string file;
+	string cfile;
 	int64_t bytes = 0;
 	size_t files = 0;
 	u_int32_t tick = GET_TICK();
 
-	HashManager::getInstance()->getStats(file, bytes, files);
+	HashManager::getInstance()->getStats(cfile, bytes, files);
+	if (bytes > startBytes)
+		startBytes = bytes;
+		
 	if(files > startFiles)
 		startFiles = files;
 	
 	double diff = tick - startTime;
-	if(diff < 1000 || files == 0)
+	if(files == 0 || bytes == 0 )
 	{
-		fileSpeed.set_text (WUtil::ConvertToUTF8 ("-.-- files/h, ") + Util::toString((u_int32_t)files) + " files left.");
-		timeLeft.set_text (WUtil::ConvertToUTF8 ("-:--:-- left."));
+		frame.set_label ("Hashprogress - " + Util::toString((u_int32_t)files) +" files left");
+		speed.set_text ("-.-- B/s, " + Util::formatBytes(bytes) + " left");
+		timeleft.set_text ("-:--:-- left");
+		progressBar.set_fraction (0.0);
 	}
 	else
 	{
-		double filestat = (((double)(startFiles - files)) * 60 * 60 * 1000) / diff;
-		fileSpeed.set_text (Util::toString (filestat) + " files/h, " + Util::toString ((u_int32_t)files) + " files left.");
-		if(filestat == 0)
+		double speedStat = (((double)(startBytes - bytes)) * 1000) / diff;
+		speed.set_text (Util::formatBytes((int64_t)speedStat) + "/s, " + Util::formatBytes(bytes) + " left");
+		if(speedStat == 0)
 		{
-			timeLeft.set_text (WUtil::ConvertToUTF8 ("-:--:-- left."));
+			timeleft.set_text ("-:--:-- left");
 		}
 		else
 		{
-			double fs = files * 60 * 60 / filestat;
-			timeLeft.set_text (Util::formatSeconds ((int64_t)fs) + " left.");
+			double ss = bytes / speedStat;
+			timeleft.set_text (Util::formatSeconds ((int64_t)ss) + " left");
 		}
 	}
 	if(files == 0)
 	{
-		currentFile.set_text ("Done.");
+		file.set_text ("Done");
 	}
 	else
 	{
-		currentFile.set_text (file);
+		file.set_text (Util::getFileName (cfile));
 	}
-	if(startFiles == 0)
+	if(startFiles == 0 || startBytes == 0)
 	{
 		progressBar.set_fraction (0.0);
 	}
 	else
 	{
-		progressBar.set_fraction ((double)(((startFiles - files)/(double)startFiles) ));
+		progressBar.set_fraction ((double)(((startBytes - bytes)/(double)startBytes) ));
 	}
 }
 

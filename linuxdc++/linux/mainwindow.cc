@@ -262,10 +262,20 @@ void MainWindow::setStatus(string text, int num)
 	if (num<0 || num>NUM_STATUS-1) return;
 
 	status[num].pop(1);
+	ustring tmp = text;
 	if (num == 0)
-		status[num].push("[" + Util::getShortTimeString() + "] " + text, 1);
-	else
-		status[num].push(text, 1);
+	{
+		status[num].push ("[" + Util::getShortTimeString() + "] " + tmp, 1);
+		return;
+	}
+
+	Glib::RefPtr<Pango::Layout> layout = Pango::Layout::create (status[num].create_pango_context ());
+	int x=0, y=0;
+	layout->set_text (tmp);
+	layout->get_pixel_size (x, y);
+	status[num].set_size_request (x*1.2, -1);
+	status[num].push(tmp, 1);
+
 }
 
 void MainWindow::pubHubsClicked()  {

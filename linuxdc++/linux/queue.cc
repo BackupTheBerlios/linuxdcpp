@@ -352,7 +352,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 						(*item)[dq->fileColumns.status] = "Waiting (User online)";
 					else
 					{
-						sprintf(buf, "Waiting (%d of %d users online), online", getSources().size());
+						sprintf(buf, "Waiting (%d of %d users online), online", online, getSources().size());
 						(*item)[dq->fileColumns.status] = buf;
 					}
 				}
@@ -766,6 +766,8 @@ void DownloadQueue::removeFileClicked ()
 		return;
 
 	QueueManager::getInstance ()->remove (((QueueItemInfo*)r[fileColumns.item])->getTarget ());
+
+	update ();
 }
 int DownloadQueue::countFiles (Glib::ustring path)
 {
@@ -775,8 +777,15 @@ int DownloadQueue::countFiles (Glib::ustring path)
 	vector<TreeModel::iterator> iter;
 	getChildren (path, &iter);
 	for (int i=0; i<iter.size ();i++)
-		if (!dirFileMap[(*iter[i])[dirColumns.realpath]].empty ())
+	{
+		if (dirFileMap.find ((*iter[i])[dirColumns.realpath]) == dirFileMap.end ())
+		{
+			if (!dirFileMap[(*iter[i])[dirColumns.realpath]].empty ())
+				return 1;
+		}
+		else
 			return 1;
+	}
 
 	return 0;
 }
@@ -788,13 +797,10 @@ void DownloadQueue::removeDir (ustring path)
 
 	if (countFiles (path) == 0)
 	{
-		if (dirFileMap.find (path) != dirFileMap.end ())
-		{
-			if (showingDir == path)
-				fileStore->clear ();
+		if (showingDir == path)
+			fileStore->clear ();
 
-			dirFileMap.erase (dirFileMap.find (path));
-		}
+		dirFileMap.erase (dirFileMap.find (path));
 		if (dirMap.find (path) != dirMap.end ())
 		{
 			dirStore->erase (*dirMap[path]);
