@@ -1,3 +1,7 @@
+2004-10-04 22:54 paskharen
+
+	* linux/guilistener.hh: Shanged all calls through the thread tunnel to syncronized mode.
+
 2004-10-04 18:01 paskharen
 
 	* linux/sharebrowser.hh, linux/sharebrowser.cc, client/DirectoryListing.cpp, client/QueueManager.cpp: Added a first version of downloading files
