@@ -102,5 +102,5 @@ bool UnZFilter::operator()(const void* in, size_t& insize, void* out, size_t& ou
 
 /**
  * @file
- * $Id: ZUtils.cpp,v 1.1 2004/11/11 22:35:00 paskharen Exp $
+ * $Id: ZUtils.cpp,v 1.2 2004/11/12 16:29:31 phase Exp $
  */

@@ -116,6 +116,7 @@ MainWindow::MainWindow():
 	lastUp = lastDown = lastUpdate = 0;
 
 	proxy->addListener<MainWindow, TimerManagerListener>(this, TimerManager::getInstance());
+	proxy->addListener<MainWindow, QueueManagerListener>(this, QueueManager::getInstance());
 
 	showingHash = false;
 	
@@ -321,6 +322,19 @@ void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw()
 
 	if (!showingHash)
 		hashProgress->updateStats ();
+}
+
+//From QueueManagerListener
+void MainWindow::on(QueueManagerListener::Finished, QueueItem *item) throw()
+{
+	ShareBrowser *b;
+	
+	if ( item->isSet(QueueItem::FLAG_CLIENT_VIEW) &&
+		item->isSet(QueueItem::FLAG_USER_LIST))
+	{
+		b = new ShareBrowser(item, this);
+		addPage(b);
+	}
 }
 
 void MainWindow::quit ()

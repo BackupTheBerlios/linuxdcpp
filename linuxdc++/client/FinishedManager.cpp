@@ -62,5 +62,5 @@ void FinishedManager::on(UploadManagerListener::Complete, Upload* u) throw()
 
 /**
  * @file
- * $Id: FinishedManager.cpp,v 1.1 2004/11/11 22:34:55 paskharen Exp $
+ * $Id: FinishedManager.cpp,v 1.2 2004/11/12 16:29:31 phase Exp $
  */

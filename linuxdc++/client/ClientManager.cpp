@@ -328,5 +328,5 @@ void ClientManager::on(UserCommand, Client* client, int aType, int ctx, const st
 
 /**
  * @file
- * $Id: ClientManager.cpp,v 1.1 2004/11/11 22:34:54 paskharen Exp $
+ * $Id: ClientManager.cpp,v 1.2 2004/11/12 16:29:30 phase Exp $
  */

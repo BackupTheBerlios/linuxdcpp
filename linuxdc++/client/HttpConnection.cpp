@@ -156,6 +156,6 @@ void HttpConnection::on(BufferedSocketListener::Data, u_int8_t* aBuf, size_t aLe
 
 /**
  * @file
- * $Id: HttpConnection.cpp,v 1.1 2004/11/11 22:34:55 paskharen Exp $
+ * $Id: HttpConnection.cpp,v 1.2 2004/11/12 16:29:31 phase Exp $
  */
 

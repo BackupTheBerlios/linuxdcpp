@@ -33,7 +33,7 @@ using namespace SigC;
 using namespace SigCX;
 //can't import whole namespace, messes with client/Exception
 
-ShareBrowser::ShareBrowser(User::Ptr user, MainWindow *mw):
+ShareBrowser::ShareBrowser(QueueItem *item, MainWindow *mw):
 	listing(NULL),
 	downloadItem("Download"),
 	dirItem("Download directory"),
@@ -44,19 +44,11 @@ ShareBrowser::ShareBrowser(User::Ptr user, MainWindow *mw):
 	Slot0<void> callback0;
 	Slot1<void, GdkEventButton *> callback1;
 	Slot2<void, const TreeModel::Path&, TreeViewColumn*> callback2;
-	QueueManager *qmgr = QueueManager::getInstance();
 	GuiProxy *proxy = GuiProxy::getInstance();
 	ThreadTunnel *tunnel = proxy->getTunnel();
 		
-	this->user = user;
+	this->user = item->getCurrent()->getUser();
 	this->mw = mw;
-
-	proxy->addListener<ShareBrowser, QueueManagerListener>(this, qmgr);
-	try {
-		qmgr->addList(user, QueueItem::FLAG_CLIENT_VIEW);
-	} catch(const Exception& e) {
-		cout << "error: " << e.getError() << endl;
-	}
 
 	label.set_text(WUtil::ConvertToUTF8(user->getNick()));
 	label.show();
@@ -109,27 +101,17 @@ ShareBrowser::ShareBrowser(User::Ptr user, MainWindow *mw):
 
 	pack_start(pane);
 	show_all();
+
+	assert(listing == NULL);
+	listing = new DirectoryListing(user);
+	listing->loadFile(item->getListName (), false);
+	buildList();
+	setPosition(item->getSearchString());
+	
 }
 
 ShareBrowser::~ShareBrowser() {
 	if (listing != NULL) delete listing;
-}
-
-void ShareBrowser::on(QueueManagerListener::Finished, 
-	QueueItem *item) throw() 
-{
-	if ( item->isSet(QueueItem::FLAG_CLIENT_VIEW) &&
-		item->isSet(QueueItem::FLAG_USER_LIST))
-	{
-		//check so that it's the filelist for the correct user
-		if (item->getCurrent()->getUser()->getFullNick() != user->getFullNick())
-			return;
-		assert(listing == NULL);
-		listing = new DirectoryListing(user);
-		listing->loadFile(item->getListName(), false);
-		buildList();
-		setPosition(item->getSearchString());
-	}
 }
 
 void ShareBrowser::buildList() {

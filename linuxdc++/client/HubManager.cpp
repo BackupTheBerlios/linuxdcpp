@@ -434,5 +434,5 @@ void HubManager::on(TypeBZ2, HttpConnection*) throw() {
 
 /**
  * @file
- * $Id: HubManager.cpp,v 1.1 2004/11/11 22:34:56 paskharen Exp $
+ * $Id: HubManager.cpp,v 1.2 2004/11/12 16:29:31 phase Exp $
  */

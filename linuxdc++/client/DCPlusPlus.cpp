@@ -90,7 +90,8 @@ void startup(void (*f)(void*, const string&), void* p) {
 
 }
 
-void shutdown() {
+void shutdown()
+{
 	ConnectionManager::getInstance()->shutdown();
 	HashManager::getInstance()->shutdown();
 
@@ -117,6 +118,6 @@ void shutdown() {
 
 /**
  * @file
- * $Id: DCPlusPlus.cpp,v 1.1 2004/11/11 22:34:54 paskharen Exp $
+ * $Id: DCPlusPlus.cpp,v 1.2 2004/11/12 16:29:30 phase Exp $
  */
 

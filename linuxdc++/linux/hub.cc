@@ -196,7 +196,14 @@ void Hub::on(ClientListener::UserRemoved,
 	if (e && e->getID() == BOOK_PRIVATE_MESSAGE)
 		(dynamic_cast<PrivateMsg*>(e))->addMsg (user->getNick () + " left the hub.");
 	TreeModel::iterator it = findUser(user->getNick());
-	nickStore->erase(it);
+	if (it == nickStore->children().end())
+	{
+		for (TreeModel::iterator it = nickStore->children().begin(),it2=nickStore->children().begin(); it != nickStore->children().end(); it2=it, it++)
+				if ((*it)[columns.nick] == (*it2)[columns.nick])
+					nickStore->erase (it);
+	}
+	else
+		nickStore->erase(it);
 	
 	char buffer[32];
 	sprintf (buffer, "%d User(s)", client->getUserCount ());
@@ -340,8 +347,14 @@ void Hub::browseClicked() {
 	if (!it) return;
 	user = man->getUser (WUtil::ConvertFromUTF8 ((*it)[columns.nick]), client);
 
-	b = new ShareBrowser(user, mw);
-	mw->addPage(b);
+	try
+	{
+		QueueManager::getInstance ()->addList(user, QueueItem::FLAG_CLIENT_VIEW);
+	}
+	catch(...)
+	{
+		cout << "Couldn't add filelist." << endl;
+	}	
 }
 
 void Hub::pmClicked() {

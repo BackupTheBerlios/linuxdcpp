@@ -26,14 +26,14 @@
 #include "../client/DCPlusPlus.h"
 #include "../client/User.h"
 #include "../client/DirectoryListing.h"
-#include "../client/QueueManager.h"
+#include "../client/QueueItem.h"
 
 #include "bookentry.hh"
 #include "mainwindow.hh"
 
-class ShareBrowser: public BookEntry, public QueueManagerListener {
+class ShareBrowser: public BookEntry  {
 	public:	
-		ShareBrowser(User::Ptr user, MainWindow *mw);
+		ShareBrowser(QueueItem *item, MainWindow *mw);
 		~ShareBrowser();
 		
 		void setPosition(std::string pos);
@@ -48,9 +48,6 @@ class ShareBrowser: public BookEntry, public QueueManagerListener {
 		void buttonReleasedFile(GdkEventButton* event);
 		
 		bool operator== (BookEntry &b);
-		
-		//stuff from QueueManagerListener
-		void on(QueueManagerListener::Finished, QueueItem *item) throw();
 
 	private:
 		class FileColumns: public Gtk::TreeModel::ColumnRecord {
@@ -89,7 +86,7 @@ class ShareBrowser: public BookEntry, public QueueManagerListener {
 		FileColumns fCol;
 
 		GdkEventType filePrevious, dirPrevious;
-		
+
 		Gtk::HPaned pane;
 		Gtk::ScrolledWindow fileScroll, dirScroll;
 		Gtk::TreeView dirView, fileView;

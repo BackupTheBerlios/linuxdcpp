@@ -313,6 +313,6 @@ void SettingsManager::save(string const& aFileName) {
 
 /**
  * @file
- * $Id: SettingsManager.cpp,v 1.1 2004/11/11 22:34:57 paskharen Exp $
+ * $Id: SettingsManager.cpp,v 1.2 2004/11/12 16:29:31 phase Exp $
  */
 

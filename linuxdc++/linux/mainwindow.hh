@@ -26,6 +26,7 @@
 #include "bookentry.hh"
 #include "util.hh"
 #include "transfer.hh"
+#include "sharebrowser.hh"
 
 #include "hashdialog.hh"
 
@@ -50,8 +51,8 @@ enum {
 
 class MainWindow:
 	public Gtk::Window,
-	public TimerManagerListener
-//	public QueueManagerListener
+	public TimerManagerListener,
+	public QueueManagerListener
 {
 	public:
 		MainWindow();
@@ -64,6 +65,9 @@ class MainWindow:
 
 		//TimerManagerListener
 		virtual void on(TimerManagerListener::Second, u_int32_t tics) throw();
+
+		//QueueManagerListener
+		virtual void on(QueueManagerListener::Finished, QueueItem *item) throw();
 
 		void quit();
 

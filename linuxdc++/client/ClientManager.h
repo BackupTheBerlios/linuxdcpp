@@ -174,6 +174,6 @@ private:
 
 /**
  * @file
- * $Id: ClientManager.h,v 1.1 2004/11/11 22:35:01 paskharen Exp $
+ * $Id: ClientManager.h,v 1.2 2004/11/12 16:29:30 phase Exp $
  */
 

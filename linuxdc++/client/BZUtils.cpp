@@ -102,5 +102,5 @@ bool UnBZFilter::operator()(const void* in, size_t& insize, void* out, size_t& o
 
 /**
  * @file
- * $Id: BZUtils.cpp,v 1.1 2004/11/11 22:34:53 paskharen Exp $
+ * $Id: BZUtils.cpp,v 1.2 2004/11/12 16:29:30 phase Exp $
  */

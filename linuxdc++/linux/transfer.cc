@@ -23,6 +23,7 @@
 using namespace Gtk;
 using namespace SigC;
 using namespace SigCX;
+using namespace Glib;
 
 CTransfer *CTransfer::instance;
 
@@ -87,7 +88,18 @@ TreeModel::iterator CTransfer::findTransfer (TransferItem *t)
 		
 	return c.end ();
 }
+CTransfer::TransferItem *CTransfer::findTransfer (TreeModel::iterator i)
+{
+	TransferItem::MapIter it;
 
+	for (it = transfer.begin (); it != transfer.end(); it++)
+		if (it->second->user->getNick () == (*i)[columns.user] && it->second->type == (*i)[columns.direction])
+			return it->second;
+
+	return NULL;
+}
+
+// This function is useless...
 CTransfer::TransferItem * CTransfer::bruteFindTransfer ()
 {
 	TreeModel::iterator it;
@@ -100,6 +112,10 @@ CTransfer::TransferItem * CTransfer::bruteFindTransfer ()
 
 	return NULL;
 }
+// End useless function.
+
+
+
 
 void CTransfer::on(ConnectionManagerListener::Added, ConnectionQueueItem *item) throw()
 {
@@ -176,9 +192,8 @@ void CTransfer::on(ConnectionManagerListener::Removed, ConnectionQueueItem *item
 		i = transfer[item];
 
 	TreeModel::iterator it = findTransfer (i);
-	assert (it != transferStore->children().end());
-
 	transferStore->erase (it);
+	
 	if (transfer.find (item) != transfer.end())
 		transfer.erase (transfer.find (item));
 }
@@ -212,7 +227,6 @@ void CTransfer::on(ConnectionManagerListener::Failed, ConnectionQueueItem *item,
 
 void CTransfer::on(DownloadManagerListener::Starting, Download *dl) throw()
 {
-	cout << "Download starting." << endl;
 	ConnectionQueueItem* cqi;
 	if (dl->getUserConnection ())
 		if (dl->getUserConnection ()->getCQI ())
@@ -263,7 +277,6 @@ void CTransfer::on(DownloadManagerListener::Starting, Download *dl) throw()
 
 void CTransfer::on(DownloadManagerListener::Tick, const Download::List &list) throw()
 {
-	cout << "Download tick." << endl;
 	Lock l(cs);
 
 	char *buf = new char[128];
@@ -295,7 +308,6 @@ void CTransfer::on(DownloadManagerListener::Tick, const Download::List &list) th
 
 void CTransfer::on(DownloadManagerListener::Failed, Download* dl, const string& reason)throw()
 {
-	cout << "Download failed. Reason: " << reason << endl;
 	ConnectionQueueItem* cqi;
 	if (dl->getUserConnection ())
 		if (dl->getUserConnection ()->getCQI ())
@@ -343,7 +355,6 @@ void CTransfer::on(DownloadManagerListener::Failed, Download* dl, const string& 
 
 void CTransfer::on(UploadManagerListener::Starting, Upload *ul)throw()
 {
-	cout << "Upload starting." << endl;
 	ConnectionQueueItem* cqi;
 	if (ul->getUserConnection ())
 		if (ul->getUserConnection ()->getCQI ())
@@ -398,7 +409,6 @@ void CTransfer::on(UploadManagerListener::Starting, Upload *ul)throw()
 
 void CTransfer::on(UploadManagerListener::Tick, const Upload::List& list) throw()
 {
-	cout << "Upload tick." << endl;
 	Lock l(cs);
 	char *buf = new char[128];
 	for(Upload::List::const_iterator j = list.begin(); j != list.end(); ++j)
@@ -430,18 +440,11 @@ void CTransfer::on(UploadManagerListener::Tick, const Upload::List& list) throw(
 
 void CTransfer::onTransferComplete(Transfer* t, bool upload)
 {
-	if (upload)
-		cout << "Upload complete." << endl;
-	else
-		cout << "Download complete." << endl;
-
 	ConnectionQueueItem* cqi;
 	if (t->getUserConnection ())
 		if (t->getUserConnection ()->getCQI ())
 	 		cqi = t->getUserConnection()->getCQI();
-	else
-		cout << "Connection not found." << endl;
-		
+
 	TransferItem* i;
 	Lock l(cs);
 	if (t->getUserConnection ())
@@ -483,7 +486,6 @@ void CTransfer::onTransferComplete(Transfer* t, bool upload)
 
 void CTransfer::TransferItem::update ()
 {
-	cout << "Updating item." << endl;
 	CTransfer *t = CTransfer::getInstance ();
 	TreeModel::iterator it = t->findTransfer (this);
 	if (it == t->transferStore->children().end())
@@ -506,6 +508,7 @@ void CTransfer::TransferItem::update ()
 
 void CTransfer::TransferItem::disconnect ()
 {
+	ConnectionManager::getInstance()->removeConnection(user, (type == TYPE_DOWNLOAD));
 }
 
 void CTransfer::TransferItem::remove()
@@ -540,7 +543,15 @@ void CTransfer::showPopupMenu(GdkEventButton* event)
 
 void CTransfer::removeTransferClicked ()
 {
+	RefPtr<TreeSelection> sel = transferList.get_selection();
+	TreeModel::iterator it = sel->get_selected();
 
+	TransferItem *i = findTransfer (it);
+
+	if (!i)
+		return;
+	
+	i->disconnect ();
 }
 
 void CTransfer::browseClicked ()

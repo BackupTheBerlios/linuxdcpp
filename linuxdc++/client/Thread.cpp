@@ -41,6 +41,6 @@ void Thread::start() throw(ThreadException) {
 #endif
 /**
  * @file
- * $Id: Thread.cpp,v 1.1 2004/11/11 22:34:59 paskharen Exp $
+ * $Id: Thread.cpp,v 1.2 2004/11/12 16:29:31 phase Exp $
  */
 

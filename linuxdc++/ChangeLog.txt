@@ -1,6 +1,22 @@
-2004-10-04 22:54 paskharen
+2004-10-11 22:48 phase
 
-	* linux/guilistener.hh: Shanged all calls through the thread tunnel to syncronized mode.
+	* linux/transfer.cc: You can now close a connection through the "connection lister"-menu.
+
+2004-10-11 18:16 phase
+
+	* linux/transfer.cc: Fixed a assertion bug.
+
+2004-10-10 12:20 phase
+
+	* linux/hub.cc, linux/sharebrowser.hh/cc, linux/mainwindow.hh/cc: Sharebrowser doesn't open until the filelist is downloaded.
+	
+2004-10-09 23:30 phase
+
+	* linux/transfer.hh/cc: Added a menu (you can't do anything with it yet though). Changed some fallbacks to work better with synced threads. 
+	
+2004-10-09 22:54 paskharen
+
+	* linux/guilistener.hh: Changed all calls through the thread tunnel to syncronized mode.
 
 2004-10-04 18:01 paskharen
 

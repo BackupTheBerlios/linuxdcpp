@@ -330,5 +330,5 @@ size_t DirectoryListing::Directory::getTotalFileCount(bool adl) {
 
 /**
  * @file
- * $Id: DirectoryListing.cpp,v 1.1 2004/11/11 22:34:54 paskharen Exp $
+ * $Id: DirectoryListing.cpp,v 1.2 2004/11/12 16:29:30 phase Exp $
  */

@@ -96,5 +96,5 @@ template<class T> void* FastAlloc<T>::freeList = NULL;
 #endif // _FAST_ALLOC
 /**
  * @file
- * $Id: FastAlloc.h,v 1.1 2004/11/11 22:35:02 paskharen Exp $
+ * $Id: FastAlloc.h,v 1.2 2004/11/12 16:29:31 phase Exp $
  */
