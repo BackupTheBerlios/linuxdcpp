@@ -44,20 +44,18 @@ class PrivateMessage: public BookEntry {
 		//gui thread functions
 		void addMessage_gui(std::string message);
 		void sendMessage_gui(GtkEntry *entry, gpointer data);
-		void updateScroll_gui(GtkAdjustment *adj, gpointer data);
 
 	private:
 		Callback2<PrivateMessage, void, GtkEntry *> enterCallback;
-		Callback2<PrivateMessage, void, GtkAdjustment *> scrollCallback;
 	
 		User::Ptr user;
-		bool setBottom;
 
 		GtkWidget *box;
 		GtkTextView *text;
 		GtkTextBuffer *buffer;
 		GtkEntry *entry;
 		GtkScrolledWindow *scroll;
+		GtkTextMark *mark;
 };
 
 #else

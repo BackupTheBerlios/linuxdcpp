@@ -57,6 +57,8 @@ MainWindow::MainWindow():
 	DownloadManager::getInstance()->addListener(this);
 	UploadManager::getInstance()->addListener(this);
 	ConnectionManager::getInstance()->addListener(this);
+	
+	startSocket();
 }
 
 MainWindow::~MainWindow() {

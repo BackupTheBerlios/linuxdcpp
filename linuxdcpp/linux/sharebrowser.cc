@@ -90,16 +90,22 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	menuCallback.connect(G_OBJECT(dlDirDir), "activate", NULL);
 	menuCallback.connect(G_OBJECT(dlDirToDir), "activate", NULL);
 	
+	//Set the buttons text to small so that the statusbar isn't too high.
+	//This can't be set with glade, needs tyo be done in code.
+	GtkLabel *label;
+	label = GTK_LABEL(gtk_bin_get_child(GTK_BIN(matchButton)));
+	gtk_label_set_markup(label, "<small>Match Queue</small>");
+	label = GTK_LABEL(gtk_bin_get_child(GTK_BIN(findButton)));
+	gtk_label_set_markup(label, "<small>Find</small>");
+	label = GTK_LABEL(gtk_bin_get_child(GTK_BIN(nextButton)));
+	gtk_label_set_markup(label, "<small>Next</small>");
+	
 	//set the buttons in statusbar to same height as statusbar
 	GtkRequisition statusReq;
 	gtk_widget_size_request(GTK_WIDGET(mainStatus), &statusReq);
 	gtk_widget_set_size_request(GTK_WIDGET(matchButton), -1, statusReq.height);
 	gtk_widget_set_size_request(GTK_WIDGET(findButton), -1, statusReq.height);
 	gtk_widget_set_size_request(GTK_WIDGET(nextButton), -1, statusReq.height);
-	
-	gtk_button_set_alignment(matchButton, 0.5, 0);
-	gtk_button_set_alignment(findButton, 0.5, 0.25);
-	gtk_button_set_alignment(nextButton, 0.5, 0.5);
 	
 	listing.loadFile(file, false);	
 	shareSize = 0;

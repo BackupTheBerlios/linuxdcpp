@@ -31,7 +31,6 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	nickListCallback(this, &Hub::popupNickMenu_gui),
 	browseCallback(this, &Hub::browseItemClicked_gui),
 	msgCallback(this, &Hub::msgItemClicked_gui),
-	scrollCallback(this, &Hub::updateScroll_gui),
 	WIDTH_ICON(20),
 	WIDTH_NICK(100),
 	WIDTH_SHARED(50)
@@ -64,6 +63,9 @@ Hub::Hub(std::string address, GCallback closeCallback):
 
 	chatBuffer = gtk_text_buffer_new(NULL);
 	gtk_text_view_set_buffer(chatText, chatBuffer);
+	GtkTextIter iter;
+	gtk_text_buffer_get_end_iter(chatBuffer, &iter);
+	chatMark = gtk_text_buffer_create_mark(chatBuffer, NULL, &iter, FALSE);
 
 	nickMenu = GTK_MENU(gtk_menu_new());
 	browseItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Browse files"));
@@ -73,14 +75,11 @@ Hub::Hub(std::string address, GCallback closeCallback):
 
 	pthread_mutex_init(&clientLock, NULL);
 	client = NULL;
-	setBottom = false;
 
 	enterCallback.connect(G_OBJECT(chatEntry), "activate", NULL);
 	nickListCallback.connect_after(G_OBJECT(nickView), "button-release-event", NULL);
 	browseCallback.connect(G_OBJECT(browseItem), "activate", NULL);
 	msgCallback.connect(G_OBJECT(msgItem), "activate", NULL);
-	scrollCallback.connect(G_OBJECT(gtk_scrolled_window_get_vadjustment(chatScroll)), 
-		"changed", NULL);
 }
 
 Hub::~Hub() {
@@ -216,23 +215,23 @@ void Hub::getPassword_gui() {
 	WulforManager::get()->dispatchClientFunc(func);
 }
 
-void Hub::updateScroll_gui(GtkAdjustment *adj, gpointer data) {
-	if (setBottom) {
-		gtk_adjustment_set_value(adj, adj->upper - adj->page_size);
-		setBottom = false;
-	}
-}
-
 void Hub::addMessage_gui(string msg) {
 	GtkTextIter iter;
 	string text = "[" + Util::getShortTimeString() + "] " + msg + "\n";
 	GtkAdjustment *adj;
+	bool setBottom;
 
 	adj = gtk_scrolled_window_get_vadjustment(chatScroll);
 	setBottom = gtk_adjustment_get_value(adj) >= (adj->upper - adj->page_size);
 	
 	gtk_text_buffer_get_end_iter(chatBuffer, &iter);
 	gtk_text_buffer_insert(chatBuffer, &iter, text.c_str(), text.size());
+
+	if (setBottom) {
+		gtk_text_buffer_get_end_iter(chatBuffer, &iter);
+		gtk_text_buffer_move_mark(chatBuffer, chatMark, &iter);
+		gtk_text_view_scroll_to_mark(chatText, chatMark, 0, FALSE, 0, 0);
+	}
 }
 
 void Hub::addPrivateMessage_gui(User::Ptr user, std::string msg) {

@@ -26,8 +26,7 @@ using namespace std;
 PrivateMessage::PrivateMessage(User::Ptr user, GCallback closeCallback):
 	BookEntry(WulforManager::PRIVATE_MSG, user->getFullNick(), 
 		user->getNick(), closeCallback),
-	enterCallback(this, &PrivateMessage::sendMessage_gui),
-	scrollCallback(this, &PrivateMessage::updateScroll_gui)
+	enterCallback(this, &PrivateMessage::sendMessage_gui)
 {
 	string file = WulforManager::get()->getPath() + "/glade/privatemessage.glade";
 	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
@@ -44,24 +43,17 @@ PrivateMessage::PrivateMessage(User::Ptr user, GCallback closeCallback):
 
 	buffer = gtk_text_buffer_new(NULL);
 	gtk_text_view_set_buffer(text, buffer);
+	GtkTextIter iter;
+	gtk_text_buffer_get_end_iter(buffer, &iter);
+	mark = gtk_text_buffer_create_mark(buffer, NULL, &iter, FALSE);
 	
 	enterCallback.connect(G_OBJECT(entry), "activate", NULL);
-	scrollCallback.connect(G_OBJECT(gtk_scrolled_window_get_vadjustment(scroll)), 
-		"changed", NULL);
 
-	setBottom = false;
 	this->user = user;
 }
 
 GtkWidget *PrivateMessage::getWidget() {
 	return box;
-}
-
-void PrivateMessage::updateScroll_gui(GtkAdjustment *adj, gpointer data) {
-	if (setBottom) {
-		gtk_adjustment_set_value(adj, adj->upper - adj->page_size);
-		setBottom = false;
-	}
 }
 
 void PrivateMessage::sendMessage_client(std::string message) {
@@ -70,13 +62,21 @@ void PrivateMessage::sendMessage_client(std::string message) {
 
 void PrivateMessage::addMessage_gui(std::string message) {
 	GtkTextIter iter;
-	string text = "[" + Util::getShortTimeString() + "] " + message + "\n";
+	string msg = "[" + Util::getShortTimeString() + "] " + message + "\n";
+	GtkAdjustment *adj;
+	bool setBottom;
 	
-	GtkAdjustment *adj = gtk_scrolled_window_get_vadjustment(scroll);
+	adj = gtk_scrolled_window_get_vadjustment(scroll);
 	setBottom = gtk_adjustment_get_value(adj) >= (adj->upper - adj->page_size);
 	
 	gtk_text_buffer_get_end_iter(buffer, &iter);
-	gtk_text_buffer_insert(buffer, &iter, text.c_str(), text.size());
+	gtk_text_buffer_insert(buffer, &iter, msg.c_str(), msg.size());
+	
+	if (setBottom) {
+		gtk_text_buffer_get_end_iter(buffer, &iter);
+		gtk_text_buffer_move_mark(buffer, mark, &iter);
+		gtk_text_view_scroll_to_mark(text, mark, 0, FALSE, 0, 0);
+	}
 }
 
 void PrivateMessage::sendMessage_gui(GtkEntry *e, gpointer d) {
