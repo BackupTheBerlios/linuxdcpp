@@ -16,32 +16,43 @@
 * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-#ifndef WULFOR_BOOK_ENTRY_HH
-#define WULFOR_BOOK_ENTRY_HH
+#ifndef WULFOR_PUBLIC_HUBS_HH
+#define WULFOR_PUBLIC_HUBS_HH
 
 #include <gtk/gtk.h>
-#include <string>
+#include <glade/glade.h>
+#include "bookentry.hh"
 
-class BookEntry {
+#include <client/stdinc.h>
+#include <client/DCPlusPlus.h>
+#include <client/HubManager.h>
+
+class PublicHubs: 
+	public BookEntry,
+	public HubManagerListener
+{
 	public:
-		BookEntry(int type, std::string id, std::string title, GCallback closeCallback);
-		virtual ~BookEntry();
-		bool isEqual(int type, std::string id);
-		bool isEqual(BookEntry *entry);
+		//constructor must be called from gui thread
+		PublicHubs(GCallback closeCallback);
+		~PublicHubs();
 
-		//only to be called by gui thread
-		void setLabel_gui(std::string text);
-		GtkWidget *getTitle();
-		virtual GtkWidget *getWidget() = 0;
+		GtkWidget *getWidget();
+
+		//only to be called from the gui thread
+		void filterHubs_gui();
+		void connect_gui();
+
 
 	private:
-		int type;
-		std::string id;
-		GtkWidget *box;
-		GtkButton *button;
-		GtkLabel *label;
+		static void filter_callback(GtkWidget *widget, gpointer data);
+		static void connect_callback(GtkWidget *widget, gpointer data);
+
+		GtkWidget *mainBox;
+		GtkEntry *filterEntry, *connectEntry;
+		//GtkButton *filterButton, *connectButton;
+		GtkTreeView *hubView;
 };
 
 #else
-class BookEntry;
+class PublicHubs;
 #endif

@@ -1,6 +1,7 @@
 gui_files = [	'selecter.cc',				'wulformanager.cc',
 				'bookentry.cc',				'mainwindow.cc',
-				'wulfor.cc', 				'prefix.cc']
+				'wulfor.cc', 				'prefix.cc',
+				'publichubs.cc']
 
 Import('env')
 guiObjs = env.Object(gui_files)

@@ -41,6 +41,10 @@ class MainWindow:
 		void setStatus_gui(std::string status);
 		void setStats_gui(std::string hub, std::string slot, 
 			std::string dTot, std::string uTot, std::string dl, std::string ul);
+			
+		void addPage_gui(GtkWidget *page, GtkWidget *label, bool raise);
+		void removePage_gui(GtkWidget *page);
+		void raisePage_gui(GtkWidget *page);
 
 		//client functions
 		void startSocket();

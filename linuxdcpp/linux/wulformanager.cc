@@ -1,5 +1,6 @@
 #include "wulformanager.hh"
 #include "prefix.hh"
+#include "publichubs.hh"
 #include <iostream>
 
 using namespace std;
@@ -83,6 +84,10 @@ void WulforManager::createMainWindow() {
 	mainWin = new MainWindow;
 }
 
+void WulforManager::closeEntry_callback(GtkWidget *widget, gpointer data) {
+	get()->deleteBookEntry_gui((BookEntry *)data);
+}
+
 WulforManager::WulforManager() {
 	pthread_mutex_init(&guiLock, NULL);
 	pthread_mutex_init(&clientLock, NULL);
@@ -114,8 +119,41 @@ MainWindow *WulforManager::getMainWindow() {
 	return mainWin;
 }
 
+BookEntry *WulforManager::getBookEntry(int type, string id, bool raise) {
+	BookEntry *ret = NULL;
+	vector<BookEntry *>::iterator it;
+	
+	for (it = bookEntrys.begin(); it != bookEntrys.end(); it++)
+		if ((*it)->isEqual(type, id)) ret = *it;
+		
+	if (ret && raise) {
+		Func1<MainWindow, GtkWidget *> *func = new Func1<MainWindow, GtkWidget*>
+			(mainWin, &MainWindow::raisePage_gui, ret->getWidget());
+		dispatchGuiFunc(func);
+	}
+
+	return ret;
+}
+
+void WulforManager::deleteBookEntry_gui(BookEntry *entry) {
+	mainWin->removePage_gui(entry->getWidget());
+	
+	vector<BookEntry *>::iterator it;
+	for (it = bookEntrys.begin(); it != bookEntrys.end(); it++)
+		if ((*it)->isEqual(entry)) {
+			bookEntrys.erase(it);
+			return;
+		}
+		
+	assert(it != bookEntrys.end());
+}
+
 void WulforManager::addPublicHubs_gui() {
+	if (getBookEntry(PUBLIC_HUBS, "", true)) return;
 
-
+	PublicHubs *pubHubs = new PublicHubs(G_CALLBACK(closeEntry_callback));
+	mainWin->addPage_gui(pubHubs->getWidget(), pubHubs->getTitle(), true);
+	gtk_widget_unref(pubHubs->getWidget());
+	bookEntrys.push_back(pubHubs);
 }
 

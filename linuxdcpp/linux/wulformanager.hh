@@ -24,9 +24,11 @@
 #include <semaphore.h>
 #include <string>
 #include <queue>
+#include <vector>
 
 #include "func.hh"
 #include "mainwindow.hh"
+#include "bookentry.hh"
 
 class WulforManager {
 	public:
@@ -46,10 +48,24 @@ class WulforManager {
 
 		void addPublicHubs_gui();
 
+		BookEntry *getBookEntry(int type, string id, bool raise);
+		void deleteBookEntry_gui(BookEntry *entry);
+
+		enum {
+			PUBLIC_HUBS,
+			HUB,
+			SEARCH,
+			PRIVATE_MSG,
+			SHAREBROWSER,
+			DOWNLOAD_QUEUE,
+			FAVOURITE_HUBS
+		};
+
 	private:
 		static void *threadFunc_gui(void *data);
 		static void *threadFunc_client(void *data);
 		static gboolean guiCallback(gpointer data);
+		static void closeEntry_callback(GtkWidget *widget, gpointer data);
 		void callGuiFunc();
 		void processGuiQueue();
 		void processClientQueue();
@@ -64,6 +80,7 @@ class WulforManager {
 		pthread_t guiThread, clientThread;
 
 		MainWindow *mainWin;
+		std::vector<BookEntry *> bookEntrys;
 };
 
 #else

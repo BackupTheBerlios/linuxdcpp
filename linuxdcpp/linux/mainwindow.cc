@@ -60,6 +60,8 @@ void MainWindow::createWindow_gui() {
     g_signal_connect(o, "clicked", G_CALLBACK(pubHubs_callback), (gpointer)this);
 	o = G_OBJECT(glade_xml_get_widget(xml, "quit"));
     g_signal_connect(o, "clicked", G_CALLBACK(quit_callback), (gpointer)this);
+	
+	gtk_statusbar_push(mainStatus, 0, "Welcome to Wulfor - Reloaded");
 }
 
 void MainWindow::startSocket() {
@@ -132,6 +134,31 @@ void MainWindow::on(QueueManagerListener::Finished, QueueItem *item) throw() {
 
 
 
+}
+
+void MainWindow::addPage_gui(GtkWidget *page, GtkWidget *label, bool raise) {
+	gtk_notebook_append_page(book, page, label);
+	if (raise) gtk_notebook_set_current_page(book, -1);
+}
+
+void MainWindow::removePage_gui(GtkWidget *page) {
+	int i, pageNum = -1;
+
+	for (i=0; i<gtk_notebook_get_n_pages(book); i++)
+		if (page == gtk_notebook_get_nth_page(book, i)) pageNum = i;
+		
+	assert(pageNum != -1);
+	gtk_notebook_remove_page(book, pageNum);
+}
+
+void MainWindow::raisePage_gui(GtkWidget *page) {
+	int i, pageNum = -1;
+
+	for (i=0; i<gtk_notebook_get_n_pages(book); i++)
+		if (page == gtk_notebook_get_nth_page(book, i)) pageNum = i;
+		
+	assert(pageNum != -1);
+	gtk_notebook_set_current_page(book, pageNum);
 }
 		
 void MainWindow::setStatus_gui(std::string status) {

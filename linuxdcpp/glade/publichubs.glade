@@ -3,7 +3,7 @@
 
 <glade-interface>
 
-<widget class="GtkWindow" id="publiHubsWindow">
+<widget class="GtkWindow" id="publicHubsWindow">
   <property name="width_request">800</property>
   <property name="height_request">600</property>
   <property name="title" translatable="yes">blah</property>
@@ -139,7 +139,7 @@
 		  <property name="right_padding">0</property>
 
 		  <child>
-		    <widget class="GtkEntry" id="addressEntry">
+		    <widget class="GtkEntry" id="connectEntry">
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
 		      <property name="editable">True</property>
