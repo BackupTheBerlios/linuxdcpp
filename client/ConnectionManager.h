@@ -63,7 +63,6 @@ class ConnectionManager : public Speaker<ConnectionManagerListener>,
 	public UserConnectionListener, ServerSocketListener, TimerManagerListener, 
 	public Singleton<ConnectionManager>
 {
-friend class Accepter;
 
 public:
 	void connect(const string& aServer, short aPort, const string& aNick);
@@ -148,5 +147,5 @@ private:
 
 /**
  * @file
- * $Id: ConnectionManager.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
+ * $Id: ConnectionManager.h,v 1.3 2004/11/04 00:16:42 paskharen Exp $
  */

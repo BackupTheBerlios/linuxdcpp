@@ -23,8 +23,6 @@
 
 class MainWindow;
 
-const int SETTINGS_DIALOG_OK = 0, SETTINGS_DIALOG_CANCEL = 1;
-
 class SettingsDialog: public Gtk::Dialog {
 	public:
 		SettingsDialog(MainWindow *mw);
@@ -38,6 +36,8 @@ class SettingsDialog: public Gtk::Dialog {
 		void removeDirectory();
 		void defDirClicked();
 		void tempDirClicked();		
+
+		static const int OK = 0, CANCEL = 1;
 
 	private:
 		class DirColumns: public Gtk::TreeModel::ColumnRecord {

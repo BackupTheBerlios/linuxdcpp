@@ -1,3 +1,7 @@
+2004-10-04 00:53 paskharen
+
+	* linux/mainwindow.cc, linux/selecter.cc, linux/selecter.hh: New verison of the WSAASyncSelect emulation. This one is a lot better, the last one was ugly.
+
 2004-10-03 14:40 phase
 
 	* linux/transfer.cc: Bug fix: When a connection is about to be removed the client could seg. fault.

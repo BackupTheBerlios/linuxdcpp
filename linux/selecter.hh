@@ -27,16 +27,18 @@
 #include "../client/ServerSocket.h"
 #include "../client/ConnectionManager.h"
 
-class Accepter {
+class Selecter {
 	public:
-		static void registerSocket(ServerSocket *socket);
+		static void WSAASyncSelect(ServerSocket &socket);
 		static void quit();
 
 	private:
 		static void *threadFunc(void *arg);
-		static std::vector<UserConnection *> connections;
+		static bool exitPlease, running;
 		static pthread_t thread;
+		static pthread_mutex_t lock;
+		
 };
 #else
-class Accepter;
+class Selecter;
 #endif

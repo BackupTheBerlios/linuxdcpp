@@ -99,8 +99,8 @@ SettingsDialog::SettingsDialog(MainWindow *mw):
 
 	get_vbox()->pack_start(book, PACK_EXPAND_WIDGET);
 	
-	add_button("Ok", SETTINGS_DIALOG_OK);
-	add_button("Cancel", SETTINGS_DIALOG_CANCEL);
+	add_button("Ok", OK);
+	add_button("Cancel", CANCEL);
 
 	setValues();
 

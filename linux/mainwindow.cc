@@ -20,7 +20,7 @@
 #include "publichubs.hh"
 #include "search.hh"
 #include "settingsdialog.hh"
-#include "accepter.hh"
+#include "selecter.hh"
 #include "guiproxy.hh"
 #include "sharebrowser.hh"
 
@@ -136,8 +136,8 @@ void MainWindow::startSocket() {
 	while(true) {
 		try {
 			ConnectionManager::getInstance()->setPort(lastPort);
-			Accepter::registerSocket(
-				&ConnectionManager::getInstance()->getServerSocket());
+			Selecter::WSAASyncSelect(
+				ConnectionManager::getInstance()->getServerSocket());
 
 			SearchManager::getInstance()->setPort(lastPort);
 			break;
@@ -269,13 +269,15 @@ void MainWindow::settingsClicked() {
 	int lastConn = SETTING(CONNECTION_TYPE);
 
 	SettingsDialog d(this);
-	if (d.run() == SETTINGS_DIALOG_OK) {
+	if (d.run() == SettingsDialog::OK) {
 		d.saveSettings();
 	}
 	
-	//maybe we need to refresh the socket
-	if (SETTING(CONNECTION_TYPE) != lastConn || SETTING(IN_PORT) != lastPort)
+	//maybe we need to restart the socket
+	if (SETTING(CONNECTION_TYPE) != lastConn || SETTING(IN_PORT) != lastPort) {
+		Selecter::quit();
 		startSocket();
+	}
 }
 
 void MainWindow::hashClicked()
@@ -323,6 +325,6 @@ void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw()
 
 void MainWindow::quit ()
 {
-	Accepter::quit();
+	Selecter::quit();
 	Main::quit();
 }

@@ -128,7 +128,7 @@ bool Hub::operator== (BookEntry &b) {
 	Hub *hub;
 	
 	hub = dynamic_cast<Hub *>(&b);
-	if (hub == NULL) return false;
+	if (!hub) return false;
 	
 	return hub->address == address;
 }
@@ -193,7 +193,7 @@ void Hub::on(ClientListener::UserRemoved,
 	Client *client, const User::Ptr &user) throw()
 {
 	BookEntry *e = mw->findPage (user->getNick ());
-	if (e != NULL && e->getID() == BOOK_PRIVATE_MESSAGE)
+	if (e && e->getID() == BOOK_PRIVATE_MESSAGE)
 		(dynamic_cast<PrivateMsg*>(e))->addMsg (user->getNick () + " left the hub.");
 	TreeModel::iterator it = findUser(user->getNick());
 	nickStore->erase(it);
@@ -337,7 +337,7 @@ void Hub::browseClicked() {
 	
 	ClientManager *man = ClientManager::getInstance();
 	
-	if (it == NULL) return;
+	if (!it) return;
 	user = man->getUser (WUtil::ConvertFromUTF8 ((*it)[columns.nick]), client);
 
 	b = new ShareBrowser(user, mw);
@@ -350,7 +350,7 @@ void Hub::pmClicked() {
 	RefPtr<TreeSelection> sel = nickView.get_selection();
 	TreeModel::iterator it = sel->get_selected();
 	
-	if (it == NULL) return;
+	if (!it) return;
 	user = new User (WUtil::ConvertFromUTF8 ((*it)[columns.nick]));
 	
 	user->setClient(client);

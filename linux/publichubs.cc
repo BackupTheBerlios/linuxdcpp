@@ -169,17 +169,12 @@ bool PublicHubs::operator== (BookEntry &b) {
 }
 
 void PublicHubs::refresh() {
-	filter = //filterEntry.get_text();
-		WUtil::ConvertFromUTF8(filterEntry.get_text());
-	
-	//No reloading - this is nothing but a waist of time
-	//HubManager::getInstance()->refresh(); 
-	
+	filter = WUtil::ConvertFromUTF8(filterEntry.get_text());
 	updateList();
 }
 
 void PublicHubs::connect() {
-	string address = //connectEntry.get_text();
+	string address = 
 		WUtil::ConvertFromUTF8(connectEntry.get_text());
 	Hub *hub;
 	TreeModel::iterator it;
