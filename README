@@ -6,30 +6,32 @@ idea why I called it wulfor, but I know I was bored with all projects called
 Later I have realized that DC-- probably would be the best name for it since
 it's no way near feature complete compared to DC++.
 
-Requirements:
+Dependencies:
 -------------
 Gtkmm 2.2
-pkg-config
 Currently configures for, and successfully built using g++-3.3 but it will
 probably work on other gcc versions as well. Just change the makefile.
 
 Compiling:
 ----------
+In a dream world:
+
+cd sigc
+make
+cd ../sigcx
+make
+cd..
 cd linux
 make
 ./wulfor
 
-Notes:
-------
-If things start acting funny and you get a lot of errors complaining it can't
-find hash_map and stuff like that, try adding #undef HAS_STLPORT to 
-client/stdinc.h. It's probably just my gcc install that's broken, but for some
-reason it seems to define HAS_STLPORT. Maybe the order of the #ifdefs need
-to be changed so that it first looks for glibcpp first or something.
-
-Apart from a small fix in ShareManager.cpp (line 1031, strnicmp is not ANSI) 
-the client code included is plain 0.4032. Apart from the issue already
-mentioned it compiled without problems. Great work, whoever did it =)
+Sadly, I had to make compile my own version of libsigc and libsigcx since 
+the standard versions did not support functions with enough arguments. 
+This means that I can't use pkg-config anymore, since this will link with the
+standard libsigc on your system. So you will have to edit the makefile
+manually and change all the compiler flags. The easiest way to do this
+is probably to run pkg-config --cflags/--libs gtkmm-2.0, remove everything
+about libsigc++ from the output and paste what's left into the makefile.
 
 License:
 --------
