@@ -32,6 +32,7 @@ to avoid including that file.
 License:
 --------
 The GPL (couldn't be any other, could it?)
+See License.txt for details.
 
 Contact:
 --------
