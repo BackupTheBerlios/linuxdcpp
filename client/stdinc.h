@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@
 
 #include <windows.h>
 #include <crtdbg.h>
-
+#include <tchar.h>
 #else
 #include <unistd.h>
 #endif
@@ -63,11 +63,8 @@
 using namespace _STL;
 #include <hash_map>
 
-#elif defined(__GLIBCPP__)  // Using GNU C++ library?
+#elif defined(__GLIBCPP__) || defined(__GLIBCXX__)  // Using GNU C++ library?
 #include <ext/hash_map>
-#define HAS_HASH 1
-#define HASH_MAP hash_map
-#define HASH_MULTIMAP hash_multimap
                                                                                 
 using namespace std;
 using namespace __gnu_cxx;
@@ -94,5 +91,5 @@ using namespace stdext;
 
 /**
  * @file
- * $Id: stdinc.h,v 1.1 2004/10/04 19:43:52 paskharen Exp $
+ * $Id: stdinc.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -94,23 +94,67 @@ void HubManager::onHttpFinished() throw() {
 	{
 		Lock l(cs);
 		publicHubs.clear();
-		i = 0;
-		
-		while( (i < x->size()) && ((j=x->find("\r\n", i)) != string::npos)) {
-			StringTokenizer tok(x->substr(i, j-i), '|');
-			i = j + 2;
-			if(tok.getTokens().size() < 4)
-				continue;
 
-			StringList::const_iterator k = tok.getTokens().begin();
-			const string& name = *k++;
-			const string& server = *k++;
-			const string& desc = *k++;
-			const string& usersOnline = *k++;
-			publicHubs.push_back(HubEntry(name, server, desc, usersOnline));
+		if(x->compare(0, 5, "<?xml") == 0) {
+			loadXmlList(*x);
+		} else {
+			i = 0;
+
+			string utfText = Text::acpToUtf8(*x);
+
+			while( (i < utfText.size()) && ((j=utfText.find("\r\n", i)) != string::npos)) {
+				StringTokenizer<string> tok(utfText.substr(i, j-i), '|');
+				i = j + 2;
+				if(tok.getTokens().size() < 4)
+					continue;
+
+				StringList::const_iterator k = tok.getTokens().begin();
+				const string& name = *k++;
+				const string& server = *k++;
+				const string& desc = *k++;
+				const string& usersOnline = *k++;
+				publicHubs.push_back(HubEntry(name, server, desc, usersOnline));
+			}
 		}
 	}
 	downloadBuf = Util::emptyString;
+}
+
+class XmlListLoader : public SimpleXMLReader::CallBack {
+public:
+	XmlListLoader(HubEntry::List& lst) : publicHubs(lst) { };
+	virtual ~XmlListLoader() { }
+	virtual void startTag(const string& name, StringPairList& attribs, bool) {
+		if(name == "Hub") {
+			const string& name = getAttrib(attribs, "Name", 0);
+			const string& server = getAttrib(attribs, "Address", 1);
+			const string& description = getAttrib(attribs, "Description", 2);
+			const string& users = getAttrib(attribs, "Users", 3);
+			const string& country = getAttrib(attribs, "Country", 4);
+			const string& shared = getAttrib(attribs, "Shared", 5);
+			const string& minShare = getAttrib(attribs, "Minshare", 5);
+			const string& minSlots = getAttrib(attribs, "Minslots", 5);
+			const string& maxHubs = getAttrib(attribs, "Maxhubs", 5);
+			const string& maxUsers = getAttrib(attribs, "Maxusers", 5);
+			const string& reliability = getAttrib(attribs, "Reliability", 5);
+			const string& rating = getAttrib(attribs, "Rating", 5);
+			publicHubs.push_back(HubEntry(name, server, description, users, country, shared, minShare, minSlots, maxHubs, maxUsers, reliability, rating));
+		}
+	}
+	virtual void endTag(const string&, const string&) {
+
+	}
+private:
+	HubEntry::List& publicHubs;
+};
+
+void HubManager::loadXmlList(const string& xml) {
+	try {
+		XmlListLoader loader(publicHubs);
+		SimpleXMLReader(&loader).fromXML(xml);
+	} catch(const SimpleXMLException&) {
+
+	}
 }
 
 void HubManager::save() {
@@ -173,7 +217,7 @@ void HubManager::save() {
 		string fname = Util::getAppPath() + FAVORITES_FILE;
 
 		File f(fname + ".tmp", File::WRITE, File::CREATE | File::TRUNCATE);
-		f.write(SimpleXML::w1252Header);
+		f.write(SimpleXML::utf8Header);
 		f.write(xml.toXML());
 		f.close();
 		File::deleteFile(fname);
@@ -186,7 +230,7 @@ void HubManager::save() {
 
 void HubManager::load() {
 	
-	// Add standard op commands
+	// Add NMDC standard op commands
 	static const char kickstr[] = 
 		"$To: %[nick] From: %[mynick] $<%[mynick]> You are being kicked because: %[line:Reason]|<%[mynick]> %[mynick] is kicking %[nick] because: %[line:Reason]|$Kick %[nick]|";
 	addUserCommand(UserCommand::TYPE_RAW_ONCE, UserCommand::CONTEXT_CHAT | UserCommand::CONTEXT_SEARCH, UserCommand::FLAG_NOSAVE, 
@@ -195,6 +239,25 @@ void HubManager::load() {
 		"$OpForceMove $Who:%[nick]$Where:%[line:Target Server]$Msg:%[line:Message]|";
 	addUserCommand(UserCommand::TYPE_RAW_ONCE, UserCommand::CONTEXT_CHAT | UserCommand::CONTEXT_SEARCH, UserCommand::FLAG_NOSAVE, 
 		STRING(REDIRECT_USER), redirstr, "op");
+
+	// Add ADC standard op commands
+	static const char adc_disconnectstr[] =
+		"HDSC %[mycid] %[cid] DI ND Friendly\\ disconnect\n";
+	addUserCommand(UserCommand::TYPE_RAW_ONCE, UserCommand::CONTEXT_CHAT | UserCommand::CONTEXT_SEARCH, UserCommand::FLAG_NOSAVE,
+		STRING(DISCONNECT_USER), adc_disconnectstr, "adc://op");
+	static const char adc_kickstr[] =
+		"HDSC %[mycid] %[cid] KK KK %[line:Reason]\n";
+	addUserCommand(UserCommand::TYPE_RAW_ONCE, UserCommand::CONTEXT_CHAT | UserCommand::CONTEXT_SEARCH, UserCommand::FLAG_NOSAVE,
+		STRING(KICK_USER), adc_kickstr, "adc://op");
+	static const char adc_banstr[] =
+		"HDSC %[mycid] %[cid] BN BN %[line:Seconds (-1 = forever)] %[line:Reason]\n";
+	addUserCommand(UserCommand::TYPE_RAW_ONCE, UserCommand::CONTEXT_CHAT | UserCommand::CONTEXT_SEARCH, UserCommand::FLAG_NOSAVE,
+		STRING(BAN_USER), adc_banstr, "adc://op");
+	static const char adc_redirstr[] =
+		"HDSC %[mycid] %[cid] RD RD %[line:Redirect address] %[line:Reason]\n";
+	addUserCommand(UserCommand::TYPE_RAW_ONCE, UserCommand::CONTEXT_CHAT | UserCommand::CONTEXT_SEARCH, UserCommand::FLAG_NOSAVE,
+		STRING(REDIRECT_USER), adc_redirstr, "adc://op");
+
 
 	try {
 		SimpleXML xml;
@@ -301,7 +364,7 @@ void HubManager::load(SimpleXML* aXml) {
 }
 
 void HubManager::refresh() {
-	StringList sl = StringTokenizer(SETTING(HUBLIST_SERVERS), ';').getTokens();
+	StringList sl = StringTokenizer<string>(SETTING(HUBLIST_SERVERS), ';').getTokens();
 	if(sl.empty())
 		return;
 	const string& server = sl[(lastServer) % sl.size()];
@@ -327,11 +390,12 @@ void HubManager::refresh() {
 UserCommand::List HubManager::getUserCommands(int ctx, const string& hub, bool op) {
 	Lock l(cs);
 	UserCommand::List lst;
+	bool adc = hub.size() >= 6 && hub.substr(0, 6) == "adc://";
 	for(UserCommand::Iter i = userCommands.begin(); i != userCommands.end(); ++i) {
 		UserCommand& uc = *i;
 		if(uc.getCtx() & ctx) {
-			if( (uc.getHub().empty()) || 
-				(op && uc.getHub() == "op") || 
+		if( (!adc && (uc.getHub().empty() || (op && uc.getHub() == "op"))) ||
+				(adc && (uc.getHub() == "adc://" || (op && uc.getHub() == "adc://op"))) ||
 				(Util::stricmp(hub, uc.getHub()) == 0) )
 			{
 				lst.push_back(*i);
@@ -370,5 +434,5 @@ void HubManager::on(TypeBZ2, HttpConnection*) throw() {
 
 /**
  * @file
- * $Id: HubManager.cpp,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: HubManager.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

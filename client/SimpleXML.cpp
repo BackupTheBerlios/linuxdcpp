@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,9 +22,8 @@
 #include "SimpleXML.h"
 
 const string SimpleXML::utf8Header = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\r\n";
-const string SimpleXML::w1252Header = "<?xml version=\"1.0\" encoding=\"windows-1252\" standalone=\"yes\"?>\r\n";
 
-string& SimpleXML::escape(string& aString, bool aAttrib, bool aLoading /* = false */) {
+string& SimpleXML::escape(string& aString, bool aAttrib, bool aLoading /* = false */, bool utf8 /* = true */) {
 	string::size_type i = 0;
 	const char* chars = aAttrib ? "<&>'\"" : "<&>";
 	
@@ -58,6 +57,10 @@ string& SimpleXML::escape(string& aString, bool aAttrib, bool aLoading /* = fals
 				}
 			}
 		}
+		if(!utf8) {
+			// Not very performant, but shouldn't happen very often
+			aString = Text::acpToUtf8(aString);
+		}
 	} else {
 		while( (i = aString.find_first_of(chars, i)) != string::npos) {
 			switch(aString[i]) {
@@ -68,6 +71,9 @@ string& SimpleXML::escape(string& aString, bool aAttrib, bool aLoading /* = fals
 			case '"': aString.replace(i, 1, "&quot;"); i+=6; break;
 			default: dcasserta(0);
 			}
+		}
+		if(!utf8) {
+			aString = Text::utf8ToAcp(aString);
 		}
 	}
 	return aString;
@@ -173,7 +179,7 @@ string::size_type SimpleXMLReader::loadAttribs(const string& name, const string&
 		}
 		// Ok, we have an attribute...
 		attribs.push_back(make_pair(tmp.substr(i, j-i), tmp.substr(x, y-x)));
-		SimpleXML::escape(attribs.back().second, true, true);
+		SimpleXML::escape(attribs.back().second, true, true, utf8);
 
 		i = tmp.find_first_not_of(' ', y + 1);
 		if(tmp[i] == '/' || tmp[i] == '>') {
@@ -204,10 +210,17 @@ string::size_type SimpleXMLReader::fromXML(const string& tmp, const string& n, s
 		i = j + 1;
 
 		if(tmp[i] == '?') {
-			// <? processing instruction ?>, ignore...
+			// <? processing instruction ?>, check encoding...
 			if((j = tmp.find("?>", i)) == string::npos) {
 				throw SimpleXMLException("Missing '?>' in " + n);
 			}
+
+			string str = tmp.substr(i, j - i);
+			if(str.find("encoding=\"utf-8\"") == string::npos) {
+				// Ugly pass to convert from some other codepage to utf-8; note that we convert from the ACP, not the one specified in the xml...
+				utf8 = false;
+			}
+
 			i = j + 2;
 			continue;
 		}
@@ -230,7 +243,7 @@ string::size_type SimpleXMLReader::fromXML(const string& tmp, const string& n, s
 			{
 				if(!hasChildren) {
 					data = tmp.substr(start, i - start - 2);
-					SimpleXML::escape(data, false, true);
+					SimpleXML::escape(data, false, true, utf8);
 				} else {
 					data.clear();
 				}
@@ -318,6 +331,6 @@ void SimpleXML::fromXML(const string& aXML) throw(SimpleXMLException) {
 
 /**
  * @file
- * $Id: SimpleXML.cpp,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: SimpleXML.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */
 

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ void FinishedManager::on(DownloadManagerListener::Complete, Download* d) throw()
 
 void FinishedManager::on(UploadManagerListener::Complete, Upload* u) throw()
 {
-	if(!u->isSet(Upload::FLAG_USER_LIST) || BOOLSETTING(LOG_FILELIST_TRANSFERS)) {
+	if(!u->isSet(Upload::FLAG_TTH_LEAVES) && (BOOLSETTING(LOG_FILELIST_TRANSFERS) || !u->isSet(Upload::FLAG_USER_LIST))) {
 		FinishedItem *item = new FinishedItem(
 			u->getLocalFileName(), u->getUserConnection()->getUser()->getNick(),
 			u->getUserConnection()->getUser()->getLastHubName(),
@@ -62,5 +62,5 @@ void FinishedManager::on(UploadManagerListener::Complete, Upload* u) throw()
 
 /**
  * @file
- * $Id: FinishedManager.cpp,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: FinishedManager.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

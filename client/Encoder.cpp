@@ -87,5 +87,5 @@ void Encoder::fromBase32(const char* src, u_int8_t* dst, size_t len) {
 
 /**
  * @file
- * $Id: Encoder.cpp,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: Encoder.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,10 @@
 #include "ZUtils.h"
 
 struct CRC32Hash {
-	size_t operator()(const void* buf, size_t len) { f(buf, len); return f.getValue(); }
+	size_t operator()(const void* buf, size_t len) { 
+		f(buf, len);
+		return f.getValue();
+	}
 private:
 	CRC32Filter f;
 };
@@ -80,7 +83,10 @@ private:
 			}
 		} 
 	}
-	size_t getPos(const string& s, int i, int l) { HashFunc h; return (h(&s[i], l) % table.size()); }
+	size_t getPos(const string& s, size_t i, size_t l) {
+		HashFunc h;
+		return  h(&s[i], l) % table.size();
+	}
 	
 	vector<bool> table;
 };
@@ -89,5 +95,5 @@ private:
 
 /**
  * @file
- * $Id: BloomFilter.h,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: BloomFilter.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 
 #include "Exception.h"
 #include "Util.h"
+#include "Text.h"
 
 #ifndef _WIN32
 #include <sys/stat.h>
@@ -114,7 +115,7 @@ public:
 			}
 		}
 
-		h = ::CreateFile(aFileName.c_str(), access, FILE_SHARE_READ, NULL, m, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+		h = ::CreateFile(Text::utf8ToWide(aFileName).c_str(), access, FILE_SHARE_READ, NULL, m, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 		
 		if(h == INVALID_HANDLE_VALUE) {
 			throw FileException(Util::translateError(GetLastError()));
@@ -190,7 +191,7 @@ public:
 	
 	virtual size_t read(void* buf, size_t& len) throw(Exception) {
 		DWORD x;
-		if(!::ReadFile(h, buf, len, &x, NULL)) {
+		if(!::ReadFile(h, buf, (DWORD)len, &x, NULL)) {
 			throw(FileException(Util::translateError(GetLastError())));
 		}
 		len = x;
@@ -199,7 +200,7 @@ public:
 
 	virtual size_t write(const void* buf, size_t len) throw(Exception) {
 		DWORD x;
-		if(!::WriteFile(h, buf, len, &x, NULL)) {
+		if(!::WriteFile(h, buf, (DWORD)len, &x, NULL)) {
 			throw FileException(Util::translateError(GetLastError()));
 		}
 		dcassert(x == len);
@@ -218,28 +219,47 @@ public:
 		return 0;
 	}
 
-	static void deleteFile(const string& aFileName) throw() { ::DeleteFile(aFileName.c_str()); };
+	static void deleteFile(const string& aFileName) throw() { ::DeleteFile(Text::toT(aFileName).c_str()); }
 	static void renameFile(const string& source, const string& target) throw(FileException) { 
-		if(!::MoveFile(source.c_str(), target.c_str())) {
+		if(!::MoveFile(Text::toT(source).c_str(), Text::toT(target).c_str())) {
 			// Can't move, try copy/delete...
-			if(!CopyFile(source.c_str(), target.c_str(), FALSE)) {
+			if(!CopyFile(Text::toT(source).c_str(), Text::toT(target).c_str(), FALSE)) {
 				throw FileException(Util::translateError(GetLastError()));
 			}
 			deleteFile(source);
 		}
-	};
+	}
+	static void copyFile(const string& src, const string& target) throw(FileException) {
+		if(!::CopyFile(Text::toT(src).c_str(), Text::toT(target).c_str(), FALSE)) {
+			throw FileException(Util::translateError(GetLastError()));
+		}
+	}
 
 	static int64_t getSize(const string& aFileName) throw() {
 		WIN32_FIND_DATA fd;
 		HANDLE hFind;
 		
-		hFind = FindFirstFile(aFileName.c_str(), &fd);
+		hFind = FindFirstFile(Text::toT(aFileName).c_str(), &fd);
 		
 		if (hFind == INVALID_HANDLE_VALUE) {
 			return -1;
 		} else {
 			FindClose(hFind);
 			return ((int64_t)fd.nFileSizeHigh << 32 | (int64_t)fd.nFileSizeLow);
+		}
+	}
+
+	static void ensureDirectory(const string& aFile) {
+		// Skip the first dir...
+		tstring file;
+		Text::toT(aFile, file);
+		wstring::size_type start = file.find_first_of(L"\\/");
+		if(start == string::npos)
+			return;
+		start++;
+		while( (start = file.find_first_of(L"\\/", start)) != string::npos) {
+			CreateDirectory(file.substr(0, start+1).c_str(), NULL);
+			start++;
 		}
 	}
 	
@@ -313,7 +333,7 @@ public:
 		return (size_t)x;
 	}
 	
-	virtual u_int32_t write(const void* buf, u_int32_t len) throw(FileException) {
+	virtual size_t write(const void* buf, size_t len) throw(FileException) {
 		ssize_t x = ::write(h, buf, len);
 		if(x == -1)
 			throw FileException("Write error");
@@ -339,6 +359,10 @@ public:
 
 	static void deleteFile(const string& aFileName) throw() { ::unlink(aFileName.c_str()); };
 	static void renameFile(const string& source, const string& target) throw() { ::rename(source.c_str(), target.c_str()); };
+	static void copyFile(const string& source, const string& target) throw() { 
+#warning FIXME
+		
+	}
 
 	static int64_t getSize(const string& aFileName) {
 		struct stat s;
@@ -347,6 +371,16 @@ public:
 		
 		return s.st_size;
 	}
+
+	static void ensureDirectory(const string& aFile) {
+		string acp = Text::utf8ToAcp(aFile);
+		string::size_type start = 0;
+		while( (start = aFile.find_first_of(L'/', start)) != string::npos) {
+			mkdir(aFile.substr(0, start+1).c_str(), 0755);
+			start++;
+		}
+	}
+
 	
 #endif // _WIN32
 
@@ -472,6 +506,6 @@ private:
 
 /**
  * @file
- * $Id: File.h,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: File.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */
 

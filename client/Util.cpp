@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,57 +43,67 @@
 FastCriticalSection FastAllocBase::cs;
 
 string Util::emptyString;
+wstring Util::emptyStringW;
+tstring Util::emptyStringT;
 
 bool Util::away = false;
 string Util::awayMsg;
 time_t Util::awayTime;
-char Util::upper[256];
-char Util::lower[256];
-int8_t Util::cmp[256][256];
-int8_t Util::cmpi[256][256];
+
 Util::CountryList Util::countries;
+string Util::appPath;
 
 static void sgenrand(unsigned long seed);
 
 void Util::initialize() {
-	int i;
-	for(i = 0; i < 256; ++i) {
-#ifdef _WIN32
-		upper[i] = (char)CharUpper((LPSTR)i);
-		lower[i] = (char)CharLower((LPSTR)i);
-#else
-		upper[i] = (char)toupper(i);
-		lower[i] = (char)tolower(i);
-#endif
-	}
-
 	setlocale(LC_ALL, "");
 
-	// Now initialize the compare table to the current locale (hm...hopefully we
-	// won't have strange problems because of this (users from different locales for instance)
-	for(i = 0; i < 256; ++i) {
-		for(int j = 0; j < 256; ++j) {
-			cmp[i][j] = (int8_t)::strncmp((char*)&i, (char*)&j, 1);
-			cmpi[i][j] = (int8_t)::strncmp((char*)&lower[i], (char*)&lower[j], 1);
-		}
-	}
+	Text::initialize();
 
-	sgenrand(time(NULL));
+	sgenrand((unsigned long)time(NULL));
 
 	try {
+		// This product includes GeoIP data created by MaxMind, available from http://maxmind.com/
+		// Updates at http://www.maxmind.com/app/geoip_country
 		string file = Util::getAppPath() + "GeoIpCountryWhois.csv";
+		string data = File(file, File::READ, File::OPEN).read();
 
-		StringTokenizer st(File(file , File::READ, File::OPEN).read());
+		const char* start = data.c_str();
+		string::size_type i = 0;
+		string::size_type j = 0;
+		string::size_type k = 0;
 		CountryIter last = countries.end();
-		for(StringIter i = st.getTokens().begin(); i != st.getTokens().end(); ++i) {
-			string::size_type j = i->find(',');
-			if(j != string::npos && j < i->length() - 2) {
-				u_int16_t* country = (u_int16_t*)(i->c_str() + j + 1);
-				last = countries.insert(last, make_pair(Util::toUInt32(i->c_str()), *country));
-			}
+
+		for(;;) {
+			i = data.find(',', k);
+			if(i == string::npos)
+				break;
+
+			j = data.find('\n', i);
+			if(j == string::npos)
+				break;
+
+			u_int16_t* country = (u_int16_t*)(start + i + 1);
+			last = countries.insert(last, make_pair(Util::toUInt32(start + k), *country));
+
+			k = j + 1;
 		}
 	} catch(const FileException&) {
 	}
+
+#ifdef _WIN32
+	TCHAR buf[MAX_PATH+1];
+	GetModuleFileName(NULL, buf, MAX_PATH);
+	appPath = Text::fromT(buf);
+	appPath.erase(appPath.rfind('\\') + 1);
+#else // _WIN32
+	char* home = getenv("HOME");
+	if (home) {
+		appPath = Text::fromT(home);
+		appPath += "/.dc++/";
+	}
+#endif // _WIN32
+
 }
 
 string Util::validateMessage(string tmp, bool reverse, bool checkNewLines) {
@@ -157,19 +167,11 @@ string Util::validateMessage(string tmp, bool reverse, bool checkNewLines) {
 	return tmp;
 }
 
-#ifdef _WIN32
 static const char badChars[] = { 
 	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 		17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
 		31, '<', '>', '/', '"', '|', '?', '*', 0
 };
-#else
-static const char badChars[] = { 
-	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
-		17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-		31, '<', '>', '"', '|', '?', '*', 0
-};
-#endif
 
 /**
  * Replaces all strange characters in a file with '_'
@@ -301,7 +303,7 @@ string Util::formatExactSize(int64_t aBytes) {
 	char buf[64];
 #ifdef _WIN32
 		char number[64];
-		NUMBERFMT nf;
+		NUMBERFMTA nf;
 		sprintf(number, "%I64d", aBytes);
 		char Dummy[16];
     
@@ -312,9 +314,9 @@ string Util::formatExactSize(int64_t aBytes) {
 		nf.NegativeOrder = 0;
 		nf.lpDecimalSep = ",";
 
-		GetLocaleInfo( LOCALE_SYSTEM_DEFAULT, LOCALE_SGROUPING, Dummy, 16 );
+		GetLocaleInfoA( LOCALE_SYSTEM_DEFAULT, LOCALE_SGROUPING, Dummy, 16 );
 		nf.Grouping = atoi(Dummy);
-		GetLocaleInfo( LOCALE_SYSTEM_DEFAULT, LOCALE_STHOUSAND, Dummy, 16 );
+		GetLocaleInfoA( LOCALE_SYSTEM_DEFAULT, LOCALE_STHOUSAND, Dummy, 16 );
 		nf.lpThousandSep = Dummy;
 
 		GetNumberFormatA(LOCALE_USER_DEFAULT, 0, number, &nf, buf, sizeof(buf)/sizeof(buf[0]));
@@ -367,21 +369,11 @@ bool Util::isPrivateIp(string const& ip) {
 	return false;
 }
 
-static void cToUtf8(wchar_t c, string& str) {
-	if(c >= 0x0800) {
-		str += (char)(0x80 | 0x40 | 0x20  | (c >> 12));
-		str += (char)(0x80 | ((c >> 6) & 0x3f));
-		str += (char)(0x80 | (c & 0x3f));
-	} else if(c >= 0x0080) {
-		str += (char)(0x80 | 0x40 | (c >> 6));
-		str += (char)(0x80 | (c & 0x3f));
-	} else {
-		str += (char)c;
-	}
-}
 
-static int utf8ToC(const char* str, wchar_t& c) {
-	int l = 0;
+
+typedef const u_int8_t* ccp;
+static wchar_t utf8ToLC(ccp& str) {
+	wchar_t c = 0;
 	if(str[0] & 0x80) {
 		if(str[0] & 0x40) {
 			if(str[0] & 0x20) {
@@ -389,99 +381,111 @@ static int utf8ToC(const char* str, wchar_t& c) {
 					!((((unsigned char)str[1]) & ~0x3f) == 0x80) ||
 					!((((unsigned char)str[2]) & ~0x3f) == 0x80))
 				{
-					return -1;
+					str++;
+					return 0;
 				}
 				c = ((wchar_t)(unsigned char)str[0] & 0xf) << 12 |
 					((wchar_t)(unsigned char)str[1] & 0x3f) << 6 |
 					((wchar_t)(unsigned char)str[2] & 0x3f);
-				l = 3;
+				str += 3;
 			} else {
 				if(str[1] == 0 ||
 					!((((unsigned char)str[1]) & ~0x3f) == 0x80)) 
 				{
-					return -1;
+					str++;
+					return 0;
 				}
 				c = ((wchar_t)(unsigned char)str[0] & 0x1f) << 6 |
 					((wchar_t)(unsigned char)str[1] & 0x3f);
-				l = 2;
+				str += 2;
 			}
 		} else {
-			return -1;
+			str++;
+			return 0;
 		}
 	} else {
-		c = (unsigned char)str[0];
-		l = 1;
+		wchar_t c = Text::asciiToLower((char)str[0]);
+		str++;
+		return c;
 	}
 
-	return l;
+	return Text::toLower(c);
 }
 
-/**
- * Convert a string in the current locale (whatever that happens to be) to UTF-8.
- */
-string& Util::toUtf8(string& str) {
-	if(str.empty())
-		return str;
-	wstring wtmp(str.length(), 0);
-#ifdef _WIN32
-	int sz = MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str.c_str(), str.length(),
-		&wtmp[0], str.length());
-	if(sz <= 0) {
-		str.clear();
-		return str;
-	}
-#else
-	int sz = mbstowcs(&wtmp[0], str.c_str(), wtmp.length());
-	if(sz <= 0) {
-		str.clear();
-		return str;
-	}
-	if(sz < (int)wtmp.length())
-		sz--;
-#endif
+string::size_type Util::findSubString(const string& aString, const string& aSubString, string::size_type start) throw() {
+	if(aString.length() < start)
+		return (string::size_type)string::npos;
 
-	wtmp.resize(sz);
-	str.clear();
-    for(string::size_type i = 0; i < wtmp.length(); ++i) {
-		cToUtf8(wtmp[i], str);
-	}
-	return str;
-}
+	if(aString.length() - start < aSubString.length())
+		return (string::size_type)string::npos;
 
-string& Util::toAcp(string& str) {
-	if(str.empty())
-		return str;
+	if(aSubString.empty())
+		return 0;
 
-	wstring wtmp;
-	wtmp.reserve(str.length());
-	for(string::size_type i = 0; i < str.length(); ) {
-		wchar_t c = 0;
-		int x = utf8ToC(str.c_str() + i, c);
-		if(x == -1) {
-			i++;
-		} else {
-			i+=x;
-			wtmp += c;
+	// Hm, should start measure in characters or in bytes? bytes for now...
+	const u_int8_t* tx = (const u_int8_t*)aString.c_str() + start;
+	const u_int8_t* px = (const u_int8_t*)aSubString.c_str();
+
+	const u_int8_t* end = tx + aString.length() - aSubString.length() + 1;
+
+	wchar_t wp = utf8ToLC(px);
+
+	while(tx < end) {
+		const u_int8_t* otx = tx;
+		if(wp == utf8ToLC(tx)) {
+			const u_int8_t* px2 = px;
+			const u_int8_t* tx2 = tx;
+
+			for(;;) {
+				if(*px2 == 0)
+					return otx - (u_int8_t*)aString.c_str();
+
+				if(utf8ToLC(px2) != utf8ToLC(tx2))
+					break;
+			}
 		}
 	}
-#ifdef _WIN32
-	int x = WideCharToMultiByte(CP_ACP, 0, wtmp.c_str(), wtmp.length(), NULL, 0, NULL, NULL);
-	if(x == 0) {
-		str.clear();
-		return str;
+	return (string::size_type)string::npos;
+}
+
+int Util::stricmp(const char* a, const char* b) {
+	while(*a) {
+		wchar_t ca = 0, cb = 0;
+		int na = Text::utf8ToWc(a, ca);
+		int nb = Text::utf8ToWc(b, cb);
+		ca = Text::toLower(ca);
+		cb = Text::toLower(cb);
+		if(ca != cb) {
+			return (int)cb - (int)ca;
+		}
+		a+= na < 0 ? 1 : na;
+		b+= nb < 0 ? 1 : nb;
 	}
-	str.resize(x);
-	WideCharToMultiByte(CP_ACP, 0, wtmp.c_str(), wtmp.length(), &str[0], str.size(), NULL, NULL);
-#else
-	size_t x = wcstombs(NULL, wtmp.c_str(), 0);
-	if(x == (size_t)-1) {
-		str.clear();
-		return str;
+	wchar_t ca = 0, cb = 0;
+	Text::utf8ToWc(a, ca);
+	Text::utf8ToWc(b, cb);
+
+	return (int)Text::toLower(cb) - (int)Text::toLower(ca);
+}
+
+int Util::strnicmp(const char* a, const char* b, size_t n) {
+	const char* end = a + n;
+	while(*a && a < end) {
+		wchar_t ca = 0, cb = 0;
+		int na = Text::utf8ToWc(a, ca);
+		int nb = Text::utf8ToWc(b, cb);
+		ca = Text::toLower(ca);
+		cb = Text::toLower(cb);
+		if(ca != cb) {
+			return (int)cb - (int)ca;
+		}
+		a+= na < 0 ? 1 : na;
+		b+= nb < 0 ? 1 : nb;
 	}
-	str.resize(x);
-	wcstombs(&str[0], wtmp.c_str(), str.size());
-#endif
-	return str;
+	wchar_t ca = 0, cb = 0;
+	Text::utf8ToWc(a, ca);
+	Text::utf8ToWc(b, cb);
+	return (a >= end) ? 0 : ((int)Text::toLower(cb) - (int)Text::toLower(ca));
 }
 
 string Util::encodeURI(const string& aString, bool reverse) {
@@ -743,8 +747,61 @@ string Util::getIpCountry (string IP) {
 
 	return Util::emptyString; //if doesn't returned anything already, something is wrong...
 }
+
+string Util::toDOS(const string& tmp) {
+	if(tmp.empty())
+		return Util::emptyString;
+
+	string tmp2(tmp);
+
+	if(tmp2[0] == '\r' && (tmp2.size() == 1 || tmp2[1] != '\n')) {
+		tmp2.insert(1, "\n");
+	}
+	for(string::size_type i = 1; i < tmp2.size() - 1; ++i) {
+		if(tmp2[i] == '\r' && tmp2[i+1] != '\n') {
+			// Mac ending
+			tmp2.insert(i+1, "\n");
+			i++;
+		} else if(tmp2[i] == '\n' && tmp2[i-1] != '\r') {
+			// Unix encoding
+			tmp2.insert(i, "\r");
+			i++;
+		}
+	}
+	return tmp2;
+}
+
+int Util::getOsMajor() 
+{
+#ifdef _WIN32
+	OSVERSIONINFOEX ver;
+	memset(&ver, 0, sizeof(OSVERSIONINFOEX));
+	if(!GetVersionEx((OSVERSIONINFO*)&ver)) 
+	{
+		ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+	}
+	GetVersionEx((OSVERSIONINFO*)&ver);
+	ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+	return ver.dwMajorVersion;
+#endif //_WIN32
+}
+
+int Util::getOsMinor() 
+{
+#ifdef _WIN32
+	OSVERSIONINFOEX ver;
+	memset(&ver, 0, sizeof(OSVERSIONINFOEX));
+	if(!GetVersionEx((OSVERSIONINFO*)&ver)) 
+	{
+		ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+	}
+	GetVersionEx((OSVERSIONINFO*)&ver);
+	ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+	return ver.dwMinorVersion;
+#endif //_WIN32
+}
 /**
  * @file
- * $Id: Util.cpp,v 1.1 2004/10/04 19:43:52 paskharen Exp $
+ * $Id: Util.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */
 

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ const string SettingsManager::settingTags[] =
 	// Ints
 	"ConnectionType", "InPort", "Slots", "Rollback", "AutoFollow", "ClearSearch",
 	"BackgroundColor", "TextColor", "UseOemMonoFont", "ShareHidden", "FilterMessages", "MinimizeToTray",
-	"OpenPublic", "OpenQueue", "AutoSearch", "AutoAutoSearchString", "TimeStamps", "ConfirmExit", "IgnoreOffline", "PopupOffline",
+	"OpenPublic", "OpenQueue", "AutoSearch", "TimeStamps", "ConfirmExit", "IgnoreOffline", "PopupOffline",
 	"ListDuplicates", "BufferSize", "DownloadSlots", "MaxDownloadSpeed", "LogMainChat", "LogPrivateChat",
 	"LogDownloads", "LogUploads", "StatusInChat", "ShowJoins", "PrivateMessageBeep", "PrivateMessageBeepOpen",
 	"UseSystemIcons", "PopupPMs", "MinUploadSpeed", "GetUserInfo", "UrlHandler", "MainWindowState", 
@@ -55,7 +55,7 @@ const string SettingsManager::settingTags[] =
 	"LogFilelistTransfers", "SendUnknownCommands", "MaxHashSpeed",
 	"GetUserCountry", "FavShowJoins", "LogStatusMessages", "ShowStatusbar",
 	"ShowToolbar", "ShowTransferview", "PopunderPm", "PopunderFilelist", "MagnetAsk", "MagnetAction", "MagnetRegister",
-	"AddFinishedInstantly",
+	"AddFinishedInstantly", "UseUPnP",
 	"SENTRY",
 	// Int64
 	"TotalUpload", "TotalDownload",
@@ -93,14 +93,13 @@ SettingsManager::SettingsManager()
 	setDefault(OPEN_PUBLIC, false);
 	setDefault(OPEN_QUEUE, false);
 	setDefault(AUTO_SEARCH, false);
-	setDefault(AUTO_SEARCH_AUTO_STRING, false);
 	setDefault(TIME_STAMPS, false);
 	setDefault(CONFIRM_EXIT, false);
 	setDefault(IGNORE_OFFLINE, false);
 	setDefault(POPUP_OFFLINE, false);
-	setDefault(LIST_DUPES, false);
+	setDefault(LIST_DUPES, true);
 	setDefault(BUFFER_SIZE, 64);
-	setDefault(HUBLIST_SERVERS, "http://www.hublist.org/PublicHubList.config.bz2");
+	setDefault(HUBLIST_SERVERS, "http://www.hublist.org/PublicHubList.xml.bz2");
 	setDefault(DOWNLOAD_SLOTS, 3);
 	setDefault(MAX_DOWNLOAD_SPEED, 0);
 	setDefault(LOG_DIRECTORY, Util::getAppPath() + "Logs\\");
@@ -167,6 +166,7 @@ SettingsManager::SettingsManager()
 	setDefault(MAGNET_ASK, true);
 	setDefault(MAGNET_ACTION, MAGNET_AUTO_SEARCH);
 	setDefault(ADD_FINISHED_INSTANTLY, false);
+	setDefault(SETTINGS_USE_UPNP, false);
 
 #ifdef _WIN32
 	setDefault(MAIN_WINDOW_STATE, SW_SHOWNORMAL);
@@ -208,13 +208,12 @@ void SettingsManager::load(string const& aFileName)
 		if(xml.findChild("Settings"))
 		{
 			xml.stepIn();
-			
+
 			int i;
-			string attr;
 			
 			for(i=STR_FIRST; i<STR_LAST; i++)
 			{
-				attr = settingTags[i];
+				const string& attr = settingTags[i];
 				dcassert(attr.find("SENTRY") == string::npos);
 				
 				if(xml.findChild(attr))
@@ -223,7 +222,7 @@ void SettingsManager::load(string const& aFileName)
 			}
 			for(i=INT_FIRST; i<INT_LAST; i++)
 			{
-				attr = settingTags[i];
+				const string& attr = settingTags[i];
 				dcassert(attr.find("SENTRY") == string::npos);
 				
 				if(xml.findChild(attr))
@@ -232,7 +231,7 @@ void SettingsManager::load(string const& aFileName)
 			}
 			for(i=INT64_FIRST; i<INT64_LAST; i++)
 			{
-				attr = settingTags[i];
+				const string& attr = settingTags[i];
 				dcassert(attr.find("SENTRY") == string::npos);
 				
 				if(xml.findChild(attr))
@@ -242,6 +241,10 @@ void SettingsManager::load(string const& aFileName)
 			
 			xml.stepOut();
 		}
+
+		// double v = Util::toDouble(SETTING(CONFIG_VERSION));
+		// if(v < 0.x) { // Fix old settings here }
+
 		fire(SettingsManagerListener::Load(), &xml);
 
 		xml.stepOut();
@@ -297,7 +300,7 @@ void SettingsManager::save(string const& aFileName) {
 	try {
 		File ff(aFileName + ".tmp", File::WRITE, File::CREATE | File::TRUNCATE);
 		BufferedOutputStream<false> f(&ff);
-		f.write(SimpleXML::w1252Header);
+		f.write(SimpleXML::utf8Header);
 		xml.toXML(&f);
 		f.flush();
 		ff.close();
@@ -310,6 +313,6 @@ void SettingsManager::save(string const& aFileName) {
 
 /**
  * @file
- * $Id: SettingsManager.cpp,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: SettingsManager.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */
 

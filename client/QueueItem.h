@@ -1,5 +1,5 @@
 /* 
-* Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+* Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ public:
 	// Strange, the vc7 optimizer won't take a deque here...
 	typedef vector<Ptr> List;
 	typedef List::iterator Iter;
-	typedef map<string, Ptr, noCaseStringLess> StringMap;
+	typedef map<string*, Ptr, noCaseStringLess> StringMap;
 	//	typedef HASH_MAP<string, Ptr, noCaseStringHash, noCaseStringEq> StringMap;
 	typedef StringMap::iterator StringIter;
 	typedef HASH_MAP_X(User::Ptr, Ptr, User::HashFunction, equal_to<User::Ptr>, less<User::Ptr>) UserMap;
@@ -73,8 +73,6 @@ public:
 		FLAG_DIRECTORY_DOWNLOAD = 0x04,
 		/** The file is downloaded to be viewed in the gui */
 		FLAG_CLIENT_VIEW = 0x08,
-		/** The file list downloaded was actually BZ compressed (MyList.bz2, only available in FINISHED message) */
-		FLAG_BZLIST = 0x10,
 		/** Flag to indicate that file should be viewed as a text file */
 		FLAG_TEXT = 0x20,
 		/** This file exists on the hard disk and should be prioritised */
@@ -120,16 +118,16 @@ public:
 		User::Ptr user;
 	};
 
-	QueueItem(const string& aTarget, int64_t aSize, const string& aSearchString, 
+	QueueItem(const string& aTarget, int64_t aSize, 
 		Priority aPriority, int aFlag, int64_t aDownloadedBytes, u_int32_t aAdded, const TTHValue* tth) : 
-	Flags(aFlag), target(aTarget), searchString(aSearchString), 
+	Flags(aFlag), target(aTarget), 
 		size(aSize), downloadedBytes(aDownloadedBytes), status(STATUS_WAITING), 
 		priority(aPriority), current(NULL), currentDownload(NULL), added(aAdded),
 		tthRoot(tth == NULL ? NULL : new TTHValue(*tth))
 	{ };
 
 	QueueItem(const QueueItem& rhs) : 
-	Flags(rhs), target(rhs.target), tempTarget(rhs.tempTarget), searchString(rhs.searchString),
+	Flags(rhs), target(rhs.target), tempTarget(rhs.tempTarget), 
 		size(rhs.size), downloadedBytes(rhs.downloadedBytes), status(rhs.status), priority(rhs.priority), 
 		current(rhs.current), currentDownload(rhs.currentDownload), added(rhs.added), tthRoot(rhs.tthRoot == NULL ? NULL : new TTHValue(*rhs.tthRoot))
 	{
@@ -200,16 +198,15 @@ public:
 		dcassert(isSet(QueueItem::FLAG_USER_LIST));
 		if(isSet(QueueItem::FLAG_XML_BZLIST)) {
 			return getTarget() + ".xml.bz2";
-		} else if(isSet(QueueItem::FLAG_BZLIST)) {
-			return getTarget() + ".bz2";
 		} else {
 			return getTarget() + ".DcLst";
 		}
 	}
 
+	string getSearchString() const;
+
 	GETSET(string, target, Target);
 	GETSET(string, tempTarget, TempTarget);
-	GETSET(string, searchString, SearchString);
 	GETSET(int64_t, size, Size);
 	GETSET(int64_t, downloadedBytes, DownloadedBytes);
 	GETSET(Status, status, Status);
@@ -279,5 +276,5 @@ private:
 
 /**
 * @file
-* $Id: QueueItem.h,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+* $Id: QueueItem.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
 */

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,6 +45,15 @@ const string& User::getClientNick() const {
 		return client->getNick();
 	} else {
 		return SETTING(NICK);
+	}
+}
+
+const CID User::getClientCID() const {
+	RLock l(cs);
+	if(client) {
+		return client->getMe()->getCID();
+	} else {
+		return CID(SETTING(CLIENT_ID));
 	}
 }
 
@@ -104,6 +113,10 @@ void User::send(const string& aMsg) {
 	}
 }
 
+void User::sendUserCmd(const string& aUserCmd) {
+	send(aUserCmd);
+}
+
 void User::redirect(const string& aTarget, const string& aReason) {
 	RLock l(cs);
 	if(client) {
@@ -136,6 +149,7 @@ void User::setClient(Client* aClient) {
 
 void User::getParams(StringMap& ucParams) {
 	ucParams["nick"] = getNick();
+	ucParams["cid"] = getCID().toBase32();
 	ucParams["tag"] = getTag();
 	ucParams["description"] = getDescription();
 	ucParams["email"] = getEmail();
@@ -204,8 +218,12 @@ void User::setUserDescription(const string& aDescription) {
 		favoriteUser->setDescription(aDescription);
 }
 
+StringMap& User::clientEscapeParams(StringMap& sm) const {
+	return client->escapeParams(sm);
+}
+
 /**
  * @file
- * $Id: User.cpp,v 1.1 2004/10/04 19:43:52 paskharen Exp $
+ * $Id: User.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */
 

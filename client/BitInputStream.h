@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,10 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+#include "Exception.h"
+
+STANDARD_EXCEPTION(BitStreamException);
+
 /**
  * A clumsy bit streamer, assumes that there's enough data to complete the operations.
  * No, doesn't operate on streams...=)
@@ -30,10 +34,13 @@
 class BitInputStream  
 {
 public:
-	BitInputStream(const u_int8_t* aStream, int aStart) : bitPos(aStart*8), is(aStream) { };
+	BitInputStream(const u_int8_t* aStream, size_t aStart, size_t aEnd) : endPos(aEnd*8), bitPos(aStart*8), is(aStream) { };
 	~BitInputStream() { };
 	
-	bool get() {
+	bool get() throw(BitStreamException) {
+		if(bitPos > endPos) {
+			throw BitStreamException(STRING(SEEK_BEYOND_END));
+		}
 		bool ret = (((u_int8_t)is[bitPos>>3]) >> (bitPos&0x07)) & 0x01;
 		bitPos++;
 		return ret;
@@ -49,7 +56,8 @@ public:
 		return ;
 	}
 private:
-	int bitPos;
+	size_t bitPos;
+	size_t endPos;
 	const u_int8_t* is;
 };
 
@@ -57,5 +65,5 @@ private:
 
 /**
  * @file
- * $Id: BitInputStream.h,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: BitInputStream.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

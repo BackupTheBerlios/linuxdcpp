@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,8 +25,6 @@
 #include "CryptoManager.h"
 
 #include "File.h"
-
-#include <iostream>
 
 #define SMALL_BUFFER_SIZE 1024
 
@@ -303,14 +301,12 @@ void BufferedSocket::threadRead() {
 					for(string::iterator k = l.begin(); k != l.end(); ++k) {
 						if(*k == '\\') {
 							escaped = !escaped;
-						} else if(*k == separator) {
-							if(!escaped) {
-								pos = k - l.begin();
-								foundSeparator = true;
-								break;
-							} else {
-								escaped = false;
-							}
+						} else if(*k == separator && !escaped) {
+							pos = k - l.begin();
+							foundSeparator = true;
+							break;
+						} else {
+							escaped = false;
 						}
 					}
 				} else {
@@ -359,10 +355,10 @@ void BufferedSocket::threadRead() {
 	}
 }
 
-void BufferedSocket::write(const char* aBuf, int aLen) throw() {
+void BufferedSocket::write(const char* aBuf, size_t aLen) throw() {
 	{
 		Lock l(cs);
-		int newSize = outbufSize[curBuf];
+		size_t newSize = outbufSize[curBuf];
 		
 		while(newSize < (aLen + outbufPos[curBuf])) {
 			newSize *= 2;
@@ -418,6 +414,7 @@ int BufferedSocket::run() {
 					t = tasks.front();
 					tasks.erase(tasks.begin());
 				}
+
 				switch(t) {
 				case SHUTDOWN: threadShutDown(); return 0;
 				case DISCONNECT: if(isConnected()) fail(STRING(DISCONNECTED)); break;
@@ -451,5 +448,5 @@ int BufferedSocket::run() {
 
 /**
  * @file
- * $Id: BufferedSocket.cpp,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: BufferedSocket.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

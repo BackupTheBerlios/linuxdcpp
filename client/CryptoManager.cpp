@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@ void CryptoManager::decodeBZ2(const u_int8_t* is, size_t sz, string& os) throw (
 
 	// We assume that the files aren't compressed more than 2:1...if they are it'll work anyway,
 	// but we'll have to do multiple passes...
-	int bufsize = 2*sz;
+	size_t bufsize = 2*sz;
 	AutoArray<char> buf(bufsize);
 	
 	bs.avail_in = sz;
@@ -72,12 +72,12 @@ void CryptoManager::decodeBZ2(const u_int8_t* is, size_t sz, string& os) throw (
 	}
 }
 
-string CryptoManager::keySubst(const u_int8_t* aKey, int len, int n) {
+string CryptoManager::keySubst(const u_int8_t* aKey, size_t len, size_t n) {
 	u_int8_t* temp = new u_int8_t[len + n * 10];
 	
-	int j=0;
+	size_t j=0;
 	
-	for(int i = 0; i<len; i++) {
+	for(size_t i = 0; i<len; i++) {
 		if(isExtra(aKey[i])) {
 			temp[j++] = '/'; temp[j++] = '%'; temp[j++] = 'D';
 			temp[j++] = 'C'; temp[j++] = 'N';
@@ -105,7 +105,7 @@ string CryptoManager::makeKey(const string& aLock) {
 
     u_int8_t* temp = new u_int8_t[aLock.length()];
 	u_int8_t v1;
-	int extra=0;
+	size_t extra=0;
 	
 	v1 = (u_int8_t)(aLock[0]^5);
 	v1 = (u_int8_t)(((v1 >> 4) | (v1 << 4)) & 0xff);
@@ -132,11 +132,11 @@ string CryptoManager::makeKey(const string& aLock) {
 	return tmp;
 }
 
-void CryptoManager::decodeHuffman(const u_int8_t* is, string& os) throw(CryptoException) {
+void CryptoManager::decodeHuffman(const u_int8_t* is, string& os, const size_t len) throw(CryptoException) {
 //	BitInputStream bis;
 	int pos = 0;
 
-	if(is[pos] != 'H' || is[pos+1] != 'E' || !((is[pos+2] == '3') || (is[pos+2] == '0'))) {
+	if(len < 11 || is[pos] != 'H' || is[pos+1] != 'E' || !((is[pos+2] == '3') || (is[pos+2] == '0'))) {
 		throw CryptoException(STRING(DECOMPRESSION_ERROR));
 	}
 	pos+=5;
@@ -148,11 +148,13 @@ void CryptoManager::decodeHuffman(const u_int8_t* is, string& os) throw(CryptoEx
 
 	dcdebug("Size: %d\n", size);
 	
-	short treeSize;
-	treeSize = *(short*)&is[pos];
+	unsigned short treeSize;
+	treeSize = *(unsigned short*)&is[pos];
 
 	pos+=2;
 
+	if(len < (size_t)(11 + treeSize * 2)) 
+		throw CryptoException(STRING(DECOMPRESSION_ERROR));
 	Leaf** leaves = new Leaf*[treeSize];
 
 	int i;
@@ -162,23 +164,27 @@ void CryptoManager::decodeHuffman(const u_int8_t* is, string& os) throw(CryptoEx
 		leaves[i] = new Leaf(chr, bits);
 	}
 
-	BitInputStream bis(is, pos);
+	BitInputStream bis(is, pos, len);
 
 	DecNode* root = new DecNode();
 
 	for(i=0; i<treeSize; i++) {
 		DecNode* node = root;
 		for(int j=0; j<leaves[i]->len; j++) {
-			if(bis.get()) {
-				if(node->right == NULL)
-					node->right = new DecNode();
+			try {
+				if(bis.get()) {
+					if(node->right == NULL)
+						node->right = new DecNode();
 
-				node = node->right;
-			} else {
-				if(node->left == NULL)
-					node->left = new DecNode();
+					node = node->right;
+				} else {
+					if(node->left == NULL)
+						node->left = new DecNode();
 
-				node = node->left;
+					node = node->left;
+				}
+			} catch(const BitStreamException&) {
+				throw CryptoException(STRING(DECOMPRESSION_ERROR));
 			}
 		}
 		node->chr = leaves[i]->chr;
@@ -193,10 +199,14 @@ void CryptoManager::decodeHuffman(const u_int8_t* is, string& os) throw(CryptoEx
 	for(i=0; i<size; i++) {
 		DecNode* node = root;
 		while(node->chr == -1) {
-			if(bis.get()) {
-				node = node->right;
-			} else {
-				node = node->left;
+			try {
+				if(bis.get()) {
+					node = node->right;
+				} else {
+					node = node->left;
+				}
+			} catch(const BitStreamException&) {
+				throw CryptoException(STRING(DECOMPRESSION_ERROR));
 			}
 
 			if(node == NULL) {
@@ -395,5 +405,5 @@ void CryptoManager::encodeHuffman(const string& is, string& os) {
 
 /**
  * @file
- * $Id: CryptoManager.cpp,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: CryptoManager.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

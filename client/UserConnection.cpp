@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,7 +78,7 @@ void UserConnection::on(BufferedSocketListener::Line, const string& aLine) throw
 	
 	if(cmd == "$MyNick") {
 		if(!param.empty())
-			fire(UserConnectionListener::MyNick(), this, param);
+			fire(UserConnectionListener::MyNick(), this, Text::acpToUtf8(param));
 	} else if(cmd == "$Direction") {
 		x = param.find(" ");
 		if(x != string::npos) {
@@ -99,9 +99,9 @@ void UserConnection::on(BufferedSocketListener::Line, const string& aLine) throw
 	} else if(cmd == "$Get") {
 		x = param.find('$');
 		if(x != string::npos) {
-			fire(UserConnectionListener::Get(), this, param.substr(0, x), Util::toInt64(param.substr(x+1)) - (int64_t)1);
+			fire(UserConnectionListener::Get(), this, Text::acpToUtf8(param.substr(0, x)), Util::toInt64(param.substr(x+1)) - (int64_t)1);
 		}
-	} else if(cmd == "$GetTestZBlock" || cmd == "$GetZBlock" || cmd == "$UGetZBlock" || cmd == "$UGetBlock") {
+	} else if(cmd == "$GetZBlock" || cmd == "$UGetZBlock" || cmd == "$UGetBlock") {
 		string::size_type i = param.find(' ');
 		if(i == string::npos)
 			return;
@@ -116,8 +116,8 @@ void UserConnection::on(BufferedSocketListener::Line, const string& aLine) throw
 			return;
 		int64_t bytes = Util::toInt64(param.substr(i, j-i));
 		string name = param.substr(j+1);
-		if(cmd == "$UGetZBlock" || cmd == "$UGetBlock")
-			Util::toAcp(name);
+		if(cmd == "$GetZBlock")
+			name = Text::acpToUtf8(name);
 		if(cmd == "$UGetBlock") {
 			fire(UserConnectionListener::GetBlock(), this, name, start, bytes);
 		} else {
@@ -153,7 +153,7 @@ void UserConnection::on(BufferedSocketListener::Line, const string& aLine) throw
 		fire(UserConnectionListener::MaxedOut(), this);
 	} else if(cmd == "$Supports") {
 		if(!param.empty()) {
-			fire(UserConnectionListener::Supports(), this, StringTokenizer(param, ' ').getTokens());
+			fire(UserConnectionListener::Supports(), this, StringTokenizer<string>(param, ' ').getTokens());
 		}
 	} else if(cmd.compare(0, 4, "$ADC") == 0) {
 		dispatch(aLine, true);
@@ -169,5 +169,5 @@ void UserConnection::on(BufferedSocketListener::Failed, const string& aLine) thr
 
 /**
  * @file
- * $Id: UserConnection.cpp,v 1.1 2004/10/04 19:43:52 paskharen Exp $
+ * $Id: UserConnection.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,8 +49,6 @@
 // Remove this if you want to try using the msvc 7.x STL
 //#define HAS_STLPORT 1
 
-#define HAS_ATOMIC 1
-
 // --- Shouldn't have to change anything under here...
 #if (defined(HAS_STLPORT))
 #if !(defined(_REENTRANT))
@@ -73,8 +71,15 @@
 #define HASH_MULTIMAP hash_multimap
 
 #ifdef HAS_STLPORT
+
 #define HASH_MAP_X(key, type, hfunc, eq, order) hash_map<key, type, hfunc, eq >
 #define HASH_MULTIMAP_X(key, type, hfunc, eq, order) hash_multimap<key, type, hfunc, eq >
+
+#elif defined(__GLIBCPP__) || defined(__GLIBCXX__)  // Using GNU C++ library?
+
+#define HASH_MAP_X(key, type, hfunc, eq, order) hash_map<key, type, hfunc, eq >
+#define HASH_MULTIMAP_X(key, type, hfunc, eq, order) hash_multimap<key, type, hfunc, eq >
+
 #else // Assume the msvc 7.x stl
 #define HASH_MAP_X(key, type, hfunc, eq, order) hash_map<key, type, hfunc >
 #define HASH_MULTIMAP_X(key, type, hfunc, eq, order) hash_multimap<key, type, hfunc >
@@ -120,5 +125,5 @@ typedef unsigned __int64 u_int64_t;
 
 /**
  * @file
- * $Id: config.h,v 1.1 2004/10/04 19:43:52 paskharen Exp $
+ * $Id: config.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@
 #include <sys/resource.h>
 #endif
 
-#ifdef HAS_ATOMIC
+#ifdef HAVE_ASM_ATOMIC_H
 #include <asm/atomic.h>
 #endif
 
@@ -98,7 +98,7 @@ public:
 	static void sleep(u_int32_t millis) { ::usleep(millis*1000); };
 	static void yield() { ::sched_yield(); };
 	static long safeInc(long* v) { 
-#ifdef HAS_ATOMIC
+#ifdef HAVE_ASM_ATOMIC_H
 		atomic_t t = ATOMIC_INIT(*v);
 		atomic_inc(&t);
 		return (*v=t.counter);
@@ -109,7 +109,7 @@ public:
 #endif
 	};
 	static long safeDec(long* v) { 
-#if HAS_ATOMIC
+#ifdef HAVE_ASM_ATOMIC_H
 		atomic_t t = ATOMIC_INIT(*v);
 		atomic_dec(&t);
 		return (*v=t.counter);
@@ -148,6 +148,6 @@ private:
 
 /**
  * @file
- * $Id: Thread.h,v 1.1 2004/10/04 19:43:52 paskharen Exp $
+ * $Id: Thread.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */
 

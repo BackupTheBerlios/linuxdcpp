@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -148,9 +148,9 @@ public:
 	virtual void connect(const string& aIp, short aPort) throw(SocketException);
 	void connect(const string& aIp, const string& aPort) throw(SocketException) { connect(aIp, (short)Util::toInt(aPort)); };
 	virtual void accept(const ServerSocket& aSocket) throw(SocketException);
-	virtual void write(const char* buffer, int len) throw(SocketException);
+	virtual void write(const char* buffer, size_t len) throw(SocketException);
 	void write(const string& aData) throw(SocketException) { write(aData.data(), aData.length()); };
-	virtual void writeTo(const string& aIp, short aPort, const char* buffer, int len) throw(SocketException);
+	virtual void writeTo(const string& aIp, short aPort, const char* buffer, size_t len) throw(SocketException);
 	void writeTo(const string& aIp, short aPort, const string& aData) throw(SocketException) { writeTo(aIp, aPort, aData.data(), aData.length()); };
 
 	int read(void* aBuffer, int aBufLen) throw(SocketException);
@@ -258,6 +258,6 @@ private:
 
 /**
  * @file
- * $Id: Socket.h,v 1.1 2004/10/04 19:43:52 paskharen Exp $
+ * $Id: Socket.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */
 

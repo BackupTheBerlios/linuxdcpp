@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,10 +38,10 @@ public:
 	Client* getClient(const string& aHubURL);
 	void putClient(Client* aClient);
 
-	int getUserCount() {
+	size_t getUserCount() {
 		Lock l(cs);
 
-		int c = 0;
+		size_t c = 0;
 		for(Client::Iter i = clients.begin(); i != clients.end(); ++i) {
 			c+=(*i)->getUserCount();
 		}
@@ -174,6 +174,6 @@ private:
 
 /**
  * @file
- * $Id: ClientManager.h,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: ClientManager.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */
 

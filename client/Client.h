@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -87,18 +87,21 @@ public:
 	virtual void kick(const User* user, const string& aMessage) = 0;
 	virtual void ban(const User* user, const string& aMessage, time_t seconds) = 0;
 	virtual void send(const string& aMessage) = 0;
+	virtual void sendUserCmd(const string& aUserCmd) = 0;
 	virtual void redirect(const User* user, const string& aHub, const string& aMessage) = 0;
 	virtual void search(int aSizeMode, int64_t aSize, int aFileType, const string& aString) = 0;
 	virtual void password(const string& pwd) = 0;
 	virtual void info() = 0;
     
-	virtual int getUserCount() const = 0;
+	virtual size_t getUserCount() const = 0;
 	virtual int64_t getAvailable() const = 0;
 	virtual const string& getName() const = 0;
 	virtual bool getOp() const = 0;
 
 	virtual User::NickMap& lockUserList() = 0;
 	virtual void unlockUserList() = 0;
+
+	virtual string checkNick(const string& nick) = 0;
 
 	const string& getAddress() const { return address; }
 	const string& getAddressPort() const { return addressPort; }
@@ -129,6 +132,14 @@ public:
 	void setDescription(const string& aDesc) { description = aDesc; };
 
 	void scheduleDestruction() const { socket->shutdown(); }
+
+	virtual string escape(string const& str) const { return str; };
+	StringMap& escapeParams(StringMap& sm) {
+		for(StringMapIter i = sm.begin(); i != sm.end(); ++i) {
+			i->second = escape(i->second);
+		}
+		return sm;
+	}
 
 	GETSET(string, nick, Nick);
 	GETSET(string, defpassword, Password);
@@ -181,5 +192,5 @@ private:
 #endif // _CLIENT_H
 /**
  * @file
- * $Id: Client.h,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: Client.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

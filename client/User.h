@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -82,6 +82,7 @@ public:
 	void setClient(Client* aClient);
 	void connect();
 	const string& getClientNick() const;
+	const CID getClientCID() const;
 	const string& getClientName() const;
 	string getClientAddressPort() const;
 	void privateMessage(const string& aMsg);
@@ -90,6 +91,7 @@ public:
 	void redirect(const string& aTarget, const string& aReason);
 	bool isClientOp() const;
 	void send(const string& msg);
+	void sendUserCmd(const string& aUserCmd);
 
 	string getFullNick() const { 
 		string tmp(getNick());
@@ -117,6 +119,8 @@ public:
 	void setUserDescription(const string& aDescription);
 
 	static void updated(User::Ptr& aUser);
+
+	StringMap& clientEscapeParams(StringMap& sm) const;
 	
 	GETSET(string, connection, Connection);
 	GETSET(string, nick, Nick);
@@ -142,5 +146,5 @@ private:
 
 /**
  * @file
- * $Id: User.h,v 1.1 2004/10/04 19:43:52 paskharen Exp $
+ * $Id: User.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

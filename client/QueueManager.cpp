@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,14 +49,23 @@
 const string QueueManager::USER_LIST_NAME = "MyList.DcLst";
 const string QueueManager::TEMP_EXTENSION = ".dctmp";
 
-QueueItem* QueueManager::FileQueue::add(const string& aTarget, int64_t aSize, const string& aSearchString, 
+namespace {
+	const char* badChars = "$|.[]()-_+";
+}
+string QueueItem::getSearchString() const {
+	return SearchManager::clean(getTargetFileName());
+}
+
+
+
+QueueItem* QueueManager::FileQueue::add(const string& aTarget, int64_t aSize, 
 						  int aFlags, QueueItem::Priority p, const string& aTempTarget,
 						  int64_t aDownloadedBytes, u_int32_t aAdded, const TTHValue* root) throw(QueueException, FileException) 
 {
 	if(p == QueueItem::DEFAULT)
 		p = (aSize <= 64*1024) ? QueueItem::HIGHEST : QueueItem::NORMAL;
 
-	QueueItem* qi = new QueueItem(aTarget, aSize, aSearchString, p, aFlags, aDownloadedBytes, aAdded, root);
+	QueueItem* qi = new QueueItem(aTarget, aSize, p, aFlags, aDownloadedBytes, aAdded, root);
 
 	if(!qi->isSet(QueueItem::FLAG_USER_LIST)) {
 		if(aTempTarget.empty()) {
@@ -78,13 +87,13 @@ QueueItem* QueueManager::FileQueue::add(const string& aTarget, int64_t aSize, co
 
 void QueueManager::FileQueue::add(QueueItem* qi) {
 	if(lastInsert == queue.end())
-		lastInsert = queue.insert(make_pair(qi->getTarget(), qi)).first;
+		lastInsert = queue.insert(make_pair(const_cast<string*>(&qi->getTarget()), qi)).first;
 	else
-		lastInsert = queue.insert(lastInsert, make_pair(qi->getTarget(), qi));
+		lastInsert = queue.insert(lastInsert, make_pair(const_cast<string*>(&qi->getTarget()), qi));
 }
 
 QueueItem* QueueManager::FileQueue::find(const string& target) {
-	QueueItem::StringIter i = queue.find(target);
+	QueueItem::StringIter i = queue.find(const_cast<string*>(&target));
 	return (i == queue.end()) ? NULL : i->second;
 }
 
@@ -99,7 +108,7 @@ void QueueManager::FileQueue::find(QueueItem::List& sl, int64_t aSize, const str
 	}
 }
 
-void QueueManager::FileQueue::find(QueueItem::List& ql, TTHValue* tth) {
+void QueueManager::FileQueue::find(QueueItem::List& ql, const TTHValue* tth) {
 	for(QueueItem::StringIter i = queue.begin(); i != queue.end(); ++i) {
 		QueueItem* qi = i->second;
 		if(qi->getTTH() != NULL && *qi->getTTH() == *tth) {
@@ -119,17 +128,14 @@ static QueueItem* findCandidate(QueueItem::StringIter start, QueueItem::StringIt
 		// No user lists
 		if(q->isSet(QueueItem::FLAG_USER_LIST))
 			continue;
-        // No paused downloads
+		// No paused downloads
 		if(q->getPriority() == QueueItem::PAUSED)
 			continue;
 		// No files that already have more than 5 online sources
 		if(q->countOnlineUsers() >= 5)
 			continue;
-		// Check that we have a search string
-		if(!BOOLSETTING(AUTO_SEARCH_AUTO_STRING) && q->getSearchString().empty())
-			continue;
 		// Did we search for it recently?
-        if(find(recent.begin(), recent.end(), q->getSearchString()) != recent.end())
+        if(find(recent.begin(), recent.end(), q->getTarget()) != recent.end())
 			continue;
 
 		cand = q;
@@ -142,7 +148,7 @@ static QueueItem* findCandidate(QueueItem::StringIter start, QueueItem::StringIt
 
 QueueItem* QueueManager::FileQueue::findAutoSearch(StringList& recent) {
 	// We pick a start position at random, hoping that we will find something to search for...
-	QueueItem::StringMap::size_type start = (QueueItem::StringMap::size_type)Util::rand(queue.size());
+	QueueItem::StringMap::size_type start = (QueueItem::StringMap::size_type)Util::rand((u_int32_t)queue.size());
 
 	QueueItem::StringIter i = queue.begin();
 	advance(i, start);
@@ -160,9 +166,9 @@ QueueItem* QueueManager::FileQueue::findAutoSearch(StringList& recent) {
 }
 
 void QueueManager::FileQueue::move(QueueItem* qi, const string& aTarget) {
-	if(lastInsert != queue.end() && lastInsert->first == qi->getTarget())
+	if(lastInsert != queue.end() && Util::stricmp(*lastInsert->first, qi->getTarget()) == 0)
 		lastInsert = queue.end();
-	queue.erase(qi->getTarget());
+	queue.erase(const_cast<string*>(&qi->getTarget()));
 	qi->setTarget(aTarget);
 	add(qi);
 }
@@ -272,11 +278,12 @@ void QueueManager::UserQueue::remove(QueueItem* qi, const User::Ptr& aUser) {
 	}
 }
 
-QueueManager::QueueManager() : lastSave(0), queueFile(Util::getAppPath() + "Queue.xml"), dirty(false), nextSearch(0) { 
+QueueManager::QueueManager() : lastSave(0), queueFile(Util::getAppPath() + "Queue.xml"), dirty(true), nextSearch(0) { 
 	TimerManager::getInstance()->addListener(this); 
 	SearchManager::getInstance()->addListener(this);
 	ClientManager::getInstance()->addListener(this);
-	Util::ensureDirectory(Util::getAppPath() + FILELISTS_DIR);
+
+	File::ensureDirectory(Util::getAppPath() + FILELISTS_DIR);
 };
 
 QueueManager::~QueueManager() { 
@@ -293,19 +300,19 @@ QueueManager::~QueueManager() {
 		WIN32_FIND_DATA data;
 		HANDLE hFind;
 	
-		hFind = FindFirstFile((path + "\\*.bz2").c_str(), &data);
+		hFind = FindFirstFile(Text::toT(path + "\\*.xml.bz2").c_str(), &data);
 		if(hFind != INVALID_HANDLE_VALUE) {
 			do {
-				File::deleteFile(path + data.cFileName);			
+				File::deleteFile(path + Text::fromT(data.cFileName));			
 			} while(FindNextFile(hFind, &data));
 			
 			FindClose(hFind);
 		}
 		
-		hFind = FindFirstFile((path + "\\*.DcLst").c_str(), &data);
+		hFind = FindFirstFile(Text::toT(path + "\\*.DcLst").c_str(), &data);
 		if(hFind != INVALID_HANDLE_VALUE) {
 			do {
-				File::deleteFile(path + data.cFileName);			
+				File::deleteFile(path + Text::fromT(data.cFileName));			
 			} while(FindNextFile(hFind, &data));
 			
 			FindClose(hFind);
@@ -315,7 +322,7 @@ QueueManager::~QueueManager() {
 		DIR* dir = opendir(path.c_str());
 		if (dir) {
 			while (struct dirent* ent = readdir(dir)) {
-				if (fnmatch("*.bz2", ent->d_name, 0) == 0 ||
+				if (fnmatch("*.xml.bz2", ent->d_name, 0) == 0 ||
 					fnmatch("*.DcLst", ent->d_name, 0) == 0) {
 					File::deleteFile(path + ent->d_name);	
 				}
@@ -360,14 +367,10 @@ void QueueManager::on(TimerManagerListener::Minute, u_int32_t aTick) throw() {
 				} else {
 					fn = qi->getTargetFileName();
 					sz = qi->getSize() - 1;
-					if(qi->getSearchString().empty()) { // BOOLSETTING(AUTO_SEARCH_AUTO_STRING must be set...
-						searchString = SearchManager::getInstance()->clean(qi->getTargetFileName());
-					} else {
-						searchString = qi->getSearchString();
-					}
+					searchString = qi->getSearchString();
 				}
 				online = qi->hasOnlineUsers();
-				recent.push_back(searchString);
+				recent.push_back(qi->getTarget());
 				nextSearch = aTick + (online ? 120000 : 300000);
 			}
 		}
@@ -381,18 +384,17 @@ void QueueManager::on(TimerManagerListener::Minute, u_int32_t aTick) throw() {
 }
 
 string QueueManager::getTempName(const string& aFileName, const TTHValue* aRoot) {
-	string tmp;
-	tmp.clear();
+	string tmp(aFileName);
 	if(aRoot != NULL) {
 		TTHValue tmpRoot(*aRoot);
-		tmp = tmpRoot.toBase32() + ".";
+		tmp += "." + tmpRoot.toBase32();
 	}
-	tmp += aFileName + TEMP_EXTENSION;
+	tmp += TEMP_EXTENSION;
 	return tmp;
 }
 
 void QueueManager::add(const string& aFile, int64_t aSize, User::Ptr aUser, const string& aTarget, 
-					   const TTHValue* root, const string& aSearchString /* = Util::emptyString */,
+					   const TTHValue* root, 
 					   int aFlags /* = QueueItem::FLAG_RESUME */, QueueItem::Priority p /* = QueueItem::DEFAULT */,
 					   const string& aTempTarget /* = Util::emptyString */, bool addBad /* = true */) throw(QueueException, FileException) 
 {
@@ -422,7 +424,7 @@ void QueueManager::add(const string& aFile, int64_t aSize, User::Ptr aUser, cons
 
 		QueueItem* q = fileQueue.find(target);
 		if(q == NULL) {
-			q = fileQueue.add(target, aSize, aSearchString, aFlags, p, aTempTarget, 0, GET_TIME(), root);
+			q = fileQueue.add(target, aSize, aFlags, p, aTempTarget, 0, GET_TIME(), root);
 			fire(QueueManagerListener::Added(), q);
 		} else {
 			if(q->getSize() != aSize) {
@@ -587,7 +589,7 @@ static SizeMap sizeMap;
 static string utfTmp;
 
 static const string& utfEscaper(const string& x) {
-	return curDl->getUtf8() ? Util::toAcp(x, utfTmp) : x;
+	return curDl->getUtf8() ? x : (utfTmp.clear(), Text::acpToUtf8(x, utfTmp));
 }
 
 int QueueManager::matchFiles(DirectoryListing::Directory* dir) throw() {
@@ -731,17 +733,17 @@ void QueueManager::putDownload(Download* aDownload, bool finished /* = false */)
 		QueueItem* q = fileQueue.find(aDownload->getTarget());
 
 		if(q != NULL) {
+			if(aDownload->isSet(Download::FLAG_USER_LIST)) {
+				if(aDownload->getSource() == "files.xml.bz2") {
+					q->setFlag(QueueItem::FLAG_XML_BZLIST);
+				} else {
+					q->unsetFlag(QueueItem::FLAG_XML_BZLIST);
+				}
+			}
 
 			if(finished) {
 				dcassert(q->getStatus() == QueueItem::STATUS_RUNNING);
 				userQueue.remove(q);
-				if(aDownload->isSet(Download::FLAG_USER_LIST)) {
-					if(aDownload->getSource() == "files.xml.bz2") {
-						q->setFlag(QueueItem::FLAG_XML_BZLIST);
-					} else if(aDownload->getSource() == "MyList.bz2") {
-						q->setFlag(QueueItem::FLAG_BZLIST);
-					}
-				}
 				fire(QueueManagerListener::Finished(), q);
 				fire(QueueManagerListener::Removed(), q);
 				// Now, let's see if this was a directory download filelist...
@@ -816,7 +818,7 @@ void QueueManager::putDownload(Download* aDownload, bool finished /* = false */)
 
 			for(DirectoryItem::Iter i = dl.begin(); i != dl.end(); ++i) {
 				DirectoryItem* di = *i;
-				dirList.download(di->getName(), di->getTarget());
+				dirList.download(di->getName(), di->getTarget(), false);
 				delete di;
 			}
 		}
@@ -968,18 +970,6 @@ void QueueManager::setPriority(const string& aTarget, QueueItem::Priority p) thr
 	}
 }
 
-void QueueManager::setSearchString(const string& aTarget, const string& searchString) throw()
-{
-	Lock l(cs);
-
-	QueueItem* q = fileQueue.find(aTarget);
-	if( (q != NULL) && (q->getSearchString() != searchString) ) {
-		q->setSearchString(searchString);
-		setDirty();
-		fire(QueueManagerListener::SearchStringUpdated(), q);
-	}
-}
-
 void QueueManager::saveQueue() throw() {
 	if(!dirty)
 		return;
@@ -994,8 +984,8 @@ void QueueManager::saveQueue() throw() {
 		File ff(getQueueFile() + ".tmp", File::WRITE, File::CREATE | File::TRUNCATE);
 		BufferedOutputStream<false> f(&ff);
 
-		f.write(SimpleXML::w1252Header);
-		f.write(STRINGLEN("<Downloads>\r\n"));
+		f.write(SimpleXML::utf8Header);
+		f.write(STRINGLEN("<Downloads Version=\"" VERSIONSTRING "\">\r\n"));
 		string tmp;
 		string b32tmp;
 		for(QueueItem::StringIter i = fileQueue.getQueue().begin(); i != fileQueue.getQueue().end(); ++i) {
@@ -1015,10 +1005,6 @@ void QueueManager::saveQueue() throw() {
 					b32tmp.clear();
 					f.write(STRINGLEN("\" TTH=\""));
 					f.write(d->getTTH()->toBase32(b32tmp));
-				}
-				if(!d->getSearchString().empty()) {
-					f.write(STRINGLEN("\" SearchString=\""));
-					f.write(CHECKESCAPE(d->getSearchString()));
 				}
 				if(d->getDownloadedBytes() != 0) {
 					f.write(STRINGLEN("\" Downloaded=\""));
@@ -1101,7 +1087,6 @@ static const string sSource = "Source";
 static const string sNick = "Nick";
 static const string sPath = "Path";
 static const string sDirectory = "Directory";
-static const string sSearchString = "SearchString";
 static const string sAdded = "Added";
 static const string sUtf8 = "Utf8";
 static const string sTTH = "TTH";
@@ -1117,17 +1102,17 @@ void QueueLoader::startTag(const string& name, StringPairList& attribs, bool sim
 			if(size == 0)
 				return;
 			try {
-				target = QueueManager::checkTarget(getAttrib(attribs, sTarget, 0), size, flags);
+				const string& tgt = getAttrib(attribs, sTarget, 0);
+				target = QueueManager::checkTarget(tgt, size, flags);
 				if(target.empty())
 					return;
 			} catch(const Exception&) {
 				return;
 			}
 			QueueItem::Priority p = (QueueItem::Priority)Util::toInt(getAttrib(attribs, sPriority, 3));
-			const string& tempTarget = getAttrib(attribs, sTempTarget, 4);
+			string tempTarget = getAttrib(attribs, sTempTarget, 4);
 			u_int32_t added = (u_int32_t)Util::toInt(getAttrib(attribs, sAdded, 5));
 			const string& tthRoot = getAttrib(attribs, sTTH, 6);
-			const string& searchString = getAttrib(attribs, sSearchString, 6);
 			int64_t downloaded = Util::toInt64(getAttrib(attribs, sDownloaded, 6));
 			if (downloaded > size || downloaded < 0)
 				downloaded = 0;
@@ -1138,11 +1123,11 @@ void QueueLoader::startTag(const string& name, StringPairList& attribs, bool sim
 			QueueItem* qi = qm->fileQueue.find(target);
 
 			if(qi == NULL) {
-				if(tthRoot.empty())
-					qi = qm->fileQueue.add(target, size, searchString, flags, p, tempTarget, downloaded, added, NULL);
-				else {
+				if(tthRoot.empty()) {
+					qi = qm->fileQueue.add(target, size, flags, p, tempTarget, downloaded, added, NULL);
+				} else {
 					TTHValue root(tthRoot);
-					qi = qm->fileQueue.add(target, size, searchString, flags, p, tempTarget, downloaded, added, &root);
+					qi = qm->fileQueue.add(target, size, flags, p, tempTarget, downloaded, added, &root);
 				}
 				qm->fire(QueueManagerListener::Added(), qi);
 			}
@@ -1261,5 +1246,5 @@ void QueueManager::on(TimerManagerListener::Second, u_int32_t aTick) throw() {
 
 /**
  * @file
- * $Id: QueueManager.cpp,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: QueueManager.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

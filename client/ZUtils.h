@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,7 +66,8 @@ private:
 class CRC32Filter {
 public:
 	CRC32Filter() : crc(crc32(0, NULL, 0)) { }
-	void operator()(const void* buf, size_t len) { crc = crc32(crc, (const Bytef*)buf, len); }
+	// TODO 64-bits?
+	void operator()(const void* buf, size_t len) { crc = crc32(crc, (const Bytef*)buf, (uInt)len); }
 	u_int32_t getValue() const { return crc; }
 private:
 	u_int32_t crc;
@@ -76,5 +77,5 @@ private:
 
 /**
  * @file
- * $Id: ZUtils.h,v 1.1 2004/10/04 19:43:52 paskharen Exp $
+ * $Id: ZUtils.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

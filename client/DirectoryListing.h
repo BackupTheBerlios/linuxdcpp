@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ public:
 		typedef File* Ptr;
 		struct FileSort {
 			bool operator()(const Ptr& a, const Ptr& b) const {
-				return Util::stricmp(a->getName().c_str(), b->getName().c_str()) == -1;
+				return Util::stricmp(a->getName().c_str(), b->getName().c_str()) < 0;
 			}
 		};
 		typedef vector<Ptr> List;
@@ -77,7 +77,7 @@ public:
 		typedef Directory* Ptr;
 		struct DirSort {
 			bool operator()(const Ptr& a, const Ptr& b) const {
-				return Util::stricmp(a->getName().c_str(), b->getName().c_str()) == -1;
+				return Util::stricmp(a->getName().c_str(), b->getName().c_str()) < 0;
 			}
 		};
 		typedef vector<Ptr> List;
@@ -94,10 +94,10 @@ public:
 			for_each(files.begin(), files.end(), DeleteFunction<File*>());
 		}
 
-		int getTotalFileCount(bool adls = false);		
+		size_t getTotalFileCount(bool adls = false);		
 		int64_t getTotalSize(bool adls = false);
 		
-		int getFileCount() { return files.size(); };
+		size_t getFileCount() { return files.size(); };
 		
 		int64_t getSize() {
 			int64_t x = 0;
@@ -135,17 +135,17 @@ public:
 	void load(const string& i, bool doAdl);
 	void loadXML(const string& xml, bool doAdl);
 
-	void download(const string& aDir, const string& aTarget);
-	void download(Directory* aDir, const string& aTarget);
+	void download(const string& aDir, const string& aTarget, bool highPrio);
+	void download(Directory* aDir, const string& aTarget, bool highPrio);
+	void download(File* aFile, const string& aTarget, bool view, bool highPrio);
 	
 	string getPath(Directory* d);
-	
 	string getPath(File* f) { return getPath(f->getParent()); };
+
 	int64_t getTotalSize(bool adls = false) { return root->getTotalSize(adls); };
-	int getTotalFileCount(bool adls = false) { return root->getTotalFileCount(adls); };
+	size_t getTotalFileCount(bool adls = false) { return root->getTotalFileCount(adls); };
+
 	Directory* getRoot() { return root; };
-	
-	void download(File* aFile, const string& aTarget, bool view = false);
 
 	GETSET(User::Ptr, user, User);
 	GETSET(bool, utf8, Utf8);
@@ -169,5 +169,5 @@ inline bool operator==(DirectoryListing::File::Ptr a, const string& b) { return 
 
 /**
  * @file
- * $Id: DirectoryListing.h,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: DirectoryListing.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

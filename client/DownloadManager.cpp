@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -148,11 +148,11 @@ void DownloadManager::checkDownloads(UserConnection* aConn) {
 	if(d == NULL) {
 		firstTry = true;
 
-		bool slotsFull = (SETTING(DOWNLOAD_SLOTS) != 0) && (getDownloads() >= SETTING(DOWNLOAD_SLOTS));
+		bool slotsFull = (SETTING(DOWNLOAD_SLOTS) != 0) && (getDownloads() >= (size_t)SETTING(DOWNLOAD_SLOTS));
 		bool speedFull = (SETTING(MAX_DOWNLOAD_SPEED) != 0) && (getAverageSpeed() >= (SETTING(MAX_DOWNLOAD_SPEED)*1024));
 
 		if( slotsFull || speedFull ) {
-			bool extraFull = (SETTING(DOWNLOAD_SLOTS) != 0) && (getDownloads() >= (SETTING(DOWNLOAD_SLOTS)+3));
+			bool extraFull = (SETTING(DOWNLOAD_SLOTS) != 0) && (getDownloads() >= (size_t)(SETTING(DOWNLOAD_SLOTS)+3));
 			if(extraFull || !QueueManager::getInstance()->hasDownload(aConn->getUser(), QueueItem::HIGHEST)) {
 				removeConnection(aConn);
 				return;
@@ -178,7 +178,7 @@ void DownloadManager::checkDownloads(UserConnection* aConn) {
 	if(firstTry && !d->getTreeValid() && 
 		!d->isSet(Download::FLAG_USER_LIST) && d->getTTH() != NULL)
 	{
-		if(HashManager::getInstance()->getTree(d->getTarget(), d->getTigerTree())) {
+		if(HashManager::getInstance()->getTree(d->getTarget(), d->getTTH(), d->getTigerTree())) {
 			d->setTreeValid(true);
 		} else if(!d->isSet(Download::FLAG_TREE_TRIED) && 
 			aConn->isSet(UserConnection::FLAG_SUPPORTS_TTHL)) 
@@ -327,7 +327,7 @@ public:
 		f->read(buf, n);
 		f->movePos(-((int64_t)bytes));
 	}
-	virtual ~RollbackOutputStream() { if(managed) delete s; };
+	virtual ~RollbackOutputStream() { delete[] buf; if(managed) delete s; };
 
 	virtual size_t flush() throw(FileException) {
 		return s->flush();
@@ -408,7 +408,7 @@ public:
 	}
 	
 	virtual int64_t verifiedBytes() {
-		return min(real.getFileSize(), cur.getBlockSize() * (int64_t)cur.getLeaves().size());
+		return min(real.getFileSize(), (int64_t)(cur.getBlockSize() * cur.getLeaves().size()));
 	}
 private:
 	OutputStream* s;
@@ -449,7 +449,7 @@ bool DownloadManager::prepareFile(UserConnection* aSource, int64_t newSize /* = 
 	dcassert(d->getSize() != -1);
 
 	string target = d->getDownloadTarget();
-	Util::ensureDirectory(target);
+	File::ensureDirectory(target);
 	if(d->isSet(Download::FLAG_USER_LIST)) {
 		if(aSource->isSet(UserConnection::FLAG_SUPPORTS_XML_BZLIST)) {
 			target += ".xml.bz2";
@@ -536,7 +536,9 @@ void DownloadManager::on(UserConnectionListener::Data, UserConnection* aSource, 
 	try {
 		d->addPos(d->getFile()->write(aData, aLen), aLen);
 
-		if(d->getPos() == d->getSize()) {
+		if(d->getPos() > d->getSize()) {
+			throw Exception(STRING(TOO_MUCH_DATA));
+		} else if(d->getPos() == d->getSize()) {
 			handleEndData(aSource);
 			aSource->setLineMode();
 		}
@@ -726,7 +728,7 @@ noCRC:
 	// Check if we need to move the file
 	if( !d->getTempTarget().empty() && (Util::stricmp(d->getTarget().c_str(), d->getTempTarget().c_str()) != 0) ) {
 		try {
-			Util::ensureDirectory(d->getTarget());
+			File::ensureDirectory(d->getTarget());
 			if(File::getSize(d->getTempTarget()) > MOVER_LIMIT) {
 				mover.moveFile(d->getTempTarget(), d->getTarget());
 			} else {
@@ -734,7 +736,19 @@ noCRC:
 			}
 			d->setTempTarget(Util::emptyString);
 		} catch(const FileException&) {
-			// Huh??? Now what??? Oh well...let it be...
+			try {
+				if(!SETTING(DOWNLOAD_DIRECTORY).empty()) {
+					File::renameFile(d->getTempTarget(), SETTING(DOWNLOAD_DIRECTORY) + d->getTargetFileName());
+				} else {
+					File::renameFile(d->getTempTarget(), Util::getFilePath(d->getTempTarget()) + d->getTargetFileName());
+				}
+			} catch(const FileException&) {
+				try {
+					File::renameFile(d->getTempTarget(), Util::getFilePath(d->getTempTarget()) + d->getTargetFileName());
+				} catch(const FileException&) {
+					// Ignore...
+				}
+			}
 		}
 	}
 
@@ -815,10 +829,12 @@ void DownloadManager::removeDownload(Download* d, bool full, bool finished /* = 
 	}
 
 	if(d->getFile()) {
-		try {
-			d->getFile()->flush();
-		} catch(const Exception&) {
-			finished = false;
+		if(d->getActual() > 0) {
+			try {
+				d->getFile()->flush();
+			} catch(const Exception&) {
+				finished = false;
+			}
 		}
 		delete d->getFile();
 		d->setFile(NULL);
@@ -896,5 +912,5 @@ void DownloadManager::on(UserConnectionListener::FileNotAvailable, UserConnectio
 
 /**
  * @file
- * $Id: DownloadManager.cpp,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: DownloadManager.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

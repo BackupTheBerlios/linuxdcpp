@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ public:
 		string stringParams = Util::formatParams(searchString, params);
 
 		// Split into substrings
-		StringTokenizer st(stringParams, ' ');
+		StringTokenizer<string> st(stringParams, ' ');
 		for(StringList::iterator i = st.getTokens().begin(); i != st.getTokens().end(); ++i) {
 			if(i->size() > 0) {
 				// Add substring search
@@ -107,6 +107,15 @@ public:
 		}
 	}
 
+	tstring SourceTypeToDisplayString(SourceType t) {
+		switch(t) {
+		default:
+		case OnlyFile:		return TSTRING(FILENAME);
+		case OnlyDirectory:	return TSTRING(DIRECTORY);
+		case FullPath:		return TSTRING(ADL_FULL_PATH);
+		}
+	}
+
 	// Maximum & minimum file sizes (in bytes). 
 	// Negative values means do not check.
 	int64_t minFileSize;
@@ -140,13 +149,13 @@ public:
 		case SizeGigaBytes:	return "GB";
 		}
 	}
-	string SizeTypeToStringInternational(SizeType t) {
+	tstring SizeTypeToDisplayString(SizeType t) {
 		switch(t) {
 		default:
-		case SizeBytes:		return CSTRING(B);
-		case SizeKiloBytes:	return CSTRING(KB);
-		case SizeMegaBytes:	return CSTRING(MB);
-		case SizeGigaBytes:	return CSTRING(GB);
+		case SizeBytes:		return CTSTRING(B);
+		case SizeKiloBytes:	return CTSTRING(KB);
+		case SizeMegaBytes:	return CTSTRING(MB);
+		case SizeGigaBytes:	return CTSTRING(GB);
 		}
 	}
 	int64_t GetSizeBase() {
@@ -294,5 +303,5 @@ public:
 
 /**
  * @file
- * $Id: ADLSearch.h,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: ADLSearch.h,v 1.2 2004/10/22 14:44:36 paskharen Exp $
  */

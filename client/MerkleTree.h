@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -87,7 +87,7 @@ public:
 	 * @param len Length of data, must be a multiple of baseBlockSize, unless it's
 	 *            the last block.
 	 */
-	void update(const void* data, u_int32_t len) {
+	void update(const void* data, size_t len) {
 		u_int8_t* buf = (u_int8_t*)data;
 		u_int8_t zero = 0;
 		size_t i = 0;
@@ -97,7 +97,7 @@ public:
 			return;
 		
 		do {
-			size_t n = min(baseBlockSize, (size_t)len-i);
+			size_t n = min(baseBlockSize, len-i);
 			Hasher h;
 			h.update(&zero, 1);
 			h.update(buf + i, n);
@@ -214,34 +214,26 @@ template<class T>
 class TreeInputStream : public InputStream {
 public:
 	
-	TreeInputStream(const MerkleTree<T>& aTree) : tree(aTree), pos(0), n(0) {
+	TreeInputStream(const MerkleTree<T>& aTree) : leaves(aTree.getLeaves().size() * Value::SIZE, 0),  pos(0) {
+		u_int8_t* p = &leaves[0];
+		for(size_t i = 0; i < aTree.getLeaves().size(); ++i) {
+			memcpy(p + i * Value::SIZE, &aTree.getLeaves()[i], Value::SIZE);
+		}
 	}
+
 	virtual ~TreeInputStream() {
 	}
 
 	virtual size_t read(void* buf, size_t& len) throw(Exception) {
-		size_t total = 0;
-		while(n < tree.getLeaves().size() && total < len) {
-			Value& v = tree.getLeaves()[n];
-			size_t left = Value::SIZE - pos;
-			size_t bytes = min(len, left);
-			memcpy((u_int8_t*)buf + total, v.data, bytes);
-			total += bytes;
-
-			if(bytes == left) {
-				pos = 0;
-				n++;
-			}
-		}
-		len = total;
-		return total;
+		len = min(len, leaves.size() - pos);
+		memcpy(buf, &leaves[pos], len);
+		pos += len;
+		return len;
 	}
 private:
 	typedef typename MerkleTree<T>::MerkleValue Value;
-	MerkleTree<T> tree;
+	vector<u_int8_t> leaves;
 	size_t pos;
-	typename MerkleTree<T>::MerkleList::size_type n;
-
 };
 struct TTFilter {
 	TTFilter(size_t aBlockSize, u_int32_t aTimeStamp = 0) : tt(aBlockSize, aTimeStamp) { };
@@ -255,5 +247,5 @@ private:
 
 /**
  * @file
- * $Id: MerkleTree.h,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: MerkleTree.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

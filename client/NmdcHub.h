@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 #include "BufferedSocket.h"
 #include "User.h"
 #include "CriticalSection.h"
+#include "Text.h"
 
 class NmdcHub;
 
@@ -109,52 +110,62 @@ public:
 		SUPPORTS_USERIP2 = 0x04,
 	};
 
-	User::NickMap& lockUserList() { cs.enter(); return users; };
-	void unlockUserList() { cs.leave(); };
+#define checkstate() if(state != STATE_CONNECTED) return
+
+	virtual void connect(const User* aUser);
+	virtual void hubMessage(const string& aMessage) { checkstate(); send(toNmdc( "<" + getNick() + "> " + Util::validateMessage(aMessage, false) + "|" ) ); }
+	virtual void privateMessage(const User* aUser, const string& aMessage) { privateMessage(aUser->getNick(), string("<") + getNick() + "> " + aMessage); }
+	virtual void kick(const User* aUser, const string& aMsg);
+	virtual void ban(const User*, const string&, time_t) { /* Unimplemented... */ }
+	virtual void send(const string& a) throw() {
+		lastActivity = GET_TICK();
+		//dcdebug("Sending %d to %s: %.40s\n", a.size(), getName().c_str(), a.c_str());
+		socket->write(a);
+	}
+	virtual void sendUserCmd(const string& aUserCmd) throw() {
+		send(toNmdc(aUserCmd));
+	}
+	virtual void redirect(const User* aUser, const string& aServer, const string& aMsg);
+	virtual void search(int aSizeType, int64_t aSize, int aFileType, const string& aString);
+	virtual void password(const string& aPass) { send("$MyPass " + toNmdc(aPass) + "|"); }
+	virtual void info() { myInfo(); }
+	
+	virtual size_t getUserCount() const {  Lock l(cs); return users.size(); }
+	virtual int64_t getAvailable() const;
+	virtual const string& getName() const { return name; };
+	virtual bool getOp() const { return getMe() ? getMe()->isSet(User::OP) : false; };
+
+	virtual User::NickMap& lockUserList() { cs.enter(); return users; };
+	virtual void unlockUserList() { cs.leave(); };
+
+	virtual string checkNick(const string& aNick);
+
+	virtual string escape(string const& str) const { return Util::validateMessage(str, false); };
 
 	void disconnect() throw();
 	void myInfo();
 	
 	void refreshUserList(bool unknownOnly = false);
 
-#define checkstate() if(state != STATE_CONNECTED) return
-
-	void validateNick(const string& aNick) { send("$ValidateNick " + aNick + "|"); }
+	void validateNick(const string& aNick) { send("$ValidateNick " + toNmdc(aNick) + "|"); }
 	void key(const string& aKey) { send("$Key " + aKey + "|"); };	
 	void version() { send("$Version 1,0091|"); };
 	void getNickList() { checkstate(); send("$GetNickList|"); };
-	void password(const string& aPass) { send("$MyPass " + aPass + "|"); };
-	void getInfo(User::Ptr aUser) { checkstate(); send("$GetINFO " + aUser->getNick() + " " + getNick() + "|"); };
-	void getInfo(User* aUser) {  checkstate(); send("$GetINFO " + aUser->getNick() + " " + getNick() + "|"); };
-	void hubMessage(const string& aMessage) { checkstate(); send("<" + getNick() + "> " + Util::validateMessage(aMessage, false) + "|"); }
+	void getInfo(User::Ptr aUser) { checkstate(); send("$GetINFO " + toNmdc(aUser->getNick()) + " " + toNmdc(getNick()) + "|"); };
+	void getInfo(User* aUser) {  checkstate(); send("$GetINFO " + toNmdc(aUser->getNick()) + " " + toNmdc(getNick()) + "|"); };
 
-	void info() { myInfo(); }
-
-	void search(int aSizeType, int64_t aSize, int aFileType, const string& aString);
-	
 	void connectToMe(const User::Ptr& aUser) {
 		checkstate(); 
 		dcdebug("NmdcHub::connectToMe %s\n", aUser->getNick().c_str());
-		send("$ConnectToMe " + aUser->getNick() + " " + getLocalIp() + ":" + Util::toString(SETTING(IN_PORT)) + "|");
+		send("$ConnectToMe " + toNmdc(aUser->getNick()) + " " + getLocalIp() + ":" + Util::toString(SETTING(IN_PORT)) + "|");
 	}
-	void connect(const User* aUser) {
-		checkstate(); 
-		dcdebug("NmdcHub::connectToMe %s\n", aUser->getNick().c_str());
-		if(SETTING(CONNECTION_TYPE) == SettingsManager::CONNECTION_ACTIVE) {
-			send("$ConnectToMe " + aUser->getNick() + " " + getLocalIp() + ":" + Util::toString(SETTING(IN_PORT)) + "|");
-		} else {
-			send("$RevConnectToMe " + getNick() + " " + aUser->getNick()  + "|");
-		}
-	}
+
 	void privateMessage(const User::Ptr& aUser, const string& aMessage) {
-		privateMessage(aUser->getNick(), aMessage);
-	}
-	void privateMessage(const User* aUser, const string& aMessage) {
-		privateMessage(aUser->getNick(), aMessage);
+		privateMessage(aUser->getNick(), string("<") + getNick() + "> " + aMessage);
 	}
 	void privateMessage(const string& aNick, const string& aMessage) {
 		checkstate(); 
-		send("$To: " + aNick + " From: " + getNick() + " $" + Util::validateMessage(aMessage, false) + "|");
+		send("$To: " + toNmdc(aNick) + " From: " + toNmdc(getNick()) + " $" + toNmdc(Util::validateMessage(aMessage, false)) + "|");
 	}
 	void supports(const StringList& feat) { 
 		string x;
@@ -166,53 +177,15 @@ public:
 	void revConnectToMe(const User::Ptr& aUser) {
 		checkstate(); 
 		dcdebug("NmdcHub::revConnectToMe %s\n", aUser->getNick().c_str());
-		send("$RevConnectToMe " + getNick() + " " + aUser->getNick()  + "|");
+		send("$RevConnectToMe " + toNmdc(getNick()) + " " + toNmdc(aUser->getNick()) + "|");
 	}
 
-	void send(const string& a) throw() {
-		lastActivity = GET_TICK();
-		//dcdebug("Sending %d to %s: %.40s\n", a.size(), getName().c_str(), a.c_str());
-		socket->write(a);
-	}
 	void send(const char* aBuf, int aLen) throw() {
 		lastActivity = GET_TICK();
 		socket->write(aBuf, aLen);
 	}
 
 	void kick(const User::Ptr& aUser, const string& aMsg);
-	void kick(const User* aUser, const string& aMsg);
-
-	virtual void ban(const User*, const string&, time_t) {
-		// Unimplemented...
-	}
-	void opForceMove(const User::Ptr& aUser, const string& aServer, const string& aMsg) {
-		checkstate(); 
-		dcdebug("NmdcHub::opForceMove\n");
-		send("$OpForceMove $Who:" + aUser->getNick() + "$Where:" + aServer + "$Msg:" + aMsg + "|");
-	}
-
-	void redirect(const User* aUser, const string& aServer, const string& aMsg) {
-		checkstate(); 
-		dcdebug("NmdcHub::opForceMove\n");
-		send("$OpForceMove $Who:" + aUser->getNick() + "$Where:" + aServer + "$Msg:" + aMsg + "|");
-	}
-
-	int getUserCount() const {
-		Lock l(cs);
-		return users.size();
-	}
-
-	int64_t getAvailable() const {
-		Lock l(cs);
-		int64_t x = 0;
-		for(User::NickMap::const_iterator i = users.begin(); i != users.end(); ++i) {
-			x+=i->second->getBytesShared();
-		}
-		return x;
-	}
-
-	const string& getName() const { return name; };
-	bool getOp() const { return getMe() ? getMe()->isSet(User::OP) : false; };
 
 	GETSET(int, supportFlags, SupportFlags);
 private:
@@ -277,6 +250,9 @@ private:
 
 	void clearUsers();
 	void onLine(const string& aLine) throw();
+
+	string fromNmdc(const string& str) const { return Text::acpToUtf8(str); }
+	string toNmdc(const string& str) const { return Text::utf8ToAcp(str); }
 	
 	// TimerManagerListener
 	virtual void on(TimerManagerListener::Second, u_int32_t aTick) throw();
@@ -292,6 +268,6 @@ private:
 
 /**
  * @file
- * $Id: NmdcHub.h,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: NmdcHub.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */
 

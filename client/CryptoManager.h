@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -77,7 +77,7 @@ public:
 	const string& getPk() { return pk; };
 	bool isExtended(const string& aLock) { return strncmp(aLock.c_str(), "EXTENDEDPROTOCOL", 16) == 0; };
 
-	void decodeHuffman(const u_int8_t* is, string& os) throw(CryptoException);
+	void decodeHuffman(const u_int8_t* /*is*/, string& /*os*/, const size_t /*len*/) throw(CryptoException);
 	void encodeHuffman(const string& is, string& os);
 	void decodeBZ2(const u_int8_t* is, size_t sz, string& os) throw(CryptoException);
 private:
@@ -117,7 +117,7 @@ private:
 	void recurseLookup(vector<u_int8_t>* b, Node* node, vector<u_int8_t>& bytes);
 	void buildLookup(vector<u_int8_t>* b, Node* root);
 	
-	string keySubst(const u_int8_t* aKey, int len, int n);
+	string keySubst(const u_int8_t* aKey, size_t len, size_t n);
 	bool isExtra(u_int8_t b) {
 		return (b == 0 || b==5 || b==124 || b==96 || b==126 || b==36);
 	}
@@ -127,5 +127,5 @@ private:
 
 /**
  * @file
- * $Id: CryptoManager.h,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: CryptoManager.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,15 +38,37 @@ public:
 	typedef List::iterator Iter;
 	
 	HubEntry(const string& aName, const string& aServer, const string& aDescription, const string& aUsers) throw() : 
-	name(aName), server(aServer), description(aDescription), users(aUsers) { };
+	name(aName), server(aServer), description(aDescription), users(Util::toInt(aUsers)), country(Util::emptyString), 
+	rating(Util::emptyString), reliability(0.0), shared(0), minShare(0), minSlots(0), maxHubs(0), maxUsers(0) { };
+
+	HubEntry(const string& aName, const string& aServer, const string& aDescription, const string& aUsers, const string& aCountry,
+		const string& aShared, const string& aMinShare, const string& aMinSlots, const string& aMaxHubs, const string& aMaxUsers,
+		const string& aReliability, const string& aRating) : name(aName), server(aServer), description(aDescription), country(aCountry), 
+		rating(aRating), reliability((float)(Util::toFloat(aReliability) / 100.0)), shared(Util::toInt64(aShared)), minShare(Util::toInt64(aMinShare)),
+		users(Util::toInt(aUsers)), minSlots(Util::toInt(aMinSlots)), maxHubs(Util::toInt(aMaxHubs)), maxUsers(Util::toInt(aMaxUsers)) 
+	{
+
+	}
+
 	HubEntry() throw() { };
-	HubEntry(const HubEntry& rhs) throw() : name(rhs.name), server(rhs.server), description(rhs.description), users(rhs.users) { }
-	virtual ~HubEntry() throw() { };
+	HubEntry(const HubEntry& rhs) throw() : name(rhs.name), server(rhs.server), description(rhs.description), country(rhs.country), 
+		rating(rhs.rating), reliability(rhs.reliability), shared(rhs.shared), minShare(rhs.minShare), users(rhs.users), minSlots(rhs.minSlots),
+		maxHubs(rhs.maxHubs), maxUsers(rhs.maxUsers) { }
+
+	~HubEntry() throw() { };
 
 	GETSET(string, name, Name);
 	GETSET(string, server, Server);
 	GETSET(string, description, Description);
-	GETSET(string, users, Users);
+	GETSET(string, country, Country);
+	GETSET(string, rating, Rating);
+	GETSET(float, reliability, Reliability);
+	GETSET(int64_t, shared, Shared);
+	GETSET(int64_t, minShare, MinShare);
+	GETSET(int, users, Users);
+	GETSET(int, minSlots, MinSlots);
+	GETSET(int, maxHubs, MaxHubs)
+	GETSET(int, maxUsers, MaxUsers);
 };
 
 class FavoriteHubEntry {
@@ -280,6 +302,8 @@ private:
 		return favoriteHubs.end();
 	}
 
+	void loadXmlList(const string& xml);
+
 	// HttpConnectionListener
 	virtual void on(Data, HttpConnection*, const u_int8_t*, size_t) throw();
 	virtual void on(Failed, HttpConnection*, const string&) throw();
@@ -303,6 +327,6 @@ private:
 
 /**
  * @file
- * $Id: HubManager.h,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: HubManager.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */
 

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ class UploadManager : private ClientManagerListener, private UserConnectionListe
 {
 public:
 	
-	int getUploads() { Lock l(cs); return uploads.size(); };
+	size_t getUploads() { Lock l(cs); return uploads.size(); };
 	int getAverageSpeed() {
 		Lock l(cs);
 		int avg = 0;
@@ -150,12 +150,12 @@ private:
 	//virtual void on(Command::STA, UserConnection*, const Command&) throw();
 
 	void onGetBlock(UserConnection* aSource, const string& aFile, int64_t aResume, int64_t aBytes, bool z);
-	bool prepareFile(UserConnection* aSource, const string& aType, const string& aFile, int64_t aResume, int64_t aBytes, bool adc, bool utf8);
+	bool prepareFile(UserConnection* aSource, const string& aType, const string& aFile, int64_t aResume, int64_t aBytes, bool adc);
 };
 
 #endif // !defined(AFX_UPLOADMANAGER_H__B0C67119_3445_4208_B5AA_938D4A019703__INCLUDED_)
 
 /**
  * @file
- * $Id: UploadManager.h,v 1.1 2004/10/04 19:43:52 paskharen Exp $
+ * $Id: UploadManager.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

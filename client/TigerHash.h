@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ public:
 	}
 
 	/** Calculates the Tiger hash of the data. */
-	void update(const void* data, u_int32_t len);
+	void update(const void* data, size_t len);
 	/** Call once all data has been processed. */
 	u_int8_t* finalize();
 
@@ -61,5 +61,5 @@ private:
 
 /**
  * @file
- * $Id: TigerHash.h,v 1.1 2004/10/04 19:43:52 paskharen Exp $
+ * $Id: TigerHash.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

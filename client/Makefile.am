@@ -1,38 +1,108 @@
 lib_LIBRARIES = libdcpp.a
 
 libdcpp_a_SOURCES= \
-ADLSearch.cpp                FavoriteUser.h           ShareManager.h \
-ADLSearch.h                  File.h                   SimpleXML.cpp \
-AdcCommand.h                 FilteredFile.h           SimpleXML.h \
-AdcHub.cpp                   FinishedManager.cpp      Singleton.h \
-AdcHub.h                     FinishedManager.h        Socket.cpp \
-BZUtils.cpp                  HashManager.cpp          Socket.h \
-BZUtils.h                    HashManager.h            Speaker.h \
-BitInputStream.h             HashValue.h              StringDefs.cpp \
-BitOutputStream.h            HttpConnection.cpp       StringDefs.h \
-BloomFilter.h                HttpConnection.h         StringSearch.h \
-BufferedSocket.cpp           HubManager.cpp           StringTokenizer.cpp \
-BufferedSocket.h             HubManager.h             StringTokenizer.h \
-CID.h                        LogManager.cpp           Thread.cpp \
-Client.cpp                   LogManager.h             Thread.h \
-Client.h                     MerkleTree.h             TigerHash.cpp \
-ClientManager.cpp            NmdcHub.cpp              TigerHash.h \
-ClientManager.h              NmdcHub.h                TimerManager.cpp \
-ClientManagerListener.h      Pointer.h                TimerManager.h \
-ConnectionManager.cpp        QueueItem.h              UploadManager.cpp \
-ConnectionManager.h          QueueManager.cpp         UploadManager.h \
-ConnectionManagerListener.h  QueueManager.h           User.cpp \
-CriticalSection.h            QueueManagerListener.h   User.h \
-CryptoManager.cpp            ResourceManager.cpp      UserCommand.h \
-CryptoManager.h              ResourceManager.h        UserConnection.cpp \
-DCPlusPlus.cpp               SFVReader.cpp            UserConnection.h \
-DCPlusPlus.h                 SFVReader.h              Util.cpp \
-DirectoryListing.cpp         SearchManager.cpp        Util.h \
-DirectoryListing.h           SearchManager.h          ZUtils.cpp \
-DownloadManager.cpp          SearchManagerListener.h  ZUtils.h \
-DownloadManager.h            Semaphore.h              config.h \
-Encoder.cpp                  ServerSocket.cpp         stdinc.cpp \
-Encoder.h                    ServerSocket.h           stdinc.h \
-Exception.cpp                SettingsManager.cpp      version.h \
-Exception.h                  SettingsManager.h \
-FastAlloc.h                  ShareManager.cpp
+AdcCommand.h \
+AdcHub.cpp \
+AdcHub.h \
+ADLSearch.cpp \
+ADLSearch.h \
+BitInputStream.h \
+BitOutputStream.h \
+BloomFilter.h \
+BufferedSocket.cpp \
+BufferedSocket.h \
+BZUtils.cpp \
+BZUtils.h \
+CID.h \
+Client.cpp \
+Client.h \
+ClientManager.cpp \
+ClientManager.h \
+ClientManagerListener.h \
+config.h \
+ConnectionManager.cpp \
+ConnectionManager.h \
+ConnectionManagerListener.h \
+CriticalSection.h \
+CryptoManager.cpp \
+CryptoManager.h \
+DCPlusPlus.cpp \
+DCPlusPlus.h \
+DirectoryListing.cpp \
+DirectoryListing.h \
+DownloadManager.cpp \
+DownloadManager.h \
+Encoder.cpp \
+Encoder.h \
+Exception.cpp \
+Exception.h \
+FastAlloc.h \
+FavoriteUser.h \
+File.h \
+FilteredFile.h \
+FinishedManager.cpp \
+FinishedManager.h \
+HashManager.cpp \
+HashManager.h \
+HashValue.h \
+HttpConnection.cpp \
+HttpConnection.h \
+HubManager.cpp \
+HubManager.h \
+LogManager.cpp \
+LogManager.h \
+MerkleTree.h \
+NmdcHub.cpp \
+NmdcHub.h \
+Pointer.h \
+QueueItem.h \
+QueueManager.cpp \
+QueueManager.h \
+QueueManagerListener.h \
+ResourceManager.cpp \
+ResourceManager.h \
+SearchManager.cpp \
+SearchManager.h \
+SearchManagerListener.h \
+Semaphore.h \
+ServerSocket.cpp \
+ServerSocket.h \
+SettingsManager.cpp \
+SettingsManager.h \
+SFVReader.cpp \
+SFVReader.h \
+ShareManager.cpp \
+ShareManager.h \
+SimpleXML.cpp \
+SimpleXML.h \
+Singleton.h \
+Socket.cpp \
+Socket.h \
+Speaker.h \
+stdinc.cpp \
+stdinc.h \
+StringDefs.cpp \
+StringDefs.h \
+StringSearch.h \
+StringTokenizer.cpp \
+StringTokenizer.h \
+Text.cpp \
+Text.h \
+Thread.cpp \
+Thread.h \
+TigerHash.cpp \
+TigerHash.h \
+TimerManager.cpp \
+TimerManager.h \
+UploadManager.cpp \
+UploadManager.h \
+UserCommand.h \
+UserConnection.cpp \
+UserConnection.h \
+User.cpp \
+User.h \
+Util.cpp \
+Util.h \
+version.h \
+ZUtils.cpp \
+ZUtils.h 

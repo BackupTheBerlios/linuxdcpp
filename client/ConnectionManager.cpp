@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,8 +28,6 @@
 #include "QueueManager.h"
 
 #include "UserConnection.h"
-
-#include <iostream>
 
 ConnectionManager::ConnectionManager() : floodCounter(0), shuttingDown(false) {
 	TimerManager::getInstance()->addListener(this);
@@ -183,7 +181,7 @@ void ConnectionManager::on(TimerManagerListener::Second, u_int32_t aTick) throw(
 			pendingAdd.clear();
 		}
 
-		bool tooMany = ((SETTING(DOWNLOAD_SLOTS) != 0) && DownloadManager::getInstance()->getDownloads() >= SETTING(DOWNLOAD_SLOTS));
+		bool tooMany = ((SETTING(DOWNLOAD_SLOTS) != 0) && DownloadManager::getInstance()->getDownloads() >= (size_t)SETTING(DOWNLOAD_SLOTS));
 		bool tooFast = ((SETTING(MAX_DOWNLOAD_SPEED) != 0 && DownloadManager::getInstance()->getAverageSpeed() >= (SETTING(MAX_DOWNLOAD_SPEED)*1024)));
 		
 		bool startDown = !tooMany && !tooFast;
@@ -219,7 +217,7 @@ void ConnectionManager::on(TimerManagerListener::Second, u_int32_t aTick) throw(
 
 				// Always start high-priority downloads unless we have 3 more than maxdownslots already...
 				if(!startDown) {
-					bool extraFull = (SETTING(DOWNLOAD_SLOTS) != 0) && (DownloadManager::getInstance()->getDownloads() >= (SETTING(DOWNLOAD_SLOTS)+3));
+					bool extraFull = (SETTING(DOWNLOAD_SLOTS) != 0) && (DownloadManager::getInstance()->getDownloads() >= (size_t)(SETTING(DOWNLOAD_SLOTS)+3));
 					startDown = !extraFull && QueueManager::getInstance()->hasDownload(cqi->getUser(), QueueItem::HIGHEST);
 				}
 				if(cqi->getState() == ConnectionQueueItem::WAITING) {
@@ -550,7 +548,6 @@ void ConnectionManager::shutdown() {
 				break;
 			}
 		}
-		std::cout << "i shutdoen" << endl;
 		Thread::sleep(50);
 	}
 }		
@@ -577,5 +574,5 @@ void ConnectionManager::on(UserConnectionListener::Supports, UserConnection* con
 
 /**
  * @file
- * $Id: ConnectionManager.cpp,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: ConnectionManager.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

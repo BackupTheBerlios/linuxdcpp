@@ -1,5 +1,5 @@
 /* 
-* Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+* Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -161,7 +161,7 @@ void ADLSearchManager::Save()
 		// Save string to file			
 		try {
 			File fout(Util::getAppPath() + ADLS_STORE_FILENAME, File::WRITE, File::CREATE | File::TRUNCATE);
-			fout.write(SimpleXML::w1252Header);
+			fout.write(SimpleXML::utf8Header);
 			fout.write(xml.toXML());
 			fout.close();
 		} catch(const FileException&) {
@@ -199,7 +199,7 @@ void ADLSearchManager::MatchesFile(DestDirList& destDirVector, DirectoryListing:
 			destDirVector[is->ddIndex].fileAdded = true;
 
 			if(is->isAutoQueue){
-				QueueManager::getInstance()->add(currentFile->getName(), currentFile->getSize(), getUser(), Util::getTempPath() + currentFile->getName(), currentFile->getTTH(), Util::emptyString, QueueItem::FLAG_RESUME);
+				QueueManager::getInstance()->add(currentFile->getName(), currentFile->getSize(), getUser(), Util::getTempPath() + currentFile->getName(), currentFile->getTTH());
 			}
 
 			if(breakOnFirst) {
@@ -287,6 +287,6 @@ void ADLSearchManager::PrepareDestinationDirectories(DestDirList& destDirVector,
 
 /**
 * @file
-* $Id: ADLSearch.cpp,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+* $Id: ADLSearch.cpp,v 1.2 2004/10/22 14:44:36 paskharen Exp $
 */
 

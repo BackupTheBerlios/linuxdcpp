@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,21 +29,24 @@ class AdcHub : public Client, CommandHandler<AdcHub> {
 public:
 
 	virtual void connect(const User* user);
+	virtual void disconnect();
 	
 	virtual void hubMessage(const string& aMessage);
 	virtual void privateMessage(const User* user, const string& aMessage);
 	virtual void kick(const User* user, const string& aMessage);
 	virtual void ban(const User* user, const string& aMessage, time_t aSeconds);
 	virtual void send(const string& aMessage) { socket->write(aMessage); };
+	virtual void sendUserCmd(const string& aUserCmd) { send(aUserCmd); }
 	virtual void redirect(const User* user, const string& aHub, const string& aMessage);
 	virtual void search(int aSizeMode, int64_t aSize, int aFileType, const string& aString);
 	virtual void password(const string& pwd);
 	virtual void info();
+	virtual string checkNick(const string& nick);
 
-	virtual int getUserCount() const { return 0;};
+	virtual size_t getUserCount() const { return 0;};
 	virtual int64_t getAvailable() const { return 0; };
 	virtual const string& getName() const { return (hub ? hub->getNick() : getAddressPort()); };
-	virtual bool getOp() const { return false;};
+	virtual bool getOp() const { return getMe() ? getMe()->isSet(User::OP) : false; };
 
 	virtual User::NickMap& lockUserList() { return nickMap; };
 	virtual void unlockUserList() { };
@@ -58,8 +61,17 @@ public:
 	void handle(Command::GPA, Command& c) throw();
 	void handle(Command::QUI, Command& c) throw();
 
+	virtual string escape(string const& str) const { return Command::escape(str); };
+
 private:
 	friend class ClientManager;
+
+	enum States {
+		STATE_PROTOCOL,
+		STATE_IDENTIFY,
+		STATE_VERIFY,
+		STATE_NORMAL
+	} state;
 
 	AdcHub(const string& aHubURL);
 
@@ -68,7 +80,7 @@ private:
 
 	User::NickMap nickMap;
 	User::Ptr hub;
-	string lastInfo;
+	StringMap lastInfoMap;
 
 	string salt;
 
@@ -83,5 +95,5 @@ private:
 
 /**
  * @file
- * $Id: AdcHub.h,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: AdcHub.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

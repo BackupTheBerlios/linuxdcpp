@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,12 +57,12 @@ void Command::parse(const string& aLine, bool nmdc /* = false */) {
 		case ' ': 
 			// New parameter...
 			{
-				if(!fromSet && type != TYPE_CLIENT) {
-					from = CID(cur);
-					fromSet = true;
-				} else 	if(type == TYPE_DIRECT && !toSet) {
+				if(type == TYPE_DIRECT && !toSet) {
 					to = CID(cur);
 					toSet = true;
+				} else if(!fromSet && type != TYPE_CLIENT) {
+					from = CID(cur);
+					fromSet = true;
 				} else {
 					parameters.push_back(cur);
 				}
@@ -88,7 +88,7 @@ void Command::parse(const string& aLine, bool nmdc /* = false */) {
 	}
 }
 
-AdcHub::AdcHub(const string& aHubURL) : Client(aHubURL, '\n', true) {
+AdcHub::AdcHub(const string& aHubURL) : Client(aHubURL, '\n', true), state(STATE_PROTOCOL) {
 }
 
 void AdcHub::handle(Command::INF, Command& c) throw() {
@@ -118,7 +118,7 @@ void AdcHub::handle(Command::INF, Command& c) throw() {
 		} else if(i->compare(0, 2, "SS") == 0) {
 			u->setBytesShared(i->substr(2));
 		} else if(i->compare(0, 2, "VE") == 0) {
-			ve=i->substr(2);
+			ve = i->substr(2);
 		} else if(i->compare(0, 2, "EM") == 0) {
 			u->setEmail(i->substr(2));
 		} else if(i->compare(0, 2, "OP") == 0) {
@@ -165,6 +165,9 @@ void AdcHub::handle(Command::INF, Command& c) throw() {
 			Util::toString(sl) + ">" );
 	}
 
+	if(u == getMe())
+		state = STATE_NORMAL;
+
 	fire(ClientListener::UserUpdated(), this, u);
 }
 
@@ -173,6 +176,7 @@ void AdcHub::handle(Command::SUP, Command& c) throw() {
 		disconnect();
 		return;
 	}
+	state = STATE_IDENTIFY;
 	info();
 }
 
@@ -182,14 +186,25 @@ void AdcHub::handle(Command::MSG, Command& c) throw() {
 	User::Ptr p = ClientManager::getInstance()->getUser(c.getFrom(), false);
 	if(!p)
 		return;
-	string msg = '<' + p->getNick() + "> " + Util::toAcp(c.getParameters()[0]);
-	fire(ClientListener::Message(), this, msg);
+	if(c.getParameters().size() == 2 && c.getParameters()[1] == "PM") { // add PM<group-cid> as well
+		const string& msg = c.getParameters()[0];
+		if(c.getFrom() == getMe()->getCID()) {
+			p = ClientManager::getInstance()->getUser(c.getTo(), false);
+			if(!p)
+				return;
+		}
+		fire(ClientListener::PrivateMessage(), this, p, msg);
+	} else {
+		string msg = '<' + p->getNick() + "> " + c.getParameters()[0];
+		fire(ClientListener::Message(), this, msg);
+	}		
 }
 
 void AdcHub::handle(Command::GPA, Command& c) throw() {
 	if(c.getParameters().empty())
 		return;
 	salt = c.getParameters()[0];
+	state = STATE_VERIFY;
 
 	fire(ClientListener::GetPassword(), this);
 }
@@ -205,36 +220,55 @@ void AdcHub::handle(Command::QUI, Command& c) throw() {
 }
 
 void AdcHub::connect(const User* user) {
+	if(state != STATE_NORMAL)
+		return;
 	string tmp = (SETTING(CONNECTION_TYPE) == SettingsManager::CONNECTION_ACTIVE) ? "DCTM " : "DRCM ";
 	tmp += user->getCID().toBase32();
 	tmp += " 0 NMDC/1.0\n";
 	send(tmp);
 }
 
+void AdcHub::disconnect() {
+	state = STATE_PROTOCOL;
+	Client::disconnect();
+}
+
 void AdcHub::hubMessage(const string& aMessage) {
+	if(state != STATE_NORMAL)
+		return;
 	string strtmp;
-	send("BMSG " + getMe()->getCID().toBase32() + " " + Command::escape(Util::toUtf8(aMessage, strtmp)) + "\n"); 
+	send("BMSG " + getMe()->getCID().toBase32() + " " + Command::escape(aMessage) + "\n"); 
 }
 
 void AdcHub::privateMessage(const User* user, const string& aMessage) { 
+	if(state != STATE_NORMAL)
+		return;
 	string strtmp;
-	send("DMSG " + user->getCID().toBase32() + " " + getMe()->getCID().toBase32() + " " + Command::escape(Util::toUtf8(aMessage, strtmp)) + " PM\n"); 
+	send("DMSG " + user->getCID().toBase32() + " " + getMe()->getCID().toBase32() + " " + Command::escape(aMessage) + " PM\n"); 
 }
 
 void AdcHub::kick(const User* user, const string& aMessage) { 
+	if(state != STATE_NORMAL)
+		return;
 	string strtmp;
-	send("HDSC " + user->getCID().toBase32() + " KK KK " + getMe()->getCID().toBase32() + " " + Command::escape(Util::toUtf8(aMessage, strtmp)) + "\n"); 
+	send("HDSC " + user->getCID().toBase32() + " KK KK " + getMe()->getCID().toBase32() + " " + Command::escape(aMessage) + "\n"); 
 }
 void AdcHub::ban(const User* user, const string& aMessage, time_t aSeconds) { 
+	if(state != STATE_NORMAL)
+		return;
 	string strtmp;
-	send("HDSC " + user->getCID().toBase32() + " BA BA " + getMe()->getCID().toBase32() + " " + Util::toString(aSeconds) + " " + Command::escape(Util::toUtf8(aMessage, strtmp)) + "\n"); 
+	send("HDSC " + user->getCID().toBase32() + " BA BA " + getMe()->getCID().toBase32() + " " + Util::toString((u_int32_t)aSeconds) + " " + Command::escape(aMessage) + "\n"); 
 }
 
 void AdcHub::redirect(const User* user, const string& aHub, const string& aMessage) { 
+	if(state != STATE_NORMAL)
+		return;
 	string strtmp;
-	send("HDSC " + user->getCID().toBase32() + " RD RD " + getMe()->getCID().toBase32() + " " + aHub + " " + Command::escape(Util::toUtf8(aMessage, strtmp)) + "\n"); 
+	send("HDSC " + user->getCID().toBase32() + " RD RD " + getMe()->getCID().toBase32() + " " + aHub + " " + Command::escape(aMessage) + "\n"); 
 }
 void AdcHub::search(int aSizeMode, int64_t aSize, int aFileType, const string& aString) { 
+	if(state != STATE_NORMAL)
+		return;
 	string strtmp;
 	strtmp += "BSCH " + getMe()->getCID().toBase32() + " ";
 	if(aSizeMode == SearchManager::SIZE_ATLEAST) {
@@ -242,22 +276,23 @@ void AdcHub::search(int aSizeMode, int64_t aSize, int aFileType, const string& a
 	} else if(aSizeMode == SearchManager::SIZE_ATMOST) {
 		strtmp += "<=" + Util::toString(aSize) + " ";
 	}
-	StringTokenizer st(aString, ' ');
+	StringTokenizer<string> st(aString, ' ');
 	string tmp;
 	for(StringIter i = st.getTokens().begin(); i != st.getTokens().end(); ++i) {
-		strtmp += "++" + Command::escape(Util::toUtf8(*i, tmp)) + " ";
+		strtmp += "++" + Command::escape(*i) + " ";
 	}
 	strtmp[strtmp.length() - 1] = '\n';
 	send(strtmp);
 }
 
 void AdcHub::password(const string& pwd) { 
+	if(state != STATE_VERIFY)
+		return;
 	if(!salt.empty()) {
 		static const int SALT_SIZE = 192/8;
 		u_int8_t buf[SALT_SIZE];
 		Encoder::fromBase32(salt.c_str(), buf, SALT_SIZE);
-		string tmp;
-		const string& x = Util::toUtf8(pwd, tmp);
+		const string& x = pwd;
 		TigerHash th;
 		th.update(getMe()->getCID().getData(), CID::SIZE);
 		th.update(x.data(), x.length());
@@ -268,36 +303,68 @@ void AdcHub::password(const string& pwd) {
 }
 
 void AdcHub::info() {
+	if(state != STATE_IDENTIFY && state != STATE_NORMAL)
+		return;
 	if(!getMe())
 		return;
 
+	string minf = "BINF " + getMe()->getCID().toBase32();
+	unsigned size = minf.size();
 	string tmp;
 
-	string minf = "BINF " + getMe()->getCID().toBase32();
-	minf += " NI" + Command::escape(Util::toUtf8(getNick(), tmp)); 
-	minf += " DE" + Command::escape(Util::toUtf8(getDescription(), tmp));
-	minf += " SL" + Util::toString(SETTING(SLOTS));
-	minf += " SS" + ShareManager::getInstance()->getShareSizeString();
-	minf += " HN" + Util::toString(counts.normal);
-	minf += " HR" + Util::toString(counts.registered);
-	minf += " HO" + Util::toString(counts.op);
-	minf += " VE++\\ " VERSIONSTRING;
+	StringMapIter i;
+#define ADDPARAM(var, content) \
+	tmp = content; \
+	if((i = lastInfoMap.find(var)) != lastInfoMap.end()) { \
+		if(i->second != tmp) { \
+			if(tmp.empty()) \
+				lastInfoMap.erase(i); \
+			else \
+				i->second = tmp; \
+			minf += var + tmp; \
+		} \
+	} else if(!tmp.empty()) { \
+		minf += var + tmp; \
+		lastInfoMap[var] = tmp; \
+	}
+
+	ADDPARAM(" NI", Command::escape(getNick()));
+	ADDPARAM(" DE", Command::escape(getDescription()));
+	ADDPARAM(" SL", Util::toString(SETTING(SLOTS)));
+	ADDPARAM(" SS", ShareManager::getInstance()->getShareSizeString());
+	ADDPARAM(" HN", Util::toString((int64_t)counts.normal));
+	ADDPARAM(" HR", Util::toString((int64_t)counts.registered));
+	ADDPARAM(" HO", Util::toString((int64_t)counts.op));
+	ADDPARAM(" VE", "++\\ " VERSIONSTRING);
 	if(SETTING(CONNECTION_TYPE) == SettingsManager::CONNECTION_ACTIVE) {
-		minf += " I40.0.0.0";
-		minf += " U4" + Util::toString(SETTING(IN_PORT));
+		ADDPARAM(" I4", "0.0.0.0");
+		ADDPARAM(" U4", Util::toString(SETTING(IN_PORT)));
+	} else {
+		ADDPARAM(" I4", "");
+		ADDPARAM(" U4", "");
 	}
 
-	minf += "\n";
-	if(minf != lastInfo) {
+#undef ADDPARAM
+
+	if(minf.size() != size) {
+		minf += "\n";
 		send(minf);
-		lastInfo = minf;
 	}
+}
 
+string AdcHub::checkNick(const string& aNick) {
+	string tmp = aNick;
+	string::size_type i = 0;
+	while( (i = tmp.find_first_of(" ", i)) != string::npos) {
+		tmp[i++]='_';
+	}
+	return tmp;
 }
 
 void AdcHub::on(Connected) throw() { 
+	dcassert(state == STATE_PROTOCOL);
 	setMe(ClientManager::getInstance()->getUser(CID(SETTING(CLIENT_ID)), this, false));
-	lastInfo.clear();
+	lastInfoMap.clear();
 	send("HSUP +BAS0\n");
 	
 	fire(ClientListener::Connected(), this);
@@ -307,9 +374,10 @@ void AdcHub::on(Failed, const string& aLine) throw() {
 	if(getMe())
 		ClientManager::getInstance()->putUserOffline(getMe());
 	setMe(NULL);
+	state = STATE_PROTOCOL;
 	fire(ClientListener::Failed(), this, aLine);
 }
 /**
  * @file
- * $Id: AdcHub.cpp,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: AdcHub.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
+ * Copyright (C) 2001-2004 Jacek Sieka, j_s at telia com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,10 +25,10 @@
 #include "ClientManager.h"
 #include "AdcCommand.h"
 
-SearchResult::SearchResult(Client* aClient, Types aType, int64_t aSize, const string& aFile, TTHValue* aTTH) :
+SearchResult::SearchResult(Client* aClient, Types aType, int64_t aSize, const string& aFile, TTHValue* aTTH, bool aUtf8) :
 file(aFile), hubName(aClient->getName()), hubIpPort(aClient->getIpPort()), user(aClient->getMe()), 
 size(aSize), type(aType), slots(SETTING(SLOTS)), freeSlots(UploadManager::getInstance()->getFreeSlots()),  
-tth(aTTH == NULL ? NULL : new TTHValue(*aTTH)), ref(1) { }
+tth(aTTH == NULL ? NULL : new TTHValue(*aTTH)), utf8(aUtf8), ref(1) { }
 
 string SearchResult::toSR() const {
 	// File:		"$SR %s %s%c%s %d/%d%c%s (%s)|"
@@ -36,14 +36,15 @@ string SearchResult::toSR() const {
 	string tmp;
 	tmp.reserve(128);
 	tmp.append("$SR ", 4);
-	tmp.append(user->getNick());
+	tmp.append(Text::utf8ToAcp(user->getNick()));
 	tmp.append(1, ' ');
+	string acpFile = utf8 ? Text::utf8ToAcp(file) : file;
 	if(type == TYPE_FILE) {
-		tmp.append(file);
+		tmp.append(acpFile);
 		tmp.append(1, '\x05');
 		tmp.append(Util::toString(size));
 	} else {
-		tmp.append(file, 0, file.length() - 1);
+		tmp.append(acpFile, 0, acpFile.length() - 1);
 	}
 	tmp.append(1, ' ');
 	tmp.append(Util::toString(freeSlots));
@@ -51,7 +52,7 @@ string SearchResult::toSR() const {
 	tmp.append(Util::toString(slots));
 	tmp.append(1, '\x05');
 	if(getTTH() == NULL) {
-		tmp.append(hubName);
+		tmp.append(Text::utf8ToAcp(hubName));
 	} else {
 		tmp.append("TTH:" + getTTH()->toBase32());
 	}
@@ -70,7 +71,7 @@ string SearchResult::toRES() const {
 	tmp.append(" SL");
 	tmp.append(Util::toString(freeSlots));
 	tmp.append(" FN");
-	string fn = file;
+	string fn = utf8 ? file : Text::acpToUtf8(file);
 	string::size_type i = 0;
 	while( (i = fn.find('\\', i)) != string::npos ) {
 		fn[i] = '/';
@@ -164,7 +165,7 @@ int SearchManager::run() {
 	return 0;
 }
 
-void SearchManager::onData(const u_int8_t* buf, int aLen, const string& address) {
+void SearchManager::onData(const u_int8_t* buf, size_t aLen, const string& address) {
 	string x((char*)buf, aLen);
 	if(x.compare(0, 4, "$SR ") == 0) {
 		string::size_type i, j;
@@ -174,7 +175,7 @@ void SearchManager::onData(const u_int8_t* buf, int aLen, const string& address)
 		if( (j = x.find(' ', i)) == string::npos) {
 			return;
 		}
-		string nick = x.substr(i, j-i);
+		string nick = Text::acpToUtf8(x.substr(i, j-i));
 		i = j + 1;
 
 		// A file has 2 0x05, a directory only one
@@ -199,12 +200,12 @@ void SearchManager::onData(const u_int8_t* buf, int aLen, const string& address)
 			if(j < i + 1) {
 				return;
 			}
-			file = x.substr(i, j-i) + '\\';
+			file = Text::acpToUtf8(x.substr(i, j-i) + '\\');
 		} else if(cnt == 2) {
 			if( (j = x.find((char)5, i)) == string::npos) {
 				return;
 			}
-			file = x.substr(i, j-i);
+			file = Text::acpToUtf8(x.substr(i, j-i));
 			i = j + 1;
 			if( (j = x.find(' ', i)) == string::npos) {
 				return;
@@ -226,7 +227,8 @@ void SearchManager::onData(const u_int8_t* buf, int aLen, const string& address)
 		if( (j = x.rfind(" (")) == string::npos) {
 			return;
 		}
-		string hubName = x.substr(i, j-i);
+		// the hub's name will get replaced later (with a UTF-8 version) if there's a TTH in the result
+		string hubName = Text::acpToUtf8(x.substr(i, j-i));
 		i = j + 2;
 		if( (j = x.rfind(')')) == string::npos) {
 			return;
@@ -234,8 +236,9 @@ void SearchManager::onData(const u_int8_t* buf, int aLen, const string& address)
 		string hubIpPort = x.substr(i, j-i);
 		User::Ptr user = ClientManager::getInstance()->getUser(nick, hubIpPort);
 
+		// utf8 = true is a lie, it's not really Unicode, but we have converted all the text from acp to utf8...
 		SearchResult* sr = new SearchResult(user, type, slots, freeSlots, size,
-			file, hubName, hubIpPort, address);
+			file, hubName, hubIpPort, address, true);
 		fire(SearchManagerListener::SR(), sr);
 		sr->decRef();
 	} else if(x.compare(1, 4, "RES ") == 0) {
@@ -264,7 +267,7 @@ void SearchManager::onData(const u_int8_t* buf, int aLen, const string& address)
 
 		if(!name.empty() && freeSlots != -1 && size != -1) {
 			SearchResult::Types type = (name[name.length() - 1] == '/' ? SearchResult::TYPE_DIRECTORY : SearchResult::TYPE_FILE);
-			SearchResult* sr = new SearchResult(p, type, 0, freeSlots, size, name, p->getClientName(), "0.0.0.0", NULL);
+			SearchResult* sr = new SearchResult(p, type, 0, freeSlots, size, name, p->getClientName(), "0.0.0.0", NULL, true);
 			fire(SearchManagerListener::SR(), sr);
 			sr->decRef();
 		}
@@ -289,6 +292,6 @@ string SearchManager::clean(const string& aSearchString) {
 
 /**
  * @file
- * $Id: SearchManager.cpp,v 1.1 2004/10/04 19:43:51 paskharen Exp $
+ * $Id: SearchManager.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
  */
 
