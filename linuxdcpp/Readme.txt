@@ -24,6 +24,11 @@ scons
 Scons will tell you if something's missing in a clear and human-readable way. 
 Hopefully. Fingers crossed. Knock on wood. Etc, etc. 
 
+Known problems:
+---------------
+Fedora core 3 has issues with asm/atomic.h. Try compiling with scons atomic=0
+to avoid including that file.
+
 License:
 --------
 The GPL (couldn't be any other, could it?)
