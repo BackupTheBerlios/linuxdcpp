@@ -221,7 +221,7 @@ void FavoriteHubs::remove_gui (GtkWidget *widget, gpointer data)
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 
-	f->remove_client (TreeViewFactory::getValue<gpointer,FavoriteHubEntry*>(m, &iter, COLUMN_ENTRY));
+	WulforManager::get ()->dispatchClientFunc (new Func1<FavoriteHubs, FavoriteHubEntry*> (f, &FavoriteHubs::remove_client, TreeViewFactory::getValue<gpointer,FavoriteHubEntry*>(m, &iter, COLUMN_ENTRY)));
 	
 	gtk_widget_set_sensitive (f->button["Properties"], FALSE);
 	gtk_widget_set_sensitive (f->button["Remove"], FALSE);
@@ -246,6 +246,7 @@ void FavoriteHubs::moveUp_gui (GtkWidget *widget, gpointer data)
 		if (TreeViewFactory::getValue<gpointer,FavoriteHubEntry*>(m, &iter, COLUMN_ENTRY) == fh[i])
 		{
 			FavoriteHubEntry *e = fh[i];
+			//WulforManager::get ()->dispatchClientFunc (new Func2<FavoriteHubs, FavoriteHubEntry*, FavoriteHubEntry*> (f, &FavoriteHubs::swap_client, fh[i], fh[i-1]));
 			pthread_mutex_lock (&f->favoriteLock);
 			swap (fh[i], fh[i-1]);
 			HubManager::getInstance ()->save ();
@@ -274,6 +275,7 @@ void FavoriteHubs::moveDown_gui (GtkWidget *widget, gpointer data)
 		if (TreeViewFactory::getValue<gpointer,FavoriteHubEntry*>(m, &iter, COLUMN_ENTRY) == fh[i])
 		{
 			FavoriteHubEntry *e = fh[i];
+			//WulforManager::get ()->dispatchClientFunc (new Func2<FavoriteHubs, FavoriteHubEntry*, FavoriteHubEntry*> (f, &FavoriteHubs::swap_client, fh[i], fh[i+1]));
 			pthread_mutex_lock (&f->favoriteLock);
 			swap (fh[i], fh[i+1]);
 			HubManager::getInstance ()->save ();
