@@ -1,3 +1,7 @@
+2004-10-03 14:40 phase
+
+	* linux/transfer.cc: Bug fix: When a connection is about to be removed the client could seg. fault.
+
 2004-10-03 14:05 phase
 	
 	* linux/hashdialog.hh/cc, linux/mainwindow.hh/cc: Added a "Hash progress"-dialog. Just click the "Hash" button to see it in action :)
