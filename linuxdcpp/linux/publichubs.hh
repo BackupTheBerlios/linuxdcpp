@@ -23,6 +23,7 @@
 #include <glade/glade.h>
 #include <pthread.h>
 #include "bookentry.hh"
+#include "treeview.hh"
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
@@ -76,6 +77,7 @@ class PublicHubs:
 		static void connect_callback(GtkWidget *widget, gpointer data);
 
 		pthread_mutex_t hubLock;
+		TreeView *treeView;
 
 		HubEntry::List hubs;
 		StringSearch filter;

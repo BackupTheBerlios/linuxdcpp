@@ -47,39 +47,12 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	
 	hubStore = gtk_list_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_STRING);
 	gtk_tree_view_set_model(hubView, GTK_TREE_MODEL(hubStore));
+	treeView = new TreeView(hubView, NULL);
+	treeView->addColumn_gui(COLUMN_NAME, "Name", TreeView::STRING, WIDTH_NAME);
+	treeView->addColumn_gui(COLUMN_DESC, "Description", TreeView::STRING, WIDTH_DESC);
+	treeView->addColumn_gui(COLUMN_USERS, "Users", TreeView::INT, WIDTH_USERS);
+	treeView->addColumn_gui(COLUMN_ADDRESS, "Address", TreeView::STRING, WIDTH_ADDRESS);
 
-	//name column
-	nameColumn = gtk_tree_view_column_new_with_attributes(
-		"Name", gtk_cell_renderer_text_new(), "text", COLUMN_NAME, NULL);
-	gtk_tree_view_column_set_sizing(nameColumn, GTK_TREE_VIEW_COLUMN_FIXED);
-	gtk_tree_view_column_set_fixed_width(nameColumn, WIDTH_NAME);
-	gtk_tree_view_column_set_resizable(nameColumn, TRUE);
-	gtk_tree_view_insert_column(hubView, nameColumn, COLUMN_NAME);
-
-	//Description column
-	descColumn = gtk_tree_view_column_new_with_attributes(
-		"Description", gtk_cell_renderer_text_new(), "text", COLUMN_DESC, NULL);
-	gtk_tree_view_column_set_sizing(descColumn, GTK_TREE_VIEW_COLUMN_FIXED);
-	gtk_tree_view_column_set_fixed_width(descColumn, WIDTH_DESC);
-	gtk_tree_view_column_set_resizable(descColumn, TRUE);
-	gtk_tree_view_insert_column(hubView, descColumn, COLUMN_DESC);
-
-	//Users column
-	usersColumn = gtk_tree_view_column_new_with_attributes(
-		"Users", gtk_cell_renderer_text_new(), "text", COLUMN_USERS, NULL);
-	gtk_tree_view_column_set_sizing(usersColumn, GTK_TREE_VIEW_COLUMN_FIXED);
-	gtk_tree_view_column_set_fixed_width(usersColumn, WIDTH_USERS);
-	gtk_tree_view_column_set_resizable(usersColumn, TRUE);
-	gtk_tree_view_insert_column(hubView, usersColumn, COLUMN_USERS);
-
-	//Address column
-	addressColumn = gtk_tree_view_column_new_with_attributes(
-		"Address", gtk_cell_renderer_text_new(), "text", COLUMN_ADDRESS, NULL);
-	gtk_tree_view_column_set_sizing(addressColumn, GTK_TREE_VIEW_COLUMN_FIXED);
-	gtk_tree_view_column_set_fixed_width(addressColumn, WIDTH_ADDRESS);
-	gtk_tree_view_column_set_resizable(addressColumn, TRUE);
-	gtk_tree_view_insert_column(hubView, addressColumn, COLUMN_ADDRESS);
-	
 	GObject *o;
 	o = G_OBJECT(glade_xml_get_widget(xml, "filterButton"));
     g_signal_connect(o, "clicked", G_CALLBACK(filter_callback), (gpointer)this);
@@ -89,6 +62,12 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	pthread_mutex_init(&hubLock, NULL);
 	Func0<PublicHubs> *func = new Func0<PublicHubs>(this, &PublicHubs::downloadList_client);
 	WulforManager::get()->dispatchClientFunc(func);
+}
+
+PublicHubs::~PublicHubs() {
+	HubManager::getInstance()->removeListener(this);
+	pthread_mutex_destroy(&hubLock);
+	delete treeView;
 }
 
 void PublicHubs::downloadList_client() {
@@ -138,11 +117,6 @@ void PublicHubs::updateList_gui() {
 	userStream << "Users: " << numUsers;
 	setStatus_gui(STATUS_HUBS, hubStream.str());
 	setStatus_gui(STATUS_USERS, userStream.str());
-}
-
-PublicHubs::~PublicHubs() {
-	HubManager::getInstance()->removeListener(this);
-	pthread_mutex_destroy(&hubLock);
 }
 
 GtkWidget *PublicHubs::getWidget() {

@@ -157,3 +157,14 @@ void WulforManager::addPublicHubs_gui() {
 	bookEntrys.push_back(pubHubs);
 }
 
+void WulforManager::addHub_gui(string address) {
+	/*
+	if (getBookEntry(HUB, address, true)) return;
+
+	Hub *hub = new Hub(address, G_CALLBACK(closeEntry_callback));
+	mainWin->addPage_gui(hub->getWidget(), hub->getTitle(), true);
+	gtk_widget_unref(hub->getWidget());
+	bookEntrys.push_back(hub);
+	*/
+}
+

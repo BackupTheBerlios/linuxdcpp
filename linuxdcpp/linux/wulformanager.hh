@@ -47,6 +47,7 @@ class WulforManager {
 		MainWindow *getMainWindow();
 
 		void addPublicHubs_gui();
+		void addHub_gui(std::string address);
 
 		BookEntry *getBookEntry(int type, string id, bool raise);
 		void deleteBookEntry_gui(BookEntry *entry);
