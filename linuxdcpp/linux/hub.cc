@@ -251,6 +251,10 @@ void Hub::getPassword_gui() {
 
 void Hub::addMessage_gui(string msg) {
 	GtkTextIter iter;
+	
+	//this function is sometimes triggered with an empty msg
+	if (msg.empty()) return;
+	
 	string text = "[" + Util::getShortTimeString() + "] " + msg + "\n";
 	GtkAdjustment *adj;
 	bool setBottom;
@@ -520,8 +524,15 @@ void Hub::on(ClientListener::GetPassword, Client *client) throw() {
 }
 
 void Hub::on(ClientListener::HubUpdated, Client *client) throw() {
-	Func1<BookEntry, string> *func = new Func1<BookEntry, string> (
-		this, &BookEntry::setLabel_gui, client->getName());
+	Func1<BookEntry, string> *func;
+	
+	//name is never set ???
+	if (client->getName().empty()) {
+		string hubName = client->getAddress() + ":" + client->getAddressPort();
+		func = new Func1<BookEntry, string>(this, &BookEntry::setLabel_gui, hubName);
+	} else {
+		func = new Func1<BookEntry, string>(this, &BookEntry::setLabel_gui, client->getName());	
+	}
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 

@@ -38,10 +38,7 @@ int main(int argc, char *argv[]) {
 	//starts the dc++ client part
 	startup(callBack, NULL);
 	
-	SettingsManager *smgr = SettingsManager::getInstance();
-	smgr->load();
-	//if (SETTING(DOWNLOAD_DIRECTORY) == SETTING(TEMP_DOWNLOAD_DIRECTORY))
-	//	smgr->set(SettingsManager::TEMP_DOWNLOAD_DIRECTORY, "");
+	SettingsManager::getInstance()->load();
 	TimerManager::getInstance()->start();
 
 	g_thread_init(NULL);
@@ -49,17 +46,20 @@ int main(int argc, char *argv[]) {
 	gtk_init(&argc, &argv);
 	glade_init();
 
+	//wtf?
 	signal(SIGPIPE, SIG_IGN);
+
 	WulforManager::start();
-	WulforManager::get()->createMainWindow();
+	MainWindow *mw = WulforManager::get()->createMainWindow();
+	mw->createWindow_gui();
+	mw->autoConnect_client();
+
 	gdk_threads_enter();
 	gtk_main();
 	gdk_threads_leave();
 	WulforManager::stop();
 
 	cout << "Shutting down..." << endl;
-	//if (SETTING(TEMP_DOWNLOAD_DIRECTORY) == "")
-	//	smgr->set(SettingsManager::TEMP_DOWNLOAD_DIRECTORY, SETTING(DOWNLOAD_DIRECTORY));
 	shutdown();
 	
 	delete WulforManager::get();

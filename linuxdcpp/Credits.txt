@@ -2,6 +2,7 @@ Linuxdcpp:
 ----------
 Jens Oknelid (paskharen)
 Alexander Nordfelth (phase)
+Dyluck
 
 DC++:
 -----

@@ -45,7 +45,6 @@ class WulforManager {
 		static void start();
 		static void stop();
 
-		void createMainWindow();
 		void dispatchGuiFunc(FuncBase *func);
 		void dispatchClientFunc(FuncBase *func);
 
@@ -53,6 +52,7 @@ class WulforManager {
 		~WulforManager();
 		std::string getPath();
 
+		MainWindow *createMainWindow();
 		MainWindow *getMainWindow();
 		PrivateMessage *getPrivMsg_gui(User::Ptr user);
 		PrivateMessage *getPrivMsg_client(User::Ptr user);

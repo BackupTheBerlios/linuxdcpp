@@ -171,12 +171,9 @@ WulforManager *WulforManager::get() {
 	return manager;
 }
 
-//Warning: This function has to be called from the main thread
-//Doesn't dispatch properly
-void WulforManager::createMainWindow() {
+MainWindow *WulforManager::createMainWindow() {
 	mainWin = new MainWindow;
-	mainWin->createWindow_gui();
-	mainWin->autoConnect_client();
+	return mainWin;
 }
 
 void WulforManager::closeEntry_callback(GtkWidget *widget, gpointer data) {
@@ -200,6 +197,7 @@ WulforManager::WulforManager() {
 	pthread_create(&guiThread, NULL, &threadFunc_gui, (void *)this);
 	
 	mainWin = NULL;
+	dialogEntry = NULL;
 }
 
 WulforManager::~WulforManager() {
