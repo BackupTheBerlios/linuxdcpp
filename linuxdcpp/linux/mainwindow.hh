@@ -67,9 +67,10 @@ class MainWindow:
 		void updateTransfer_gui(std::string id, connection_t type, std::string user, std::string status, 
 			std::string time, std::string speed, std::string file, std::string size, std::string path);
 		void removeTransfer_gui(std::string id);
+		void findId_gui(std::string id, GtkTreeIter *iter);
 
 		//client functions
-		void startSocket();
+		void startSocket_client();
 		std::string getId_client(ConnectionQueueItem *item);
 		std::string getId_client(Transfer *t);
 		void transferComplete_client(Transfer *t);

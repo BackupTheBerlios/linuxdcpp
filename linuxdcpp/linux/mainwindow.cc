@@ -58,7 +58,7 @@ MainWindow::MainWindow():
 	UploadManager::getInstance()->addListener(this);
 	ConnectionManager::getInstance()->addListener(this);
 	
-	startSocket();
+	startSocket_client();
 }
 
 MainWindow::~MainWindow() {
@@ -154,11 +154,11 @@ GtkWindow *MainWindow::getWindow() {
 	return window;
 }
 
-void MainWindow::startSocket() {
+void MainWindow::startSocket_client() {
 	SearchManager::getInstance()->disconnect();
 	ConnectionManager::getInstance()->disconnect();
-	if(SETTING(CONNECTION_TYPE) != SettingsManager::CONNECTION_ACTIVE)
-	{
+
+	if (SETTING(CONNECTION_TYPE) != SettingsManager::CONNECTION_ACTIVE)	{
 		return;
 	}	
 
@@ -182,7 +182,6 @@ void MainWindow::startSocket() {
 			if (SETTING(IN_PORT) == lastPort || (firstPort == newPort)) {
 				// Changing default didn't change port, a fixed port must be in
 				// use...(or we tried all ports)
-				//cout << STRING(PORT_IS_BUSY) << SETTING(IN_PORT) << endl;
 				cout << "Port is busy " << SETTING(IN_PORT) << endl;
 				break;
 			}
@@ -221,6 +220,9 @@ void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw() {
 
 //From QueueManagerListener
 void MainWindow::on(QueueManagerListener::Finished, QueueItem *item) throw() {
+	if (!item->isSet(QueueItem::FLAG_CLIENT_VIEW | QueueItem::FLAG_USER_LIST)) 
+		return;
+
 	User::Ptr user = item->getCurrent()->getUser();
 	string searchString = item->getSearchString();
 	string listName = item->getListName();
@@ -288,40 +290,9 @@ void MainWindow::updateTransfer_gui(string id, connection_t type, string user,
 	string status, string time, string speed, string file, string size, string path)
 {
 	GtkTreeIter iter;
-	bool found = false;
+	findId_gui(id, &iter);
 	
-	gtk_tree_model_get_iter_first(GTK_TREE_MODEL(transferStore), &iter);
-	
-	while (gtk_list_store_iter_is_valid(transferStore, &iter)) {
-		char *text;
-		gtk_tree_model_get(GTK_TREE_MODEL(transferStore), &iter, COLUMN_ID, &text, -1);
-
-		if (id == text) {
-			found = true;
-			break;
-		}
-
-		//When the connection is just created we don't know the type.
-		//Thus we have a special "connecting" id that matches any other id
-		//from the same user, as well as separate upload and download ids.
-		string curId = text;
-		if (curId.find("$Connecting", 0) != string::npos || 
-			id.find("$Connecting", 0) != string::npos)
-		{
-			if (curId.substr(0, curId.find('$', 0)) == 
-				id.substr(0, id.find('$', 0)))
-			{
-				found = true;
-				gtk_list_store_set(transferStore, &iter, COLUMN_ID, 
-					id.c_str(), -1);
-				break;
-			}
-		}
-
-		gtk_tree_model_iter_next(GTK_TREE_MODEL(transferStore), &iter);
-	}
-	
-	if (!found) {
+	if (!gtk_list_store_iter_is_valid(transferStore, &iter)) {
 		gtk_list_store_append(transferStore, &iter);
 		gtk_list_store_set(transferStore, &iter, COLUMN_ID, id.c_str(), -1);
 	}
@@ -357,24 +328,40 @@ void MainWindow::updateTransfer_gui(string id, connection_t type, string user,
 
 void MainWindow::removeTransfer_gui(string id) {
 	GtkTreeIter iter;
-	bool found = false;
+	findId_gui(id, &iter);
 	
-	gtk_tree_model_get_iter_first(GTK_TREE_MODEL(transferStore), &iter);
-	
-	while (gtk_list_store_iter_is_valid(transferStore, &iter)) {
-		char *text;
-		gtk_tree_model_get(GTK_TREE_MODEL(transferStore), &iter, COLUMN_ID, &text, -1);
+	if (gtk_list_store_iter_is_valid(transferStore, &iter)) {
+		gtk_list_store_remove(transferStore, &iter);
+	}
+}
 
-		if (id == text) {
-			found = true;
-			break;
+void MainWindow::findId_gui(string id, GtkTreeIter *iter) {
+	gtk_tree_model_get_iter_first(GTK_TREE_MODEL(transferStore), iter);
+
+	while (gtk_list_store_iter_is_valid(transferStore, iter)) {
+		char *text;
+		gtk_tree_model_get(GTK_TREE_MODEL(transferStore), iter, 
+			COLUMN_ID, &text, -1);
+
+		if (id == text) return;
+
+		//When the connection is just created we don't know the type.
+		//Thus we have a special "connecting" id that matches any other id
+		//from the same user, as well as separate upload and download ids.
+		string curId = text;
+		if (curId.find("$Connecting", 0) != string::npos || 
+			id.find("$Connecting", 0) != string::npos)
+		{
+			if (curId.substr(0, curId.find('$', 0)) == 
+				id.substr(0, id.find('$', 0)))
+			{
+				gtk_list_store_set(transferStore, iter, COLUMN_ID, 
+					id.c_str(), -1);
+				return;
+			}
 		}
 
-		gtk_tree_model_iter_next(GTK_TREE_MODEL(transferStore), &iter);
-	}
-	
-	if (found) {
-		gtk_list_store_remove(transferStore, &iter);
+		gtk_tree_model_iter_next(GTK_TREE_MODEL(transferStore), iter);
 	}
 }
 

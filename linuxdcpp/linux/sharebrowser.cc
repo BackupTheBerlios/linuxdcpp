@@ -4,6 +4,7 @@
 
 #include <client/Text.h>
 #include <iostream>
+#include <sstream>
 
 using namespace std;
 
@@ -14,6 +15,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	pressedCallback(this, &ShareBrowser::buttonPressed_gui),
 	releasedCallback(this, &ShareBrowser::buttonReleased_gui),
 	menuCallback(this, &ShareBrowser::menuClicked_gui),
+	buttonCallback(this, &ShareBrowser::buttonClicked_gui),
 	WIDTH_FILE(400), 
 	WIDTH_SIZE(80), 
 	WIDTH_TYPE(50), 
@@ -106,6 +108,11 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	gtk_widget_set_size_request(GTK_WIDGET(matchButton), -1, statusReq.height);
 	gtk_widget_set_size_request(GTK_WIDGET(findButton), -1, statusReq.height);
 	gtk_widget_set_size_request(GTK_WIDGET(nextButton), -1, statusReq.height);
+
+	//connect callback to buttons
+	buttonCallback.connect(G_OBJECT(matchButton), "clicked", NULL);
+	buttonCallback.connect(G_OBJECT(findButton), "clicked", NULL);
+	buttonCallback.connect(G_OBJECT(nextButton), "clicked", NULL);
 	
 	listing.loadFile(file, false);	
 	shareSize = 0;
@@ -346,4 +353,35 @@ void ShareBrowser::downloadDir_client(DirectoryListing::Directory *dir, string t
 		WulforManager::get()->dispatchGuiFunc(func);
 	}
 }
+
+void ShareBrowser::buttonClicked_gui(GtkWidget *widget, gpointer) {
+	GtkButton *button = GTK_BUTTON(widget);
+
+	if (button == matchButton) {
+		typedef Func0<ShareBrowser> F0;
+		F0 *f = new F0(this, &ShareBrowser::matchQueue_client);
+		WulforManager::get()->dispatchClientFunc(f);
+	}
+
+	if (button == findButton) {
+		cout << "find" << endl;
+	}
+
+	if (button == nextButton) {
+		cout << "next" << endl;
+	}
+}
+
+void ShareBrowser::matchQueue_client() {
+	ostringstream stream;
+	int matched;
+
+	matched = QueueManager::getInstance()->matchListing(&listing);
+	stream << "Matched " << matched << " files";
+
+	typedef Func2<ShareBrowser, GtkStatusbar *, string> F2;
+	F2 *f = new F2(this, &ShareBrowser::setStatus_gui, mainStatus, stream.str());
+	WulforManager::get()->dispatchGuiFunc(f);
+}
+
 

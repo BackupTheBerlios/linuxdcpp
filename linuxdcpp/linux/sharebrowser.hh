@@ -39,6 +39,9 @@ class ShareBrowser:
 		ShareBrowser(User::Ptr user, std::string file, GCallback closeCallback);
 	
 		GtkWidget *getWidget();
+
+		//these functions should only be called from the client thread
+		void matchQueue_client();
 	
 		//these functions should only be called from the gui thread
 		void setStatus_gui(GtkStatusbar *status, std::string msg);
@@ -49,6 +52,7 @@ class ShareBrowser:
 		gboolean buttonPressed_gui(GtkWidget *, GdkEventButton *, gpointer);
 		gboolean buttonReleased_gui(GtkWidget *, GdkEventButton *, gpointer);
 		void menuClicked_gui(GtkMenuItem *item, gpointer);
+		void buttonClicked_gui(GtkWidget *widget, gpointer);
 
 		void buildDirs_gui(DirectoryListing::Directory::List dir, GtkTreeIter *iter);
 		void updateFiles_gui();
@@ -61,6 +65,7 @@ class ShareBrowser:
 		Callback3<ShareBrowser, gboolean, GtkWidget *, GdkEventButton *> 
 			pressedCallback, releasedCallback;
 		Callback2<ShareBrowser, void, GtkMenuItem *> menuCallback;
+		Callback2<ShareBrowser, void, GtkWidget *> buttonCallback;
 		GdkEventType oldType;
 		guint oldButton;
 
