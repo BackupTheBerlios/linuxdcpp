@@ -1,3 +1,7 @@
+2004-10-02 01:36 phase
+
+	* linux/transfer.cc: Forgot to add some checks when a download failed that otherwise caused seg. faults.
+
 2004-10-02 00:51 phase
 
 	* linux/transfer.hh/cc: Added "connection lister". Though, you can't abort or anything, you can just watch .)

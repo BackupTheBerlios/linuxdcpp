@@ -259,8 +259,17 @@ void CTransfer::on(DownloadManagerListener::Failed, Download* dl, const string& 
 	ConnectionQueueItem* cqi = dl->getUserConnection()->getCQI();
 	TransferItem* i;
 	Lock l(cs);
-	assert(transfer.find(cqi) != transfer.end());
-	i = transfer[cqi];
+	if (transfer.find(cqi) == transfer.end())
+	{
+		i = bruteFindTransfer ();
+		if (i == NULL)
+		{
+			cout << "Transfer doesn't exist." << endl;
+			return;
+		}
+	}
+	else
+		i = transfer[cqi];
 	i->status = TransferItem::STATUS_WAITING;
 	i->pos = 0;
 	i->statusString = reason;
