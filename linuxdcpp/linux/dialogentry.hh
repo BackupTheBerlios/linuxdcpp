@@ -30,8 +30,7 @@ class DialogEntry {
 		GtkWidget *getDialog () { return dialog; }
 		void setDialog (GtkWidget *d) { dialog = d; }
 		
-		
-		void applyCallback (GCallback closeCallback);
+		virtual void applyCallback (GCallback closeCallback);
 
 	private:
 		GtkWidget *dialog;

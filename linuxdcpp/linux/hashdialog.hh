@@ -34,10 +34,10 @@
 class Hash : public DialogEntry, public TimerManagerListener
 {
 public:
-	Hash (GCallback closeCallback);
+	Hash ();
 	~Hash ();
 	
-	void updateStats ();
+	void updateStats_gui ();
 	
 	virtual void on(TimerManagerListener::Second, u_int32_t tics) throw();
 	

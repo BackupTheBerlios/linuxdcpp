@@ -1025,7 +1025,6 @@ void Search::SearchInfo::downloadDirTo (string dir)
 		}
 		else 
 		{
-			cout << "File: " << result->getFile () << ", to: " << dir << endl;
 			QueueManager::getInstance()->addDirectory(
 				result->getFile (),
 				result->getUser(),

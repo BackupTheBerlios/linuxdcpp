@@ -1,3 +1,6 @@
+2005-02-18 - phase
+* Fixed some things with the Hash-dialog.
+
 2005-02-16 - phase
 * Added Changelog again :)
 * Added all the settings (except User Commands), though, we haven't added all the features that the settings have to offer yet.

@@ -19,14 +19,13 @@
 #include "hashdialog.hh"
 #include "wulformanager.hh"
 
-Hash::Hash (GCallback closeCallback) : DialogEntry ()
+Hash::Hash () : DialogEntry ()
 {
 	TimerManager::getInstance ()->addListener (this);
 	string file = WulforManager::get()->getPath() + "/glade/hash.glade";
 	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
 
 	setDialog (glade_xml_get_widget(xml, "hashDialog"));
-	applyCallback (closeCallback);
 	
 	lFile = GTK_LABEL (glade_xml_get_widget(xml, "labelFile"));
 	lSpeed = GTK_LABEL (glade_xml_get_widget(xml, "labelSpeed"));
@@ -38,14 +37,13 @@ Hash::Hash (GCallback closeCallback) : DialogEntry ()
 	autoClose = false;
 	HashManager::getInstance()->getStats(tmp, startBytes, startFiles);
 	HashManager::getInstance()->setPriority(Thread::NORMAL);
-	updateStats ();
 }
 Hash::~Hash ()
 {
 	HashManager::getInstance()->setPriority(Thread::IDLE);
 	TimerManager::getInstance()->removeListener (this);
 }
-void Hash::updateStats ()
+void Hash::updateStats_gui ()
 {
 	string file;
 	int64_t bytes = 0;
@@ -111,5 +109,5 @@ void Hash::updateStats ()
 void Hash::on(TimerManagerListener::Second, u_int32_t tics) throw()
 {
 	Lock l(cs);
-	updateStats ();
+	WulforManager::get ()->dispatchGuiFunc (new Func0<Hash> (this, &Hash::updateStats_gui));
 }

@@ -96,7 +96,6 @@ void WulforManager::dispatchGuiFunc(FuncBase *func) {
 	vector<BookEntry *>::iterator it;
 
 	pthread_mutex_lock(&guiQueueLock);
-
 	//make sure we're not adding functions to deleted objects
 	if (func->comparePointer((void *)mainWin)) {
 		found = true;
@@ -109,8 +108,11 @@ void WulforManager::dispatchGuiFunc(FuncBase *func) {
 			}
 		if (!found)
 		{
-			if (func->comparePointer((void *)dialogEntry))
-				found = true;
+			if (dialogEntry)
+			{
+				if (func->comparePointer((void *)dialogEntry))
+					found = true;
+			}
 
 		}
 		pthread_mutex_unlock(&bookEntryLock);
@@ -460,8 +462,11 @@ Search *WulforManager::addSearch_gui() {
 }
 
 Hash *WulforManager::openHashDialog_gui() {
-	Hash *h = new Hash(G_CALLBACK (dialogCloseEntry_callback));
+	Hash *h = new Hash();
+	h->applyCallback (G_CALLBACK (dialogCloseEntry_callback));
 	dialogEntry = h;
+	Func0<Hash> *func = new Func0<Hash> (h, &Hash::updateStats_gui);
+	dispatchGuiFunc (func);	
 	
 	return h;
 }

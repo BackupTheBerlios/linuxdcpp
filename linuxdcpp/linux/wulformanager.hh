@@ -110,7 +110,7 @@ class WulforManager {
 
 		MainWindow *mainWin;
 		std::vector<BookEntry *> bookEntrys;
-		DialogEntry * dialogEntry;
+		DialogEntry *dialogEntry;
 };
 
 #else
