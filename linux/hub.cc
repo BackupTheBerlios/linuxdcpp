@@ -66,10 +66,7 @@ Hub::Hub(string address, MainWindow *mw):
 
 	pane.add1(chatBox);
 	pane.add2(nickScroll);
-	
-	//from BookEntry
-	pack_start(mainBox, PACK_EXPAND_WIDGET);
-	
+
 	mainBox.pack_start (pane, PACK_EXPAND_WIDGET, 0);
 	mainBox.pack_start (statusBox, PACK_SHRINK, 0);
 	

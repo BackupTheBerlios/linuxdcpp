@@ -118,8 +118,10 @@ MainWindow::MainWindow():
 void MainWindow::startSocket() {
 	SearchManager::getInstance()->disconnect();
 	ConnectionManager::getInstance()->disconnect();
-
-	if(SETTING(CONNECTION_TYPE) != SettingsManager::CONNECTION_ACTIVE) return;
+	if(SETTING(CONNECTION_TYPE) != SettingsManager::CONNECTION_ACTIVE)
+	{
+		return;
+	}	
 
 	short lastPort = (short)SETTING(IN_PORT);
 	short firstPort = lastPort;
@@ -251,10 +253,8 @@ void MainWindow::exitClicked()  {
 	d.add_button("Yes", YES);
 	d.add_button("No", NO);
 	
-	if (d.run() == YES) {
-		Accepter::quit();
-		Main::quit();
-	}
+	if (d.run() == YES)
+		quit();
 }
 
 void MainWindow::settingsClicked() {
@@ -300,4 +300,10 @@ void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw()
 	lastUpdate = ticks;
 	lastUp = Socket::getTotalUp();
 	lastDown = Socket::getTotalDown();
+}
+
+void MainWindow::quit ()
+{
+	Accepter::quit();
+	Main::quit();
 }

@@ -63,6 +63,8 @@ class MainWindow:
 		//TimerManagerListener
 		virtual void on(TimerManagerListener::Second, u_int32_t tics) throw();
 
+		void quit();
+
 	private:	
 		void pubHubsClicked();
 		void searchClicked();

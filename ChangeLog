@@ -1,3 +1,11 @@
+2004-10-03 01:03 phase
+
+	* linux/hub.cc: Removed some gui-related code that wasn't used.
+
+2004-10-03 00:24 phase
+
+	* client/SearchManager.cpp, linux/mainwindow.hh/cc: Fixed the bug when changing to passive mode hung the client.
+
 2004-10-02 23:41 phase
 
 	* linux/hub.cc: Add initial password support.
