@@ -56,7 +56,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	dirStore = gtk_tree_store_new(2, G_TYPE_STRING, G_TYPE_POINTER);
 	gtk_tree_view_set_model(dirView, GTK_TREE_MODEL(dirStore));
 	TreeViewFactory f2(dirView);
-	f2.addColumn_gui(COLUMN_DIR, "", TreeViewFactory::STRING, 200);
+	f2.addColumn_gui(COLUMN_DIR, "", TreeViewFactory::STRING, -1);
 	gtk_tree_view_insert_column(dirView, gtk_tree_view_column_new(), COLUMN_DL_DIR);
 	dirSelection = gtk_tree_view_get_selection(dirView);
 

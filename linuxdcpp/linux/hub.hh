@@ -126,7 +126,8 @@ class Hub:
 		enum {
 			COLUMN_ICON,
 			COLUMN_NICK,
-			COLUMN_SHARED
+			COLUMN_SHARED,
+			COLUMN_SHARED_BYTES
 		};
 };
 

@@ -53,9 +53,11 @@ void TreeViewFactory::addColumn_gui(int id, std::string title, type_t type, int 
 		*/
 	};
 
-	gtk_tree_view_column_set_sizing(col, GTK_TREE_VIEW_COLUMN_FIXED);
-	gtk_tree_view_column_set_fixed_width(col, width);
-	gtk_tree_view_column_set_resizable(col, TRUE);
+	if (width != -1) {
+		gtk_tree_view_column_set_sizing(col, GTK_TREE_VIEW_COLUMN_FIXED);
+		gtk_tree_view_column_set_fixed_width(col, width);
+		gtk_tree_view_column_set_resizable(col, TRUE);
+	}
 
 	//make columns sortable
 	if (type == STRING || type == INT) {
@@ -67,3 +69,8 @@ void TreeViewFactory::addColumn_gui(int id, std::string title, type_t type, int 
 	gtk_tree_view_insert_column(view, col, id);
 }
 
+void TreeViewFactory::setSortColumn_gui(int id, int sortColumn) {
+	GtkTreeViewColumn *col;
+	col = gtk_tree_view_get_column(view, id);
+	gtk_tree_view_column_set_sort_column_id(col, sortColumn);
+}

@@ -34,6 +34,7 @@ class TreeViewFactory {
 		TreeViewFactory(GtkTreeView *view);
 		GtkTreeView *get();
 		void addColumn_gui(int id, std::string title, type_t type, int width);
+		void setSortColumn_gui(int id, int sortColumn);
 
 	private:
 		GtkTreeView *view;

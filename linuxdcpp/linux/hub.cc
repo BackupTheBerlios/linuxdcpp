@@ -51,13 +51,14 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	usersStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusUsers"));
 	sharedStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusShared"));
 	
-	nickStore = gtk_list_store_new(3, GDK_TYPE_PIXBUF, G_TYPE_STRING, G_TYPE_STRING);
+	nickStore = gtk_list_store_new(4, GDK_TYPE_PIXBUF, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT64);
 	gtk_tree_view_set_model(nickView, GTK_TREE_MODEL(nickStore));
 	nickSelection = gtk_tree_view_get_selection(nickView);
 	TreeViewFactory factory(nickView);
 	factory.addColumn_gui(COLUMN_ICON, "", TreeViewFactory::PIXBUF, WIDTH_ICON);
 	factory.addColumn_gui(COLUMN_NICK, "Nick", TreeViewFactory::STRING, WIDTH_NICK);
 	factory.addColumn_gui(COLUMN_SHARED, "Shared", TreeViewFactory::STRING, WIDTH_SHARED);
+	factory.setSortColumn_gui(COLUMN_SHARED, COLUMN_SHARED_BYTES);
 
 	chatBuffer = gtk_text_buffer_new(NULL);
 	gtk_text_view_set_buffer(chatText, chatBuffer);
@@ -158,6 +159,7 @@ void Hub::updateUser_gui(string nick, int64_t shared, string iconFile) {
 		COLUMN_ICON, icon,
 		COLUMN_NICK, nick.c_str(),
 		COLUMN_SHARED, 	Util::formatBytes(shared).c_str(),
+		COLUMN_SHARED_BYTES, shared,
 		-1);
 	g_object_unref(G_OBJECT(icon));
 	
