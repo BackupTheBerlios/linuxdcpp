@@ -1,3 +1,7 @@
+2005-02-22 - phase
+* Added Streams.h and MerkleCheckOutputStream.h from DC++-cvs, because those
+were missing.
+
 2005-02-20 - paskharen
 * Added grant slot in user menu in hub.
 * Changed to client 0.670.
