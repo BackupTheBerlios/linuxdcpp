@@ -226,8 +226,6 @@ void Hub::getPassword_gui() {
 		
 	password = gtk_entry_get_text(passwordEntry);
 	gtk_widget_hide (GTK_WIDGET (passwordDialog));
-
-	cout << password << endl;
 	
 	typedef Func1<Hub, string> F1;
 	F1 *func = new F1(this, &Hub::setPassword_client, password);
@@ -346,8 +344,8 @@ void Hub::sendMessage_client(string message) {
 void Hub::setPassword_client(string password) {
 	pthread_mutex_lock(&clientLock);
 	if (client) {
-		cout << password << endl;
 		client->setPassword(password);
+		client->password(client->getPassword());
 	}
 	pthread_mutex_unlock(&clientLock);
 }
