@@ -282,7 +282,7 @@ void Hub::browseClicked() {
 	
 	ClientManager *man = ClientManager::getInstance();
 	
-	if (it == NULL) return;
+	if (!it) return;
 	user = man->getUser(locale_from_utf8((*it)[columns.nick]), client);
 	
 	b = new ShareBrowser(user, mw);
@@ -295,7 +295,7 @@ void Hub::pmClicked() {
 	RefPtr<TreeSelection> sel = nickView.get_selection();
 	TreeModel::iterator it = sel->get_selected();
 	
-	if (it == NULL) return;
+	if (!it) return;
 	user = new User(locale_from_utf8((*it)[columns.nick]));
 	user->setClient(client);	
 	privMsg = new PrivateMsg(user, mw);

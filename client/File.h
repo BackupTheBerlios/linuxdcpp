@@ -40,7 +40,13 @@ STANDARD_EXCEPTION(FileException);
 #ifdef _WIN32
 #include "../zlib/zlib.h"
 #else
+
 #include <zlib.h>
+
+#ifdef HAVE_SYS_SENDFILE_H
+#include <sys/sendfile.h>
+#endif
+
 #endif
 
 /**
@@ -360,7 +366,51 @@ public:
 	static void deleteFile(const string& aFileName) throw() { ::unlink(aFileName.c_str()); };
 	static void renameFile(const string& source, const string& target) throw() { ::rename(source.c_str(), target.c_str()); };
 	static void copyFile(const string& source, const string& target) throw() { 
-#warning FIXME
+		string err;
+		int in, out;
+		int64_t count;
+		off_t offset;
+		count = getSize(source);
+		if (count == -1)
+			throw FileException(Util::translateError(errno) + ": " + source);
+		in = ::open(source.c_str(), O_RDONLY);
+		if (in == -1)
+			throw FileException(Util::translateError(errno) + ": " + source);
+		out = ::open(target.c_str(), O_WRONLY);
+		if (out == -1) {
+			err = Util::translateError(errno) + ": " + target;
+			::close(in);
+			throw FileException(err);
+		}
+		offset = 0;
+		while (offset < count) {
+			ssize_t ret;
+#ifdef HAVE_SYS_SENDFILE_H
+			// sendfile copies files in kernel space
+			ret = ::sendfile(in, out, &offset, count - offset);
+			if (ret == -1)
+				// FIXME if errno == EINVAL or ENOSYS then maybe fall back to read/write?
+				break;
+#else
+			uint8_t buf[0x10000];	// FIXME: don't know what's a good buffer size
+			ret = ::read(in, buf, count > sizeof(buf) ? sizeof(buf) : count);
+			if (ret == -1)
+				break;
+			ret = ::write(out, buf, ret);
+			if (ret == -1)
+				break;
+			offset += ret;
+#endif
+		}
+
+		// aborted due to error?
+		if (offset < count) {
+			err = Util::translateError(errno);
+			::close(out);
+			::close(in);
+			deleteFile(target.c_str());
+			throw FileException(err);
+		}
 		
 	}
 
@@ -506,6 +556,6 @@ private:
 
 /**
  * @file
- * $Id: File.h,v 1.2 2004/10/22 14:44:37 paskharen Exp $
+ * $Id: File.h,v 1.3 2004/10/30 14:28:11 paskharen Exp $
  */
 

@@ -1,6 +1,7 @@
 Linuxdcpp:
 ----------
 Jens Oknelid (paskharen)
+Andreas Oberritter
 
 DC++:
 -----

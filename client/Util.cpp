@@ -177,7 +177,7 @@ static const char badChars[] = {
 static const char badChars[] = { 
 	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 		17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-		31, '<', '>', '\', '"', '|', '?', '*', 0
+		31, '<', '>', '\\', '"', '|', '?', '*', 0
 };
 #endif
 
@@ -810,6 +810,6 @@ int Util::getOsMinor()
 }
 /**
  * @file
- * $Id: Util.cpp,v 1.3 2004/10/29 11:40:57 paskharen Exp $
+ * $Id: Util.cpp,v 1.4 2004/10/30 14:28:11 paskharen Exp $
  */
 
