@@ -63,7 +63,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, MainWindow *mw):
 
 	dirStore = TreeStore::create(dCol);
 	dirView.set_model(dirStore);
-	dirView.append_column("Directory", dCol.dir);
+	dirView.append_column("Directory", dCol.name);
 
 	fileStore = ListStore::create(fCol);
 	fileView.set_model(fileStore);
@@ -142,8 +142,8 @@ void ShareBrowser::buildList() {
 	
 	for (it = dirs.begin(); it != dirs.end(); it++) {
 		row = *(dirStore->append());
-		row[dCol.dir] = WUtil::ConvertToUTF8((*it)->getName());
-		row[dCol.files] = &((*it)->files);
+		row[dCol.name] = WUtil::ConvertToUTF8((*it)->getName());
+		row[dCol.dir] = *it;
 		processDirectory((*it)->directories, row);
 	}
 }
@@ -156,14 +156,15 @@ void ShareBrowser::processDirectory(DirectoryListing::Directory::List dir,
 
 	for (it = dir.begin(); it != dir.end(); it++) {
 		newRow = *(dirStore->append(row.children()));
-		newRow[dCol.dir] = WUtil::ConvertToUTF8((*it)->getName());
-		newRow[dCol.files] = &((*it)->files);
+		newRow[dCol.name] = WUtil::ConvertToUTF8((*it)->getName());
+		newRow[dCol.dir] = *it;
 		processDirectory((*it)->directories, newRow);
 	}
 }
 
 void ShareBrowser::updateSelection () {
-	DirectoryListing::File::List * files;
+	DirectoryListing::File::List *files;
+	DirectoryListing::Directory *dir;
 	DirectoryListing::File::Iter it;
 	TreeRow row;
 	const TreeModel::iterator constIter = 
@@ -172,7 +173,8 @@ void ShareBrowser::updateSelection () {
 	//make sure we've actually selected a row...
 	if (!constIter) return;
 	fileStore->clear();
-	files = (*constIter)[dCol.files];
+	dir = (*constIter)[dCol.dir];
+	files = &(dir->files);
 
 	for (it = files->begin(); it != files->end(); it++) {
 		row = *(fileStore->append());
@@ -181,6 +183,7 @@ void ShareBrowser::updateSelection () {
 			Util::getFileExt((*it)->getName()));
 		row[fCol.size] = 
 			WUtil::ConvertToUTF8(Util::formatBytes((*it)->getSize()));
+		row[fCol.file] = *it;
 	}
 }
 
@@ -197,14 +200,69 @@ bool ShareBrowser::operator== (BookEntry &b) {
 
 void ShareBrowser::downloadClicked() {
 	cout << "DL clicked" << endl;
+	const TreeModel::iterator constIter = 
+		fileView.get_selection()->get_selected();
+	string target;
+
+	if (!constIter) return;
+	if (!listing) return;
+
+	DirectoryListing::File *file = (*constIter)[fCol.file];
+	try {
+		//false = prio, TODO: implement changing this
+		target = SETTING(DOWNLOAD_DIRECTORY);
+		assert(target[target.size() - 1] == PATH_SEPARATOR);
+		target += Util::getFileName(file->getName());
+		listing->download(file, target, false, false);
+	} catch(const Exception& e) {
+		cout << "Error: " << e.getError() << endl;
+		//TODO: add a statusbar and print this there instead
+		//ctrlStatus.SetText(0, e.getError().c_str());
+	}
 }
 
 void ShareBrowser::downloadDirClicked() {
 	cout << "Dir clicked" << endl;
+	const TreeModel::iterator constIter = 
+		dirView.get_selection()->get_selected();
+
+	if (!constIter) return;
+	if (!listing) return;
+
+	DirectoryListing::Directory *dir = (*constIter)[dCol.dir];
+	try {
+		//false = prio, TODO: implement changing this
+		listing->download(dir, SETTING(DOWNLOAD_DIRECTORY), false);
+	} catch(const Exception& e) {
+		cout << "Error: " << e.getError() << endl;
+		//TODO: add a statusbar and print this there instead
+		//ctrlStatus.SetText(0, e.getError().c_str());
+	}
 }
 
 void ShareBrowser::viewClicked() {
-	cout << "view clicked - Not implemented yet =)" << endl;
+	cout << "view clicked - Not fully implemented yet =)" << endl;
+	const TreeModel::iterator constIter = 
+		fileView.get_selection()->get_selected();
+	string target;
+
+	if (!constIter) return;
+	if (!listing) return;
+
+	DirectoryListing::File *file = (*constIter)[fCol.file];
+	try {
+		//true = view file
+		//somebody needs to listen to the view though...
+		//false = prio, TODO: implement changing this
+		target = SETTING(DOWNLOAD_DIRECTORY);
+		assert(target[target.size() - 1] == PATH_SEPARATOR);
+		target += Util::getFileName(file->getName());
+		listing->download(file, target, false, false);
+	} catch(const Exception& e) {
+		cout << "Error: " << e.getError() << endl;
+		//TODO: add a statusbar and print this there instead
+		//ctrlStatus.SetText(0, e.getError().c_str());
+	}
 }
 
 void ShareBrowser::buttonPressedDir(GdkEventButton* event) {

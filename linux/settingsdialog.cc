@@ -489,6 +489,8 @@ void SettingsDialog::defDirClicked() {
 
 	if (sel.run() == -5) {
 		dir = sel.get_filename();
+		if (dir[dir.size() - 1] != PATH_SEPARATOR)
+			dir += PATH_SEPARATOR_STR;
 		defDirEntry.set_text(WUtil::ConvertToUTF8(dir));
 	}
 }
@@ -504,6 +506,8 @@ void SettingsDialog::tempDirClicked() {
 
 	if (sel.run() == -5) {
 		dir = sel.get_filename();
+		if (dir[dir.size() - 1] != PATH_SEPARATOR)
+			dir += PATH_SEPARATOR_STR;
 		unfDirEntry.set_text(WUtil::ConvertToUTF8(dir));
 	}
 }

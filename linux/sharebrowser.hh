@@ -59,20 +59,22 @@ class ShareBrowser: public BookEntry, public QueueManagerListener {
 					add(name);
 					add(type);
 					add(size);
+					add(file);	//hidden from the user
 				}
 
 				Gtk::TreeModelColumn<Glib::ustring> name, type, size;
+				Gtk::TreeModelColumn<DirectoryListing::File *> file;
 		};
 
 		class DirColumns: public Gtk::TreeModel::ColumnRecord {
 			public:
 				DirColumns() {
-					add(dir);
-					add(files);	//this one is hidden from the user
+					add(name);
+					add(dir);	//this one is hidden from the user
 				}
 
-				Gtk::TreeModelColumn<Glib::ustring> dir;
-				Gtk::TreeModelColumn<DirectoryListing::File::List *> files;
+				Gtk::TreeModelColumn<Glib::ustring> name;
+				Gtk::TreeModelColumn<DirectoryListing::Directory *> dir;
 		};
 
 		void buildList();

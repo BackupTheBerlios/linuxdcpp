@@ -252,7 +252,7 @@ static inline const string& escaper(const string& n, string& tmp, bool utf8) {
 
 void DirectoryListing::download(Directory* aDir, const string& aTarget, bool highPrio) {
 	string tmp;
-	string target = (aDir == getRoot()) ? aTarget : aTarget + escaper(aDir->getName(), tmp, getUtf8()) + '\\';
+	string target = (aDir == getRoot()) ? aTarget : aTarget + escaper(aDir->getName(), tmp, getUtf8()) + PATH_SEPARATOR;
 	// First, recurse over the directories
 	Directory::List& lst = aDir->directories;
 	sort(lst.begin(), lst.end(), Directory::DirSort());
@@ -276,7 +276,7 @@ void DirectoryListing::download(Directory* aDir, const string& aTarget, bool hig
 
 void DirectoryListing::download(const string& aDir, const string& aTarget, bool highPrio) {
 	dcassert(aDir.size() > 2);
-	dcassert(aDir[aDir.size() - 1] == '\\');
+	dcassert(aDir[aDir.size() - 1] == PATH_SEPARATOR);
 	Directory* d = find(aDir, getRoot());
 	if(d != NULL)
 		download(d, aTarget, highPrio);
@@ -330,5 +330,5 @@ size_t DirectoryListing::Directory::getTotalFileCount(bool adl) {
 
 /**
  * @file
- * $Id: DirectoryListing.cpp,v 1.2 2004/10/22 14:44:37 paskharen Exp $
+ * $Id: DirectoryListing.cpp,v 1.3 2004/11/06 17:07:11 paskharen Exp $
  */
