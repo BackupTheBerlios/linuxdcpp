@@ -4,6 +4,8 @@ Jens Oknelid (paskharen)
 
 DC++:
 -----
+Jacek Sieka
+Per Lindén
 geoff
 carxor
 luca rota
@@ -56,5 +58,3 @@ liny
 xan
 olle svensson
 mark gillespie
-
-_T("Keep it coming!");
