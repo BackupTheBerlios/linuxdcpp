@@ -245,9 +245,9 @@ void Hub::getPassword_gui() {
 	gtk_widget_show_all(dialog);
 
 	ret = gtk_dialog_run(GTK_DIALOG(dialog));
+	password = gtk_entry_get_text(GTK_ENTRY(entry));
 	gtk_widget_destroy(dialog);
 	if (ret != GTK_RESPONSE_ACCEPT) return;
-	password = gtk_entry_get_text(GTK_ENTRY(entry));
 
 	typedef Func1<Hub, string> F1;
 	F1 *func = new F1(this, &Hub::setPassword_client, password);
