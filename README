@@ -1,0 +1,41 @@
+Introduction
+------------
+This is a broken but partially working port of DC++ to Unix-likes. I have no
+idea why I called it wulfor, but I know I was bored with all projects called
+[arbitrary letter]dc or something. But why wulfor of all names I don't know.
+Later I have realized that DC-- probably would be the best name for it since
+it's no way near feature complete compared to DC++.
+
+Requirements:
+-------------
+Gtkmm 2.2
+pkg-config
+Currently configures for, and successfully built using g++-3.3 but it will
+probably work on other gcc versions as well. Just change the makefile.
+
+Compiling:
+----------
+cd linux
+make
+./wulfor
+
+Notes:
+------
+If things start acting funny and you get a lot of errors complaining it can't
+find hash_map and stuff like that, try adding #undef HAS_STLPORT to 
+client/stdinc.h. It's probably just my gcc install that's broken, but for some
+reason it seems to define HAS_STLPORT. Maybe the order of the #ifdefs need
+to be changed so that it first looks for glibcpp first or something.
+
+Apart from a small fix in ShareManager.cpp (line 1031, strnicmp is not ANSI) 
+the client code included is plain 0.4032. Apart from the issue already
+mentioned it compiled without problems. Great work, whoever did it =)
+
+License:
+--------
+The GPL (couldn't be any other, could it?)
+
+Contact:
+--------
+You can reach me at paskharen@spray.se if you have any questions.
+
