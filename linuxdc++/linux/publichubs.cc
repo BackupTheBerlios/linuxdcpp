@@ -201,7 +201,9 @@ void PublicHubs::connect()
 	mw->addPage(hub);
 }
 
-void PublicHubs::close() {
+void PublicHubs::close()
+{
+	getParent ()->remove_page (*this);
 	delete this;
 }
 

@@ -32,7 +32,7 @@
 
 static const string UPLOAD_AREA = "Uploads";
 
-UploadManager::UploadManager() throw() : running(0), extra(0), lastGrant(0) { 
+UploadManager::UploadManager() throw() : running(0), extra(0), lastGrant(0) {
 	ClientManager::getInstance()->addListener(this);
 	TimerManager::getInstance()->addListener(this);
 };
@@ -66,7 +66,8 @@ bool UploadManager::prepareFile(UserConnection* aSource, const string& aType, co
 	bool leaves = false;
 
 	string file;
-	try {
+	try
+	{
 		file = ShareManager::getInstance()->translateFileName(aFile, adc);
 	} catch(const ShareException&) {
 		aSource->fileNotAvail();
@@ -390,5 +391,5 @@ void UploadManager::on(ClientManagerListener::UserUpdated, const User::Ptr& aUse
 
 /**
  * @file
- * $Id: UploadManager.cpp,v 1.2 2004/11/12 16:29:31 phase Exp $
+ * $Id: UploadManager.cpp,v 1.3 2004/12/12 21:48:52 phase Exp $
  */

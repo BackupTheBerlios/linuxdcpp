@@ -39,6 +39,7 @@ class PrivateMsg: public BookEntry {
 		void update();
 		void enterPressed ();
 		void addMsg(std::string msg);
+		void close();
 
 	private:
 		User::Ptr user;

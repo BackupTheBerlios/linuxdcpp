@@ -32,7 +32,7 @@ using namespace Glib;
 
 int Hub::columnSize[] = {100, 50 };
 
-Hub::Hub(string address, MainWindow *mw):
+Hub::Hub(string address, MainWindow *mw, const std::string nick, const std::string password, const std::string userdesc):
 	browseItem("Browse files"),
 	pmItem("Personal message"),
 	favItem("Add to favourites")
@@ -52,6 +52,7 @@ Hub::Hub(string address, MainWindow *mw):
 	pane.set_position(600);
 	chat.set_editable(false);
 	chat.set_cursor_visible(false);
+	chat.set_wrap_mode(Gtk::WRAP_WORD);
 	
 	nickStore = ListStore::create(columns);
 	nickView.set_model(nickStore);
@@ -67,6 +68,10 @@ Hub::Hub(string address, MainWindow *mw):
 
 	nickScroll.add(nickView);
 	chatScroll.add(chat);
+
+	nickScroll.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
+	chatScroll.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
+
 	
 	chatBox.pack_start(chatScroll, PACK_EXPAND_WIDGET, 2);
 	chatBox.pack_start(chatEntry, PACK_SHRINK, 2);
@@ -121,7 +126,10 @@ Hub::Hub(string address, MainWindow *mw):
 
 	client = ClientManager::getInstance()->getClient(address);
 	proxy->addListener<Hub, ClientListener>(this, client);
-	client->setNick(SETTING(NICK));
+	client->setNick(nick.empty () ? SETTING (NICK) : nick);
+	if (!userdesc.empty())
+		client->setDescription(userdesc);
+	client->setPassword(password);
 	client->connect();
 }
 

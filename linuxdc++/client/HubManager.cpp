@@ -28,6 +28,7 @@
 #include "StringTokenizer.h"
 #include "SimpleXML.h"
 #include "UserCommand.h"
+#include <string.h>
 
 #define FAVORITES_FILE "Favorites.xml"
 
@@ -434,5 +435,5 @@ void HubManager::on(TypeBZ2, HttpConnection*) throw() {
 
 /**
  * @file
- * $Id: HubManager.cpp,v 1.2 2004/11/12 16:29:31 phase Exp $
+ * $Id: HubManager.cpp,v 1.3 2004/12/12 21:48:52 phase Exp $
  */

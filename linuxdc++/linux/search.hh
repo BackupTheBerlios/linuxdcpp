@@ -44,6 +44,7 @@ class Search: public BookEntry, public SearchManagerListener {
 
 		//from SearchManagerListener
 		void on(SearchManagerListener::SR, SearchResult *result) throw();
+		void close();
 
 	private:
 

@@ -36,6 +36,7 @@
 #include "../client/UploadManager.h"
 #include "../client/ConnectionManager.h"
 #include "../client/QueueManager.h"
+#include "../client/HubManager.h"
 #include "../client/TimerManager.h"
 
 enum {
@@ -78,6 +79,8 @@ class MainWindow:
 		void exitClicked();
 		void hashClicked();
 		void queueClicked();
+		void favoriteClicked ();
+		void autoConnect (FavoriteHubEntry::List &l);
 		bool on_delete_event(GdkEventAny *e);
 
 		int64_t lastUpdate, lastUp, lastDown;
@@ -89,7 +92,7 @@ class MainWindow:
 		
 		Gtk::Notebook book;
 		Gtk::Statusbar status[NUM_STATUS];
-		Gtk::Image pubHubsIcon, exitIcon, settingsIcon, searchIcon, hashIcon, queueIcon;
+		Gtk::Image pubHubsIcon, exitIcon, settingsIcon, searchIcon, hashIcon, queueIcon, favoriteIcon;
 
 		HashDialog *hashProgress;
 		bool showingHash;

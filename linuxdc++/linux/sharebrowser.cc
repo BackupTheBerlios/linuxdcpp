@@ -34,6 +34,8 @@ using namespace SigCX;
 using Glib::ustring;
 //can't import whole namespace, messes with client/Exception
 
+int ShareBrowser::fColSize[] = {500, 50, 80};
+
 ShareBrowser::ShareBrowser(QueueItem *item, MainWindow *mw):
 	listing(NULL),
 	downloadItem("Download"),
@@ -63,8 +65,15 @@ ShareBrowser::ShareBrowser(QueueItem *item, MainWindow *mw):
 	fileView.set_model(fileStore);
 	fileView.append_column("Filename", fCol.name);
 	fileView.append_column("Type", fCol.type);
-	fileView.append_column("Size", fCol.size);
+    fileView.append_column("Size", fCol.filesize);
 
+    for (int i = 0; i < fCol.size() -1; i++)
+    {
+    	fileView.get_column(i)->set_sizing(TREE_VIEW_COLUMN_FIXED);
+        fileView.get_column(i)->set_resizable(true);
+        fileView.get_column(i)->set_fixed_width(fColSize[i]);
+	}
+	
 	dirScroll.set_policy(POLICY_AUTOMATIC, POLICY_AUTOMATIC);
 	dirScroll.add(dirView);
 	fileScroll.set_policy(POLICY_AUTOMATIC, POLICY_AUTOMATIC);
@@ -243,7 +252,6 @@ void ShareBrowser::updateSelection () {
 	currentItems = 0;
 	for (it = files->begin(); it != files->end(); it++) {
 		row = *(fileStore->append());
-
 		//data needs to be converted to utf8 if it's not in that form
 		if (listing->getUtf8()) {
 			row[fCol.name] = (*it)->getName();
@@ -254,7 +262,7 @@ void ShareBrowser::updateSelection () {
 				WUtil::ConvertToUTF8(Util::getFileExt((*it)->getName()));
 		}
 
-		row[fCol.size] = Util::formatBytes((*it)->getSize());
+		row[fCol.filesize] = Util::formatBytes((*it)->getSize());
 		row[fCol.file] = *it;
 		currentSize += (*it)->getSize ();
 		currentItems++;
@@ -394,4 +402,10 @@ void ShareBrowser::buttonReleasedFile(GdkEventButton* event) {
 			downloadClicked();
 		}
 	}
+}
+
+void ShareBrowser::close()
+{
+	getParent ()->remove_page (*this);
+	delete this;
 }

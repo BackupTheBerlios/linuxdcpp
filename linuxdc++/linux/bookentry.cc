@@ -25,7 +25,7 @@ using namespace Glib;
 using namespace std;
 using namespace Toolbar_Helpers;
 
-const bool BookEntry::useMultipleTabs[] = {false, false, true, false, true, false};
+const bool BookEntry::useMultipleTabs[] = {false, false, true, false, true, false, false};
 
 BookEntry::BookEntry():button("X") {
 	button.signal_clicked().connect(slot(*this, &BookEntry::close));
@@ -34,12 +34,8 @@ BookEntry::BookEntry():button("X") {
 	box.show_all();
 }
 
-BookEntry::~BookEntry() {	
-}
-
-void BookEntry::close ()
+BookEntry::~BookEntry()
 {
-	parent->remove_page (*this);
 }
 
 Label &BookEntry::getLabel() {

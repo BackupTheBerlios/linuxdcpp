@@ -158,7 +158,14 @@ std::string windowsSeparator (const std::string &ps)
 
 	return str;
 }
+ShareManager::HashFileIter ShareManager::lameHashFind (TTHValue *hash)
+{
+	for (HashFileIter it=tthIndex.begin (); it != tthIndex.end (); it++)
+		if (it->second->getTTH () == hash)
+			return it;
 
+	return tthIndex.end ();
+}
 string ShareManager::translateFileName(const string& aFile, bool adc) throw(ShareException) {
 	RLock l(cs);
 	if(aFile == "MyList.DcLst") {
@@ -168,53 +175,53 @@ string ShareManager::translateFileName(const string& aFile, bool adc) throw(Shar
 		generateXmlList();
 		return getBZXmlFile();
 	} else {
-		string file;
-
-		if(adc) {
+		string file, afile = linuxSeparator (aFile);
+		if(adc)
+		{
 			// Check for tth root identifier
-			if(aFile.compare(0, 4, "TTH/") == 0) {
-				TTHValue v(aFile.substr(4));
-				HashFileIter i = tthIndex.find(&v);
-				if(i != tthIndex.end()) {
+			if(afile.compare(0, 4, "TTH/") == 0)
+			{
+				TTHValue *v = new TTHValue (afile.substr(4));
+				HashFileIter i = lameHashFind(v);
+				if(i != tthIndex.end())
+				{
 					file = i->second->getADCPath();
-				} else {
+				} else
+				{
 					throw ShareException("File Not Available");
 				}
-			} else if(aFile.compare(0, 1, "/") == 0) {
-				file = aFile;
-			} else {
+			}
+			else if(afile.compare(0, 1, "/") == 0)
+			{
+				file = afile;
+			}
+			else
+			{
 				throw ShareException("File Not Available");
 			}
 			// Remove initial '/'
 			file.erase(0, 1);
-
-			// Change to NMDC path separators
-			for(string::size_type i = 0; i < file.length(); ++i) {
-				if(file[i] == '/') {
-					file[i] = '\\';
-				}
-			}
-			// Ok, we now should have an nmdc equivalent name
-		} else {
+		}
+		else
+		{
 			file = aFile;
 		}
-
-		string::size_type i = file.find('\\');
+		string::size_type i = file.find('/');
 		if(i == string::npos)
 			throw ShareException("File Not Available");
 		
-		string aDir =  linuxSeparator (file.substr(0, i));
+		string aDir =  file.substr(0, i);
 
 		RLock l(cs);
 		StringPairIter j = lookupVirtual(aDir);
-		if(j == virtualMap.end()) {
+		if(j == virtualMap.end())
+		{
 			throw ShareException("File Not Available");
 		}
 
-		file = linuxSeparator (file.substr(i + 1));
-
-		cout << j->second + file << endl;		
-		if(!checkFile(j->second, file)) {
+		file = file.substr(i + 1);
+		if(!checkFile(j->second, file))
+		{
 			throw ShareException("File Not Available");
 		}
 
@@ -1372,6 +1379,6 @@ void ShareManager::on(TimerManagerListener::Minute, u_int32_t tick) throw() {
 
 /**
  * @file
- * $Id: ShareManager.cpp,v 1.4 2004/11/30 20:08:51 phase Exp $
+ * $Id: ShareManager.cpp,v 1.5 2004/12/12 21:48:52 phase Exp $
  */
 

@@ -43,6 +43,7 @@ public:
 	void setStatus (std::string text, int num);
 
 	bool operator== (BookEntry &b);
+	void close();
 private:
 	enum {
 		COLUMN_FIRST,

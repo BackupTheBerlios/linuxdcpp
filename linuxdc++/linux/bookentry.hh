@@ -29,6 +29,7 @@ enum
 	BOOK_PRIVATE_MESSAGE,
 	BOOK_FILE_LIST,
 	BOOk_DOWNLOAD_QUEUE,
+	BOOK_FAVORITE_HUBS,
 	BOOK_NUMBER
 };
 
@@ -39,7 +40,7 @@ class BookEntry: public Gtk::VBox {
 
 		virtual bool operator== (BookEntry &b) = 0;
 
-		virtual void close();
+		virtual void close() = 0;
 		Gtk::Label &getLabel();
 		Gtk::HBox &getBox();
 

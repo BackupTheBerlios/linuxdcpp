@@ -110,11 +110,9 @@ class GuiListener:
 			{realOnConst(t, a);}
 		void on(HubManagerListener::DownloadFinished t, const string& a) throw()
 			{realOnConst(t, a);}
-		void on(HubManagerListener::FavoriteAdded t, const FavoriteHubEntry* a) 
-			throw()
+		void on(HubManagerListener::FavoriteAdded t, const FavoriteHubEntry* a) throw()
 			{realOn(t, a);}
-		void on(HubManagerListener::FavoriteRemoved t, 
-			const FavoriteHubEntry* a) throw()
+		void on(HubManagerListener::FavoriteRemoved t, const FavoriteHubEntry* a) throw()
 			{realOn(t, a);}
 		void on(HubManagerListener::UserAdded t, const User::Ptr& a) throw()
 			{realOnConst(t, a);}

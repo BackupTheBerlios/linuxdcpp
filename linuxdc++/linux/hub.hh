@@ -46,7 +46,7 @@ class Hub:
 	public BookEntry
 {
 	public:
-		Hub(std::string address, MainWindow *mw);
+		Hub(std::string address, MainWindow *mw, const std::string nick="", const std::string password="", const std::string userdesc="");
 		~Hub();
 		
 		bool operator== (BookEntry &b);

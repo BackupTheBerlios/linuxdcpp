@@ -76,3 +76,9 @@ void PrivateMsg::enterPressed ()
 	addMsg ("<" + user->getClientNick () + "> " + entry.get_text());
 	entry.set_text("");
 }
+
+void PrivateMsg::close()
+{
+	getParent ()->remove_page (*this);
+	delete this;
+}

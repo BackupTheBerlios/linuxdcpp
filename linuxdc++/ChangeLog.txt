@@ -1,103 +1,107 @@
-2004-10-27 17:00 phase
+2004-12-12 22:35 phase
+	
+	* linux/favorites.hh/cc, linux/mainwindow.hh/cc, linux/queue.cc: Add Favorite Hubs with auto connect support. You should be able to remove directorys safely from the Download queue.
+	
+2004-11-27 17:00 phase
 	
 	* linux/search.hh/cc: You can now download stuff from the searchtab.
 
-2004-10-27 02:18 paskharen
+2004-11-27 02:18 paskharen
 
 	* linux/*.cc: Unicode fixes
 
-2004-10-24 16:08 phase
+2004-11-24 16:08 phase
 
 	* linux/sharebrowser.hh/cc: Added statusbar that shows sharesize and such stuff.
 
-2004-10-25 15:02 phase
+2004-11-25 15:02 phase
 
 	* linux/queue.hh/cc: Download queue added. 
 	Bugs: 
 	/ The submenus doesn't work, but the functions are there so we just have to fix that part.
 	/ Doesn't update how much a file has been download.
 	
-2004-10-18 01:37 phase
+2004-11-18 01:37 phase
 
 	* linux/transfer.hh/cc: Removed buggy close/force connection. Removed debug messages. Remove some code that wasn't used.
 
-2004-10-14 21:17 paskharen
+2004-11-14 21:17 paskharen
 
 	* linux/hub.cc: Changed the password entry to hidden.
 	
-2004-10-14 20:45 phase
+2004-11-14 20:45 phase
 
 	* linux/transfer.hh/cc, linux/hub.hh/cc, linux/publichubs.hh/cc: Added resizeable columns. Joining large hubs is MUCH faster.
 
-2004-10-14 12:25 phase
+2004-11-14 12:25 phase
 
 	* linux/transfer.hh/cc: The client doesn't resize after the connection lister.
 	
-2004-10-13 14:46 phase
+2004-11-13 14:46 phase
 
 	* linux/transfer.hh/cc: Made some changes in the transfer-menu.
 
-2004-10-13 03:37 phase
+2004-11-13 03:37 phase
 
 	* linux/settingsdialog.cc: You can now safely remove directorys from your share.
 
-2004-10-11 22:48 phase
+2004-11-11 22:48 phase
 
 	* linux/transfer.cc: You can now close a connection through the "connection lister"-menu.
 
-2004-10-11 18:16 phase
+2004-11-11 18:16 phase
 
 	* linux/transfer.cc: Fixed a assertion bug.
 
-2004-10-10 12:20 phase
+2004-11-10 12:20 phase
 
 	* linux/hub.cc, linux/sharebrowser.hh/cc, linux/mainwindow.hh/cc: Sharebrowser doesn't open until the filelist is downloaded.
 	
-2004-10-09 23:30 phase
+2004-11-09 23:30 phase
 
 	* linux/transfer.hh/cc: Added a menu (you can't do anything with it yet though). Changed some fallbacks to work better with synced threads. 
 	
-2004-10-09 22:54 paskharen
+2004-11-09 22:54 paskharen
 
 	* linux/guilistener.hh: Changed all calls through the thread tunnel to syncronized mode.
 
-2004-10-04 18:01 paskharen
+2004-11-04 18:01 paskharen
 
 	* linux/sharebrowser.hh, linux/sharebrowser.cc, client/DirectoryListing.cpp, client/QueueManager.cpp: Added a first version of downloading files
 
-2004-10-04 13:51 paskharen
+2004-11-04 13:51 paskharen
 
 	* linux/sharebrowser.hh, linux/sharebrowser.cc: Fixed the crach on two filelists bug
 
-2004-10-04 00:53 paskharen
+2004-11-04 00:53 paskharen
 
 	* linux/mainwindow.cc, linux/selecter.cc, linux/selecter.hh: New verison of the WSAASyncSelect emulation. This one is a lot better, the last one was ugly.
 
-2004-10-03 14:40 phase
+2004-11-03 14:40 phase
 
 	* linux/transfer.cc: Bug fix: When a connection is about to be removed the client could seg. fault.
 
-2004-10-03 14:05 phase
+2004-11-03 14:05 phase
 	
 	* linux/hashdialog.hh/cc, linux/mainwindow.hh/cc: Added a "Hash progress"-dialog. Just click the "Hash" button to see it in action :)
 
-2004-10-03 01:03 phase
+2004-11-03 01:03 phase
 
 	* linux/hub.cc: Removed some gui-related code that wasn't used.
 
-2004-10-03 00:24 phase
+2004-11-03 00:24 phase
 
 	* client/SearchManager.cpp, linux/mainwindow.hh/cc: Fixed the bug when changing to passive mode hung the client.
 
-2004-10-02 23:41 phase
+2004-11-02 23:41 phase
 
 	* linux/hub.cc: Add initial password support.
 
-2004-10-02 01:36 phase
+2004-11-02 01:36 phase
 
 	* linux/transfer.cc: Forgot to add some checks when a download failed that otherwise caused seg. faults.
 
-2004-10-02 00:51 phase
+2004-11-02 00:51 phase
 
 	* linux/transfer.hh/cc: Added "connection lister". Though, you can't abort or anything, you can just watch .)
 

@@ -211,6 +211,8 @@ private:
 
 	HashFileMap tthIndex;
 
+	HashFileIter lameHashFind (TTHValue *hash);
+
 	int64_t listLen;
 	int64_t bzXmlListLen;
 	bool xmlDirty;
@@ -283,6 +285,6 @@ private:
 
 /**
  * @file
- * $Id: ShareManager.h,v 1.2 2004/11/12 16:29:31 phase Exp $
+ * $Id: ShareManager.h,v 1.3 2004/12/12 21:48:52 phase Exp $
  */
 

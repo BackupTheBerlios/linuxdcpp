@@ -50,6 +50,7 @@ class ShareBrowser: public BookEntry  {
 		void buttonReleasedFile(GdkEventButton* event);
 		
 		bool operator== (BookEntry &b);
+		void close();
 		
 	enum {
 		STATUS_FIRST,
@@ -67,11 +68,11 @@ class ShareBrowser: public BookEntry  {
 				FileColumns() {
 					add(name);
 					add(type);
-					add(size);
+					add(filesize);
 					add(file);	//hidden from the user
 				}
 
-				Gtk::TreeModelColumn<Glib::ustring> name, type, size;
+				Gtk::TreeModelColumn<Glib::ustring> name, type, filesize;
 				Gtk::TreeModelColumn<DirectoryListing::File *> file;
 		};
 
@@ -103,6 +104,7 @@ class ShareBrowser: public BookEntry  {
 		int64_t currentSize;
 		int shareItems;
 		int currentItems;
+		static int fColSize[];
 
 		Gtk::VBox mainBox;
 		Gtk::HBox statusBox;	

@@ -68,6 +68,7 @@ Search::Search(MainWindow *mw):
 	resultsView.append_column("TTH", columns.tth);
 
 	scroll.add(resultsView);
+	scroll.set_policy(POLICY_AUTOMATIC, POLICY_AUTOMATIC);
 
 	for (int i=0;i<columns.size ()-1;i++)
 	{
@@ -361,3 +362,8 @@ void Search::downloadDir ()
 	s->downloadDir ();
 }
 
+void Search::close()
+{
+	getParent ()->remove_page (*this);
+	delete this;
+}

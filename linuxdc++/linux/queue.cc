@@ -56,6 +56,7 @@ DownloadQueue::DownloadQueue (MainWindow *mw) :
 	dirStore = TreeStore::create(dirColumns);
 	dirView.set_model(dirStore);
 	dirView.append_column("Directory", dirColumns.name);
+	dirView.expand_all();
 
 	fileStore = ListStore::create(fileColumns);
 	fileView.set_model(fileStore);
@@ -309,6 +310,7 @@ void DownloadQueue::rebuildMenu ()
 }
 void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 {
+	Lock l(dq->cs);
 	TreeModel::iterator item;
 	if (!add)
 	{
@@ -581,6 +583,7 @@ void DownloadQueue::updateStatus ()
 }
 void DownloadQueue::update ()
 {
+	Lock l(cs);	
 	TreeModel::Row r = *(dirView.get_selection()->get_selected());
 
 	if (!r)
@@ -599,6 +602,7 @@ void DownloadQueue::update ()
 
 void DownloadQueue::buildList (const QueueItem::StringMap &l)
 {
+	Lock ll(cs);
 	TreeModel::Row row;
 	queueItems = 0;
 	queueSize = 0;
@@ -626,9 +630,11 @@ void DownloadQueue::buildList (const QueueItem::StringMap &l)
 			addFile (new QueueItemInfo (it->second), tmp);
 		}
 	}
+	dirView.expand_all();
 }
 void DownloadQueue::addDir (string path, TreeModel::Row row, ustring &current)
 {
+	Lock l(cs);
 	TreeModel::Row newRow;
 	string tmp = getNextSubDir (path);
 	
@@ -708,8 +714,8 @@ string DownloadQueue::getTrailingSubDir (string path)
 }
 void DownloadQueue::removeFiles (ustring path)
 {
-	vector<QueueItemInfo*>::iterator it;
-	for (it = dirFileMap[path].begin(); it != dirFileMap[path].end(); it++)
+	Lock l(cs);
+	for (vector<QueueItemInfo*>::iterator it=dirFileMap[path].begin();it != dirFileMap[path].end (); it++)
 	{
 		QueueManager::getInstance ()->remove ((*it)->getTarget());
 	}
@@ -731,7 +737,6 @@ void DownloadQueue::removeDirClicked ()
 	if (!r)
 		return;
 
-
 	vector<TreeModel::iterator> iters;
 	getChildren (r[dirColumns.realpath], &iters);
 	for (int i=iters.size ()-1; i>=0; i--)
@@ -749,6 +754,8 @@ void DownloadQueue::removeFileClicked ()
 	if (!r)
 		return;
 
+
+	Lock l(cs);		
 		
 	QueueManager::getInstance ()->remove (((QueueItemInfo*)r[fileColumns.item])->getTarget ());
 }
@@ -770,6 +777,8 @@ void DownloadQueue::removeDir (ustring path)
 	if (path == "" || path == "/")
 		return;
 
+	Lock l(cs);
+		
 	if (countFiles (path) == 0)
 	{
 		if (dirFileMap.find (path) != dirFileMap.end ())
@@ -791,10 +800,13 @@ void DownloadQueue::removeDir (ustring path)
 }
 void DownloadQueue::removeFile (Glib::ustring target)
 {
-	ustring path = Util::getFilePath(target.raw());
+
+	Lock l(cs);
+	ustring path = Util::getFilePath (target.raw ());
 	if (dirFileMap.find (path) == dirFileMap.end ())
 		return;
-	for (vector<QueueItemInfo*>::iterator it=dirFileMap[path].begin (); it != dirFileMap[path].end (); it++)
+	for (vector<QueueItemInfo*>::iterator it=dirFileMap[path].begin (); it != dirFileMap[path].end ();)
+	{
 		if ((*it)->getTarget() == target)
 		{
 			queueSize-=(*it)->getSize();
@@ -804,12 +816,16 @@ void DownloadQueue::removeFile (Glib::ustring target)
 			dirFileMap[path].erase (it);
 			break;
 		}
+		else
+			it++;
+	}
 	if (dirFileMap[path].empty ())
 		removeDir (path);
 	update ();
 }
 void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
 {
+	Lock l(cs);
 	TreeModel::Row row;
 	ustring subdir = getNextSubDir (Util::getFilePath(aQI->getTarget()));
 	QueueItemInfo *i;
@@ -849,6 +865,7 @@ void DownloadQueue::on(QueueManagerListener::Finished, QueueItem* aQI) throw()
 }
 void DownloadQueue::on(QueueManagerListener::Moved, QueueItem* aQI) throw()
 {
+	Lock l(cs);
 }
 void DownloadQueue::on(QueueManagerListener::Removed, QueueItem* aQI) throw()
 {
@@ -915,4 +932,10 @@ void DownloadQueue::setDirPriority (Glib::ustring path, QueueItem::Priority p)
 	for (int i=0;i<iter.size ();i++)
 		for (vector<QueueItemInfo*>::iterator it=dirFileMap[(*iter[i])[dirColumns.realpath]].begin (); it != dirFileMap[(*iter[i])[dirColumns.realpath]].end (); it++)
 			setFilePriority ((*it)->getTarget (), p);
+}
+
+void DownloadQueue::close()
+{
+	getParent ()->remove_page (*this);
+	delete this;
 }

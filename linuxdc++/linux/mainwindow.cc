@@ -31,6 +31,8 @@
 #include "../client/ConnectionManager.h"
 #include "../client/Exception.h"
 #include "queue.hh"
+#include "favorites.hh"
+#include "hub.hh"
 
 #include <iostream>
 #include <assert.h>
@@ -52,7 +54,8 @@ MainWindow::MainWindow():
 	settingsIcon("test.xpm"),
 	exitIcon("test.xpm"),
 	hashIcon("test.xpm"),
-	queueIcon("test.xpm")
+	queueIcon("test.xpm"),
+	favoriteIcon("test.xpm")
 {
 	int i;
 	Slot0<void> callback;
@@ -79,6 +82,9 @@ MainWindow::MainWindow():
 	callback = 
 		open_tunnel(tunnel, slot(*this, &MainWindow::queueClicked), false);	
 	leftBar.tools().push_back(ButtonElem("Queue", queueIcon, callback));
+	callback = 
+		open_tunnel(tunnel, slot(*this, &MainWindow::favoriteClicked), false);
+	leftBar.tools().push_back(ButtonElem("Favorite Hubs", favoriteIcon, callback));
 	callback =
 		open_tunnel(tunnel, slot(*this, &MainWindow::exitClicked), false);	
 	rightBar.tools().push_back(ButtonElem("Exit", exitIcon, callback));
@@ -126,6 +132,7 @@ MainWindow::MainWindow():
 	showingHash = false;
 	
 	startSocket();
+	autoConnect (HubManager::getInstance ()->getFavoriteHubs ());
 }
 
 void MainWindow::startSocket() {
@@ -162,6 +169,23 @@ void MainWindow::startSocket() {
 			}
 			lastPort = newPort;
 		}
+	}
+}
+
+void MainWindow::autoConnect (FavoriteHubEntry::List &l)
+{
+	for (FavoriteHubEntry::List::const_iterator it=l.begin (); it != l.end (); it++)
+	{
+		FavoriteHubEntry *entry = *it;
+		if (entry->getConnect ())
+			if (!entry->getNick ().empty () || !SETTING (NICK).empty ())
+			{
+				Hub *h = new Hub (entry->getServer (), this, entry->getNick ().empty () ? SETTING (NICK) : entry->getNick (), entry->getPassword (), entry->getUserDescription ());
+				if (addPage (h))
+					manage (h);
+				else
+					delete h;				
+			}
 	}
 }
 
@@ -260,6 +284,14 @@ void MainWindow::queueClicked ()
 	if (findPage ("Download queue"))
 		return;
 	DownloadQueue *q = new DownloadQueue (this);
+	if (addPage (q)) manage (q);
+	else delete q;
+}
+void MainWindow::favoriteClicked ()
+{
+	if (findPage ("Favorite Hubs"))
+		return;
+	FavoriteHubs *q = new FavoriteHubs (this);
 	if (addPage (q)) manage (q);
 	else delete q;
 }
