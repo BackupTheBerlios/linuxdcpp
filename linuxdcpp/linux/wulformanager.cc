@@ -159,9 +159,12 @@ WulforManager *WulforManager::get() {
 }
 
 void WulforManager::createMainWindow() {
+	Func0<MainWindow> *func;
 	mainWin = new MainWindow;
-	Func0<MainWindow> *func = new Func0<MainWindow>(mainWin, &MainWindow::createWindow_gui);
+	func = new Func0<MainWindow>(mainWin, &MainWindow::createWindow_gui);
 	dispatchGuiFunc(func);
+	func = new Func0<MainWindow>(mainWin, &MainWindow::autoConnect_client);
+	dispatchClientFunc(func);
 }
 
 void WulforManager::closeEntry_callback(GtkWidget *widget, gpointer data) {

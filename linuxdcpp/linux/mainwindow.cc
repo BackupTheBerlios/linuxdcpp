@@ -62,20 +62,20 @@ void MainWindow::pubHubs_callback(GtkWidget *widget, gpointer data) {
 	//no need to dispatch, already in gui thread
 	WulforManager::get()->addPublicHubs_gui();
 }
-void MainWindow::dlQueue_callback(GtkWidget *widget, gpointer data)
-{
+
+void MainWindow::dlQueue_callback(GtkWidget *widget, gpointer data) {
 	WulforManager::get()->addDownloadQueue_gui();
 }
-void MainWindow::favHubs_callback(GtkWidget *widget, gpointer data)
-{
+
+void MainWindow::favHubs_callback(GtkWidget *widget, gpointer data) {
 	WulforManager::get()->addFavoriteHubs_gui();
 }
-void MainWindow::search_callback(GtkWidget *widget, gpointer data)
-{
+
+void MainWindow::search_callback(GtkWidget *widget, gpointer data) {
 	WulforManager::get()->addSearch_gui();
 }
-void MainWindow::settings_callback(GtkWidget *widget, gpointer data)
-{
+
+void MainWindow::settings_callback(GtkWidget *widget, gpointer data) {
 	Settings *s = WulforManager::get()->openSettingsDialog_gui();
 
 	short lastPort = (short)SETTING(IN_PORT);
@@ -94,8 +94,8 @@ void MainWindow::settings_callback(GtkWidget *widget, gpointer data)
 
 	gtk_widget_hide (s->getDialog());
 }
-void MainWindow::hash_callback (GtkWidget *widget, gpointer data)
-{
+
+void MainWindow::hash_callback (GtkWidget *widget, gpointer data) {
 	/*Hash *h = WulforManager::get ()->openHashDialog_gui();
 	
 	if (gtk_dialog_run (GTK_DIALOG (h->getDialog ())) == GTK_RESPONSE_OK)
@@ -121,7 +121,6 @@ MainWindow::MainWindow():
 	ConnectionManager::getInstance()->addListener(this);
 	
 	startSocket_client();
-	autoConnect_client();
 }
 
 MainWindow::~MainWindow() {
@@ -333,8 +332,8 @@ void MainWindow::on(QueueManagerListener::Finished, QueueItem *item) throw() {
 	string searchString = item->getSearchString();
 	string listName = item->getListName();
 
-	
-	if ( item->isSet(QueueItem::FLAG_CLIENT_VIEW) && item->isSet(QueueItem::FLAG_USER_LIST))
+	if (item->isSet(QueueItem::FLAG_CLIENT_VIEW) && 
+		item->isSet(QueueItem::FLAG_USER_LIST))
 	{
 		typedef Func3<MainWindow, User::Ptr, string, string> F3;
 		F3 *func = new F3(this, &MainWindow::addShareBrowser_gui, 

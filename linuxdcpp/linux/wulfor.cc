@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 	gtk_init(&argc, &argv);
 	glade_init();
 
-	signal(SIGPIPE,SIG_IGN);
+	signal(SIGPIPE, SIG_IGN);
 	WulforManager::start();
 	WulforManager::get()->createMainWindow();
 	gdk_threads_enter();
