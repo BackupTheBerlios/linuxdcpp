@@ -413,6 +413,8 @@ void Hub::showPasswordDialog ()
 
 		window.set_default_size (200, 50);
 
+		entry.set_invisible_char('*');
+		entry.set_visibility(false);
 		window.get_vbox ()->pack_start (entry, PACK_EXPAND_WIDGET);
 		window.add_button (GTK_STOCK_APPLY, 1);
 		
