@@ -293,7 +293,7 @@ void Settings::initDownloads_gui ()
 	gtk_entry_set_text (GTK_ENTRY (downloadItems["Proxy"]), SETTING (HTTP_PROXY).c_str ());
 
 	GtkTreeView *view = GTK_TREE_VIEW (downloadItems["View"]);
-   	 g_signal_connect(G_OBJECT (view), "button_press_event", G_CALLBACK(onFavoriteButtonPressed_gui), (gpointer)this);
+   	 g_signal_connect(G_OBJECT (view), "button_release_event", G_CALLBACK(onFavoriteButtonReleased_gui), (gpointer)this);
 
 	downloadToStore = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_STRING);
 	gtk_tree_view_set_model (view, GTK_TREE_MODEL (downloadToStore));
@@ -567,7 +567,7 @@ void Settings::onRemoveFavorite_gui (GtkWidget *widget, gpointer user_data)
 		gtk_widget_set_sensitive (s->downloadItems["Remove"], FALSE);
 	}
 }
-gboolean Settings::onFavoriteButtonPressed_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
+gboolean Settings::onFavoriteButtonReleased_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
 {
 	Settings *s = (Settings*)user_data;
 	GtkTreeIter iter;
@@ -587,7 +587,7 @@ void Settings::initSharing_gui ()
 	GtkTreeView *view = GTK_TREE_VIEW (shareItems["Shares"]);
 	shareStore = gtk_list_store_new (3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
 	gtk_tree_view_set_model (view, GTK_TREE_MODEL (shareStore));
-	g_signal_connect(G_OBJECT (view), "button_press_event", G_CALLBACK(onShareButtonPressed_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT (view), "button_release_event", G_CALLBACK(onShareButtonReleased_gui), (gpointer)this);
 	shares = new TreeViewFactory (view);
 
 	shares->addColumn_gui (SHARE_NAME, "Virtual name", TreeViewFactory::STRING, 100);
@@ -685,7 +685,7 @@ void Settings::onRemoveShare_gui (GtkWidget *widget, gpointer user_data)
 	gtk_list_store_remove (s->shareStore, &iter);
 	gtk_widget_set_sensitive (s->shareItems["Remove"], FALSE);
 }
-gboolean Settings::onShareButtonPressed_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
+gboolean Settings::onShareButtonReleased_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
 {
 	Settings *s = (Settings*)user_data;
 	GtkTreeSelection *selection;

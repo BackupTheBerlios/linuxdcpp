@@ -72,7 +72,7 @@ private:
 	bool removeFavoriteDir_client (string path);
 	static void onAddFavorite_gui (GtkWidget *widget, gpointer user_data);
 	static void onRemoveFavorite_gui (GtkWidget *widget, gpointer user_data);	
-	static gboolean onFavoriteButtonPressed_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
+	static gboolean onFavoriteButtonReleased_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
 	enum {
 		DOWNLOADTO_FIRST,
 		DOWNLOADTO_NAME = DOWNLOADTO_FIRST,
@@ -86,7 +86,7 @@ private:
 	// Sharing
 	static void onAddShare_gui (GtkWidget *widget, gpointer user_data);
 	static void onRemoveShare_gui (GtkWidget *widget, gpointer user_data);
-	static gboolean onShareButtonPressed_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
+	static gboolean onShareButtonReleased_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
 	static gboolean onShareHiddenPressed_gui (GtkToggleButton *togglebutton, gpointer user_data);
 	void shareHidden_client (bool show);
 	void modifyShare_client (bool add, string path, string name);
@@ -99,6 +99,7 @@ private:
 	};
 	TreeViewFactory *shares;
 	GtkListStore *shareStore;
+	GdkEventType sharePrevious;
 
 	std::map<string,GtkWidget*> generalItems;
 	std::map<string,GtkWidget*> downloadItems;

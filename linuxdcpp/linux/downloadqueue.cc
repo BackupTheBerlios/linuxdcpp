@@ -199,9 +199,9 @@ void DownloadQueue::buildDynamicMenu_gui ()
 void DownloadQueue::setPriority_client (string target, QueueItem::Priority p)
 {
 	//Lock l(cs);
-	//pthread_mutex_lock (&queueLock);
+	pthread_mutex_lock (&queueLock);
 	QueueManager::getInstance ()->setPriority(target, p);
-	//pthread_mutex_unlock (&queueLock);
+	pthread_mutex_unlock (&queueLock);
 }
 void DownloadQueue::setDirPriority_gui (string path, QueueItem::Priority p)
 {
@@ -817,7 +817,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 		}	
 		// Added
 		{
-			gtk_list_store_set (dq->fileStore, &it, COLUMN_ADDED, Util::formatTime("%Y-%m-%d %H:%M", getAdded()).c_str ());
+			gtk_list_store_set (dq->fileStore, &it, COLUMN_ADDED, Util::formatTime("%Y-%m-%d %H:%M", getAdded()).c_str (), -1);
 		}		
 		// TTH
 		{
@@ -937,7 +937,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 		}	
 		// Added
 		{
-			gtk_list_store_set (dq->fileStore, &it, COLUMN_ADDED, Util::formatTime("%Y-%m-%d %H:%M", getAdded()).c_str ());
+			gtk_list_store_set (dq->fileStore, &it, COLUMN_ADDED, Util::formatTime("%Y-%m-%d %H:%M", getAdded()).c_str (), -1);
 		}	
 		// TTH
 		{
@@ -1125,7 +1125,7 @@ void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 	
-	if (showingDir == TreeViewFactory::getValue<gchar*,string>(m, &iter, DIRCOLUMN_REALPATH))
+	if (realpath == TreeViewFactory::getValue<gchar*,string>(m, &iter, DIRCOLUMN_REALPATH))
 		i->update (this, true);
 }
 

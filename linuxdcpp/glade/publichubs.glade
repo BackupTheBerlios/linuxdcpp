@@ -23,7 +23,7 @@
       <property name="border_width">5</property>
       <property name="visible">True</property>
       <property name="homogeneous">False</property>
-      <property name="spacing">5</property>
+      <property name="spacing">4</property>
 
       <child>
 	<widget class="GtkScrolledWindow" id="scrolledwindow1">
@@ -56,7 +56,7 @@
 	<widget class="GtkHBox" id="hbox1">
 	  <property name="visible">True</property>
 	  <property name="homogeneous">False</property>
-	  <property name="spacing">5</property>
+	  <property name="spacing">4</property>
 
 	  <child>
 	    <widget class="GtkFrame" id="fram1">
@@ -184,7 +184,7 @@
 	    <widget class="GtkVBox" id="vbox2">
 	      <property name="visible">True</property>
 	      <property name="homogeneous">False</property>
-	      <property name="spacing">5</property>
+	      <property name="spacing">4</property>
 
 	      <child>
 		<widget class="GtkButton" id="filterButton">

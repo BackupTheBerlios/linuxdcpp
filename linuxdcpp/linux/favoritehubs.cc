@@ -131,7 +131,10 @@ void FavoriteHubs::onToggledClicked_gui (GtkCellRendererToggle *cell,
   	gtk_list_store_set (GTK_LIST_STORE (m), &iter, FavoriteHubs::COLUMN_AUTOCONNECT, fixed, -1);
 
 	FavoriteHubEntry *e = TreeViewFactory::getValue<gpointer,FavoriteHubEntry*>(m, &iter, COLUMN_ENTRY);
-	((FavoriteHubs*)data)->setConnect_client (e, fixed);
+	typedef Func2<FavoriteHubs, FavoriteHubEntry*, bool> F2;
+	F2 *func;
+	func = new F2 ((FavoriteHubs*)data, &FavoriteHubs::setConnect_client, e, fixed);
+	WulforManager::get()->dispatchClientFunc(func);
 }
 GtkTreeIter FavoriteHubs::addEntry_gui(const FavoriteHubEntry* entry, int pos)
 {
@@ -156,35 +159,38 @@ gboolean FavoriteHubs::onButtonPressed_gui (GtkWidget *widget, GdkEventButton *e
 }
 gboolean FavoriteHubs::onButtonReleased_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
 {
+	FavoriteHubs *f = (FavoriteHubs*)user_data;
+	GtkTreeIter iter;
+	GtkTreeModel *m = GTK_TREE_MODEL (f->favoriteStore);
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(f->favoriteView->get ());
+
+	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
+	{
+		gtk_widget_set_sensitive (f->button["Properties"], FALSE);
+		gtk_widget_set_sensitive (f->button["Remove"], FALSE);
+		gtk_widget_set_sensitive (f->button["MoveUp"], FALSE);
+		gtk_widget_set_sensitive (f->button["MoveDown"], FALSE);
+		gtk_widget_set_sensitive (f->button["Connect"], FALSE);
+		return FALSE;
+	}
+	gtk_widget_set_sensitive (f->button["Properties"], TRUE);
+	gtk_widget_set_sensitive (f->button["Remove"], TRUE);
+	gtk_widget_set_sensitive (f->button["MoveUp"], TRUE);
+	gtk_widget_set_sensitive (f->button["MoveDown"], TRUE);
+	gtk_widget_set_sensitive (f->button["Connect"], TRUE);	
+	
 	if (((FavoriteHubs*)user_data)->previous == GDK_BUTTON_PRESS)
     	{
 		if (event->button == 3)
-		{
-				GtkTreeSelection *selection;
-
-				selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
-				if (gtk_tree_selection_count_selected_rows(selection)  == 1)
-					((FavoriteHubs*)user_data)->popup_menu_gui(event, user_data);
-		}
+			((FavoriteHubs*)user_data)->popup_menu_gui(event, user_data);
 	}
 	else if (((FavoriteHubs*)user_data)->previous == GDK_2BUTTON_PRESS)
 	{
 		if (event->button == 1)
-		{
-			FavoriteHubs *f = ((FavoriteHubs*)user_data);
-			GtkTreeSelection *selection;
-			GtkTreeIter iter;
-			GtkTreeModel *m = GTK_TREE_MODEL (f->favoriteStore);
-			selection = gtk_tree_view_get_selection(f->favoriteView->get ());
-		
-			if (!gtk_tree_selection_get_selected (selection, &m, &iter))
-				return FALSE;
-			
 			WulforManager::get()->addHub_gui(	TreeViewFactory::getValue<gchar*,string>(m, &iter, COLUMN_SERVER),
 											TreeViewFactory::getValue<gchar*,string>(m, &iter, COLUMN_NICK),
 											TreeViewFactory::getValue<gchar*,string>(m, &iter, COLUMN_USERDESCRIPTION),
 											TreeViewFactory::getValue<gchar*,string>(m, &iter, COLUMN_PASSWORD));					
-		}	
 	}
 
 	return FALSE;
@@ -218,6 +224,12 @@ void FavoriteHubs::remove_gui (GtkWidget *widget, gpointer data)
 		return;
 
 	f->remove_client (TreeViewFactory::getValue<gpointer,FavoriteHubEntry*>(m, &iter, COLUMN_ENTRY));
+	
+	gtk_widget_set_sensitive (f->button["Properties"], FALSE);
+	gtk_widget_set_sensitive (f->button["Remove"], FALSE);
+	gtk_widget_set_sensitive (f->button["MoveUp"], FALSE);
+	gtk_widget_set_sensitive (f->button["MoveDown"], FALSE);
+	gtk_widget_set_sensitive (f->button["Connect"], FALSE);
 }
 void FavoriteHubs::moveUp_gui (GtkWidget *widget, gpointer data)
 {

@@ -20,10 +20,10 @@
 
   <child>
     <widget class="GtkVBox" id="box">
-      <property name="border_width">5</property>
+      <property name="border_width">8</property>
       <property name="visible">True</property>
       <property name="homogeneous">False</property>
-      <property name="spacing">5</property>
+      <property name="spacing">4</property>
 
       <child>
 	<widget class="GtkHPaned" id="pane">
@@ -94,7 +94,7 @@
 	<widget class="GtkHBox" id="hbox1">
 	  <property name="visible">True</property>
 	  <property name="homogeneous">False</property>
-	  <property name="spacing">5</property>
+	  <property name="spacing">4</property>
 
 	  <child>
 	    <widget class="GtkStatusbar" id="mainStatus">
