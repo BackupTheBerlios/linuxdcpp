@@ -189,7 +189,10 @@ void Search::searchFor (ustring searchString)
 	searchPressed ();
 }
 
-void Search::searchPressed() {
+void Search::searchPressed()
+{
+	if (search.get_entry ()->get_text () == "")
+		return;
 	string name;
 	int64_t size;
 	SearchManager::TypeModes fileType;
@@ -221,12 +224,16 @@ void Search::searchPressed() {
 		search.set_popdown_strings (popdown);
 	}
 
+	
 	SearchManager::getInstance()->search(name, size, fileType, sizeType);
 	status.pop (1);
 	status.push ("Searching for " + search.get_entry ()->get_text () + "...");
 }
 
-void Search::on(SearchManagerListener::SR, SearchResult *result) throw() {
+void Search::on(SearchManagerListener::SR, SearchResult *result) throw()
+{
+	if (!result)
+		return;
 	TreeModel::iterator it;
 
 	//in case we don't want users with no free slots
