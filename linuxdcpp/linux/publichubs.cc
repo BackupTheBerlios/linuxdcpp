@@ -1,5 +1,6 @@
 #include "publichubs.hh"
 #include "wulformanager.hh"
+#include "treeviewfactory.hh"
 #include <iostream>
 #include <sstream>
 
@@ -47,11 +48,11 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	
 	hubStore = gtk_list_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_STRING);
 	gtk_tree_view_set_model(hubView, GTK_TREE_MODEL(hubStore));
-	TreeView treeView(hubView);
-	treeView.addColumn_gui(COLUMN_NAME, "Name", TreeView::STRING, WIDTH_NAME);
-	treeView.addColumn_gui(COLUMN_DESC, "Description", TreeView::STRING, WIDTH_DESC);
-	treeView.addColumn_gui(COLUMN_USERS, "Users", TreeView::INT, WIDTH_USERS);
-	treeView.addColumn_gui(COLUMN_ADDRESS, "Address", TreeView::STRING, WIDTH_ADDRESS);
+	TreeViewFactory factory(hubView);
+	factory.addColumn_gui(COLUMN_NAME, "Name", TreeViewFactory::STRING, WIDTH_NAME);
+	factory.addColumn_gui(COLUMN_DESC, "Description", TreeViewFactory::STRING, WIDTH_DESC);
+	factory.addColumn_gui(COLUMN_USERS, "Users", TreeViewFactory::INT, WIDTH_USERS);
+	factory.addColumn_gui(COLUMN_ADDRESS, "Address", TreeViewFactory::STRING, WIDTH_ADDRESS);
 
 	GObject *o;
 	o = G_OBJECT(glade_xml_get_widget(xml, "filterButton"));

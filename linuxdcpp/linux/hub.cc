@@ -1,5 +1,6 @@
 #include "hub.hh"
 #include "wulformanager.hh"
+#include "treeviewfactory.hh"
 
 #include <iostream>
 #include <sstream>
@@ -35,10 +36,10 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	
 	nickStore = gtk_list_store_new(3, GDK_TYPE_PIXBUF, G_TYPE_STRING, G_TYPE_STRING);
 	gtk_tree_view_set_model(nickView, GTK_TREE_MODEL(nickStore));
-	TreeView treeView(nickView);
-	treeView.addColumn_gui(COLUMN_ICON, "", TreeView::PIXBUF, WIDTH_ICON);
-	treeView.addColumn_gui(COLUMN_NICK, "Nick", TreeView::STRING, WIDTH_NICK);
-	treeView.addColumn_gui(COLUMN_SHARED, "Shared", TreeView::STRING, WIDTH_SHARED);
+	TreeViewFactory factory(nickView);
+	factory.addColumn_gui(COLUMN_ICON, "", TreeViewFactory::PIXBUF, WIDTH_ICON);
+	factory.addColumn_gui(COLUMN_NICK, "Nick", TreeViewFactory::STRING, WIDTH_NICK);
+	factory.addColumn_gui(COLUMN_SHARED, "Shared", TreeViewFactory::STRING, WIDTH_SHARED);
 
 	chatBuffer = gtk_text_buffer_new(NULL);
 	gtk_text_view_set_buffer(chatText, chatBuffer);

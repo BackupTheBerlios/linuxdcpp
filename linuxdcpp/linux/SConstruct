@@ -1,7 +1,7 @@
 gui_files = [	'selecter.cc',				'wulformanager.cc',
 				'bookentry.cc',				'mainwindow.cc',
 				'wulfor.cc', 				'prefix.cc',
-				'publichubs.cc',			'treeview.cc',
+				'publichubs.cc',			'treeviewfactory.cc',
 				'hub.cc',					'privatemessage.cc']
 
 Import('env')

@@ -22,7 +22,7 @@
 #include <gtk/gtk.h>
 #include <string>
 
-class TreeView {
+class TreeViewFactory {
 	public:
 		typedef enum {
 			STRING,
@@ -31,7 +31,7 @@ class TreeView {
 			//PROGRESS
 		} type_t;
 	
-		TreeView(GtkTreeView *view);
+		TreeViewFactory(GtkTreeView *view);
 		GtkTreeView *get();
 		void addColumn_gui(int id, std::string title, type_t type, int width);
 
@@ -40,5 +40,5 @@ class TreeView {
 };
 
 #else
-class TreeView;
+class TreeViewFactory;
 #endif

@@ -1,17 +1,17 @@
-#include "treeview.hh"
+#include "treeviewfactory.hh"
 
 using namespace std;
 
-TreeView::TreeView(GtkTreeView *view) {
+TreeViewFactory::TreeViewFactory(GtkTreeView *view) {
 	this->view = view;
 	gtk_tree_view_set_headers_clickable(view, TRUE);
 }
 
-GtkTreeView *TreeView::get() {
+GtkTreeView *TreeViewFactory::get() {
 	return view;
 }
 
-void TreeView::addColumn_gui(int id, std::string title, type_t type, int width) {
+void TreeViewFactory::addColumn_gui(int id, std::string title, type_t type, int width) {
 	GtkTreeViewColumn *col;
 	
 	switch (type) {

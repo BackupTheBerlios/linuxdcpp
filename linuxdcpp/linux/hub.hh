@@ -32,7 +32,6 @@
 #include <client/User.h>
 
 #include "bookentry.hh"
-#include "treeview.hh"
 
 class Hub:
 	public BookEntry,
