@@ -31,6 +31,7 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	nickListCallback(this, &Hub::popupNickMenu_gui),
 	browseCallback(this, &Hub::browseItemClicked_gui),
 	msgCallback(this, &Hub::msgItemClicked_gui),
+	grantCallback(this, &Hub::grantItemClicked_gui),
 	WIDTH_ICON(20),
 	WIDTH_NICK(100),
 	WIDTH_SHARED(50)
@@ -72,8 +73,10 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	nickMenu = GTK_MENU(gtk_menu_new());
 	browseItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Browse files"));
 	msgItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Private message"));
+	grantItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Grant slot"));
 	gtk_menu_shell_append(GTK_MENU_SHELL(nickMenu), GTK_WIDGET(browseItem));
 	gtk_menu_shell_append(GTK_MENU_SHELL(nickMenu), GTK_WIDGET(msgItem));
+	gtk_menu_shell_append(GTK_MENU_SHELL(nickMenu), GTK_WIDGET(grantItem));
 
 	pthread_mutex_init(&clientLock, NULL);
 	client = NULL;
@@ -101,6 +104,7 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	nickListCallback.connect_after(G_OBJECT(nickView), "button-release-event", NULL);
 	browseCallback.connect(G_OBJECT(browseItem), "activate", NULL);
 	msgCallback.connect(G_OBJECT(msgItem), "activate", NULL);
+	grantCallback.connect(G_OBJECT(grantItem), "activate", NULL);
 }
 
 Hub::~Hub() {
@@ -307,6 +311,8 @@ void Hub::browseItemClicked_gui(GtkMenuItem *, gpointer) {
 	typedef Func1<Hub, string> F1;
 	F1 *func = new F1(this, &Hub::getFileList_client, string(text));
 	WulforManager::get()->dispatchClientFunc(func);
+	
+	delete[] text;
 }
 
 void Hub::msgItemClicked_gui(GtkMenuItem *, gpointer) {
@@ -321,6 +327,32 @@ void Hub::msgItemClicked_gui(GtkMenuItem *, gpointer) {
 	if (client) {
 		User::Ptr user = ClientManager::getInstance()->getUser(text, client);
 		WulforManager::get()->addPrivMsg_gui(user);
+	}
+	pthread_mutex_unlock(&clientLock);
+	
+	delete[] text;
+}
+
+void Hub::grantItemClicked_gui(GtkMenuItem *, gpointer) {
+	GtkTreeIter iter;
+	char *text;
+	gtk_tree_selection_get_selected(nickSelection, NULL, &iter);
+	gtk_tree_model_get(GTK_TREE_MODEL(nickStore), &iter,
+		COLUMN_NICK, &text,
+		-1);
+
+	typedef Func1<Hub, string> F1;
+	F1 *func = new F1(this, &Hub::grantSlot_client, string(text));
+	WulforManager::get()->dispatchClientFunc(func);
+	
+	delete[] text;
+}
+
+void Hub::grantSlot_client(string userName) {
+	pthread_mutex_lock(&clientLock);
+	if (client) {
+		User::Ptr user = ClientManager::getInstance()->getUser(userName, client);
+		if (user) UploadManager::getInstance()->reserveSlot(user);
 	}
 	pthread_mutex_unlock(&clientLock);
 }

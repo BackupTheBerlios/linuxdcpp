@@ -62,6 +62,7 @@ class Hub:
 		void popupNickMenu_gui(GtkWidget *, GdkEventButton *, gpointer);
 		void browseItemClicked_gui(GtkMenuItem *, gpointer);
 		void msgItemClicked_gui(GtkMenuItem *, gpointer);
+		void grantItemClicked_gui(GtkMenuItem *, gpointer);
 
 		//to be called from client thread
 		void connectClient_client(string address, 
@@ -70,6 +71,7 @@ class Hub:
 		void updateUser_client(User::Ptr user);
 		void sendMessage_client(std::string message);
 		void getFileList_client(std::string nick);
+		void grantSlot_client(string userName);
 
 		//all this from ClientListener...
 		void on(ClientListener::Connecting, Client *client) throw();
@@ -105,13 +107,13 @@ class Hub:
 
 		Callback2<Hub, void, GtkEntry *> enterCallback;
 		Callback3<Hub, void, GtkWidget *, GdkEventButton *> nickListCallback;
-		Callback2<Hub, void, GtkMenuItem *> browseCallback, msgCallback;
+		Callback2<Hub, void, GtkMenuItem *> browseCallback, msgCallback, grantCallback;
 
 		std::set<std::string> nicks;
 		pthread_mutex_t clientLock;
 
 		GtkMenu *nickMenu;
-		GtkMenuItem *browseItem, *msgItem;
+		GtkMenuItem *browseItem, *msgItem, *grantItem;
 
 		std::map<std::string, GdkPixbuf *> userIcons;
 
