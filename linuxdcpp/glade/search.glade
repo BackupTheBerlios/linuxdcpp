@@ -2,7 +2,6 @@
 <!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
 
 <glade-interface>
-<requires lib="gnome"/>
 
 <widget class="GtkWindow" id="searchWindow">
   <property name="width_request">640</property>
@@ -22,9 +21,10 @@
 
   <child>
     <widget class="GtkVBox" id="mainBox">
+      <property name="border_width">5</property>
       <property name="visible">True</property>
       <property name="homogeneous">False</property>
-      <property name="spacing">0</property>
+      <property name="spacing">5</property>
 
       <child>
 	<widget class="GtkHBox" id="hbox1">
@@ -34,10 +34,10 @@
 
 	  <child>
 	    <widget class="GtkVBox" id="vbox2">
-	      <property name="border_width">8</property>
+	      <property name="border_width">5</property>
 	      <property name="visible">True</property>
 	      <property name="homogeneous">False</property>
-	      <property name="spacing">8</property>
+	      <property name="spacing">5</property>
 
 	      <child>
 		<widget class="GtkVBox" id="vbox3">
@@ -117,7 +117,7 @@
 		    <widget class="GtkHBox" id="hbox2">
 		      <property name="visible">True</property>
 		      <property name="homogeneous">False</property>
-		      <property name="spacing">0</property>
+		      <property name="spacing">5</property>
 
 		      <child>
 			<widget class="GtkComboBox" id="comboboxSize">
@@ -394,7 +394,6 @@ TTH</property>
 
 	  <child>
 	    <widget class="GtkScrolledWindow" id="scrolledwindow2">
-	      <property name="border_width">8</property>
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
@@ -431,7 +430,7 @@ TTH</property>
 	<widget class="GtkHBox" id="hbox4">
 	  <property name="visible">True</property>
 	  <property name="homogeneous">False</property>
-	  <property name="spacing">0</property>
+	  <property name="spacing">5</property>
 
 	  <child>
 	    <widget class="GtkStatusbar" id="statusbar1">
