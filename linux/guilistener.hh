@@ -187,15 +187,9 @@ class GuiListener:
 			{realOn(t, a);}
 		void on(ClientListener::Message t, Client* a, const string& b) throw() 
 			{realOnConst(t, a, b);}
-		/*
-			this is not supported since SigCX only supports 3 arg slots
-			in the thread_tunnel. Should probably compile a special
-			version of SigCX at some point...
-		*/
 		void on(ClientListener::PrivateMessage t, Client* a, const User::Ptr& b,
 			const string& c) throw()
 			{realOnConst(t, a, b, c);}
-		//see above
 		void on(ClientListener::UserCommand t, Client* a, int b, int c, 
 			const string& d, const string& e) throw()
 			{realOnConst(t, a, b, c, d, e);}
@@ -206,7 +200,6 @@ class GuiListener:
 		void on(ClientListener::SearchFlood t, Client* a, const string& b)
 			throw()
 			{realOnConst(t, a, b);}
-		//see above
 		void on(ClientListener::NmdcSearch t, Client* a, const string& b, int c,
 			int64_t d, int e, const string& f) throw()
 			{realOnConst(t, a, b, c, d, e, f);}
@@ -228,7 +221,7 @@ class GuiListener:
 			void (Type::* func)(T0) = &Type::on;
 
 			SigC::Slot1<void, T0> callback = open_tunnel(
-				tunnel, SigC::slot(*myListener, &Listener::on), false);
+				tunnel, SigC::slot(*myListener, &Listener::on), true);
 			callback(type);
 		}
 
@@ -238,7 +231,7 @@ class GuiListener:
 			void (Type::* func)(T0, T1) = &Type::on;
 			
 			SigC::Slot2<void, T0, T1> callback = open_tunnel(
-				tunnel, SigC::slot(*myListener, func), false);
+				tunnel, SigC::slot(*myListener, func), true);
 			callback(type, p1);
 		}
 
@@ -248,7 +241,7 @@ class GuiListener:
 			void (Type::* func)(T0, T1, T2) = &Type::on;
 
 			SigC::Slot3<void, T0, T1, T2> callback = open_tunnel(
-				tunnel, SigC::slot(*myListener, func), false);
+				tunnel, SigC::slot(*myListener, func), true);
 			callback(type, p1, p2);
 		}
 
@@ -258,7 +251,7 @@ class GuiListener:
 			void (Type::* func)(T0, T1, T2, T3) = &Type::on;
 			
 			SigC::Slot4<void, T0, T1, T2, T3> callback = open_tunnel(
-				tunnel, SigC::slot(*myListener, func), false);
+				tunnel, SigC::slot(*myListener, func), true);
 			callback(type, p1, p2, p3);
 		}
 
@@ -270,7 +263,7 @@ class GuiListener:
 			void (Type::* func)(T0, T1, T2, T3, T4) = &Type::on;
 
 			SigC::Slot5<void, T0, T1, T2, T3, T4> callback = open_tunnel(
-				tunnel, SigC::slot(*myListener, func), false);
+				tunnel, SigC::slot(*myListener, func), true);
 			callback(type, p1, p2, p3, p4);
 		}
 
@@ -282,7 +275,7 @@ class GuiListener:
 			void (Type::* func)(T0, T1, T2, T3, T4, T5) = &Type::on;
 
 			SigC::Slot6<void, T0, T1, T2, T3, T4, T5> callback = open_tunnel(
-				tunnel, SigC::slot(*myListener, &Listener::on), false);
+				tunnel, SigC::slot(*myListener, &Listener::on), true);
 			callback(type, p1, p2, p3, p4, p5);
 		}
 
@@ -295,7 +288,7 @@ class GuiListener:
 			void (Type::* func)(T0, T1, T3, T4, T5, T6) = &Type::on;
 
 			SigC::Slot7<void, T0, T1, T2, T3, T4, T5, T6> callback =
-				open_tunnel(tunnel, SigC::slot(*myListener, func), false);
+				open_tunnel(tunnel, SigC::slot(*myListener, func), true);
 			callback(type, p1, p2, p3, p4, p5, p6);
 		}
 
@@ -305,7 +298,7 @@ class GuiListener:
 			void (Type::* func)(T0, const T1&) = &Type::on;
 			
 			SigC::Slot2<void, T0, const T1&> callback = open_tunnel(
-				tunnel, SigC::slot(*myListener, func), false);
+				tunnel, SigC::slot(*myListener, func), true);
 			callback(type, p1);
 		}
 
@@ -315,7 +308,7 @@ class GuiListener:
 			void (Type::* func)(T0, T1, const T2&) = &Type::on;
 
 			SigC::Slot3<void, T0, T1, const T2&> callback = open_tunnel(
-				tunnel, SigC::slot(*myListener, func), false);
+				tunnel, SigC::slot(*myListener, func), true);
 			callback(type, p1, p2);
 		}
 
@@ -328,7 +321,7 @@ class GuiListener:
 				(T0, T1, const T2&, const T3&) = &Type::on;
 
 			SigC::Slot4<void, T0, T1, const T2&, const T3&> callback =
-				open_tunnel(tunnel, SigC::slot(*myListener, func), false);
+				open_tunnel(tunnel, SigC::slot(*myListener, func), true);
 			callback(type, p1, p2, p3);
 		}
 
@@ -342,7 +335,7 @@ class GuiListener:
 				= &Type::on;
 
 			SigC::Slot6<void, T0, T1, T2, T3, const T4&, const T5&> callback =
-				open_tunnel(tunnel, SigC::slot(*myListener, func), false);
+				open_tunnel(tunnel, SigC::slot(*myListener, func), true);
 			callback(type, p1, p2, p3, p4, p5);
 		}
 
@@ -356,7 +349,7 @@ class GuiListener:
 				= &Type::on;
 
 			SigC::Slot7<void, T0, T1, const T2&, T3, T4, T5, const T6&> callback
-				= open_tunnel(tunnel, SigC::slot(*myListener, func), false);
+				= open_tunnel(tunnel, SigC::slot(*myListener, func), true);
 			callback(type, p1, p2, p3, p4, p5, p6);
 		}
 
