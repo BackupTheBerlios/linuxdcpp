@@ -23,19 +23,19 @@
 #include <glade/glade.h>
 #include <iostream>
 
+#include "dialogentry.hh"
+
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/HashManager.h>
 #include <client/TimerManager.h>
 #include <client/CriticalSection.h>
 
-class Hash : public TimerManagerListener
+class Hash : public DialogEntry, public TimerManagerListener
 {
 public:
-	Hash ();
+	Hash (GCallback closeCallback);
 	~Hash ();
-	
-	GtkWidget *getDialog () { return dialog; }
 	
 	void updateStats ();
 	
@@ -46,10 +46,8 @@ private:
 	int64_t startBytes;
 	size_t startFiles;
 	u_int32_t startTime;
-	
-	GtkWidget *dialog;
+
 	GtkLabel *lFile;
-	GtkLabel *lFiles;
 	GtkLabel *lSpeed;
 	GtkLabel *lTime;
 	GtkProgressBar *pProgress;

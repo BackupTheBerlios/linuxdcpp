@@ -22,6 +22,55 @@
 #include <sstream>
 
 using namespace std;
+
+SettingsManager::IntSetting Settings::optionSettings[] = { SettingsManager::FILTER_MESSAGES,
+	SettingsManager::TIME_STAMPS,
+	SettingsManager::CONFIRM_EXIT,
+	SettingsManager::STATUS_IN_CHAT,
+	SettingsManager::SHOW_JOINS,
+	SettingsManager::FAV_SHOW_JOINS,
+	SettingsManager::FINISHED_DIRTY,
+	SettingsManager::QUEUE_DIRTY,
+	SettingsManager::TAB_DIRTY,
+	SettingsManager::CONFIRM_HUB_REMOVAL};
+
+SettingsManager::IntSetting Settings::advancedSettings[] = { SettingsManager::AUTO_AWAY,
+	SettingsManager::AUTO_FOLLOW,
+	SettingsManager::CLEAR_SEARCH,
+	SettingsManager::OPEN_PUBLIC,
+	SettingsManager::OPEN_QUEUE,
+	SettingsManager::OPEN_FAVORITE_HUBS,
+	SettingsManager::OPEN_FINISHED_DOWNLOADS,
+	SettingsManager::AUTO_SEARCH,
+	SettingsManager::POPUP_PMS,
+	SettingsManager::IGNORE_OFFLINE,
+	SettingsManager::POPUP_OFFLINE,
+	SettingsManager::POPUNDER_FILELIST,
+	SettingsManager::POPUNDER_PM,
+	SettingsManager::LIST_DUPES,
+	SettingsManager::SMALL_SEND_BUFFER,
+	SettingsManager::KEEP_LISTS,
+	SettingsManager::AUTO_KICK,
+	SettingsManager::SHOW_PROGRESS_BARS,
+	SettingsManager::SFV_CHECK,
+	SettingsManager::AUTO_UPDATE_LIST,
+	SettingsManager::ANTI_FRAG,
+	SettingsManager::NO_AWAYMSG_TO_BOTS,
+	SettingsManager::SKIP_ZERO_BYTE,
+	SettingsManager::ADLS_BREAK_ON_FIRST,
+	SettingsManager::TAB_COMPLETION,
+	SettingsManager::COMPRESS_TRANSFERS,
+	SettingsManager::HUB_USER_COMMANDS,
+	SettingsManager::AUTO_SEARCH_AUTO_MATCH,
+	SettingsManager::LOG_FILELIST_TRANSFERS,
+	SettingsManager::SEND_UNKNOWN_COMMANDS,
+	SettingsManager::ADD_FINISHED_INSTANTLY,
+	SettingsManager::SETTINGS_USE_UPNP,
+	SettingsManager::DONT_DL_ALREADY_SHARED,
+	SettingsManager::SETTINGS_USE_CTRL_FOR_LINE_HISTORY,
+	SettingsManager::SETTINGS_OPEN_NEW_WINDOW
+	};
+	
 Settings::~Settings ()
 {
 	pthread_mutex_destroy(&settingsLock);
@@ -115,16 +164,59 @@ Settings::Settings ()
 		shareItems["Upload"] = glade_xml_get_widget(xml, "spinbuttonUploadSlot");
 		shareItems["Virtual"] = glade_xml_get_widget(xml, "entryVirtual");
 	}
+	{// Appearance
+		appearanceItems["Options"] = glade_xml_get_widget(xml, "treeviewOptions");
+		appearanceItems["Away"] = glade_xml_get_widget(xml, "entryAway");
+		appearanceItems["Timestamp"] = glade_xml_get_widget(xml, "entryTimestamp");
+	}
+	{// Logs and sound
+		logItems["Directory"] = glade_xml_get_widget(xml, "entryDir");
+		logItems["Browse"] = glade_xml_get_widget(xml, "buttonLog");
+		g_signal_connect (G_OBJECT (logItems["Browse"]), "clicked", G_CALLBACK (onLogBrowseClicked_gui), (gpointer)this);
+		logItems["Main"] = glade_xml_get_widget(xml, "checkbuttonMain");
+		g_signal_connect (G_OBJECT (logItems["Main"]), "toggled", G_CALLBACK (onLogMainClicked_gui), (gpointer)this);
+		logItems["Format1"] = glade_xml_get_widget(xml, "labelFormat1");
+		logItems["EMain"] = glade_xml_get_widget(xml, "entryMain");
+		logItems["Private"] = glade_xml_get_widget(xml, "checkbuttonPrivate");
+		g_signal_connect (G_OBJECT (logItems["Private"]), "toggled", G_CALLBACK (onLogPrivateClicked_gui), (gpointer)this);
+		logItems["Format2"] = glade_xml_get_widget(xml, "labelFormat2");
+		logItems["EPrivate"] = glade_xml_get_widget(xml, "entryPrivate");		
+		logItems["Download"] = glade_xml_get_widget(xml, "checkbuttonDownloads");
+		g_signal_connect (G_OBJECT (logItems["Download"]), "toggled", G_CALLBACK (onLogDownloadClicked_gui), (gpointer)this);
+		logItems["Format3"] = glade_xml_get_widget(xml, "labelFormat3");
+		logItems["EDownload"] = glade_xml_get_widget(xml, "entryDownloads");		
+		logItems["Upload"] = glade_xml_get_widget(xml, "checkbuttonUploads");
+		g_signal_connect (G_OBJECT (logItems["Upload"]), "toggled", G_CALLBACK (onLogUploadClicked_gui), (gpointer)this);
+		logItems["Format4"] = glade_xml_get_widget(xml, "labelFormat4");
+		logItems["EUpload"] = glade_xml_get_widget(xml, "entryUploads");
+		
+		logItems["System"] = glade_xml_get_widget(xml, "checkbuttonSystem");
+		logItems["Status"] = glade_xml_get_widget(xml, "checkbuttonStatus");
+		logItems["SPrivate"] = glade_xml_get_widget(xml, "checkbuttonPM");
+		logItems["SPrivateWindow"] = glade_xml_get_widget(xml, "checkbuttonPMW");
+	}
+	{// Advanced
+		advancedItems["Rollback"] = glade_xml_get_widget(xml, "spinbuttonRollback");
+		advancedItems["Hash"] = glade_xml_get_widget(xml, "spinbuttonHash");
+		advancedItems["Write"] = glade_xml_get_widget(xml, "spinbuttonWrite");
+		advancedItems["Advanced"] = glade_xml_get_widget(xml, "treeviewAdvanced");
+	}
 	
 	pthread_mutex_init(&settingsLock, NULL);
 	
 	initGeneral_gui ();
 	initDownloads_gui ();
 	initSharing_gui ();
+	initAppearance_gui ();
+	initLog_gui ();
+	initAdvanced_gui ();
 }
 void Settings::saveSettings_client ()
 {
 	SettingsManager *sm = SettingsManager::getInstance ();
+	GtkTreeIter iter;
+	GtkTreeModel *m;
+	vector<gboolean> o;
 	
 	// General
 	pthread_mutex_lock(&settingsLock);
@@ -163,6 +255,62 @@ void Settings::saveSettings_client ()
 	// Sharing
 	sm->set (SettingsManager::MIN_UPLOAD_SPEED, (int)gtk_spin_button_get_value (GTK_SPIN_BUTTON (shareItems["Extra"])));
 	sm->set (SettingsManager::SLOTS, (int)gtk_spin_button_get_value (GTK_SPIN_BUTTON (shareItems["Upload"])));
+	
+	// Appearance
+	m = GTK_TREE_MODEL (appearanceStore);
+	if (gtk_tree_model_get_iter_first (m, &iter))
+	{
+		while (1)
+		{
+			o.push_back (TreeViewFactory::getValue<gboolean>(m, &iter, APPEARANCE_USE));
+			if (!gtk_tree_model_iter_next (m, &iter))
+				break;
+		}
+	}
+	
+	for (int i=0;i<o.size (); i++)
+		sm->set (optionSettings[i], o[i]);
+		
+	sm->set (SettingsManager::DEFAULT_AWAY_MESSAGE, string (gtk_entry_get_text (GTK_ENTRY (appearanceItems["Away"]))));
+	sm->set (SettingsManager::TIME_STAMPS_FORMAT, string (gtk_entry_get_text (GTK_ENTRY (appearanceItems["Timestamp"]))));
+
+	// Logs and sound
+		
+	sm->set (SettingsManager::LOG_DIRECTORY, string (gtk_entry_get_text (GTK_ENTRY (logItems["Directory"]))));
+	sm->set (SettingsManager::LOG_MAIN_CHAT, gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (logItems["Main"])));
+	sm->set (SettingsManager::LOG_FORMAT_MAIN_CHAT, string (gtk_entry_get_text (GTK_ENTRY (logItems["EMain"]))));
+	sm->set (SettingsManager::LOG_PRIVATE_CHAT, gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (logItems["Private"])));
+	sm->set (SettingsManager::LOG_FORMAT_PRIVATE_CHAT, string (gtk_entry_get_text (GTK_ENTRY (logItems["EPrivate"]))));
+	sm->set (SettingsManager::LOG_DOWNLOADS, gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (logItems["Download"])));
+	sm->set (SettingsManager::LOG_FORMAT_POST_DOWNLOAD, string (gtk_entry_get_text (GTK_ENTRY (logItems["EDownload"]))));
+	sm->set (SettingsManager::LOG_UPLOADS, gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (logItems["Upload"])));
+	sm->set (SettingsManager::LOG_FORMAT_POST_UPLOAD, string (gtk_entry_get_text (GTK_ENTRY (logItems["EUpload"]))));	
+	
+	sm->set (SettingsManager::LOG_SYSTEM, gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (logItems["System"])));
+	sm->set (SettingsManager::LOG_STATUS_MESSAGES, gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (logItems["Status"])));
+	sm->set (SettingsManager::PRIVATE_MESSAGE_BEEP, gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (logItems["SPrivate"])));
+	sm->set (SettingsManager::PRIVATE_MESSAGE_BEEP_OPEN, gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (logItems["SPrivateWindow"])));
+	
+	// Advanced
+	o.clear ();
+	m = GTK_TREE_MODEL (advancedStore);
+	if (gtk_tree_model_get_iter_first (m, &iter))
+	{
+		while (1)
+		{
+			o.push_back (TreeViewFactory::getValue<gboolean>(m, &iter, ADVANCED_USE));
+			if (!gtk_tree_model_iter_next (m, &iter))
+				break;
+		}
+	}
+	
+	for (int i=0;i<o.size (); i++)
+		sm->set (advancedSettings[i], o[i]);
+		
+	sm->set (SettingsManager::ROLLBACK, Util::toString (gtk_spin_button_get_value (GTK_SPIN_BUTTON (advancedItems["Rollback"]))));
+	sm->set (SettingsManager::MAX_HASH_SPEED, Util::toString (gtk_spin_button_get_value (GTK_SPIN_BUTTON (advancedItems["Hash"]))));
+	sm->set (SettingsManager::BUFFER_SIZE, Util::toString (gtk_spin_button_get_value (GTK_SPIN_BUTTON (advancedItems["Write"]))));
+	
 	pthread_mutex_unlock(&settingsLock);
 }
 void Settings::initGeneral_gui ()
@@ -339,6 +487,7 @@ void Settings::onBrowseF_gui (GtkWidget *widget, gpointer user_data)
 		gtk_entry_set_text (GTK_ENTRY (s->downloadItems["Finished"]), path.c_str ());
 	}
 	gtk_widget_hide (s->dirChooser);	
+	s->dirChooser = NULL;
 }
 void Settings::onBrowseUF_gui (GtkWidget *widget, gpointer user_data)
 {
@@ -359,6 +508,7 @@ void Settings::onBrowseUF_gui (GtkWidget *widget, gpointer user_data)
 		gtk_entry_set_text (GTK_ENTRY (s->downloadItems["Unfinished"]), path.c_str ());
 	}
 	gtk_widget_hide (s->dirChooser);	
+	s->dirChooser = NULL;
 }
 void Settings::setPublicHubs_client (string list)
 {
@@ -510,6 +660,7 @@ void Settings::onAddFavorite_gui (GtkWidget *widget, gpointer user_data)
 		string path = gtk_file_chooser_get_current_folder (GTK_FILE_CHOOSER (s->dirChooser));
 		s->lastdir = path;
 		gtk_widget_hide (s->dirChooser);
+		s->dirChooser = NULL;
 
 		gtk_entry_set_text (GTK_ENTRY (s->downloadItems["Name"]), "");
 		response = gtk_dialog_run (GTK_DIALOG (s->favoriteName));
@@ -542,7 +693,11 @@ void Settings::onAddFavorite_gui (GtkWidget *widget, gpointer user_data)
 		gtk_widget_hide (s->favoriteName);
 	}
 	else
+	{
 		gtk_widget_hide (s->dirChooser);	
+		s->dirChooser = NULL;
+	}
+		
 }
 bool Settings::removeFavoriteDir_client (string path)
 {
@@ -638,6 +793,7 @@ void Settings::onAddShare_gui (GtkWidget *widget, gpointer user_data)
 		string path = gtk_file_chooser_get_current_folder (GTK_FILE_CHOOSER (s->dirChooser));
 		s->lastdir = path;
 		gtk_widget_hide (s->dirChooser);
+		s->dirChooser = NULL;
 
 		gtk_entry_set_text (GTK_ENTRY (s->shareItems["Virtual"]), "");
 		response = gtk_dialog_run (GTK_DIALOG (s->virtualName));
@@ -673,7 +829,10 @@ void Settings::onAddShare_gui (GtkWidget *widget, gpointer user_data)
 		gtk_widget_hide (s->virtualName);
 	}
 	else
+	{
 		gtk_widget_hide (s->dirChooser);	
+		s->dirChooser = NULL;
+	}
 }
 void Settings::onRemoveShare_gui (GtkWidget *widget, gpointer user_data)
 {
@@ -732,4 +891,212 @@ gboolean Settings::onShareHiddenPressed_gui (GtkToggleButton *togglebutton, gpoi
 										-1);
 	}
 	gtk_label_set_text (GTK_LABEL (s->shareItems["Size"]), string ("Total size: " +Util::formatBytes(ShareManager::getInstance()->getShareSize())).c_str ());
+}
+
+// Appearance
+void Settings::initAppearance_gui ()
+{
+	appearanceStore = gtk_list_store_new (2, G_TYPE_BOOLEAN, G_TYPE_STRING);
+	gtk_tree_view_set_model(GTK_TREE_VIEW (appearanceItems["Options"]), GTK_TREE_MODEL (appearanceStore));
+	appearance = new TreeViewFactory (GTK_TREE_VIEW (appearanceItems["Options"]));
+	
+	appearance->addColumn_gui (APPEARANCE_USE, "", TreeViewFactory::BOOL, -1);
+	appearance->addColumn_gui (APPEARANCE_NAME, "", TreeViewFactory::STRING, -1);
+	
+	GList *list = gtk_tree_view_column_get_cell_renderers (gtk_tree_view_get_column(GTK_TREE_VIEW (appearanceItems["Options"]), APPEARANCE_USE));
+	GtkCellRenderer *renderer = (GtkCellRenderer*)list->data;
+	g_signal_connect (renderer, "toggled", G_CALLBACK (onAppearanceToggledClicked_gui), (gpointer)this);	
+	
+	addOption ("Filter kick and NMDC debug messages", SETTING (FILTER_MESSAGES));
+	addOption ("Show timestamps in chat by default", SETTING (TIME_STAMPS));
+	addOption ("Confirm application exit", SETTING (CONFIRM_EXIT));
+	addOption ("View status messages in main chat", SETTING (STATUS_IN_CHAT));
+	addOption ("Show joins / parts in chat by default", SETTING (SHOW_JOINS));
+	addOption ("Only show joins / parts for favorite users", SETTING (FAV_SHOW_JOINS));
+	addOption ("Set Finished Manager(s) tab bold when an entry is added", SETTING (FINISHED_DIRTY));
+	addOption ("Set Download Queue tab bold when contents change", SETTING (QUEUE_DIRTY));
+	addOption ("Set hub/PM tab bold when contents change", SETTING (TAB_DIRTY));
+	addOption ("Confirm favorite hub removal", SETTING (CONFIRM_HUB_REMOVAL));
+	
+	gtk_entry_set_text (GTK_ENTRY (appearanceItems["Away"]), SETTING (DEFAULT_AWAY_MESSAGE).c_str ());
+	gtk_entry_set_text (GTK_ENTRY (appearanceItems["Timestamp"]), SETTING (TIME_STAMPS_FORMAT).c_str ());
+}
+
+void Settings::addOption (string name, bool use)
+{
+	GtkTreeIter iter;
+	gtk_list_store_append (appearanceStore, &iter);
+	gtk_list_store_set (appearanceStore, &iter, APPEARANCE_USE, use, APPEARANCE_NAME, name.c_str (), -1);
+}
+
+void Settings::onAppearanceToggledClicked_gui (GtkCellRendererToggle *cell, gchar *path_str, gpointer data)
+{
+  	GtkTreeIter iter;
+  	gboolean fixed;
+	GtkTreeModel *m = gtk_tree_view_get_model (((Settings*)data)->appearance->get ());
+  	gtk_tree_model_get_iter (m, &iter, gtk_tree_path_new_from_string (path_str));
+  	gtk_tree_model_get (m, &iter, Settings::APPEARANCE_USE, &fixed, -1);
+  	fixed = !fixed;
+  	gtk_list_store_set (GTK_LIST_STORE (m), &iter, Settings::APPEARANCE_USE, fixed, -1);
+}
+
+void Settings::checkClicked ()
+{	
+	bool bmain = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (logItems["Main"]));
+	bool bprivate = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (logItems["Private"]));
+	bool bdownload = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (logItems["Download"]));
+	bool bupload = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (logItems["Upload"]));
+	{ // Main
+		gtk_widget_set_sensitive (logItems["Format1"], bmain);
+		gtk_widget_set_sensitive (logItems["EMain"], bmain);
+	}
+	{ // Private
+		gtk_widget_set_sensitive (logItems["Format2"], bprivate);
+		gtk_widget_set_sensitive (logItems["EPrivate"], bprivate);
+	}
+	{ // Downloads
+		gtk_widget_set_sensitive (logItems["Format3"], bdownload);
+		gtk_widget_set_sensitive (logItems["EDownload"], bdownload);
+	}
+	{ // Uploads
+		gtk_widget_set_sensitive (logItems["Format4"], bupload);
+		gtk_widget_set_sensitive (logItems["EUpload"], bupload);
+	}
+}
+
+void Settings::initLog_gui ()
+{
+	gtk_entry_set_text (GTK_ENTRY (logItems["Directory"]), SETTING (LOG_DIRECTORY).c_str ());
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (logItems["Main"]), BOOLSETTING (LOG_MAIN_CHAT));
+	gtk_entry_set_text (GTK_ENTRY (logItems["EMain"]), SETTING (LOG_FORMAT_MAIN_CHAT).c_str ());
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (logItems["Private"]), BOOLSETTING (LOG_PRIVATE_CHAT));
+	gtk_entry_set_text (GTK_ENTRY (logItems["EPrivate"]), SETTING (LOG_FORMAT_PRIVATE_CHAT).c_str ());
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (logItems["Download"]), BOOLSETTING (LOG_DOWNLOADS));
+	gtk_entry_set_text (GTK_ENTRY (logItems["EDownload"]), SETTING (LOG_FORMAT_POST_DOWNLOAD).c_str ());
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (logItems["Upload"]), BOOLSETTING (LOG_UPLOADS));
+	gtk_entry_set_text (GTK_ENTRY (logItems["EUpload"]), SETTING (LOG_FORMAT_POST_UPLOAD).c_str ());
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (logItems["System"]), BOOLSETTING (LOG_SYSTEM));
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (logItems["Status"]), BOOLSETTING (LOG_STATUS_MESSAGES));
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (logItems["SPrivate"]), BOOLSETTING (PRIVATE_MESSAGE_BEEP));
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (logItems["SPrivateWindow"]), BOOLSETTING (PRIVATE_MESSAGE_BEEP_OPEN));
+	
+	checkClicked ();
+}
+
+void Settings::onLogBrowseClicked_gui (GtkWidget *widget, gpointer user_data)
+{
+	Settings *s = (Settings*)user_data;
+	s->dirChooser = gtk_file_chooser_dialog_new (	"Choose directory",
+											WulforManager::get ()->getMainWindow ()->getWindow (),
+											GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
+											GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+											GTK_STOCK_OPEN, GTK_RESPONSE_OK,
+											NULL);
+	if (s->lastdir != "")
+		gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (s->dirChooser), s->lastdir.c_str ());
+	else
+		gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (s->dirChooser), gtk_entry_get_text (GTK_ENTRY (s->logItems["Directory"])));
+ 	gint response = gtk_dialog_run (GTK_DIALOG (s->dirChooser));
+	if (response == GTK_RESPONSE_OK)
+	{
+		string path = gtk_file_chooser_get_current_folder (GTK_FILE_CHOOSER (s->dirChooser));
+		s->lastdir = path;
+		if (path[path.length ()-1] != PATH_SEPARATOR)
+			path += PATH_SEPARATOR;
+		gtk_entry_set_text (GTK_ENTRY (s->logItems["Directory"]), path.c_str ());
+	}	
+	gtk_widget_hide (s->dirChooser);
+	s->dirChooser = NULL;
+}
+void Settings::onLogMainClicked_gui (GtkToggleButton *togglebutton, gpointer user_data)
+{
+	Settings *s = (Settings*)user_data;
+	s->checkClicked ();
+}
+void Settings::onLogPrivateClicked_gui (GtkToggleButton *togglebutton, gpointer user_data)
+{
+	Settings *s = (Settings*)user_data;
+	s->checkClicked ();
+}
+void Settings::onLogDownloadClicked_gui (GtkToggleButton *togglebutton, gpointer user_data)
+{
+	Settings *s = (Settings*)user_data;
+	s->checkClicked ();
+}
+void Settings::onLogUploadClicked_gui (GtkToggleButton *togglebutton, gpointer user_data)
+{
+	Settings *s = (Settings*)user_data;
+	s->checkClicked ();
+}
+
+void Settings::initAdvanced_gui ()
+{
+	advancedStore = gtk_list_store_new (2, G_TYPE_BOOLEAN, G_TYPE_STRING);
+	gtk_tree_view_set_model(GTK_TREE_VIEW (advancedItems["Advanced"]), GTK_TREE_MODEL (advancedStore));
+	advanced = new TreeViewFactory (GTK_TREE_VIEW (advancedItems["Advanced"]));
+	
+	advanced->addColumn_gui (ADVANCED_USE, "", TreeViewFactory::BOOL, -1);
+	advanced->addColumn_gui (ADVANCED_NAME, "", TreeViewFactory::STRING, -1);
+	
+	GList *list = gtk_tree_view_column_get_cell_renderers (gtk_tree_view_get_column(GTK_TREE_VIEW (advancedItems["Advanced"]), ADVANCED_USE));
+	GtkCellRenderer *renderer = (GtkCellRenderer*)list->data;
+	g_signal_connect (renderer, "toggled", G_CALLBACK (onAdvancedToggledClicked_gui), (gpointer)this);	
+	
+	addAdvanced ("Auto-away on minimize (and back on restore)", SETTING (AUTO_AWAY));
+	addAdvanced ("Automatically follow redirects", SETTING (AUTO_FOLLOW));
+	addAdvanced ("Clear search box after each search", SETTING (CLEAR_SEARCH));
+	addAdvanced ("Open the public hubs window at startup", SETTING (OPEN_PUBLIC));
+	addAdvanced ("Open the download queue window at startup", SETTING (OPEN_QUEUE));
+	addAdvanced ("Open the favorite hubs window at startup", SETTING (OPEN_FAVORITE_HUBS));
+	addAdvanced ("Open the finished downloads window at startup", SETTING (OPEN_FINISHED_DOWNLOADS));
+	addAdvanced ("Automatically search for alternative download locations", SETTING (AUTO_SEARCH));
+	addAdvanced ("Open private messages in their own window", SETTING (POPUP_PMS));
+	addAdvanced ("Ignore private messages from offline users", SETTING (IGNORE_OFFLINE));
+	addAdvanced ("Open private messages from offline users in their own window", SETTING (POPUP_OFFLINE));
+	addAdvanced ("Open new file list windows in the background", SETTING (POPUNDER_FILELIST));
+	addAdvanced ("Open new private message windows in the background", SETTING (POPUNDER_PM));
+	addAdvanced ("Keep duplicate files in your file list (duplicates never count towards your share size)", SETTING (LIST_DUPES));
+	addAdvanced ("Use small send buffer (enable if uploads slow downloads a lot)", SETTING (SMALL_SEND_BUFFER));
+	addAdvanced ("Don't delete file lists when exiting", SETTING (KEEP_LISTS));
+	addAdvanced ("Automatically disconnect users who leave the hub (does not disconnect when hub goes down / you leave it)", SETTING (AUTO_KICK));
+	addAdvanced ("Show progress bars for transfers (uses some CPU)", SETTING (SHOW_PROGRESS_BARS));
+	addAdvanced ("Enable automatic SFV checking", SETTING (SFV_CHECK));
+	addAdvanced ("Automatically refresh share list every hour", SETTING (AUTO_UPDATE_LIST));
+	addAdvanced ("Use antifragmentation method for downloads", SETTING (ANTI_FRAG));
+	addAdvanced ("Don't send the away message to bots", SETTING (NO_AWAYMSG_TO_BOTS));
+	addAdvanced ("Skip zero-byte files", SETTING (SKIP_ZERO_BYTE));
+	addAdvanced ("Break on first ADLSearch match", SETTING (ADLS_BREAK_ON_FIRST));
+	addAdvanced ("Tab completion of nicks in chat", SETTING (TAB_COMPLETION));
+	addAdvanced ("Enable safe and compressed transfers", SETTING (COMPRESS_TRANSFERS));
+	addAdvanced ("Accept custom user commands from hub", SETTING (HUB_USER_COMMANDS));
+	addAdvanced ("Automatically match queue for auto search hits", SETTING (AUTO_SEARCH_AUTO_MATCH));
+	addAdvanced ("Log filelist transfers", SETTING (LOG_FILELIST_TRANSFERS));
+	addAdvanced ("Send unknown /commands to the hub", SETTING (SEND_UNKNOWN_COMMANDS));
+	addAdvanced ("Add finished files to share instantly (if shared)", SETTING (ADD_FINISHED_INSTANTLY));
+	addAdvanced ("Use UPnP Control", SETTING (SETTINGS_USE_UPNP));
+	addAdvanced ("Don't download files already in share", SETTING (DONT_DL_ALREADY_SHARED));
+	addAdvanced ("Use CTRL for line history", SETTING (SETTINGS_USE_CTRL_FOR_LINE_HISTORY));
+	addAdvanced ("Open new window when using /join", SETTING (SETTINGS_OPEN_NEW_WINDOW));
+	
+	gtk_spin_button_set_value (GTK_SPIN_BUTTON (advancedItems["Rollback"]), (double)SETTING (ROLLBACK));
+	gtk_spin_button_set_value (GTK_SPIN_BUTTON (advancedItems["Hash"]), (double)SETTING (MAX_HASH_SPEED));
+	gtk_spin_button_set_value (GTK_SPIN_BUTTON (advancedItems["Write"]), (double)SETTING (BUFFER_SIZE));
+}
+
+void Settings::addAdvanced (string name, bool use)
+{
+	GtkTreeIter iter;
+	gtk_list_store_append (advancedStore, &iter);
+	gtk_list_store_set (advancedStore, &iter, ADVANCED_USE, use, ADVANCED_NAME, name.c_str (), -1);
+}
+
+void Settings::onAdvancedToggledClicked_gui (GtkCellRendererToggle *cell, gchar *path_str, gpointer data)
+{
+  	GtkTreeIter iter;
+  	gboolean fixed;
+	GtkTreeModel *m = gtk_tree_view_get_model (((Settings*)data)->advanced->get ());
+  	gtk_tree_model_get_iter (m, &iter, gtk_tree_path_new_from_string (path_str));
+  	gtk_tree_model_get (m, &iter, Settings::ADVANCED_USE, &fixed, -1);
+  	fixed = !fixed;
+  	gtk_list_store_set (GTK_LIST_STORE (m), &iter, Settings::ADVANCED_USE, fixed, -1);
 }

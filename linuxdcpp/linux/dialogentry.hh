@@ -16,37 +16,27 @@
 * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-#ifndef WULFOR_BOOK_ENTRY_HH
-#define WULFOR_BOOK_ENTRY_HH
+#ifndef WULFOR_DIALOG_ENTRY_HH
+#define WULFOR_DIALOG_ENTRY_HH
 
 #include <gtk/gtk.h>
 #include <string>
 
-class BookEntry {
+class DialogEntry {
 	public:
-		BookEntry(int type, std::string id, std::string title, GCallback closeCallback);
-		virtual ~BookEntry();
-		bool isEqual(int type, std::string id);
-		bool isEqual(BookEntry *entry);
-
-		//only to be called by gui thread
-		void setLabel_gui(std::string text);
-		void setLabelBold_gui (std::string text);
-		GtkWidget *getTitle();
-		virtual GtkWidget *getWidget() = 0;
-		virtual void switchedPage () {};
-		int getType () { return type; };
-
-	protected:
-		std::string id;
+		DialogEntry();
+		~DialogEntry();
+		
+		GtkWidget *getDialog () { return dialog; }
+		void setDialog (GtkWidget *d) { dialog = d; }
+		
+		
+		void applyCallback (GCallback closeCallback);
 
 	private:
-		int type;
-		GtkWidget *box;
-		GtkButton *button;
-		GtkLabel *label;
+		GtkWidget *dialog;
 };
 
 #else
-class BookEntry;
+class DialogEntry;
 #endif

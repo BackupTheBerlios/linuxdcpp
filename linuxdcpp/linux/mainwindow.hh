@@ -58,7 +58,11 @@ class MainWindow:
 		void addPage_gui(GtkWidget *page, GtkWidget *label, bool raise);
 		void removePage_gui(GtkWidget *page);
 		void raisePage_gui(GtkWidget *page);
-
+		GtkWidget *currentPage_gui ();
+		
+		void autoOpen_gui ();
+		void openHub_gui (string server, string nick, string desc, string password);
+		
 		typedef enum {
 			CONNECTION_UL,
 			CONNECTION_DL,
@@ -112,6 +116,7 @@ class MainWindow:
 		
 		static void exit_callback(GtkWidget *widget, gpointer data);
 		static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data);
+		static void switchPage_callback (GtkNotebook *notebook, GtkNotebookPage *page, guint page_num, gpointer user_data);
 
 		int64_t lastUpdate, lastUp, lastDown;
 		int emptyStatusWidth;

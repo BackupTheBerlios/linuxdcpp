@@ -41,6 +41,22 @@ string DownloadQueue::getTextFromMenu (GtkMenuItem *item)
 	return "";
 }
 
+void DownloadQueue::switchedPage ()
+{
+	Func1<BookEntry, string> *func = new Func1<BookEntry, string> (
+		this, &BookEntry::setLabel_gui, string ("Download Queue"));
+	WulforManager::get()->dispatchGuiFunc(func);	
+}
+
+void DownloadQueue::contentUpdated ()
+{
+	if (WulforManager::get ()->getMainWindow()->currentPage_gui () == getWidget ())
+		return;
+	Func1<BookEntry, string> *func = new Func1<BookEntry, string> (
+		this, &BookEntry::setLabelBold_gui, string ("Download Queue"));
+	WulforManager::get()->dispatchGuiFunc(func);	
+}
+
 void DownloadQueue::buildStaticMenu_gui ()
 {
 	dirPriority = GTK_MENU (gtk_menu_new ());
@@ -1126,6 +1142,7 @@ void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
 		addFile_gui (i, tmp);
 	}
 	gtk_tree_view_expand_all (dirView->get ());
+	contentUpdated ();
 	GtkTreeSelection *selection;
 	GtkTreeIter iter;
 	selection = gtk_tree_view_get_selection(dirView->get ());
@@ -1140,13 +1157,15 @@ void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
 void DownloadQueue::on(QueueManagerListener::Removed, QueueItem* aQI) throw()
 {
 	removeFile_gui (aQI->getTarget ());
+	contentUpdated ();
 }
 void DownloadQueue::on(QueueManagerListener::Finished, QueueItem* aQI) throw()
 {
-
+	
 }
 void DownloadQueue::on(QueueManagerListener::Moved, QueueItem* aQI) throw()
 {
+	contentUpdated ();
 }
 void DownloadQueue::updateFiles_gui (QueueItem *aQI)
 {

@@ -36,11 +36,15 @@ using namespace std;
 
 void MainWindow::quit_callback(GtkWidget *widget, gpointer data) {
 	MainWindow *m = (MainWindow*)data;
-	gtk_widget_show_all (GTK_WIDGET (m->exitDialog));
-	gint response = gtk_dialog_run (m->exitDialog);
-	gtk_widget_hide (GTK_WIDGET (m->exitDialog));
-	if (response == GTK_RESPONSE_OK)	
-		gtk_main_quit();
+	if (BOOLSETTING (CONFIRM_EXIT))
+	{
+		gtk_widget_show_all (GTK_WIDGET (m->exitDialog));
+		gint response = gtk_dialog_run (m->exitDialog);
+		gtk_widget_hide (GTK_WIDGET (m->exitDialog));
+		if (response != GTK_RESPONSE_OK)	
+			return;
+	}
+	gtk_main_quit();
 }
 
 void MainWindow::exit_callback(GtkWidget *widget, gpointer data) {
@@ -49,6 +53,8 @@ void MainWindow::exit_callback(GtkWidget *widget, gpointer data) {
 
 gboolean MainWindow::delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
 	MainWindow *m = (MainWindow*)data;
+	if (!BOOLSETTING (CONFIRM_EXIT))
+		return FALSE;
 	gtk_widget_show_all (GTK_WIDGET (m->exitDialog));
 	gint response = gtk_dialog_run (m->exitDialog);
 	gtk_widget_hide (GTK_WIDGET (m->exitDialog));
@@ -88,7 +94,7 @@ void MainWindow::settings_callback(GtkWidget *widget, gpointer data) {
 		if (SETTING(CONNECTION_TYPE) != lastConn || SETTING(IN_PORT) != lastPort) 
 		{
 			Selecter::quit();
-			((MainWindow*)data)->startSocket_client();
+			WulforManager::get()->dispatchClientFunc(new Func0<MainWindow>(((MainWindow*)data), &MainWindow::startSocket_client));
 		}		
 	}
 
@@ -96,12 +102,10 @@ void MainWindow::settings_callback(GtkWidget *widget, gpointer data) {
 }
 
 void MainWindow::hash_callback (GtkWidget *widget, gpointer data) {
-	/*Hash *h = WulforManager::get ()->openHashDialog_gui();
+	Hash *h = WulforManager::get ()->openHashDialog_gui();
 	
-	if (gtk_dialog_run (GTK_DIALOG (h->getDialog ())) == GTK_RESPONSE_OK)
-		cout << "yay" << endl;
-		
-	gtk_widget_hide (h->getDialog ());*/
+	gtk_dialog_run (GTK_DIALOG (h->getDialog ()));
+	WulforManager::get ()->deleteDialogEntry_gui ();
 }
 
 MainWindow::MainWindow():
@@ -185,6 +189,7 @@ void MainWindow::createWindow_gui() {
 	//All notebooks created in glade need one page.
 	//In our case, this is just a placeholder, so we remove it.
 	gtk_notebook_remove_page(book, -1);
+	g_signal_connect (G_OBJECT (book), "switch_page", G_CALLBACK (switchPage_callback), NULL);
 
 	//We need to do this in the code and not in the .glade file,
 	//otherwise we won't always find the images using binreloc
@@ -230,10 +235,16 @@ void MainWindow::createWindow_gui() {
 	emptyStatusWidth = req.width;
 	
 	gtk_statusbar_push(mainStatus, 0, "Welcome to Wulfor - Reloaded");
+	autoOpen_gui ();
 }
 
 GtkWindow *MainWindow::getWindow() {
 	return window;
+}
+
+void MainWindow::openHub_gui (string server, string nick, string desc, string password)
+{
+	WulforManager::get ()->addHub_gui (server, nick, desc, password);
 }
 
 void MainWindow::autoConnect_client() {
@@ -251,13 +262,24 @@ void MainWindow::autoConnect_client() {
 				else
 					nick = entry->getNick();
 			
-				WulforManager::get()->addHub_gui(
+				WulforManager::get()->dispatchGuiFunc (new Func4<MainWindow, string, string, string, string> (this, &MainWindow::openHub_gui,
 					entry->getServer(),
 					nick,
 					entry->getUserDescription(),
-					entry->getPassword());
+					entry->getPassword()));
 			}
 	}
+}
+
+void MainWindow::autoOpen_gui ()
+{
+	if (SETTING (OPEN_PUBLIC))
+		WulforManager::get()->addPublicHubs_gui();
+	if (SETTING (OPEN_QUEUE))
+		WulforManager::get()->addDownloadQueue_gui();
+	if (SETTING (OPEN_FAVORITE_HUBS))
+		WulforManager::get()->addFavoriteHubs_gui();
+	//if (SETTING (OPEN_FINISHED_DOWNLOADS)) // Can't open since Finished Downloads ain't added yet.
 }
 
 void MainWindow::startSocket_client() {
@@ -372,7 +394,23 @@ void MainWindow::raisePage_gui(GtkWidget *page) {
 	assert(pageNum != -1);
 	gtk_notebook_set_current_page(book, pageNum);
 }
-		
+
+GtkWidget *MainWindow::currentPage_gui ()
+{
+	int pageNum = gtk_notebook_get_current_page(book);
+	if (pageNum == -1)
+		return NULL;
+	else
+		return gtk_notebook_get_nth_page(book, pageNum);
+}
+
+void MainWindow::switchPage_callback (GtkNotebook *notebook, GtkNotebookPage *page, guint page_num, gpointer user_data)
+{
+	BookEntry *b = WulforManager::get ()->getBookEntry_gui (page_num);
+	if (b)
+		b->switchedPage ();
+}
+	
 void MainWindow::setStatus_gui(GtkStatusbar *status, std::string text) {
 	if (status != mainStatus) {
 		PangoLayout *pango;

@@ -2293,8 +2293,9 @@
 			  <property name="spacing">4</property>
 
 			  <child>
-			    <widget class="GtkLabel" id="label48">
+			    <widget class="GtkLabel" id="labelFormat1">
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="label" translatable="yes">Format</property>
 			      <property name="use_underline">False</property>
 			      <property name="use_markup">False</property>
@@ -2317,6 +2318,7 @@
 			    <widget class="GtkEntry" id="entryMain">
 			      <property name="width_request">270</property>
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
 			      <property name="visibility">True</property>
@@ -2366,8 +2368,9 @@
 			  <property name="spacing">4</property>
 
 			  <child>
-			    <widget class="GtkLabel" id="label49">
+			    <widget class="GtkLabel" id="labelFormat2">
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="label" translatable="yes">Format</property>
 			      <property name="use_underline">False</property>
 			      <property name="use_markup">False</property>
@@ -2390,6 +2393,7 @@
 			    <widget class="GtkEntry" id="entryPrivate">
 			      <property name="width_request">270</property>
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
 			      <property name="visibility">True</property>
@@ -2439,8 +2443,9 @@
 			  <property name="spacing">4</property>
 
 			  <child>
-			    <widget class="GtkLabel" id="label50">
+			    <widget class="GtkLabel" id="labelFormat3">
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="label" translatable="yes">Format</property>
 			      <property name="use_underline">False</property>
 			      <property name="use_markup">False</property>
@@ -2463,6 +2468,7 @@
 			    <widget class="GtkEntry" id="entryDownloads">
 			      <property name="width_request">270</property>
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
 			      <property name="visibility">True</property>
@@ -2512,8 +2518,9 @@
 			  <property name="spacing">4</property>
 
 			  <child>
-			    <widget class="GtkLabel" id="label51">
+			    <widget class="GtkLabel" id="labelFormat4">
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="label" translatable="yes">Format</property>
 			      <property name="use_underline">False</property>
 			      <property name="use_markup">False</property>
@@ -2536,6 +2543,7 @@
 			    <widget class="GtkEntry" id="entryUploads">
 			      <property name="width_request">270</property>
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
 			      <property name="visibility">True</property>
@@ -2659,7 +2667,7 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkCheckButton" id="checkbuttonMW">
+			<widget class="GtkCheckButton" id="checkbuttonPMW">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="label" translatable="yes">Make an annoying sound when a private message window is opened</property>
@@ -2854,21 +2862,22 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkEntry" id="entryRollback">
-			  <property name="width_request">50</property>
+			<widget class="GtkLabel" id="label61">
 			  <property name="visible">True</property>
-			  <property name="can_focus">True</property>
-			  <property name="editable">True</property>
-			  <property name="visibility">True</property>
-			  <property name="max_length">0</property>
-			  <property name="text" translatable="yes"></property>
-			  <property name="has_frame">True</property>
-			  <property name="invisible_char">*</property>
-			  <property name="activates_default">False</property>
+			  <property name="label" translatable="yes">KiB</property>
+			  <property name="use_underline">False</property>
+			  <property name="use_markup">False</property>
+			  <property name="justify">GTK_JUSTIFY_LEFT</property>
+			  <property name="wrap">False</property>
+			  <property name="selectable">False</property>
+			  <property name="xalign">0</property>
+			  <property name="yalign">0.5</property>
+			  <property name="xpad">0</property>
+			  <property name="ypad">0</property>
 			</widget>
 			<packing>
-			  <property name="left_attach">1</property>
-			  <property name="right_attach">2</property>
+			  <property name="left_attach">5</property>
+			  <property name="right_attach">6</property>
 			  <property name="top_attach">0</property>
 			  <property name="bottom_attach">1</property>
 			  <property name="x_options">fill</property>
@@ -2877,48 +2886,64 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkEntry" id="entryHashspeed">
-			  <property name="width_request">50</property>
+			<widget class="GtkSpinButton" id="spinbuttonRollback">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
-			  <property name="editable">True</property>
-			  <property name="visibility">True</property>
-			  <property name="max_length">0</property>
-			  <property name="text" translatable="yes"></property>
-			  <property name="has_frame">True</property>
-			  <property name="invisible_char">*</property>
-			  <property name="activates_default">False</property>
+			  <property name="climb_rate">1</property>
+			  <property name="digits">0</property>
+			  <property name="numeric">True</property>
+			  <property name="update_policy">GTK_UPDATE_ALWAYS</property>
+			  <property name="snap_to_ticks">False</property>
+			  <property name="wrap">False</property>
+			  <property name="adjustment">0 0 10240 64 10 10</property>
+			</widget>
+			<packing>
+			  <property name="left_attach">1</property>
+			  <property name="right_attach">2</property>
+			  <property name="top_attach">0</property>
+			  <property name="bottom_attach">1</property>
+			  <property name="y_options"></property>
+			</packing>
+		      </child>
+
+		      <child>
+			<widget class="GtkSpinButton" id="spinbuttonHash">
+			  <property name="visible">True</property>
+			  <property name="can_focus">True</property>
+			  <property name="climb_rate">1</property>
+			  <property name="digits">0</property>
+			  <property name="numeric">True</property>
+			  <property name="update_policy">GTK_UPDATE_ALWAYS</property>
+			  <property name="snap_to_ticks">False</property>
+			  <property name="wrap">False</property>
+			  <property name="adjustment">0 0 100 1 10 10</property>
 			</widget>
 			<packing>
 			  <property name="left_attach">1</property>
 			  <property name="right_attach">2</property>
 			  <property name="top_attach">1</property>
 			  <property name="bottom_attach">2</property>
-			  <property name="x_options">fill</property>
 			  <property name="y_options"></property>
 			</packing>
 		      </child>
 
 		      <child>
-			<widget class="GtkLabel" id="label60">
+			<widget class="GtkSpinButton" id="spinbuttonWrite">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes">Max tab rows</property>
-			  <property name="use_underline">False</property>
-			  <property name="use_markup">False</property>
-			  <property name="justify">GTK_JUSTIFY_LEFT</property>
+			  <property name="can_focus">True</property>
+			  <property name="climb_rate">1</property>
+			  <property name="digits">0</property>
+			  <property name="numeric">True</property>
+			  <property name="update_policy">GTK_UPDATE_ALWAYS</property>
+			  <property name="snap_to_ticks">False</property>
 			  <property name="wrap">False</property>
-			  <property name="selectable">False</property>
-			  <property name="xalign">1</property>
-			  <property name="yalign">0.5</property>
-			  <property name="xpad">0</property>
-			  <property name="ypad">0</property>
+			  <property name="adjustment">0 0 1024 64 10 10</property>
 			</widget>
 			<packing>
-			  <property name="left_attach">3</property>
-			  <property name="right_attach">4</property>
-			  <property name="top_attach">1</property>
-			  <property name="bottom_attach">2</property>
-			  <property name="x_options">fill</property>
+			  <property name="left_attach">4</property>
+			  <property name="right_attach">5</property>
+			  <property name="top_attach">0</property>
+			  <property name="bottom_attach">1</property>
 			  <property name="y_options"></property>
 			</packing>
 		      </child>
@@ -2940,75 +2965,6 @@
 			<packing>
 			  <property name="left_attach">3</property>
 			  <property name="right_attach">4</property>
-			  <property name="top_attach">0</property>
-			  <property name="bottom_attach">1</property>
-			  <property name="y_options"></property>
-			</packing>
-		      </child>
-
-		      <child>
-			<widget class="GtkEntry" id="entryWrite">
-			  <property name="width_request">50</property>
-			  <property name="visible">True</property>
-			  <property name="can_focus">True</property>
-			  <property name="editable">True</property>
-			  <property name="visibility">True</property>
-			  <property name="max_length">0</property>
-			  <property name="text" translatable="yes"></property>
-			  <property name="has_frame">True</property>
-			  <property name="invisible_char">*</property>
-			  <property name="activates_default">False</property>
-			</widget>
-			<packing>
-			  <property name="left_attach">4</property>
-			  <property name="right_attach">5</property>
-			  <property name="top_attach">0</property>
-			  <property name="bottom_attach">1</property>
-			  <property name="x_options">fill</property>
-			  <property name="y_options"></property>
-			</packing>
-		      </child>
-
-		      <child>
-			<widget class="GtkEntry" id="entryTabs">
-			  <property name="width_request">50</property>
-			  <property name="visible">True</property>
-			  <property name="can_focus">True</property>
-			  <property name="editable">True</property>
-			  <property name="visibility">True</property>
-			  <property name="max_length">0</property>
-			  <property name="text" translatable="yes"></property>
-			  <property name="has_frame">True</property>
-			  <property name="invisible_char">*</property>
-			  <property name="activates_default">False</property>
-			</widget>
-			<packing>
-			  <property name="left_attach">4</property>
-			  <property name="right_attach">5</property>
-			  <property name="top_attach">1</property>
-			  <property name="bottom_attach">2</property>
-			  <property name="x_options">fill</property>
-			  <property name="y_options"></property>
-			</packing>
-		      </child>
-
-		      <child>
-			<widget class="GtkLabel" id="label61">
-			  <property name="visible">True</property>
-			  <property name="label" translatable="yes">KiB</property>
-			  <property name="use_underline">False</property>
-			  <property name="use_markup">False</property>
-			  <property name="justify">GTK_JUSTIFY_LEFT</property>
-			  <property name="wrap">False</property>
-			  <property name="selectable">False</property>
-			  <property name="xalign">0</property>
-			  <property name="yalign">0.5</property>
-			  <property name="xpad">0</property>
-			  <property name="ypad">0</property>
-			</widget>
-			<packing>
-			  <property name="left_attach">5</property>
-			  <property name="right_attach">6</property>
 			  <property name="top_attach">0</property>
 			  <property name="bottom_attach">1</property>
 			  <property name="x_options">fill</property>

@@ -41,6 +41,9 @@ public:
 	void initGeneral_gui ();
 	void initDownloads_gui ();
 	void initSharing_gui ();
+	void initAppearance_gui ();
+	void initLog_gui ();
+	void initAdvanced_gui ();
 	
 private:
 	GtkWidget *dialog;
@@ -101,10 +104,46 @@ private:
 	TreeViewFactory *shares;
 	GtkListStore *shareStore;
 	GdkEventType sharePrevious;
+	// Appearance
+	static void onAppearanceToggledClicked_gui (GtkCellRendererToggle *cell, gchar *path_str, gpointer data);
+	void addOption (string name, bool use);
+	enum {
+		APPEARANCE_FIRST,
+		APPEARANCE_USE = APPEARANCE_FIRST,
+		APPEARANCE_NAME,
+		APPEARANCE_LAST
+	};
+	TreeViewFactory *appearance;
+	GtkListStore *appearanceStore;
+	static SettingsManager::IntSetting optionSettings[];
+	
+	// Logs and sound
+	static void onLogBrowseClicked_gui (GtkWidget *widget, gpointer user_data);
+	static void onLogMainClicked_gui (GtkToggleButton *togglebutton, gpointer user_data);
+	static void onLogPrivateClicked_gui (GtkToggleButton *togglebutton, gpointer user_data);
+	static void onLogDownloadClicked_gui (GtkToggleButton *togglebutton, gpointer user_data);
+	static void onLogUploadClicked_gui (GtkToggleButton *togglebutton, gpointer user_data);
+	void checkClicked ();
+	
+	// Advanced
+	static void onAdvancedToggledClicked_gui (GtkCellRendererToggle *cell, gchar *path_str, gpointer data);
+	void addAdvanced (string name, bool use);
+	enum {
+		ADVANCED_FIRST,
+		ADVANCED_USE = ADVANCED_FIRST,
+		ADVANCED_NAME,
+		ADVANCED_LAST
+	};
+	TreeViewFactory *advanced;
+	GtkListStore *advancedStore;
+	static SettingsManager::IntSetting advancedSettings[];
 
 	std::map<string,GtkWidget*> generalItems;
 	std::map<string,GtkWidget*> downloadItems;
 	std::map<string,GtkWidget*> shareItems;
+	std::map<string,GtkWidget*> appearanceItems;
+	std::map<string,GtkWidget*> logItems;
+	std::map<string,GtkWidget*> advancedItems;
 
 	string lastdir;
 	

@@ -103,9 +103,15 @@ void WulforManager::dispatchGuiFunc(FuncBase *func) {
 	} else {
 		pthread_mutex_lock(&bookEntryLock);
 		for (it = bookEntrys.begin(); it != bookEntrys.end(); it++)
-		if (func->comparePointer((void *)*it)) {
-			found = true;
-			break;
+			if (func->comparePointer((void *)*it)) {
+				found = true;
+				break;
+			}
+		if (!found)
+		{
+			if (func->comparePointer((void *)dialogEntry))
+				found = true;
+
 		}
 		pthread_mutex_unlock(&bookEntryLock);
 	}
@@ -131,6 +137,11 @@ void WulforManager::dispatchClientFunc(FuncBase *func) {
 				found = true;
 				break;
 			}
+		if (!found)
+		{
+			if (func->comparePointer((void *)dialogEntry))
+				found = true;
+		}			
 		pthread_mutex_unlock(&bookEntryLock);
 	}
 	if (found) clientFuncs.push_back(func);
@@ -168,6 +179,10 @@ void WulforManager::createMainWindow() {
 
 void WulforManager::closeEntry_callback(GtkWidget *widget, gpointer data) {
 	get()->deleteBookEntry_gui((BookEntry *)data);
+}
+
+void WulforManager::dialogCloseEntry_callback(GtkWidget *widget, gpointer data) {
+	get()->deleteDialogEntry_gui();
 }
 
 WulforManager::WulforManager() {
@@ -233,6 +248,19 @@ BookEntry *WulforManager::getBookEntry_gui(int type, string id, bool raise) {
 	return ret;
 }
 
+BookEntry *WulforManager::getBookEntry_gui(int nr) {
+	BookEntry *ret = NULL;
+	
+	if (nr < 0 || nr >= bookEntrys.size ())
+		return ret;
+	
+	pthread_mutex_lock(&bookEntryLock);
+	ret = bookEntrys[nr];
+	pthread_mutex_unlock(&bookEntryLock);
+	
+	return ret;
+}
+
 BookEntry *WulforManager::getBookEntry_client(int type, string id, bool raise) {
 	BookEntry *ret = NULL;
 	vector<BookEntry *>::iterator it;
@@ -292,6 +320,43 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry) {
 
 	pthread_mutex_unlock(&guiCallLock);
 	pthread_mutex_unlock(&clientCallLock);
+}
+
+void WulforManager::deleteDialogEntry_gui()
+{
+	vector<FuncBase *>::iterator fIt;
+	
+	pthread_mutex_lock(&clientCallLock);
+	pthread_mutex_lock(&guiCallLock);
+
+	//erase any pending calls to this bookentry
+	fIt = clientFuncs.begin();
+	while (fIt != clientFuncs.end())
+		for (fIt = clientFuncs.begin(); fIt != clientFuncs.end(); fIt++)
+			if ((*fIt)->comparePointer((void *)dialogEntry)) {
+				delete *fIt;
+				clientFuncs.erase(fIt);
+				break;
+			}
+
+	fIt = guiFuncs.begin();
+	while (fIt != guiFuncs.end())
+		for (fIt = guiFuncs.begin(); fIt != guiFuncs.end(); fIt++)
+			if ((*fIt)->comparePointer((void *)dialogEntry)) {
+				delete *fIt;
+				guiFuncs.erase(fIt);
+				break;
+			}
+
+	// Hide the dialog
+	if (dialogEntry->getDialog ())
+	{
+		gtk_widget_hide (dialogEntry->getDialog ());
+		dialogEntry->setDialog (NULL);
+	}
+
+	pthread_mutex_unlock(&guiCallLock);
+	pthread_mutex_unlock(&clientCallLock);	
 }
 
 PublicHubs *WulforManager::addPublicHubs_gui() {
@@ -395,7 +460,8 @@ Search *WulforManager::addSearch_gui() {
 }
 
 Hash *WulforManager::openHashDialog_gui() {
-	Hash *h = new Hash();
+	Hash *h = new Hash(G_CALLBACK (dialogCloseEntry_callback));
+	dialogEntry = h;
 	
 	return h;
 }

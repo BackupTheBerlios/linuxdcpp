@@ -55,6 +55,14 @@ void BookEntry::setLabel_gui(std::string text) {
 	gtk_label_set_text(label, text.c_str());
 }
 
+void BookEntry::setLabelBold_gui(std::string text) {
+	if (text.size() > 15)
+		text = text.substr(0, 15) + "...";
+		
+	char *markup = g_markup_printf_escaped ("<b>%s</b>", text.c_str ());
+	gtk_label_set_markup (label, markup);
+}
+
 bool BookEntry::isEqual(int type, string id) {
 	if (this->type == type) 
 		return this->id == id;

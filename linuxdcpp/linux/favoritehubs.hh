@@ -56,6 +56,7 @@ private:
 	};
 
 	GtkWidget *mainBox;
+	GtkDialog *deleteDialog;
 	std::map<string,GtkWidget*> button;
 	std::map<string,GtkWidget*> dialog;
 	std::map<string,GtkWidget*> menuItems;

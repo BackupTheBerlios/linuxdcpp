@@ -19,16 +19,16 @@
 #include "hashdialog.hh"
 #include "wulformanager.hh"
 
-Hash::Hash ()
+Hash::Hash (GCallback closeCallback) : DialogEntry ()
 {
 	TimerManager::getInstance ()->addListener (this);
 	string file = WulforManager::get()->getPath() + "/glade/hash.glade";
 	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
 
-	dialog = glade_xml_get_widget(xml, "hashDialog");
+	setDialog (glade_xml_get_widget(xml, "hashDialog"));
+	applyCallback (closeCallback);
 	
 	lFile = GTK_LABEL (glade_xml_get_widget(xml, "labelFile"));
-	lFiles = GTK_LABEL (glade_xml_get_widget(xml, "labelFiles"));
 	lSpeed = GTK_LABEL (glade_xml_get_widget(xml, "labelSpeed"));
 	lTime = GTK_LABEL (glade_xml_get_widget(xml, "labelTime"));
 	pProgress = GTK_PROGRESS_BAR (glade_xml_get_widget(xml, "progressbar"));
@@ -61,14 +61,13 @@ void Hash::updateStats ()
 
 	if(autoClose && files == 0) 
 	{
-		gtk_dialog_response (GTK_DIALOG (dialog), GTK_RESPONSE_OK);
+		gtk_dialog_response (GTK_DIALOG (getDialog()), GTK_RESPONSE_OK);
 		return;
 	}
 		
 	double diff = tick - startTime;
 	if(diff < 1000 || files == 0 || bytes == 0) 
 	{
-		gtk_label_set_text (lFiles, string ("-.-- files/h, " + Util::toString((u_int32_t)files) + " files left").c_str ());
 		gtk_label_set_text (lSpeed, string ("-.-- B/s, " + Util::formatBytes (bytes) + " left").c_str ());
 		gtk_label_set_text (lTime, "-:--:-- left");
 		gtk_progress_bar_set_text (pProgress, "0%");
@@ -76,19 +75,16 @@ void Hash::updateStats ()
 	} 
 	else 
 	{
-		double filestat = (((double)(startFiles - files)) * 60 * 60 * 1000) / diff;
 		double speedStat = (((double)(startBytes - bytes)) * 1000) / diff;
 
-		gtk_label_set_text (lFiles, string (Util::toString (filestat) + " files/h, " + Util::toString ((u_int32_t)files) + " files left").c_str ());
 		gtk_label_set_text (lSpeed, string (Util::formatBytes ((int64_t)speedStat) + "/s, " + Util::formatBytes(bytes) + " left").c_str ());
 		
-		if(filestat == 0 || speedStat == 0)
+		if(speedStat == 0)
 			gtk_label_set_text (lTime,"-:--:-- left");
 		else 
 		{
-			double fs = files * 60 * 60 / filestat;
 			double ss = bytes / speedStat;
-			gtk_label_set_text (lTime,string (Util::formatSeconds ((int64_t)(fs+ss)/2) + " left").c_str ());
+			gtk_label_set_text (lTime,string (Util::formatSeconds ((int64_t)ss) + " left").c_str ());
 		}
 	}
 
@@ -106,7 +102,7 @@ void Hash::updateStats ()
 	{
 		double progress = ((0.5 * (double)(startFiles - files)/(double)startFiles) + (0.5 * (double)(startBytes - bytes)/(double)startBytes));
 		char buf[16];
-		sprintf (buf, "%.0f", progress);
+		sprintf (buf, "%.0f", progress*100);
 		gtk_progress_bar_set_text (pProgress, string (string (buf)+"%").c_str ());
 		gtk_progress_bar_set_fraction (pProgress, progress);
 	}

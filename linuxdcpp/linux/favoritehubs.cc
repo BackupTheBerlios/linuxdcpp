@@ -45,6 +45,8 @@ FavoriteHubs::FavoriteHubs (GCallback closeCallback):
 	gtk_container_remove(GTK_CONTAINER(window), mainBox);
 	gtk_widget_destroy(window);
 
+	deleteDialog = GTK_DIALOG (glade_xml_get_widget (xml, "deleteFavoriteDialog"));
+	
 	GtkTreeView *view = GTK_TREE_VIEW (glade_xml_get_widget (xml, "favoriteView"));
 	button["New"] = glade_xml_get_widget (xml, "buttonNew");
 	g_signal_connect(G_OBJECT (button["New"]), "clicked", G_CALLBACK(preNew_gui), (gpointer)this);
@@ -219,6 +221,14 @@ void FavoriteHubs::remove_gui (GtkWidget *widget, gpointer data)
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 
+	if (BOOLSETTING (CONFIRM_HUB_REMOVAL))
+	{
+		gint response = gtk_dialog_run (f->deleteDialog);
+		gtk_widget_hide (GTK_WIDGET (f->deleteDialog));
+		if (response != GTK_RESPONSE_OK)
+			return;
+	}
+		
 	WulforManager::get ()->dispatchClientFunc (new Func1<FavoriteHubs, FavoriteHubEntry*> (f, &FavoriteHubs::remove_client, TreeViewFactory::getValue<gpointer,FavoriteHubEntry*>(m, &iter, COLUMN_ENTRY)));
 	
 	gtk_widget_set_sensitive (f->button["Properties"], FALSE);

@@ -28,6 +28,7 @@
 #include "func.hh"
 #include "mainwindow.hh"
 #include "bookentry.hh"
+#include "dialogentry.hh"
 #include "hub.hh"
 #include "publichubs.hh"
 #include "privatemessage.hh"
@@ -67,8 +68,12 @@ class WulforManager {
 		ShareBrowser *addShareBrowser_gui(User::Ptr user, std::string file);
 
 		BookEntry *getBookEntry_gui(int type, string id, bool raise);
+		BookEntry *getBookEntry_gui(int nr);
 		BookEntry *getBookEntry_client(int type, string id, bool raise);
 		void deleteBookEntry_gui(BookEntry *entry);
+		
+		void deleteDialogEntry_gui();
+		
 
 		enum {
 			PUBLIC_HUBS,
@@ -77,7 +82,9 @@ class WulforManager {
 			PRIVATE_MSG,
 			SHARE_BROWSER,
 			DOWNLOAD_QUEUE,
-			FAVORITE_HUBS
+			FAVORITE_HUBS,
+			SETTINGS,
+			HASH
 		};
 
 	private:
@@ -85,6 +92,7 @@ class WulforManager {
 		static void *threadFunc_client(void *data);
 		static gboolean guiCallback(gpointer data);
 		static void closeEntry_callback(GtkWidget *widget, gpointer data);
+		static void dialogCloseEntry_callback(GtkWidget *widget, gpointer data);
 		void callGuiFunc();
 		void processGuiQueue();
 		void processClientQueue();
@@ -102,6 +110,7 @@ class WulforManager {
 
 		MainWindow *mainWin;
 		std::vector<BookEntry *> bookEntrys;
+		DialogEntry * dialogEntry;
 };
 
 #else

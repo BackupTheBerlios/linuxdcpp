@@ -40,7 +40,8 @@ public:
 	DownloadQueue (GCallback closeCallback);
 	~DownloadQueue ();
 
-	GtkWidget *getWidget();
+	GtkWidget *getWidget(); // From BookEntry
+	void switchedPage (); // From BookEntry
 
 	void buildList_gui ();
 	void updateStatus_gui ();
@@ -169,6 +170,8 @@ private:
 	CriticalSection cs;
 	GdkEventType filePrevious, dirPrevious;
 	static string getTextFromMenu (GtkMenuItem *item);
+	
+	void contentUpdated ();
 
 	class QueueItemInfo : public Flags
 	{

@@ -1,0 +1,12 @@
+2005-02-16 - phase
+* Added Changelog again :)
+* Added all the settings (except User Commands), though, we haven't added all the features that the settings have to offer yet.
+* The Hash progress is now working.
+* Added some settings: 
+	* Confirm applicatioon exit
+	* Set Download Queue tab bold when an entry is added
+	* Confirm favorite hub removal
+	* Clear search box after each search
+	* Open the public hubs window at startup
+	* Open the download queue window at startup
+	* Open the favorite hubs window at startup

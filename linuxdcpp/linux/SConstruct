@@ -5,7 +5,8 @@ gui_files = [	'selecter.cc',				'wulformanager.cc',
 				'hub.cc',				'privatemessage.cc',
 				'downloadqueue.cc', 'favoritehubs.cc',
 				'settingsdialog.cc','sharebrowser.cc',
-				'search.cc','hashdialog.cc']
+				'search.cc','hashdialog.cc',
+				'dialogentry.cc']
 
 Import('env')
 guiObjs = env.Object(gui_files)

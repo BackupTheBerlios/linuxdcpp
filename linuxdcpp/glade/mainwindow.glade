@@ -88,7 +88,6 @@
 	  <child>
 	    <widget class="GtkToolButton" id="hash">
 	      <property name="visible">True</property>
-	      <property name="sensitive">False</property>
 	      <property name="label" translatable="yes">Hash</property>
 	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-convert</property>

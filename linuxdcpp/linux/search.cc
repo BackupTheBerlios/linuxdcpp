@@ -914,6 +914,7 @@ void Search::SearchInfo::browse (bool file)
 			downloadTo (path);
 		}
 		gtk_widget_hide (fileChooser);
+		fileChooser = NULL;
 	}
 	else
 	{
@@ -935,6 +936,7 @@ void Search::SearchInfo::browse (bool file)
 			downloadDirTo (path);
 		}
 		gtk_widget_hide (dirChooser);
+		dirChooser = NULL;
 	}
 }
 
