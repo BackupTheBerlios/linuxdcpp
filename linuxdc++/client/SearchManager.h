@@ -174,7 +174,7 @@ private:
 		if(socket) {
 			stop = true;
 			socket->disconnect();
-			join();
+			//join();
 			delete socket;
 		}
 	};
@@ -186,5 +186,5 @@ private:
 
 /**
  * @file
- * $Id: SearchManager.h,v 1.3 2004/11/14 16:35:23 paskharen Exp $
+ * $Id: SearchManager.h,v 1.4 2004/12/19 14:30:18 phase Exp $
  */

@@ -72,7 +72,8 @@ DownloadQueue::DownloadQueue (MainWindow *mw) :
 	fileView.append_column("Added", fileColumns.added);
 	fileView.append_column("TTH", fileColumns.tth);
 	
-
+	fileView.set_headers_clickable (true);
+	dirView.set_headers_visible (false);
 	for (int i=0;i<fileColumns.size ()-1;i++)
 	{
 		fileView.get_column (i)->set_sizing (TREE_VIEW_COLUMN_FIXED);
@@ -350,6 +351,11 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 				{
 					if(getSources().size() == 1)
 						(*item)[dq->fileColumns.status] = "Waiting (User online)";
+					else if (getSources().size() < 0)
+					{
+						sprintf(buf, "Waiting (%d users online)", online);
+						(*item)[dq->fileColumns.status] = buf;
+					}
 					else
 					{
 						sprintf(buf, "Waiting (%d of %d users online)", online, getSources().size());
@@ -861,7 +867,7 @@ void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
 		i = new QueueItemInfo (aQI);
 		addFile (i, tmp);
 	}
-
+	dirView.expand_all();
 	TreeModel::Row r = *(dirView.get_selection()->get_selected());
 
 	if (!r)

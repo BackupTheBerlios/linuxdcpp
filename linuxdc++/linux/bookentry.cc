@@ -27,7 +27,10 @@ using namespace Toolbar_Helpers;
 
 const bool BookEntry::useMultipleTabs[] = {false, false, true, false, true, false, false};
 
-BookEntry::BookEntry():button("X") {
+BookEntry::BookEntry()
+{
+	button.add(*manage(new Gtk::Image(Stock::CLOSE, ICON_SIZE_MENU)));
+	button.set_size_request (16, 16);
 	button.signal_clicked().connect(slot(*this, &BookEntry::close));
 	box.pack_start(label, Gtk::PACK_EXPAND_WIDGET);
 	box.pack_start(button, Gtk::PACK_SHRINK);

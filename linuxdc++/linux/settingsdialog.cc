@@ -43,23 +43,25 @@ SettingsDialog::SettingsDialog(MainWindow *mw):
 	
 	//general
 	infoTable(4, 2),
+	conTable (3, 5),
 	sockTable(4, 4),
-	personalFrame("Personal information"),
-	connectionFrame("Connection settings"),
-	nick("Nick"),
-	email("E-mail"),
-	desc("Description"),
-	connection("Connection"),
-	ip("IP"),
-	port("Port (empty=random)"),
-	sockIp("Socks IP"),
-	sockPort("Port"),
-	user("Username"),
-	pass("Password"),
+	personalFrame("Personal Information"),
+	connectionFrame("Connection Settings (see the help file if unsure)"),
+	nick("Nick", 1.0, 0.5),
+	email("E-Mail", 1.0, 0.5),
+	desc("Description", 1.0, 0.5),
+	connection("Connection Type", 1.0, 0.5),
+	ip("IP", 1.0, 0.5),
+	tcpport("TCP Port", 0.5, 0.5),
+	udpport("UDP Port", 0.5, 0.5),
+	sockIp("Socks IP", 0.0, 0.5),
+	sockPort("Port", 0.0, 0.5),
+	user("Username", 0.0, 0.5),
+	pass("Password", 0.0, 0.5),
 	activeRB("Active"),
 	passiveRB("Passive"),
 	sock5RB("SOCKS5"),
-	sock5CB("Use SOCK5 for hostnames"),
+	sock5CB("Use SOCKS5 server to resolve hostnames"),
 	
 	
 	//download
@@ -135,7 +137,9 @@ void SettingsDialog::createGeneral() {
 	}
 		
 	connectionOption.set_menu(connectionMenu);
-	
+
+	infoTable.set_border_width (8);
+	infoTable.set_spacings (1);
 	infoTable.attach(nick, 0, 1, 0, 1);
 	infoTable.attach(nickEntry, 1, 2, 0, 1);
 	infoTable.attach(email, 0, 1, 1, 2);
@@ -144,13 +148,21 @@ void SettingsDialog::createGeneral() {
 	infoTable.attach(descEntry, 1, 2, 2, 3);
 	infoTable.attach(connection, 0, 1, 3, 4);
 	infoTable.attach(connectionOption, 1, 2, 3, 4);
-	
-	ipBox.pack_start(activeRB, PACK_EXPAND_WIDGET);
-	ipBox.pack_start(ip, PACK_EXPAND_WIDGET);
-	ipBox.pack_start(ipEntry, PACK_EXPAND_WIDGET);
-	ipBox.pack_start(port, PACK_EXPAND_WIDGET);
-	ipBox.pack_start(portEntry, PACK_EXPAND_WIDGET);
 
+	conTable.set_border_width (8);
+	conTable.set_spacings (1);
+	conTable.attach (activeRB, 0, 1, 0, 1);
+	conTable.attach (ip, 1, 2, 0, 1);
+	conTable.attach (ipEntry, 2, 3, 0, 1);
+	conTable.attach (tcpport, 3, 4, 0, 1);
+	conTable.attach (tcpportEntry, 4, 5, 0, 1);
+	conTable.attach (passiveRB, 0, 1, 1, 2);
+	conTable.attach (udpport, 3, 4, 1, 2);
+	conTable.attach (udpportEntry, 4, 5, 1, 2);
+	conTable.attach (sock5RB, 0, 1, 2, 3);
+
+	sockTable.set_border_width (8);
+	sockTable.set_spacings (1);
 	sockTable.attach(sockIp, 0, 1, 0, 1);
 	sockTable.attach(sockPort, 1, 2, 0, 1);
 	sockTable.attach(sockIpEntry, 0, 1, 1, 2);
@@ -160,9 +172,7 @@ void SettingsDialog::createGeneral() {
 	sockTable.attach(userEntry, 0, 1, 3, 4);
 	sockTable.attach(passEntry, 1, 2, 3, 4);
 	
-	connectionBox.pack_start(ipBox, PACK_EXPAND_WIDGET);
-	connectionBox.pack_start(passiveRB, PACK_EXPAND_WIDGET);
-	connectionBox.pack_start(sock5RB, PACK_EXPAND_WIDGET);
+	connectionBox.pack_start(conTable, PACK_EXPAND_WIDGET);
 	connectionBox.pack_start(sockTable, PACK_EXPAND_WIDGET);
 	connectionBox.pack_start(sock5CB, PACK_EXPAND_WIDGET);
 
@@ -282,7 +292,7 @@ void SettingsDialog::setValues() {
 	
 	ipEntry.set_text(SETTING(SERVER));
 	sprintf(temp, "%d", SETTING(IN_PORT));
-	portEntry.set_text(temp);
+	tcpportEntry.set_text(temp);
 	sockIpEntry.set_text(SETTING(SOCKS_SERVER));
 	sprintf(temp, "%d", SETTING(SOCKS_PORT));
 	sockPortEntry.set_text(temp);
@@ -341,7 +351,7 @@ void SettingsDialog::saveSettings() {
 	mgr->set(SettingsManager::CONNECTION, SettingsManager::connectionSpeeds[connectionOption.get_history()]);
 
 	mgr->set(SettingsManager::SERVER, ipEntry.get_text());
-	mgr->set(SettingsManager::IN_PORT, atoi(portEntry.get_text().c_str()));
+	mgr->set(SettingsManager::IN_PORT, atoi(tcpportEntry.get_text().c_str()));
 	mgr->set(SettingsManager::SOCKS_SERVER, sockIpEntry.get_text());
 	mgr->set(SettingsManager::SOCKS_PORT,
 		atoi(sockPortEntry.get_text().c_str()));
@@ -382,30 +392,24 @@ void SettingsDialog::activeClicked() {
 	sockTable.set_sensitive(false);
 	sock5CB.set_sensitive(false);
 
-	ip.set_sensitive(true);
 	ipEntry.set_sensitive(true);
-	port.set_sensitive(true);
-	portEntry.set_sensitive(true);
+	tcpportEntry.set_sensitive(true);
 }
 
 void SettingsDialog::passiveClicked() {
 	sockTable.set_sensitive(false);
 	sock5CB.set_sensitive(false);
 
-	ip.set_sensitive(false);
 	ipEntry.set_sensitive(false);
-	port.set_sensitive(false);
-	portEntry.set_sensitive(false);
+	tcpportEntry.set_sensitive(false);
 }
 
 void SettingsDialog::sockClicked() {
 	sockTable.set_sensitive(true);
 	sock5CB.set_sensitive(true);
 
-	ip.set_sensitive(false);
 	ipEntry.set_sensitive(false);
-	port.set_sensitive(false);
-	portEntry.set_sensitive(false);
+	tcpportEntry.set_sensitive(false);
 }
 
 void SettingsDialog::addDirectory() {

@@ -126,7 +126,7 @@ void SearchManager::disconnect() throw() {
 	if(socket != NULL) {
 		stop = true;
 		socket->disconnect();
-		join();
+		//join();
 		stop = false;
 	}
 }
@@ -292,6 +292,6 @@ string SearchManager::clean(const string& aSearchString) {
 
 /**
  * @file
- * $Id: SearchManager.cpp,v 1.3 2004/11/14 16:35:23 paskharen Exp $
+ * $Id: SearchManager.cpp,v 1.4 2004/12/19 14:30:18 phase Exp $
  */
 

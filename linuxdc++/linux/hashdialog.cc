@@ -53,6 +53,7 @@ HashDialog::HashDialog (MainWindow *m) : 	Dialog ("Hash progress", *m, true), st
 	frame.add (box);
 	box.pack_start (table, PACK_EXPAND_WIDGET);
 	table.set_spacings (2);
+	table.set_border_width (8);
 	table.attach(fileLabel, 0, 1, 0, 1);
 	table.attach(file, 1, 2, 0, 1, FILL, SHRINK);
 	table.attach(speedLabel, 0, 1, 1, 2);
@@ -94,6 +95,7 @@ void HashDialog::updateStats ()
 	else
 	{
 		double speedStat = (((double)(startBytes - bytes)) * 1000) / diff;
+		frame.set_label ("Hashprogress - " + Util::toString((u_int32_t)files) +" files left");
 		speed.set_text (Util::formatBytes((int64_t)speedStat) + "/s, " + Util::formatBytes(bytes) + " left");
 		if(speedStat == 0)
 		{

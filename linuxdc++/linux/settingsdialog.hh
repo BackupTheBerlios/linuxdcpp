@@ -63,13 +63,13 @@ class SettingsDialog: public Gtk::Dialog {
 		Glib::RefPtr<Gtk::ListStore> dirModel;
 		DirColumns columns;
 		Gtk::Label nick, email, desc, connection;
-		Gtk::Label ip, port, sockIp, sockPort, user, pass;
+		Gtk::Label ip, tcpport, udpport, sockIp, sockPort, user, pass;
 		
 		Gtk::VBox connectionBox, generalBox, sharingBox, downloadBox;
 		Gtk::HBox ipBox;
-		Gtk::Table infoTable, sockTable, dirTable, slotTable;
+		Gtk::Table infoTable, conTable, sockTable, dirTable, slotTable;
 		
-		Gtk::Entry nickEntry, emailEntry, descEntry, ipEntry, portEntry;
+		Gtk::Entry nickEntry, emailEntry, descEntry, ipEntry, tcpportEntry, udpportEntry;
 		Gtk::Entry sockIpEntry, sockPortEntry, userEntry, passEntry;
 		
 		Gtk::OptionMenu connectionOption;

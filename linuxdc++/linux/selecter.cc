@@ -76,6 +76,6 @@ void Selecter::quit() {
 	}
 	exitPlease = true;
 	pthread_mutex_unlock(&lock);
-	pthread_join(thread, NULL);
+	//pthread_join(thread, NULL);
 }
 

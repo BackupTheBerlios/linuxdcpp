@@ -259,7 +259,7 @@ private:
 	void buttonReleasedDir (GdkEventButton *event);
 	void buttonPressedFile (GdkEventButton *event);
 	void buttonReleasedFile (GdkEventButton *event);
-	
+
 	GdkEventType filePrevious, dirPrevious;
 	
 	/* Queue info */
