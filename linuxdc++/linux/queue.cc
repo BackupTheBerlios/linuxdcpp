@@ -352,7 +352,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 						(*item)[dq->fileColumns.status] = "Waiting (User online)";
 					else
 					{
-						sprintf(buf, "Waiting (%d of %d users online), online", online, getSources().size());
+						sprintf(buf, "Waiting (%d of %d users online)", online, getSources().size());
 						(*item)[dq->fileColumns.status] = buf;
 					}
 				}
