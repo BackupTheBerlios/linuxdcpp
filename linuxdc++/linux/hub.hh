@@ -25,6 +25,7 @@
 #include <gtkmm.h>
 #include <string>
 #include <iostream>
+#include <map>
 
 #include "bookentry.hh"
 #include "mainwindow.hh"
@@ -102,7 +103,6 @@ class Hub:
 		};
 
 		Gtk::TreeModel::iterator findUser(Glib::ustring nick);
-		int findUserNr(Glib::ustring nick);
 		void updateUser (const User::Ptr &user);
 		std::string address;
 
@@ -126,6 +126,7 @@ class Hub:
 		Client *client;
 		MainWindow *mw;
 		double scrollVal;
+		std::map<Glib::ustring, Gtk::TreeModel::iterator> userMap;
 };
 
 #else

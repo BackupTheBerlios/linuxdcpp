@@ -82,7 +82,7 @@ public:
 	};
 	Thread() throw() : threadHandle(0) { };
 	virtual ~Thread() { 
-		if(threadHandle != 0) {
+		if (threadHandle) {
 			pthread_detach(threadHandle);
 		}
 	};
@@ -139,6 +139,7 @@ private:
 	static void* starter(void* p) {
 		Thread* t = (Thread*)p;
 		t->run();
+		t->threadHandle = 0;
 		return NULL;
 	}
 #endif
@@ -148,6 +149,6 @@ private:
 
 /**
  * @file
- * $Id: Thread.h,v 1.2 2004/11/12 16:29:31 phase Exp $
+ * $Id: Thread.h,v 1.3 2004/11/14 16:35:23 paskharen Exp $
  */
 

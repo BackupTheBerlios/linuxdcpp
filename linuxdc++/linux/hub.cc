@@ -151,8 +151,11 @@ void Hub::on(ClientListener::BadPassword, Client *client) throw() {
 void Hub::updateUser (const User::Ptr &user)
 {
 	TreeModel::iterator it = findUser (WUtil::ConvertToUTF8 (user->getNick()));
-	if (it == nickStore->children ().end ())
+	if (it == nickStore->children ().end ()) {
 		it = nickStore->append ();
+		//insert the nick in the map
+		userMap[WUtil::ConvertToUTF8(user->getNick())] = it;
+	}
 
 	TreeModel::Row row = *it;		
 
@@ -176,8 +179,7 @@ void Hub::on(ClientListener::UsersUpdated,
 	Client *client, const User::List &list) throw()
 {
 	User::List::const_iterator it;
-	int i;
-	for (it=list.begin (),i=0; it != list.begin (); it++,i++)
+	for (it = list.begin (); it != list.begin (); it++)
 	{
 		if(!(*it)->isSet(User::HIDDEN))
 			updateUser (*it);
@@ -190,11 +192,15 @@ void Hub::on(ClientListener::UserRemoved,
 	BookEntry *e = mw->findPage (WUtil::ConvertToUTF8 (user->getNick()));
 	if (e && e->getID() == BOOK_PRIVATE_MESSAGE)
 		(dynamic_cast<PrivateMsg*>(e))->addMsg (WUtil::ConvertToUTF8 (user->getNick()) + " left the hub.");
+
 	TreeModel::iterator it = findUser(WUtil::ConvertToUTF8 (user->getNick()));
-	if (it == nickStore->children().end())
+	if (it == nickStore->children().end()) {
 		return;
-	else
+	} else {
 		nickStore->erase(it);
+		//remove from userMap
+		userMap.erase(WUtil::ConvertToUTF8 (user->getNick()));
+	}
 	
 	char buffer[32];
 	sprintf (buffer, "%d User(s)", client->getUserCount ());
@@ -205,7 +211,7 @@ void Hub::on(ClientListener::UserRemoved,
 void Hub::on(ClientListener::Redirect, 
 	Client *client, const string &msg) throw()
 {
-	//some junk from the old client...
+	//some junk from the old client... (0.2 something)
 	//probably easier to check the windows side of things for better code...
 			/*
 			{
@@ -295,29 +301,17 @@ void Hub::on(ClientListener::NmdcSearch, Client *client, const string&,
 }
 
 TreeModel::iterator Hub::findUser(ustring nick) {
-	TreeModel::iterator it;
-	TreeModel::Children kids = nickStore->children();
-	
+	//TreeModel::iterator it;
+	//TreeModel::Children kids = nickStore->children();
+	/*
 	for (it = kids.begin(); it != kids.end(); it++)
 		if ((*it)[columns.nick] == nick)
 			return it;
-			
+						
 	return kids.end();
-}
-int Hub::findUserNr(ustring nick)
-{
-	TreeModel::iterator it;
-	TreeModel::Children kids = nickStore->children();
-	int count=0;
-	
-	for (it = kids.begin(); it != kids.end(); it++)
-	{
-		if ((*it)[columns.nick] == nick)
-			return count;
-		count++;
-	}
-	
-	return -1;
+	*/
+	if (userMap.find(nick) != userMap.end()) return userMap[nick];
+	else return nickStore->children().end();
 }
 
 void Hub::showPopupMenu(GdkEventButton* event) {
