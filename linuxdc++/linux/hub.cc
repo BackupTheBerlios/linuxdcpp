@@ -148,60 +148,51 @@ void Hub::on(ClientListener::BadPassword, Client *client) throw() {
 	client->setPassword("");
 }
 
-void Hub::on(ClientListener::UserUpdated, Client *client, 
-	const User::Ptr &user) throw() 
+void Hub::updateUser (const User::Ptr &user)
 {
-	std::string str;
-	int i;
-	TreeModel::iterator it = findUser(user->getNick());
-		
-	if (it == nickStore->children().end())
-		it = nickStore->append();
-			
-	str = user->getNick();
-	(*it)[columns.nick] = WUtil::ConvertToUTF8(str);	
-	str = Util::formatBytes(user->getBytesShared());
-	(*it)[columns.shared] = WUtil::ConvertToUTF8(str);	
+	TreeModel::iterator it = findUser (WUtil::ConvertToUTF8 (user->getNick()));
+	if (it == nickStore->children ().end ())
+		it = nickStore->append ();
+
+	TreeModel::Row row = *it;		
+
+	row[columns.nick] = WUtil::ConvertToUTF8(user->getNick ());
+	row[columns.shared] = WUtil::ConvertToUTF8(Util::formatBytes (user->getBytesShared ()));
 
 	char buffer[32];
 	sprintf (buffer, "%d User(s)", client->getUserCount ());
 	setStatus (buffer, HUB_STATUS_USERS);
 	setStatus (Util::formatBytes(client->getAvailable ()), HUB_STATUS_SHARED);
 }
+
+void Hub::on(ClientListener::UserUpdated, Client *client, 
+	const User::Ptr &user) throw() 
+{
+	if(!user->isSet(User::HIDDEN))
+		updateUser (user);
+}
 	
 void Hub::on(ClientListener::UsersUpdated, 
 	Client *client, const User::List &list) throw()
 {
+	User::List::const_iterator it;
 	int i;
-	TreeModel::iterator it;
-	std::string str;
-	
-	for (i=0; i < list.size(); i++) {
-		it = findUser(list[i]->getNick());
-		
-		if (it == nickStore->children().end())
-			it = nickStore->append();
-			
-		str = list[i]->getNick();
-		(*it)[columns.nick] = WUtil::ConvertToUTF8(str);	
-		str = Util::formatBytes(list[i]->getBytesShared());
-		(*it)[columns.shared] = WUtil::ConvertToUTF8(str);	
+	for (it=list.begin (),i=0; it != list.begin (); it++,i++)
+	{
+		if(!(*it)->isSet(User::HIDDEN))
+			updateUser (*it);
 	}
 }
 
 void Hub::on(ClientListener::UserRemoved, 
 	Client *client, const User::Ptr &user) throw()
 {
-	BookEntry *e = mw->findPage (user->getNick ());
+	BookEntry *e = mw->findPage (WUtil::ConvertToUTF8 (user->getNick()));
 	if (e && e->getID() == BOOK_PRIVATE_MESSAGE)
-		(dynamic_cast<PrivateMsg*>(e))->addMsg (user->getNick () + " left the hub.");
-	TreeModel::iterator it = findUser(user->getNick());
+		(dynamic_cast<PrivateMsg*>(e))->addMsg (WUtil::ConvertToUTF8 (user->getNick()) + " left the hub.");
+	TreeModel::iterator it = findUser(WUtil::ConvertToUTF8 (user->getNick()));
 	if (it == nickStore->children().end())
-	{
-		for (TreeModel::iterator it = nickStore->children().begin(),it2=nickStore->children().begin(); it != nickStore->children().end(); it2=it, it++)
-				if ((*it)[columns.nick] == (*it2)[columns.nick])
-					nickStore->erase (it);
-	}
+		return;
 	else
 		nickStore->erase(it);
 	

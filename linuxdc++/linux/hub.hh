@@ -89,7 +89,7 @@ class Hub:
 		void setStatus (std::string text, int num);
 		void close ();
 		void showPasswordDialog ();
-
+	
 	private:
 		class NickListColumns: public Gtk::TreeModel::ColumnRecord {
 			public:
@@ -103,6 +103,7 @@ class Hub:
 
 		Gtk::TreeModel::iterator findUser(Glib::ustring nick);
 		int findUserNr(Glib::ustring nick);
+		void updateUser (const User::Ptr &user);
 		std::string address;
 
 		Gtk::VBox mainBox;

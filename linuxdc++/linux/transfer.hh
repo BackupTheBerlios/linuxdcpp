@@ -23,6 +23,7 @@
 #include <string>
 
 #include "util.hh"
+#include "sharebrowser.hh"
 
 #include "../client/stdinc.h"
 #include "../client/DCPlusPlus.h"
@@ -30,7 +31,8 @@
 #include "../client/UploadManager.h"
 #include "../client/CriticalSection.h"
 #include "../client/ConnectionManager.h"
-//#include "../client/QueueManager.h"
+#include "../client/ClientManager.h"
+#include "../client/QueueManager.h"
 
 
 class CTransfer : 	public DownloadManagerListener,
@@ -56,7 +58,7 @@ class CTransfer : 	public DownloadManagerListener,
 		static void startup ();
 		void shutdown ();
 
-		Gtk::TreeView &getTransferList ();
+		Gtk::ScrolledWindow &getTransferScroll ();
 		
 		friend class TransferItem;
 		
@@ -181,6 +183,8 @@ class CTransfer : 	public DownloadManagerListener,
 		virtual void on(UploadManagerListener::Complete, Upload *ul) throw() { onTransferComplete (ul, true); }
 
 		void onTransferComplete (Transfer *t, bool upload);
+
+		Gtk::ScrolledWindow transferScroll;
 		
 		Gtk::TreeView transferList;
 		Glib::RefPtr<Gtk::ListStore> transferStore;
@@ -190,10 +194,13 @@ class CTransfer : 	public DownloadManagerListener,
 		TransferColumns columns;
 
 		Gtk::Menu popupMenu;
+		Gtk::MenuItem menuSeparator;
+		Gtk::MenuItem menuForce;
 		Gtk::MenuItem menuRemoveTransfer;
 		Gtk::MenuItem menuRemoveQueue;
 		Gtk::MenuItem menuBrowse;
   		void showPopupMenu(GdkEventButton* event);
+		void forceClicked ();
 		void removeTransferClicked ();
 		void browseClicked ();
 		void removeQueueClicked ();

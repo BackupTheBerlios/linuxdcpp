@@ -1,3 +1,15 @@
+2004-10-14 12:25 phase
+
+	* linux/transfer.hh/cc: The client doesn't resize after the connection lister.
+	
+2004-10-13 14:46 phase
+
+	* linux/transfer.hh/cc: Made some changes in the transfer-menu.
+
+2004-10-13 03:37 phase
+
+	* linux/settingsdialog.cc: You can now safely remove directorys from your share.
+
 2004-10-11 22:48 phase
 
 	* linux/transfer.cc: You can now close a connection through the "connection lister"-menu.

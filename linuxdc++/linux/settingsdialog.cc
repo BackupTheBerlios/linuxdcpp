@@ -472,8 +472,8 @@ void SettingsDialog::removeDirectory() {
 	ShareManager *mgr = ShareManager::getInstance();
 
 	if (!it) return;
-	dirModel->erase(it);
 	mgr->removeDirectory(WUtil::ConvertFromUTF8((*it)[columns.dir]));
+	dirModel->erase(it);
 	totalSize.set_text(WUtil::ConvertToUTF8("Total size: " +
 		Util::formatBytes(mgr->getShareSize())));
 }

@@ -81,7 +81,7 @@ MainWindow::MainWindow():
 	add(mainBox);
 	
 	pane.add1(book);
-	pane.add2(CTransfer::getInstance ()->getTransferList ());
+	pane.add2(CTransfer::getInstance ()->getTransferScroll ());
 	pane.set_position(360);
 	
 	mainBox.pack_start(toolBox, PACK_SHRINK, 0);
@@ -339,6 +339,8 @@ void MainWindow::on(QueueManagerListener::Finished, QueueItem *item) throw()
 
 void MainWindow::quit ()
 {
+	SearchManager::getInstance()->disconnect();
+	ConnectionManager::getInstance()->disconnect();
 	Selecter::quit();
 	Main::quit();
 }

@@ -27,9 +27,9 @@ using namespace Glib;
 
 CTransfer *CTransfer::instance;
 
-TreeView &CTransfer::getTransferList ()
+ScrolledWindow &CTransfer::getTransferScroll ()
 {
-	return transferList;
+	return transferScroll;
 }
 
 CTransfer::~CTransfer ()
@@ -39,7 +39,8 @@ CTransfer::~CTransfer ()
 
 CTransfer::CTransfer () : 	menuRemoveTransfer("Close transfer"),
 										menuBrowse("Browse user filelist"),
-										menuRemoveQueue("Remove from queue")
+										menuRemoveQueue("Remove from queue"),
+										menuForce("Force attempt")
 {
 	Slot1<void, GdkEventButton*> callback1;
 	Slot0<void> callback0;
@@ -58,6 +59,8 @@ CTransfer::CTransfer () : 	menuRemoveTransfer("Close transfer"),
 	transferList.append_column("IP", columns.ip);
 	transferList.append_column("Ratio", columns.ratio);
 
+	transferScroll.add (transferList);
+	
 	proxy->addListener<CTransfer, DownloadManagerListener>(this, DownloadManager::getInstance());
 	proxy->addListener<CTransfer, UploadManagerListener>(this, UploadManager::getInstance());
 	proxy->addListener<CTransfer, ConnectionManagerListener>(this, ConnectionManager::getInstance());
@@ -72,6 +75,11 @@ CTransfer::CTransfer () : 	menuRemoveTransfer("Close transfer"),
 	callback0 = open_tunnel(tunnel, slot(*this, &CTransfer::removeQueueClicked), true);
 	menuRemoveQueue.signal_activate().connect(callback0);
 
+	callback0 = open_tunnel(tunnel, slot(*this, &CTransfer::forceClicked), true);
+	menuForce.signal_activate().connect(callback0);
+
+	popupMenu.append (menuForce);
+	popupMenu.append (menuSeparator);
 	popupMenu.append (menuRemoveTransfer);
 	popupMenu.append (menuBrowse);
 	popupMenu.append (menuRemoveQueue);
@@ -544,19 +552,61 @@ void CTransfer::showPopupMenu(GdkEventButton* event)
 void CTransfer::removeTransferClicked ()
 {
 	RefPtr<TreeSelection> sel = transferList.get_selection();
-	TreeModel::iterator it = sel->get_selected();
+	RefPtr<TreeModel> tmp;
+	TreeModel::iterator it;
+	TransferItem *i;
 
-	TransferItem *i = findTransfer (it);
-
-	if (!i)
-		return;
+	sel->get_selected_rows (tmp);
 	
-	i->disconnect ();
+	for (it = tmp->children ().begin (); it != tmp->children ().end(); it++)
+	{
+		i = findTransfer (it);
+		if (!i)
+			continue;
+	
+		i->disconnect ();
+	}
+}
+
+void CTransfer::forceClicked ()
+{
+	RefPtr<TreeSelection> sel = transferList.get_selection();
+	RefPtr<TreeModel> tmp;
+	TreeModel::iterator it;
+	TransferItem *i;
+
+	sel->get_selected_rows (tmp);
+	
+	for (it = tmp->children ().begin (); it != tmp->children ().end(); it++)
+	{
+		i = findTransfer (it);
+		if (!i)
+			continue;
+
+		i->user->connect ();
+		(*it)[columns.status] = "Connecting (forced)...";
+	}	
 }
 
 void CTransfer::browseClicked ()
 {
+	ShareBrowser *b;
+	RefPtr<TreeSelection> sel = transferList.get_selection();
+	TreeModel::iterator it = sel->get_selected();
 
+	ClientManager *man = ClientManager::getInstance();
+	
+	if (!it) return;
+	TransferItem *i = findTransfer (it);
+	
+	try
+	{
+		QueueManager::getInstance ()->addList(i->user, QueueItem::FLAG_CLIENT_VIEW);
+	}
+	catch(...)
+	{
+		cout << "Couldn't add filelist." << endl;
+	}	
 }
 
 void CTransfer::removeQueueClicked ()
