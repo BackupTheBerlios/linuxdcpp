@@ -618,6 +618,8 @@ void Settings::modifyShare_client (bool add, string path, string name)
 		ShareManager::getInstance()->addDirectory (path, name);
 	else
 		ShareManager::getInstance ()->removeDirectory (path);
+		
+	gtk_label_set_text (GTK_LABEL (shareItems["Size"]), string ("Total size: " +Util::formatBytes(ShareManager::getInstance()->getShareSize())).c_str ());
 }
 void Settings::onAddShare_gui (GtkWidget *widget, gpointer user_data)
 {
@@ -647,7 +649,7 @@ void Settings::onAddShare_gui (GtkWidget *widget, gpointer user_data)
 				if (path[path.length ()-1] != PATH_SEPARATOR)
 					path += PATH_SEPARATOR;
 			
-				s->modifyShare_client (true, path, name);
+				s->modifyShare_client(true, path, name);
 				GtkTreeIter iter;
 				gtk_list_store_append (s->shareStore, &iter);
 				gtk_list_store_set (s->shareStore, &iter, 	SHARE_NAME, name.c_str (),
@@ -667,7 +669,6 @@ void Settings::onAddShare_gui (GtkWidget *widget, gpointer user_data)
 				gtk_dialog_run (GTK_DIALOG (d));
 				gtk_widget_hide (d);
 			}
-			gtk_label_set_text (GTK_LABEL (s->shareItems["Size"]), string ("Total size: " +Util::formatBytes(ShareManager::getInstance()->getShareSize())).c_str ());
 		}
 		gtk_widget_hide (s->virtualName);
 	}
@@ -684,7 +685,7 @@ void Settings::onRemoveShare_gui (GtkWidget *widget, gpointer user_data)
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 
-	s->modifyShare_client (false, TreeViewFactory::getValue<gchar*,string>(m, &iter, SHARE_DIR), "");
+	s->modifyShare_client( false, TreeViewFactory::getValue<gchar*,string>(m, &iter, SHARE_DIR), "");
 	gtk_list_store_remove (s->shareStore, &iter);
 	gtk_widget_set_sensitive (s->shareItems["Remove"], FALSE);
 }
@@ -714,9 +715,9 @@ gboolean Settings::onShareHiddenPressed_gui (GtkToggleButton *togglebutton, gpoi
 	Settings *s = (Settings*)user_data;
 	
 	if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (s->shareItems["Hidden"])))
-		s->shareHidden_client (true);
+		WulforManager::get ()->dispatchClientFunc (new Func1<Settings, bool> (s, &Settings::shareHidden_client, true));
 	else
-		s->shareHidden_client (false);
+		WulforManager::get ()->dispatchClientFunc (new Func1<Settings, bool> (s, &Settings::shareHidden_client, false));
 		
 	gtk_list_store_clear (s->shareStore);
 	StringPairList directories = ShareManager::getInstance()->getDirectories();

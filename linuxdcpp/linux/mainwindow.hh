@@ -109,6 +109,8 @@ class MainWindow:
 		static void search_callback(GtkWidget *widget, gpointer data);
 		static void hash_callback(GtkWidget *widget, gpointer data);
 		static void quit_callback(GtkWidget *widget, gpointer data);
+		
+		static void exit_callback(GtkWidget *widget, gpointer data);
 
 		int64_t lastUpdate, lastUp, lastDown;
 

@@ -1101,7 +1101,6 @@ void DownloadQueue::removeFile_gui (string target)
 
 void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
 {
-	cout << aQI->getTarget () << endl;
 	GtkTreeIter row;
 	GtkTreeModel *m = GTK_TREE_MODEL (dirStore);
 	QueueItemInfo *i = new QueueItemInfo (aQI);

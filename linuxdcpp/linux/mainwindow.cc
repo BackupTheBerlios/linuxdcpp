@@ -38,6 +38,10 @@ void MainWindow::quit_callback(GtkWidget *widget, gpointer data) {
 	gtk_main_quit();
 }
 
+void MainWindow::exit_callback(GtkWidget *widget, gpointer data) {
+	gtk_main_quit();
+}
+
 void MainWindow::pubHubs_callback(GtkWidget *widget, gpointer data) {
 	//no need to dispatch, already in gui thread
 	WulforManager::get()->addPublicHubs_gui();
@@ -136,6 +140,7 @@ void MainWindow::createWindow_gui() {
 	quitButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "quit"));
 
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "mainWindow"));
+	g_signal_connect (G_OBJECT (window), "destroy", G_CALLBACK (exit_callback), NULL);
 	book = GTK_NOTEBOOK(glade_xml_get_widget(xml, "book"));
 	transferView = GTK_TREE_VIEW(glade_xml_get_widget(xml, "transfers"));
 
