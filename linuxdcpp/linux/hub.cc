@@ -76,6 +76,25 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	pthread_mutex_init(&clientLock, NULL);
 	client = NULL;
 
+	//Loading icons for the nick list
+	string tmp, path = WulforManager::get()->getPath() + "/pixmaps/";
+	tmp = path + "normal.png";
+	userIcons["normal"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
+	tmp = path + "normal-op.png";
+	userIcons["normal-op"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
+	tmp = path + "normal-fw.png";
+	userIcons["normal-fw"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
+	tmp = path + "normal-fw-op.png";
+	userIcons["normal-fw-op"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
+	tmp = path + "dc++.png";
+	userIcons["dc++"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
+	tmp = path + "dc++-op.png";
+	userIcons["dc++-op"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
+	tmp = path + "dc++-fw.png";
+	userIcons["dc++-fw"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
+	tmp = path + "dc++-fw-op.png";
+	userIcons["dc++-fw-op"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
+
 	enterCallback.connect(G_OBJECT(chatEntry), "activate", NULL);
 	nickListCallback.connect_after(G_OBJECT(nickView), "button-release-event", NULL);
 	browseCallback.connect(G_OBJECT(browseItem), "activate", NULL);
@@ -88,6 +107,10 @@ Hub::~Hub() {
 		ClientManager::getInstance()->putClient(client);
 	}
 	pthread_mutex_destroy(&clientLock);
+
+	map<string, GdkPixbuf*>::iterator it;
+	for (it = userIcons.begin(); it != userIcons.end(); it++)
+		g_object_unref(G_OBJECT(it->second));
 }
 
 GtkWidget *Hub::getWidget() {
@@ -111,15 +134,13 @@ void Hub::connectClient_client(string address, string nick, string desc, string 
 void Hub::updateUser_client(User::Ptr user) {
 	typedef Func3<Hub, string, int64_t, string> F3;
 	F3 * func;
-	string nick = user->getNick();
+	string icon, nick = user->getNick();
 	int64_t shared = user->getBytesShared();
 
-	string icon = WulforManager::get()->getPath() + "/pixmaps/";
 	if (user->isSet(User::DCPLUSPLUS)) icon += "dc++";
 	else icon += "normal";
 	if (user->isSet(User::PASSIVE)) icon += "-fw";
 	if (user->isSet(User::OP)) icon += "-op";
-	icon += ".png";
 
 	func = new F3(this, &Hub::updateUser_gui, nick, shared, icon);
 	WulforManager::get()->dispatchGuiFunc(func);
@@ -139,8 +160,12 @@ void Hub::findUser_gui(string nick, GtkTreeIter *iter) {
 	gtk_tree_model_get_iter_first(GTK_TREE_MODEL(nickStore), iter);
 	
 	while (gtk_list_store_iter_is_valid(nickStore, iter)) {
-		char *text;
-		gtk_tree_model_get(GTK_TREE_MODEL(nickStore), iter, COLUMN_NICK, &text, -1);
+		char *t;
+		string text;
+		gtk_tree_model_get(GTK_TREE_MODEL(nickStore), iter, COLUMN_NICK, &t, -1);
+		text = t;
+		delete[] t;
+		
 		if (nick == text) return;
 		gtk_tree_model_iter_next(GTK_TREE_MODEL(nickStore), iter);
 	}
@@ -158,14 +183,13 @@ void Hub::updateUser_gui(string nick, int64_t shared, string iconFile) {
 		nicks.insert(nick);
 	}
 
-	icon = gdk_pixbuf_new_from_file(iconFile.c_str(), NULL);
+	icon = userIcons[iconFile];
 	gtk_list_store_set(nickStore, &iter, 
 		COLUMN_ICON, icon,
 		COLUMN_NICK, nick.c_str(),
 		COLUMN_SHARED, 	Util::formatBytes(shared).c_str(),
 		COLUMN_SHARED_BYTES, shared,
 		-1);
-	g_object_unref(G_OBJECT(icon));
 	
 	pthread_mutex_lock(&clientLock);
 	if (client) {

@@ -339,20 +339,22 @@ void MainWindow::findId_gui(string id, GtkTreeIter *iter) {
 	gtk_tree_model_get_iter_first(GTK_TREE_MODEL(transferStore), iter);
 
 	while (gtk_list_store_iter_is_valid(transferStore, iter)) {
-		char *text;
+		char *t;
+		string text;
 		gtk_tree_model_get(GTK_TREE_MODEL(transferStore), iter, 
-			COLUMN_ID, &text, -1);
+			COLUMN_ID, &t, -1);
+		text = t;
+		delete[] t;
 
 		if (id == text) return;
 
 		//When the connection is just created we don't know the type.
 		//Thus we have a special "connecting" id that matches any other id
 		//from the same user, as well as separate upload and download ids.
-		string curId = text;
-		if (curId.find("$Connecting", 0) != string::npos || 
+		if (text.find("$Connecting", 0) != string::npos || 
 			id.find("$Connecting", 0) != string::npos)
 		{
-			if (curId.substr(0, curId.find('$', 0)) == 
+			if (text.substr(0, text.find('$', 0)) == 
 				id.substr(0, id.find('$', 0)))
 			{
 				gtk_list_store_set(transferStore, iter, 

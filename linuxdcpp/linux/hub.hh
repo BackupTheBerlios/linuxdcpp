@@ -25,6 +25,7 @@
 #include <semaphore.h>
 #include <string>
 #include <set>
+#include <map>
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
@@ -112,6 +113,8 @@ class Hub:
 		GtkMenu *nickMenu;
 		GtkMenuItem *browseItem, *msgItem;
 
+		std::map<std::string, GdkPixbuf *> userIcons;
+
 		GtkWidget *mainBox;
 		GtkEntry *chatEntry;
 		GtkTextView *chatText;
@@ -122,7 +125,7 @@ class Hub:
 		GtkTreeSelection *nickSelection;
 		GtkScrolledWindow *chatScroll;
 		GtkTextMark *chatMark;
-
+		
 		const int WIDTH_ICON, WIDTH_NICK, WIDTH_SHARED;
 		
 		enum {
