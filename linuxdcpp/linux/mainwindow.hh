@@ -27,10 +27,18 @@
 #include <client/DCPlusPlus.h>
 #include <client/QueueManager.h>
 #include <client/TimerManager.h>
+#include <client/DownloadManager.h>
+#include <client/UploadManager.h>
+#include <client/ConnectionManager.h>
+
+#include "func.hh"
 
 class MainWindow:
 	public QueueManagerListener,
-	public TimerManagerListener
+	public TimerManagerListener,
+	public DownloadManagerListener,
+	public UploadManagerListener,
+	public ConnectionManagerListener
 {
 	public:
 		MainWindow();
@@ -50,10 +58,44 @@ class MainWindow:
 		void removePage_gui(GtkWidget *page);
 		void raisePage_gui(GtkWidget *page);
 
+		typedef enum {
+			CONNECTION_UL,
+			CONNECTION_DL,
+			CONNECTION_NA
+		} connection_t;
+
+		void updateTransfer_gui(std::string id, connection_t type, std::string user, std::string status, 
+			std::string time, std::string speed, std::string file, std::string size, std::string path);
+		void removeTransfer_gui(std::string id);
+
 		//client functions
 		void startSocket();
+		std::string getId_client(ConnectionQueueItem *item);
+		bool getId_client(Transfer *t, std::string *id);
+		void transferComplete_client(Transfer *t);
+
+		//From Timer manager
 		virtual void on(TimerManagerListener::Second, u_int32_t ticks) throw();
+
+		//From Queue Manager
 		virtual void on(QueueManagerListener::Finished, QueueItem *item) throw();
+
+		//From Connection manager
+		virtual void on(ConnectionManagerListener::Added, ConnectionQueueItem *item) throw();
+		virtual void on(ConnectionManagerListener::Removed, ConnectionQueueItem *item) throw();
+		virtual void on(ConnectionManagerListener::Failed, ConnectionQueueItem *item, const string &reason) throw();
+		virtual void on(ConnectionManagerListener::StatusChanged, ConnectionQueueItem *item) throw();
+
+		//From Download manager
+		virtual void on(DownloadManagerListener::Starting, Download *dl) throw();
+		virtual void on(DownloadManagerListener::Tick, const Download::List &list) throw();
+		virtual void on(DownloadManagerListener::Complete, Download *dl) throw();
+		virtual void on(DownloadManagerListener::Failed, Download *dl, const string &reason) throw();
+
+		//From Upload manager
+		virtual void on(UploadManagerListener::Starting, Upload *ul) throw();
+		virtual void on(UploadManagerListener::Tick, const Upload::List &list) throw();
+		virtual void on(UploadManagerListener::Complete, Upload *ul) throw();
 
 	private:
 		//callbacks (to be called from the gui)
@@ -63,10 +105,32 @@ class MainWindow:
 		int64_t lastUpdate, lastUp, lastDown;
 
 		GtkWindow *window;
-		GtkStatusbar *mainStatus, *hubStatus, *slotStatus, *dTotStatus, *uTotStatus,
-			*dlStatus, *ulStatus;
+		GtkStatusbar *mainStatus, *hubStatus, *slotStatus, 
+			*dTotStatus, *uTotStatus, *dlStatus, *ulStatus;
 		GtkNotebook *book;
-		GtkTreeView *transfers;
+		GtkTreeView *transferView;
+		GtkListStore *transferStore;
+		GtkTreeSelection *transferSel;
+		GdkPixbuf *uploadPic, *downloadPic;
+
+		const int WIDTH_TYPE, WIDTH_USER, WIDTH_STATUS, WIDTH_TIMELEFT,
+			WIDTH_SPEED, WIDTH_FILENAME, WIDTH_SIZE, WIDTH_PATH;
+		
+		enum {
+			COLUMN_TYPE,
+			COLUMN_USER,
+			COLUMN_STATUS,
+			COLUMN_TIMELEFT,
+			COLUMN_SPEED,
+			COLUMN_FILENAME,
+			COLUMN_SIZE,
+			COLUMN_PATH,
+			COLUMN_ID		//hidden from user
+		};
+		
+		//conviniece thing for the updateTransfer_gui function
+		typedef Func9 <MainWindow, std::string, connection_t, std::string, std::string, 
+			std::string, std::string, std::string, std::string, std::string> UFunc;
 };
 
 #else
