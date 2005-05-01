@@ -107,7 +107,7 @@ public:
 	enum SupportFlags {
 		SUPPORTS_USERCOMMAND = 0x01,
 		SUPPORTS_NOGETINFO = 0x02,
-		SUPPORTS_USERIP2 = 0x04,
+		SUPPORTS_USERIP2 = 0x04
 	};
 
 #define checkstate() if(state != STATE_CONNECTED) return
@@ -123,7 +123,7 @@ public:
 	virtual void sendUserCmd(const string& aUserCmd) throw() {
 		send(toNmdc(aUserCmd));
 	}
-	virtual void search(int aSizeType, int64_t aSize, int aFileType, const string& aString);
+	virtual void search(int aSizeType, int64_t aSize, int aFileType, const string& aString, const string& aToken);
 	virtual void password(const string& aPass) { send("$MyPass " + toNmdc(aPass) + "|"); }
 	virtual void info(bool alwaysSend) { myInfo(alwaysSend); }
 	
@@ -264,6 +264,6 @@ private:
 
 /**
  * @file
- * $Id: NmdcHub.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
+ * $Id: NmdcHub.h,v 1.3 2005/05/01 20:54:19 paskharen Exp $
  */
 

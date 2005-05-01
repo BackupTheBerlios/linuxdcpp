@@ -1,3 +1,7 @@
+2005-06-01 - paskharen
+* Updated to core version 0.674
+* Fixed some problems with active mode port selection (MainWindow::startSocket)
+
 2005-05-06 - paskharen
 * Added tab compleation for nicks (thanks s4kk3)
 * Fixed unicode conversion when downloading to a directory in sharbrowser (also from s4kk3)

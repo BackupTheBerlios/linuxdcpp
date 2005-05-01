@@ -59,12 +59,14 @@ Download::Download(QueueItem* qi) throw() : source(qi->getCurrent()->getPath()),
 		setFlag(Download::FLAG_RESUME);
 	if(qi->getCurrent()->isSet(QueueItem::Source::FLAG_UTF8))
 		setFlag(Download::FLAG_UTF8);
-};
+}
 
 AdcCommand Download::getCommand(bool zlib, bool tthf) {
 	AdcCommand cmd(AdcCommand::CMD_GET);
 	if(isSet(FLAG_TREE_DOWNLOAD)) {
 		cmd.addParam("tthl");
+	} else if(isSet(FLAG_PARTIAL_LIST)) {
+		cmd.addParam("list");
 	} else {
 		cmd.addParam("file");
 	}
@@ -285,22 +287,17 @@ int64_t DownloadManager::getResumePos(const string& file, const TigerTree& tt, i
 
 		try {
 			File inFile(file, File::READ, File::OPEN);
-			if(blockPos + tt.getBlockSize() >= inFile.getSize()) {
-				startPos = blockPos;
-				continue;
-			}
-
 			inFile.setPos(blockPos);
 			int64_t bytesLeft = tt.getBlockSize();
 			while(bytesLeft > 0) {
-				size_t n = buf.size();
-				n = inFile.read(&buf[0], n);
-				if(n == 0) {
+				size_t n = (size_t)min((int64_t)buf.size(), bytesLeft);
+				size_t nr = inFile.read(&buf[0], n);
+				check.write(&buf[0], nr);
+				bytesLeft -= nr;
+				if(bytesLeft > 0 && nr == 0) {
 					// Huh??
-					check.flush();
+					throw Exception();
 				}
-				check.write(&buf[0], n);
-				bytesLeft -= n;
 			}
 			check.flush();
 			break;
@@ -311,7 +308,6 @@ int64_t DownloadManager::getResumePos(const string& file, const TigerTree& tt, i
 	} while(startPos > 0);
 	return startPos;
 }
-
 
 void DownloadManager::on(UserConnectionListener::Sending, UserConnection* aSource, int64_t aBytes) throw() {
 	if(aSource->getState() != UserConnection::STATE_FILELENGTH) {
@@ -346,7 +342,8 @@ void DownloadManager::on(AdcCommand::SND, UserConnection* aSource, const AdcComm
 	const string& type = cmd.getParam(0);
 	int64_t bytes = Util::toInt64(cmd.getParam(3));
 
-	if(!(type == "file" || (type == "tthl" && aSource->getDownload()->isSet(Download::FLAG_TREE_DOWNLOAD))))
+	if(!(type == "file" || (type == "tthl" && aSource->getDownload()->isSet(Download::FLAG_TREE_DOWNLOAD)) ||
+		(type == "list" && aSource->getDownload()->isSet(Download::FLAG_PARTIAL_LIST))) )
 	{
 		// Uhh??? We didn't ask for this?
 		aSource->disconnect();
@@ -378,10 +375,10 @@ public:
 	}
 
 	virtual size_t write(const void* b, size_t len) throw(FileException) {
-		u_int8_t* wb = (u_int8_t*)b;
 		if(buf != NULL) {
-			size_t n = len < (bufSize - pos) ? len : bufSize - pos;
+			size_t n = min(len, bufSize - pos);
 
+			u_int8_t* wb = (u_int8_t*)b;
 			if(memcmp(buf + pos, wb, n) != 0) {
 				throw RollbackException(STRING(ROLLBACK_INCONSISTENCY));
 			}
@@ -391,7 +388,7 @@ public:
 				buf = NULL;
 			}
 		}
-		return s->write(wb, len);
+		return s->write(b, len);
 	}
 
 private:
@@ -420,7 +417,9 @@ bool DownloadManager::prepareFile(UserConnection* aSource, int64_t newSize, bool
 
 	dcassert(d->getSize() != -1);
 
-	if(d->isSet(Download::FLAG_TREE_DOWNLOAD)) {
+	if(d->isSet(Download::FLAG_PARTIAL_LIST)) {
+		d->setFile(new StringOutputStream(d->getPFS()));
+	} else if(d->isSet(Download::FLAG_TREE_DOWNLOAD)) {
 		d->setFile(new TreeOutputStream(d->getTigerTree()));
 	} else {
 		string target = d->getDownloadTarget();
@@ -558,7 +557,7 @@ void DownloadManager::handleEndData(UserConnection* aSource) {
 		d->getFile()->flush();
 		delete d->getFile();
 		d->setFile(NULL);
-
+		
 		int64_t bl = 1024;
 		while(bl * (int64_t)d->getTigerTree().getLeaves().size() < d->getTigerTree().getFileSize())
 			bl *= 2;
@@ -888,5 +887,5 @@ void DownloadManager::fileNotAvailable(UserConnection* aSource) {
 
 /**
  * @file
- * $Id: DownloadManager.cpp,v 1.2 2005/02/20 22:32:46 paskharen Exp $
+ * $Id: DownloadManager.cpp,v 1.3 2005/05/01 20:54:18 paskharen Exp $
  */

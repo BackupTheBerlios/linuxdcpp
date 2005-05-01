@@ -27,7 +27,7 @@
 
 #define HASH_FILE_VERSION_STRING "2"
 static const u_int32_t HASH_FILE_VERSION=2;
-const int64_t HashManager::MIN_BLOCK_SIZE;
+const int64_t HashManager::MIN_BLOCK_SIZE = 64*1024;
 
 bool HashManager::checkTTH(const string& aFileName, int64_t aSize, u_int32_t aTimeStamp) {
 	Lock l(cs);
@@ -427,7 +427,7 @@ dataFile(Util::getAppPath() + "HashData.dat"), dirty(false)
 			// ?
 		}
 	}
-};
+}
 
 /**
  * Creates the data files for storing hash values.
@@ -674,5 +674,5 @@ int HashManager::Hasher::run() {
 
 /**
  * @file
- * $Id: HashManager.cpp,v 1.2 2005/02/20 22:32:46 paskharen Exp $
+ * $Id: HashManager.cpp,v 1.3 2005/05/01 20:54:18 paskharen Exp $
  */

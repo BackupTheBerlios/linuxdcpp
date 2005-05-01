@@ -23,5 +23,5 @@
 
 /**
  * @file
- * $Id: LogManager.cpp,v 1.2 2005/02/20 22:32:47 paskharen Exp $
+ * $Id: LogManager.cpp,v 1.3 2005/05/01 20:54:18 paskharen Exp $
  */

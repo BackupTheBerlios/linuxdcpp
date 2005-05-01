@@ -36,6 +36,7 @@ public:
 	typedef X<4> SourcesUpdated;
 	typedef X<5> StatusUpdated;
 	typedef X<6> SearchStringUpdated;
+	typedef X<7> PartialList;
 
 	virtual void on(Added, QueueItem*) throw() { }
 	virtual void on(Finished, QueueItem*) throw() { }
@@ -44,11 +45,12 @@ public:
 	virtual void on(SourcesUpdated, QueueItem*) throw() { }
 	virtual void on(StatusUpdated, QueueItem*) throw() { }
 	virtual void on(SearchStringUpdated, QueueItem*) throw() { }
+	virtual void on(PartialList, const User::Ptr&, const string&) throw() { }
 };
 
 #endif
 
 /**
  * @file
- * $Id: QueueManagerListener.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
+ * $Id: QueueManagerListener.h,v 1.3 2005/05/01 20:54:19 paskharen Exp $
  */

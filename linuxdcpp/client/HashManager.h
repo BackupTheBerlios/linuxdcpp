@@ -52,7 +52,7 @@ class HashManager : public Singleton<HashManager>, public Speaker<HashManagerLis
 public:
 
 	/** We don't keep leaves for blocks smaller than this... */
-	static const int64_t MIN_BLOCK_SIZE = 64*1024;
+	static const int64_t MIN_BLOCK_SIZE;
 
 	HashManager() {
 		TimerManager::getInstance()->addListener(this);
@@ -279,5 +279,5 @@ private:
 
 /**
  * @file
- * $Id: HashManager.h,v 1.2 2005/02/20 22:32:46 paskharen Exp $
+ * $Id: HashManager.h,v 1.3 2005/05/01 20:54:18 paskharen Exp $
  */

@@ -107,5 +107,5 @@ private:
 
 /**
  * @file
- * $Id: MerkleCheckOutputStream.h,v 1.1 2005/02/22 18:46:40 phase Exp $
+ * $Id: MerkleCheckOutputStream.h,v 1.2 2005/05/01 20:54:18 paskharen Exp $
  */

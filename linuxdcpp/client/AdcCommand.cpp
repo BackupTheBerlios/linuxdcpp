@@ -21,20 +21,20 @@
 
 #include "AdcCommand.h"
 
-void AdcCommand::parse(const string& aLine, bool nmdc /* = false */) {
+void AdcCommand::parse(const string& aLine, bool nmdc /* = false */) throw(ParseException) {
 	string::size_type i = 5;
 
 	if(nmdc) {
 		// "$ADCxxx ..."
 		if(aLine.length() < 7)
-			return;
+			throw ParseException("Too short");
 		type = TYPE_CLIENT;
 		memcpy(cmd, &aLine[4], 3);
 		i += 3;
 	} else {
-		// "yxxx ..."
-		if(aLine.length() < 4)
-			return;
+		// "yxxx cidcidcidcid..."
+		if(aLine.length() < 5 + (8 * 8 + 7) / 5)
+			throw ParseException("Too short");
 		type = aLine[0];
 		memcpy(cmd, &aLine[1], 3);
 	}
@@ -49,7 +49,21 @@ void AdcCommand::parse(const string& aLine, bool nmdc /* = false */) {
 
 	while(i < len) {
 		switch(buf[i]) {
-		case '\\': i++; cur += buf[i]; break;
+		case '\\':
+			++i;
+			if(i == len)
+				throw ParseException("Escape at eol");
+			if(buf[i] == 's')
+				cur += ' ';
+			else if(buf[i] == 'n')
+				cur += '\n';
+			else if(buf[i] == '\\')
+				cur += '\\';
+			else if(buf[i] == ' ' && nmdc)	// $ADCGET escaping, leftover from old specs
+				cur += ' ';
+			else
+				throw ParseException("Unknown escape");
+			break;
 		case ' ': 
 			// New parameter...
 			{
@@ -68,7 +82,7 @@ void AdcCommand::parse(const string& aLine, bool nmdc /* = false */) {
 		default:
 			cur += buf[i];
 		}
-		i++;
+		++i;
 	}
 	if(!cur.empty()) {
 		if(!fromSet) {
@@ -83,7 +97,7 @@ void AdcCommand::parse(const string& aLine, bool nmdc /* = false */) {
 	}
 }
 
-string AdcCommand::toString(bool nmdc /* = false */) const {
+string AdcCommand::toString(bool nmdc /* = false */, bool old /* = false */) const {
 	string tmp;
 	if(nmdc) {
 		tmp += "$ADC";
@@ -105,7 +119,7 @@ string AdcCommand::toString(bool nmdc /* = false */) const {
 
 	for(StringIterC i = getParameters().begin(); i != getParameters().end(); ++i) {
 		tmp += ' ';
-		tmp += escape(*i);
+		tmp += escape(*i, old);
 	}
 	if(nmdc) {
 		tmp += '|';
@@ -139,5 +153,5 @@ bool AdcCommand::hasFlag(const char* name, size_t start) const {
 
 /**
  * @file
- * $Id: AdcCommand.cpp,v 1.2 2005/02/20 22:32:46 paskharen Exp $
+ * $Id: AdcCommand.cpp,v 1.3 2005/05/01 20:54:18 paskharen Exp $
  */

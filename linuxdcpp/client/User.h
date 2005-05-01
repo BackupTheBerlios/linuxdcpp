@@ -56,7 +56,7 @@ public:
 		QUIT_HUB = 1<<QUIT_HUB_BIT,
 		HIDDEN = 1<<HIDDEN_BIT,
 		HUB = 1<<HUB_BIT,
-		BOT = 1<<BOT_BIT,
+		BOT = 1<<BOT_BIT
 	};
 
 	typedef Pointer<User> Ptr;
@@ -74,8 +74,8 @@ public:
 		bool operator()(const Ptr& a, const Ptr& b) const { return (&(*a)) < (&(*b)); };
 	};
 
-	User(const CID& aCID) : cid(aCID), bytesShared(0), client(NULL), favoriteUser(NULL) { }
-	User(const string& aNick) throw() : nick(aNick), bytesShared(0), client(NULL), favoriteUser(NULL) { }
+	User(const CID& aCID) : cid(aCID), bytesShared(0), slots(0), udpPort(0), client(NULL), favoriteUser(NULL) { }
+	User(const string& aNick) throw() : nick(aNick), bytesShared(0), slots(0), udpPort(0), client(NULL), favoriteUser(NULL) { }
 
 	virtual ~User() throw();
 
@@ -90,7 +90,7 @@ public:
 	bool isClientOp() const;
 	void send(const string& msg);
 	void sendUserCmd(const string& aUserCmd);
-
+	
 	string getFullNick() const { 
 		string tmp(getNick());
 		tmp += " (";
@@ -130,6 +130,8 @@ public:
 	GETSET(string, ip, Ip);
 	GETSET(CID, cid, CID);
 	GETSET(int64_t, bytesShared, BytesShared);
+	GETSET(int, slots, Slots);
+	GETSET(short, udpPort, UDPPort);
 private:
 	mutable RWLock<> cs;
 
@@ -144,5 +146,5 @@ private:
 
 /**
  * @file
- * $Id: User.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
+ * $Id: User.h,v 1.3 2005/05/01 20:54:19 paskharen Exp $
  */

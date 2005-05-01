@@ -26,17 +26,23 @@
 #include "AdcCommand.h"
 #include "ConnectionManager.h"
 #include "version.h"
+#include "Util.h"
+const string AdcHub::CLIENT_PROTOCOL("ADC/0.9");
 
-const string AdcHub::CLIENT_PROTOCOL("ADC/0.8");
+AdcHub::AdcHub(const string& aHubURL) : Client(aHubURL, '\n'), state(STATE_PROTOCOL) {
+}
 
-AdcHub::AdcHub(const string& aHubURL) : Client(aHubURL, '\n', true), state(STATE_PROTOCOL) {
+AdcHub::~AdcHub() throw() {
+	Lock l(cs);
+	clearUsers();
 }
 
 void AdcHub::handle(AdcCommand::INF, AdcCommand& c) throw() {
-	if(c.getFrom().isZero() || c.getParameters().empty())
+	if(c.getParameters().empty())
 		return;
 
 	User::Ptr u = ClientManager::getInstance()->getUser(c.getFrom(), this, true);
+	cidMap[u->getCID()] = u;
 
 	int op = 0;
 	int reg = 0;
@@ -49,7 +55,12 @@ void AdcHub::handle(AdcCommand::INF, AdcCommand& c) throw() {
 			continue;
 
 		if(i->compare(0, 2, "NI") == 0) {
+			Lock l(cs);
+			if(!u->getNick().empty()) {
+				nickMap.erase(u->getNick());
+			}
 			u->setNick(i->substr(2));
+			nickMap.insert(make_pair(u->getNick(), u));
 		} else if(i->compare(0, 2, "HU") == 0) {
 			hub = u;
 		} else if(i->compare(0, 2, "DE") == 0) {
@@ -76,6 +87,7 @@ void AdcHub::handle(AdcCommand::INF, AdcCommand& c) throw() {
 			norm = Util::toInt(i->substr(2));
 		} else if(i->compare(0, 2, "SL") == 0) {
 			sl = Util::toInt(i->substr(2));
+			u->setSlots(sl);
 		} else if(i->compare(0, 2, "BO") == 0) {
 			if(i->length() == 2) {
 				u->unsetFlag(User::BOT);
@@ -94,7 +106,9 @@ void AdcHub::handle(AdcCommand::INF, AdcCommand& c) throw() {
 			} else {
 				u->setFlag(User::HUB);
 			}
-		}
+		} else if(i->compare(0, 2, "U4") == 0) {
+			u->setUDPPort((short)Util::toInt(i->substr(2)));
+		} 
 	}
 
 	if(!ve.empty()) {
@@ -113,6 +127,8 @@ void AdcHub::handle(AdcCommand::INF, AdcCommand& c) throw() {
 }
 
 void AdcHub::handle(AdcCommand::SUP, AdcCommand& c) throw() {
+	if(state != STATE_PROTOCOL) /** @todo SUP changes */
+		return;
 	if(find(c.getParameters().begin(), c.getParameters().end(), "+BASE") == c.getParameters().end()) {
 		disconnect();
 		return;
@@ -122,21 +138,25 @@ void AdcHub::handle(AdcCommand::SUP, AdcCommand& c) throw() {
 }
 
 void AdcHub::handle(AdcCommand::MSG, AdcCommand& c) throw() {
-	if(c.getFrom().isZero() || c.getParameters().empty())
+	if(c.getParameters().empty())
 		return;
-	User::Ptr p = ClientManager::getInstance()->getUser(c.getFrom(), false);
+
+	User::Ptr p = cidMap[c.getFrom()];
 	if(!p)
 		return;
-	if(c.getParameters().size() == 2 && c.getParameters()[1] == "PM") { // add PM<group-cid> as well
-		const string& msg = c.getParameters()[0];
-		if(c.getFrom() == getMe()->getCID()) {
-			p = ClientManager::getInstance()->getUser(c.getTo(), false);
-			if(!p)
-				return;
+	string pmFrom;
+	if(c.getParam("PM", 1, pmFrom)) { // add PM<group-cid> as well
+		User::Ptr pm = cidMap[CID(pmFrom)];
+		if(!pm)
+			return;
+
+		if(pm == getMe()) {
+			return;
 		}
-		fire(ClientListener::PrivateMessage(), this, p, msg);
+		string msg = '<' + p->getNick() + "> " + c.getParam(0);
+		fire(ClientListener::PrivateMessage(), this, pm, msg);
 	} else {
-		string msg = '<' + p->getNick() + "> " + c.getParameters()[0];
+		string msg = '<' + p->getNick() + "> " + c.getParam(0);
 		fire(ClientListener::Message(), this, msg);
 	}		
 }
@@ -144,22 +164,27 @@ void AdcHub::handle(AdcCommand::MSG, AdcCommand& c) throw() {
 void AdcHub::handle(AdcCommand::GPA, AdcCommand& c) throw() {
 	if(c.getParameters().empty())
 		return;
-	salt = c.getParameters()[0];
+	salt = c.getParam(0);
 	state = STATE_VERIFY;
 
 	fire(ClientListener::GetPassword(), this);
 }
 
 void AdcHub::handle(AdcCommand::QUI, AdcCommand& c) throw() {
-	User::Ptr p = ClientManager::getInstance()->getUser(CID(c.getParam(0)), false);
+	User::Ptr p = cidMap[CID(c.getParam(0))];
 	if(!p)
 		return;
+	if(!p->getNick().empty()) {
+		Lock l(cs);
+		nickMap.erase(p->getNick());
+	}
 	ClientManager::getInstance()->putUserOffline(p);
 	fire(ClientListener::UserRemoved(), this, p);
+	cidMap.erase(CID(c.getParam(0)));
 }
 
 void AdcHub::handle(AdcCommand::CTM, AdcCommand& c) throw() {
-	User::Ptr p = ClientManager::getInstance()->getUser(c.getFrom(), false);
+	User::Ptr p = cidMap[c.getFrom()];
 	if(!p || p == getMe())
 		return;
 	if(c.getParameters().size() < 3)
@@ -183,7 +208,7 @@ void AdcHub::handle(AdcCommand::CTM, AdcCommand& c) throw() {
 void AdcHub::handle(AdcCommand::RCM, AdcCommand& c) throw() {
 	if(SETTING(CONNECTION_TYPE) != SettingsManager::CONNECTION_ACTIVE)
 		return;
-	User::Ptr p = ClientManager::getInstance()->getUser(c.getFrom(), false);
+	User::Ptr p = cidMap[c.getFrom()];
 	if(!p || p == getMe())
 		return;
 	if(c.getParameters().empty() || c.getParameters()[0] != CLIENT_PROTOCOL)
@@ -191,6 +216,37 @@ void AdcHub::handle(AdcCommand::RCM, AdcCommand& c) throw() {
 	string token;
 	c.getParam("TO", 1, token);
     connect(&*p, token);
+}
+
+void AdcHub::sendUDP(const AdcCommand& cmd) {
+	try {
+		Socket s;
+		s.create(Socket::TYPE_UDP);
+
+		string tmp = cmd.toString();
+		for(User::NickIter i = nickMap.begin(); i != nickMap.end(); ++i) {
+			if(i->second->getUDPPort() != 0 && !i->second->getIp().empty()) {
+				try {
+					s.writeTo(i->second->getIp(), i->second->getUDPPort(), tmp);
+				} catch(const SocketException& e) {
+					dcdebug("AdcHub::sendUDP: write failed: %s\n", e.getError().c_str());
+				}
+			}
+		}
+	} catch(SocketException&) {
+		dcdebug("Can't create udp socket\n");
+	}
+}
+
+void AdcHub::handle(AdcCommand::STA, AdcCommand& c) throw() {
+	if(c.getParameters().size() < 2)
+		return;
+
+	fire(ClientListener::Message(), this, c.getParam(1));
+}
+
+void AdcHub::handle(AdcCommand::SCH, AdcCommand& c) throw() {	
+	fire(ClientListener::AdcSearch(), this, c);
 }
 
 void AdcHub::connect(const User* user) {
@@ -212,30 +268,33 @@ void AdcHub::connect(const User* user, string const& token) {
 void AdcHub::disconnect() {
 	state = STATE_PROTOCOL;
 	Client::disconnect();
+	{
+		Lock l(cs);
+		clearUsers();
+	}
 }
 
 void AdcHub::hubMessage(const string& aMessage) {
 	if(state != STATE_NORMAL)
 		return;
-	string strtmp;
 	send(AdcCommand(AdcCommand::CMD_MSG, AdcCommand::TYPE_BROADCAST).addParam(aMessage)); 
 }
 
 void AdcHub::privateMessage(const User* user, const string& aMessage) { 
 	if(state != STATE_NORMAL)
 		return;
-	string strtmp;
 	send(AdcCommand(AdcCommand::CMD_MSG, user->getCID()).addParam(aMessage).addParam("PM", SETTING(CLIENT_ID))); 
 }
 
-void AdcHub::search(int aSizeMode, int64_t aSize, int aFileType, const string& aString) { 
+void AdcHub::search(int aSizeMode, int64_t aSize, int aFileType, const string& aString, const string& aToken) { 
 	if(state != STATE_NORMAL)
 		return;
 
-	AdcCommand c(AdcCommand::CMD_SCH, AdcCommand::TYPE_BROADCAST);
+
+	AdcCommand c(AdcCommand::CMD_SCH, AdcCommand::TYPE_UDP);
 
 	if(aFileType == SearchManager::TYPE_TTH) {
-		c.addParam("TR", AdcCommand::escape(aString));
+		c.addParam("TR", aString);
 	} else {
 		if(aSizeMode == SearchManager::SIZE_ATLEAST) {
 			c.addParam(">=", Util::toString(aSize));
@@ -244,23 +303,32 @@ void AdcHub::search(int aSizeMode, int64_t aSize, int aFileType, const string& a
 		}
 		StringTokenizer<string> st(aString, ' ');
 		for(StringIter i = st.getTokens().begin(); i != st.getTokens().end(); ++i) {
-			c.addParam("++", AdcCommand::escape(*i));
+			c.addParam("++", *i);
 		}
 	}
-	send(c);
+
+	if(!aToken.empty())
+		c.addParam("TO", aToken);
+
+	sendUDP(c);
+
+	if(SETTING(CONNECTION_TYPE) == SettingsManager::CONNECTION_ACTIVE) {
+		c.setType(AdcCommand::TYPE_PASSIVE);
+		send(c);
+	}
 }
 
 void AdcHub::password(const string& pwd) { 
 	if(state != STATE_VERIFY)
 		return;
 	if(!salt.empty()) {
-		static const int SALT_SIZE = 192/8;
-		u_int8_t buf[SALT_SIZE];
-		Encoder::fromBase32(salt.c_str(), buf, SALT_SIZE);
+		size_t saltBytes = salt.size() * 5 / 8;
+		AutoArray<u_int8_t> buf(saltBytes);
+		Encoder::fromBase32(salt.c_str(), buf, saltBytes);
 		TigerHash th;
 		th.update(SETTING(CLIENT_ID).c_str(), SETTING(CLIENT_ID).length());
 		th.update(pwd.data(), pwd.length());
-		th.update(buf, SALT_SIZE);
+		th.update(buf, saltBytes);
 		send(AdcCommand(AdcCommand::CMD_PAS, AdcCommand::TYPE_HUB).addParam(Encoder::toBase32(th.finalize(), TigerHash::HASH_SIZE)));
 		salt.clear();
 	}
@@ -328,6 +396,14 @@ string AdcHub::getHubURL() {
 	return getAddressPort();
 }
 
+void AdcHub::clearUsers() {
+	for(User::NickIter i = nickMap.begin(); i != nickMap.end(); ++i) {
+		ClientManager::getInstance()->putUserOffline(i->second);		
+	}
+	nickMap.clear();
+	cidMap.clear();
+}
+
 void AdcHub::on(Connected) throw() { 
 	dcassert(state == STATE_PROTOCOL);
 	setMe(ClientManager::getInstance()->getUser(CID(SETTING(CLIENT_ID)), this, false));
@@ -345,13 +421,12 @@ void AdcHub::on(Line, const string& aLine) throw() {
 }
 
 void AdcHub::on(Failed, const string& aLine) throw() { 
-	if(getMe())
-		ClientManager::getInstance()->putUserOffline(getMe());
+	clearUsers();
 	setMe(NULL);
 	state = STATE_PROTOCOL;
 	fire(ClientListener::Failed(), this, aLine);
 }
 /**
  * @file
- * $Id: AdcHub.cpp,v 1.2 2005/02/20 22:32:46 paskharen Exp $
+ * $Id: AdcHub.cpp,v 1.3 2005/05/01 20:54:18 paskharen Exp $
  */

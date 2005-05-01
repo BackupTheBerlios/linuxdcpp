@@ -87,12 +87,14 @@ public:
 		string::size_type i = 0;
 		while((i = x.find('\\'), i) != string::npos)
 			x[i] = '_';
-		string file = Util::getAppPath() + "FileLists/" + x;
+		string file = Util::getAppPath() + "FileLists\\" + x;
 		// We use the searchString to store the start viewing directory for file lists
 		add(USER_LIST_NAME, -1, aUser, file, NULL, 
 			QueueItem::FLAG_USER_LIST | aFlags,  QueueItem::DEFAULT, 
 			true);
 	}
+
+	void addPfs(const User::Ptr& aUser, const string& aDir) throw();
 
 	/** Readd a source that was removed */
 	void readd(const string& target, User::Ptr& aUser) throw(QueueException);
@@ -121,7 +123,7 @@ public:
 
 	bool hasDownload(const User::Ptr& aUser, QueueItem::Priority minPrio = QueueItem::LOWEST) throw() {
 		Lock l(cs);
-		return (userQueue.getNext(aUser, minPrio) != NULL);
+		return (pfsQueue.find(aUser->getCID()) != pfsQueue.end()) || (userQueue.getNext(aUser, minPrio) != NULL);
 	}
 	
 	void loadQueue() throw();
@@ -130,6 +132,9 @@ public:
 	GETSET(u_int32_t, lastSave, LastSave);
 	GETSET(string, queueFile, QueueFile);
 private:
+
+	typedef HASH_MAP_X(CID, string, CID::Hash, equal_to<CID>, less<CID>) PfsQueue;
+	typedef PfsQueue::iterator PfsIter;
 
 	/** All queue items by target */
 	class FileQueue {
@@ -197,6 +202,8 @@ private:
 	
 	CriticalSection cs;
 	
+	/** Partial file list queue */
+	PfsQueue pfsQueue;
 	/** QueueItems by target */
 	FileQueue fileQueue;
 	/** QueueItems by user */
@@ -217,7 +224,7 @@ private:
 	/** Add a source to an existing queue item */
 	bool addSource(QueueItem* qi, const string& aFile, User::Ptr aUser, Flags::MaskType addBad, bool utf8) throw(QueueException, FileException);
 
-	int QueueManager::matchFiles(DirectoryListing::Directory* dir) throw();
+	int matchFiles(DirectoryListing::Directory* dir) throw();
 	void processList(const string& name, User::Ptr& user, int flags);
 
 	void load(SimpleXML* aXml);
@@ -244,6 +251,6 @@ private:
 
 /**
  * @file
- * $Id: QueueManager.h,v 1.4 2005/02/23 23:04:17 phase Exp $
+ * $Id: QueueManager.h,v 1.5 2005/05/01 20:54:19 paskharen Exp $
  */
 

@@ -78,8 +78,8 @@ public:
 	 * @param esc A preceding backslash escapes any character, including the separator
 	 * @return An unconnected socket
 	 */
-	static BufferedSocket* getSocket(char sep, bool esc = false) throw(SocketException) { 
-		return new BufferedSocket(sep, esc); 
+	static BufferedSocket* getSocket(char sep) throw(SocketException) { 
+		return new BufferedSocket(sep); 
 	};
 
 	static void putSocket(BufferedSocket* aSock) { 
@@ -145,10 +145,9 @@ public:
 		addTask(SEND_FILE);
 	}
 
-	GETSET(char, separator, Separator);
-	GETSET(bool, usesEscapes, UsesEscapes);
+	GETSET(char, separator, Separator)
 private:
-	BufferedSocket(char aSeparator = 0x0a, bool aUsesEscapes = false) throw(SocketException);
+	BufferedSocket(char aSeparator = 0x0a) throw(SocketException);
 
 	// Dummy...
 	BufferedSocket(const BufferedSocket&);
@@ -215,5 +214,5 @@ private:
 
 /**
  * @file
- * $Id: BufferedSocket.h,v 1.2 2005/02/20 22:32:46 paskharen Exp $
+ * $Id: BufferedSocket.h,v 1.3 2005/05/01 20:54:18 paskharen Exp $
  */

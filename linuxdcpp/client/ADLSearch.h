@@ -261,8 +261,8 @@ public:
 	void Save();
 
 	// Settings
-	GETSET(bool, breakOnFirst, BreakOnFirst);		
-	GETSET(User::Ptr, user, User);
+	GETSET(bool, breakOnFirst, BreakOnFirst)
+	GETSET(User::Ptr, user, User)
 
 	// @remarks Used to add ADLSearch directories to an existing DirectoryListing
 	void matchListing(DirectoryListing* /*aDirList*/) throw();
@@ -309,5 +309,5 @@ private:
 
 /**
  * @file
- * $Id: ADLSearch.h,v 1.2 2005/02/20 22:32:46 paskharen Exp $
+ * $Id: ADLSearch.h,v 1.3 2005/05/01 20:54:18 paskharen Exp $
  */

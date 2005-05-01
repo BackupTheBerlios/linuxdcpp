@@ -975,7 +975,7 @@ void Search::search_gui ()
 	gtk_statusbar_push(GTK_STATUSBAR (searchItems["Status2"]), 0, "");
 	gtk_statusbar_pop(GTK_STATUSBAR (searchItems["Status3"]), 0);
 	gtk_statusbar_push(GTK_STATUSBAR (searchItems["Status3"]), 0, "");	
-	SearchManager::getInstance()->search(clients, s, llsize, (SearchManager::TypeModes)ftype, mode);
+	SearchManager::getInstance()->search(clients, s, llsize, (SearchManager::TypeModes)ftype, (SearchManager::SizeModes)mode, "");
 }
 
 void Search::initHubs_gui ()

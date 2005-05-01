@@ -60,5 +60,5 @@ template<class T> T* Singleton<T>::instance = NULL;
 
 /**
  * @file
- * $Id: Singleton.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
+ * $Id: Singleton.h,v 1.3 2005/05/01 20:54:19 paskharen Exp $
  */

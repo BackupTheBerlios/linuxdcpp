@@ -333,18 +333,18 @@ void Settings::initGeneral_gui ()
 
 	switch (SETTING (CONNECTION_TYPE))
 	{
-	case SettingsManager::CONNECTION_ACTIVE:
-		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (generalItems["Active"]), true);
-		activeClicked_gui ();
-	break;
-	case SettingsManager::CONNECTION_PASSIVE:
-		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (generalItems["Passive"]), true);
-		passiveClicked_gui ();
-	break;
-	case SettingsManager::CONNECTION_SOCKS5:
-		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (generalItems["SOCKS5"]), true);
-		socks5Clicked_gui ();
-	break;	
+		case SettingsManager::CONNECTION_ACTIVE:
+			gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (generalItems["Active"]), true);
+			activeClicked_gui ();
+			break;
+		case SettingsManager::CONNECTION_PASSIVE:
+			gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (generalItems["Passive"]), true);
+			passiveClicked_gui ();
+			break;
+		case SettingsManager::CONNECTION_SOCKS5:
+			gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (generalItems["SOCKS5"]), true);
+			socks5Clicked_gui ();
+			break;	
 	}
 
 	char buf[8];

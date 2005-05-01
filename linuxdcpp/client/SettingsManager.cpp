@@ -37,7 +37,7 @@ const string SettingsManager::settingTags[] =
 	"HublistServers", "QueueFrameOrder", "QueueFrameWidths", "PublicHubsFrameOrder", "PublicHubsFrameWidths", 
 	"UsersFrameOrder", "UsersFrameWidths", "HttpProxy", "LogDirectory", "NotepadText", "LogFormatPostDownload",
 	"LogFormatPostUpload", "LogFormatMainChat", "LogFormatPrivateChat", "FinishedOrder", "FinishedWidths",	
-	"TempDownloadDirectory", "SocksServer", "SocksUser", "SocksPassword", "ConfigVersion",
+	"TempDownloadDirectory", "BindAddress", "SocksServer", "SocksUser", "SocksPassword", "ConfigVersion",
 	"DefaultAwayMessage", "TimeStampsFormat", "ADLSearchFrameOrder", "ADLSearchFrameWidths", 
 	"FinishedULWidths", "FinishedULOrder", "CID", "SpyFrameWidths", "SpyFrameOrder", "LogFileMainChat", 
 	"LogFilePrivateChat", "LogFileStatus", "LogFileUpload", "LogFileDownload", "LogFileSystem", 
@@ -46,7 +46,7 @@ const string SettingsManager::settingTags[] =
 	// Ints
 	"ConnectionType", "InPort", "Slots", "Rollback", "AutoFollow", "ClearSearch",
 	"BackgroundColor", "TextColor", "UseOemMonoFont", "ShareHidden", "FilterMessages", "MinimizeToTray",
-	"OpenPublic", "OpenQueue", "AutoSearch", "TimeStamps", "ConfirmExit", "IgnoreOffline", "PopupOffline",
+	"AutoSearch", "TimeStamps", "ConfirmExit", "IgnoreOffline", "PopupOffline",
 	"ListDuplicates", "BufferSize", "DownloadSlots", "MaxDownloadSpeed", "LogMainChat", "LogPrivateChat",
 	"LogDownloads", "LogUploads", "StatusInChat", "ShowJoins", "PrivateMessageBeep", "PrivateMessageBeepOpen",
 	"UseSystemIcons", "PopupPMs", "MinUploadSpeed", "GetUserInfo", "UrlHandler", "MainWindowState", 
@@ -54,14 +54,17 @@ const string SettingsManager::settingTags[] =
 	"SmallSendBuffer", "SocksPort", "SocksResolve", "KeepLists", "AutoKick", "QueueFrameShowTree",
 	"CompressTransfers", "ShowProgressBars", "SFVCheck", "MaxTabRows", "AutoUpdateList",
 	"MaxCompression", "FinishedDirty", "QueueDirty", "TabDirty", "AntiFrag", "MDIMaxmimized", "NoAwayMsgToBots",
-	"SkipZeroByte", "AdlsBreakOnFirst", "TabCompletion", "OpenFavoriteHubs", "OpenFinishedDownloads",
+	"SkipZeroByte", "AdlsBreakOnFirst", "TabCompletion", 
 	"HubUserCommands", "AutoSearchAutoMatch", "DownloadBarColor", "UploadBarColor", "LogSystem",
 	"LogFilelistTransfers", "SendUnknownCommands", "MaxHashSpeed", "OpenUserCmdHelp",
 	"GetUserCountry", "FavShowJoins", "LogStatusMessages", "ShowStatusbar",
 	"ShowToolbar", "ShowTransferview", "PopunderPm", "PopunderFilelist", "MagnetAsk", "MagnetAction", "MagnetRegister",
 	"AddFinishedInstantly", "UseUPnP", "DontDLAlreadyShared", "UseCTRLForLineHistory", "ConfirmHubRemoval", 
 	"OpenNewWindow", "UDPPort", "SearchOnlyTTH", "ShowLastLinesLog", "ConfirmItemRemoval",
-	"AdvancedResume", "AdcDebug", "ToggleActiveWindow", "SearchHistory", 
+	"AdvancedResume", "AdcDebug", "ToggleActiveWindow", "SearchHistory", "SetMinislotSize",
+	"HighestPrioSize", "HighPrioSize", "NormalPrioSize", "LowPrioSize", "LowestPrio", 
+	"OpenPublic", "OpenFavoriteHubs", "OpenFavoriteUsers", "OpenQueue", "OpenFinishedDownloads",
+	"OpenFinishedUploads", "OpenSearchSpy", "OpenNetworkStatistics", "OpenNotepad",
 	"SENTRY",
 	// Int64
 	"TotalUpload", "TotalDownload",
@@ -97,8 +100,6 @@ SettingsManager::SettingsManager()
 	setDefault(SHARE_HIDDEN, false);
 	setDefault(FILTER_MESSAGES, true);
 	setDefault(MINIMIZE_TRAY, false);
-	setDefault(OPEN_PUBLIC, false);
-	setDefault(OPEN_QUEUE, false);
 	setDefault(AUTO_SEARCH, false);
 	setDefault(TIME_STAMPS, false);
 	setDefault(CONFIRM_EXIT, false);
@@ -139,6 +140,7 @@ SettingsManager::SettingsManager()
 	setDefault(URL_HANDLER, false);
 	setDefault(AUTO_AWAY, false);
 	setDefault(SMALL_SEND_BUFFER, false);
+	setDefault(BIND_ADDRESS, "0.0.0.0");
 	setDefault(SOCKS_PORT, 1080);
 	setDefault(SOCKS_RESOLVE, 1);
 	setDefault(CONFIG_VERSION, "0.181");		// 0.181 is the last version missing configversion
@@ -161,8 +163,6 @@ SettingsManager::SettingsManager()
 	setDefault(SKIP_ZERO_BYTE, false);
 	setDefault(ADLS_BREAK_ON_FIRST, false);
 	setDefault(TAB_COMPLETION, true);
-	setDefault(OPEN_FAVORITE_HUBS, false);
-	setDefault(OPEN_FINISHED_DOWNLOADS, false);
 	setDefault(HUB_USER_COMMANDS, true);
 	setDefault(AUTO_SEARCH_AUTO_MATCH, true);
 	setDefault(LOG_FILELIST_TRANSFERS, true);
@@ -194,6 +194,21 @@ SettingsManager::SettingsManager()
 	setDefault(ADC_DEBUG, false);
 	setDefault(TOGGLE_ACTIVE_WINDOW, true);
 	setDefault(SEARCH_HISTORY, 10);
+	setDefault(SET_MINISLOT_SIZE, 64);
+	setDefault(PRIO_HIGHEST_SIZE, 64);
+	setDefault(PRIO_HIGH_SIZE, 0);
+	setDefault(PRIO_NORMAL_SIZE, 0);
+	setDefault(PRIO_LOW_SIZE, 0);
+	setDefault(PRIO_LOWEST, 0);
+	setDefault(OPEN_PUBLIC, false);
+	setDefault(OPEN_FAVORITE_HUBS, false);
+	setDefault(OPEN_FAVORITE_USERS, false);
+	setDefault(OPEN_QUEUE, false);
+	setDefault(OPEN_FINISHED_DOWNLOADS, false);
+	setDefault(OPEN_FINISHED_UPLOADS, false);
+	setDefault(OPEN_SEARCH_SPY, false);
+	setDefault(OPEN_NETWORK_STATISTICS, false);
+	setDefault(OPEN_NOTEPAD, false);
 	
 #ifdef _WIN32
 	setDefault(MAIN_WINDOW_STATE, SW_SHOWNORMAL);
@@ -264,6 +279,21 @@ void SettingsManager::load(string const& aFileName)
 
 		if(CID(SETTING(CLIENT_ID)).isZero())
 			set(CLIENT_ID, CID::generate().toBase32());
+
+		if(SETTING(SET_MINISLOT_SIZE) < 64)
+			set(SET_MINISLOT_SIZE, 64);
+		if(SETTING(PRIO_HIGHEST_SIZE) < 16)
+			set(PRIO_HIGHEST_SIZE, 16);
+		if(SETTING(PRIO_HIGH_SIZE) < 0)
+			set(PRIO_HIGH_SIZE, 0);
+		if(SETTING(PRIO_NORMAL_SIZE) < 0)
+			set(PRIO_NORMAL_SIZE, 0);
+		if(SETTING(PRIO_LOW_SIZE) < 0)
+			set(PRIO_LOW_SIZE, 0);
+		if(SETTING(PRIO_LOWEST) < 0)
+			set(PRIO_LOWEST, 0);
+		if(SETTING(PRIO_LOWEST) > 1)
+			set(PRIO_LOWEST, 1);
 
 #ifdef _DEBUG
 		set(CLIENT_ID, CID::generate().toBase32());
@@ -339,6 +369,6 @@ void SettingsManager::save(string const& aFileName) {
 
 /**
  * @file
- * $Id: SettingsManager.cpp,v 1.2 2005/02/20 22:32:47 paskharen Exp $
+ * $Id: SettingsManager.cpp,v 1.3 2005/05/01 20:54:19 paskharen Exp $
  */
 

@@ -65,35 +65,6 @@ void Util::initialize() {
 
 	sgenrand((unsigned long)time(NULL));
 
-	try {
-		// This product includes GeoIP data created by MaxMind, available from http://maxmind.com/
-		// Updates at http://www.maxmind.com/app/geoip_country
-		string file = Util::getAppPath() + "GeoIpCountryWhois.csv";
-		string data = File(file, File::READ, File::OPEN).read();
-
-		const char* start = data.c_str();
-		string::size_type i = 0;
-		string::size_type j = 0;
-		string::size_type k = 0;
-		CountryIter last = countries.end();
-
-		for(;;) {
-			i = data.find(',', k);
-			if(i == string::npos)
-				break;
-
-			j = data.find('\n', i);
-			if(j == string::npos)
-				break;
-
-			u_int16_t* country = (u_int16_t*)(start + i + 1);
-			last = countries.insert(last, make_pair(Util::toUInt32(start + k), *country));
-
-			k = j + 1;
-		}
-	} catch(const FileException&) {
-	}
-
 #ifdef _WIN32
 	TCHAR buf[MAX_PATH+1];
 	GetModuleFileName(NULL, buf, MAX_PATH);
@@ -106,6 +77,48 @@ void Util::initialize() {
 		appPath += "/.dc++/";
 	}
 #endif // _WIN32
+
+	try {
+		// This product includes GeoIP data created by MaxMind, available from http://maxmind.com/
+		// Updates at http://www.maxmind.com/app/geoip_country
+		string file = Util::getAppPath() + "GeoIpCountryWhois.csv";
+		string data = File(file, File::READ, File::OPEN).read();
+
+		const char* start = data.c_str();
+		string::size_type linestart = 0;
+		string::size_type comma1 = 0;
+		string::size_type comma2 = 0;
+		string::size_type comma3 = 0;
+		string::size_type comma4 = 0;
+		string::size_type lineend = 0;
+		CountryIter last = countries.end();
+		u_int32_t startIP = 0;
+		u_int32_t endIP = 0, endIPprev = 0;
+
+		for(;;) {
+			comma1 = data.find(',', linestart);
+			if(comma1 == string::npos) break;
+			comma2 = data.find(',', comma1 + 1);
+			if(comma2 == string::npos) break;
+			comma3 = data.find(',', comma2 + 1);
+			if(comma3 == string::npos) break;
+			comma4 = data.find(',', comma3 + 1);
+			if(comma4 == string::npos) break;
+			lineend = data.find('\n', comma4);
+			if(lineend == string::npos) break;
+
+			startIP = Util::toUInt32(start + comma2 + 2);
+			endIP = Util::toUInt32(start + comma3 + 2);
+			u_int16_t* country = (u_int16_t*)(start + comma4 + 2);
+			if((startIP-1) != endIPprev)
+				last = countries.insert(last, make_pair((startIP-1), (u_int16_t)16191));
+			last = countries.insert(last, make_pair(endIP, *country));
+
+			endIPprev = endIP;
+			linestart = lineend + 1;
+		}
+	} catch(const FileException&) {
+	}
 }
 
 string Util::getConfigPath() {
@@ -345,31 +358,35 @@ string Util::formatBytes(int64_t aBytes) {
 }
 
 string Util::formatExactSize(int64_t aBytes) {
-	char buf[64];
 #ifdef _WIN32
-		char number[64];
-		NUMBERFMTA nf;
-		sprintf(number, "%I64d", aBytes);
-		char Dummy[16];
+		TCHAR buf[64];
+		TCHAR number[64];
+		NUMBERFMT nf;
+		_stprintf(number, _T("%I64d"), aBytes);
+		TCHAR Dummy[16];
     
 		/*No need to read these values from the system because they are not
 		used to format the exact size*/
 		nf.NumDigits = 0;
 		nf.LeadingZero = 0;
 		nf.NegativeOrder = 0;
-		nf.lpDecimalSep = ",";
+		nf.lpDecimalSep = _T(",");
 
-		GetLocaleInfoA( LOCALE_SYSTEM_DEFAULT, LOCALE_SGROUPING, Dummy, 16 );
-		nf.Grouping = atoi(Dummy);
-		GetLocaleInfoA( LOCALE_SYSTEM_DEFAULT, LOCALE_STHOUSAND, Dummy, 16 );
+		GetLocaleInfo( LOCALE_SYSTEM_DEFAULT, LOCALE_SGROUPING, Dummy, 16 );
+		nf.Grouping = _tstoi(Dummy);
+		GetLocaleInfo( LOCALE_SYSTEM_DEFAULT, LOCALE_STHOUSAND, Dummy, 16 );
 		nf.lpThousandSep = Dummy;
 
-		GetNumberFormatA(LOCALE_USER_DEFAULT, 0, number, &nf, buf, sizeof(buf)/sizeof(buf[0]));
+		GetNumberFormat(LOCALE_USER_DEFAULT, 0, number, &nf, buf, sizeof(buf)/sizeof(buf[0]));
+		
+		_stprintf(buf, _T("%s %s"), buf, CTSTRING(B));
+		return Text::fromT(buf);
 #else
+		char buf[64];
 		sprintf(buf, "%'lld", aBytes);
-#endif
 		sprintf(buf, "%s %s", buf, CSTRING(B));
 		return buf;
+#endif
 }
 
 string Util::getLocalIp() {
@@ -469,7 +486,7 @@ string::size_type Util::findSubString(const string& aString, const string& aSubS
 	const u_int8_t* tx = (const u_int8_t*)aString.c_str() + start;
 	const u_int8_t* px = (const u_int8_t*)aSubString.c_str();
 
-	const u_int8_t* end = tx + aString.length() - aSubString.length() + 1;
+	const u_int8_t* end = tx + aString.length() - start - aSubString.length() + 1;
 
 	wchar_t wp = utf8ToLC(px);
 
@@ -501,8 +518,8 @@ int Util::stricmp(const char* a, const char* b) {
 		if(ca != cb) {
 			return (int)ca - (int)cb;
 		}
-		a+= na < 0 ? 1 : na;
-		b+= nb < 0 ? 1 : nb;
+		a += abs(na);
+		b += abs(nb);
 	}
 	wchar_t ca = 0, cb = 0;
 	Text::utf8ToWc(a, ca);
@@ -522,8 +539,8 @@ int Util::strnicmp(const char* a, const char* b, size_t n) {
 		if(ca != cb) {
 			return (int)ca - (int)cb;
 		}
-		a+= na < 0 ? 1 : na;
-		b+= nb < 0 ? 1 : nb;
+		a += abs(na);
+		b += abs(nb);
 	}
 	wchar_t ca = 0, cb = 0;
 	Text::utf8ToWc(a, ca);
@@ -860,6 +877,6 @@ string Util::toDOS(const string& tmp) {
 
 /**
  * @file
- * $Id: Util.cpp,v 1.2 2005/02/20 22:32:47 paskharen Exp $
+ * $Id: Util.cpp,v 1.3 2005/05/01 20:54:19 paskharen Exp $
  */
 

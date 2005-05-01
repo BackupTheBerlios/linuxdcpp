@@ -69,8 +69,8 @@ public:
 		return false;
 	}
 	
-	void search(int aSizeMode, int64_t aSize, int aFileType, const string& aString);
-	void search(StringList& who, int aSizeMode, int64_t aSize, int aFileType, const string& aString);
+	void search(int aSizeMode, int64_t aSize, int aFileType, const string& aString, const string& aToken);
+	void search(StringList& who, int aSizeMode, int64_t aSize, int aFileType, const string& aString, const string& aToken);
 	void infoUpdated();
 
 	User::Ptr getUser(const CID& cid, bool createUser);
@@ -140,7 +140,7 @@ private:
 	virtual void on(UserCommand, Client*, int, int, const string&, const string&) throw();
 	virtual void on(NmdcSearch, Client* aClient, const string& aSeeker, int aSearchType, int64_t aSize, 
 		int aFileType, const string& aString) throw();
-
+	virtual void on(AdcSearch, Client* c, const AdcCommand& adc) throw();
 	// TimerManagerListener
 	virtual void on(TimerManagerListener::Minute, u_int32_t aTick) throw();
 };
@@ -149,6 +149,6 @@ private:
 
 /**
  * @file
- * $Id: ClientManager.h,v 1.2 2005/02/20 22:32:46 paskharen Exp $
+ * $Id: ClientManager.h,v 1.3 2005/05/01 20:54:18 paskharen Exp $
  */
 

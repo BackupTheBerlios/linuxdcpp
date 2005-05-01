@@ -21,6 +21,9 @@
 
 #include "CID.h"
 #include "SettingsManager.h"
+#include "Exception.h"
+
+STANDARD_EXCEPTION(ParseException);
 
 class AdcCommand {
 public:
@@ -51,13 +54,13 @@ public:
 		ERROR_TRANSFER_GENERIC = 50,
 		ERROR_FILE_NOT_AVAILABLE = 51,
 		ERROR_FILE_PART_NOT_AVAILABLE = 52,
-		ERROR_SLOTS_FULL = 53,
+		ERROR_SLOTS_FULL = 53
 	};
 
 	enum Severity {
 		SEV_SUCCESS = 0,
 		SEV_RECOVERABLE = 1,
-		SEV_FATAL = 2,
+		SEV_FATAL = 2
 	};
 
 	static const char TYPE_ACTIVE = 'A';
@@ -69,7 +72,7 @@ public:
 	static const char TYPE_PASSIVE = 'P';
 	static const char TYPE_UDP = 'U';
 
-#define CMD(n, a, b, c) static const u_int32_t CMD_##n = (((u_int32_t)a) | (((u_int32_t)b)<<8) | (((u_int32_t)c)<<16)); typedef Type<CMD_##n> n;
+#define CMD(n, a, b, c) static const u_int32_t CMD_##n = (((u_int32_t)a) | (((u_int32_t)b)<<8) | (((u_int32_t)c)<<16)); typedef Type<CMD_##n> n
 	CMD(SUP, 'S','U','P');
 	CMD(STA, 'S','T','A');
 	CMD(INF, 'I','N','F');
@@ -91,19 +94,20 @@ public:
 	explicit AdcCommand(u_int32_t aCmd, char aType = TYPE_CLIENT) : cmdInt(aCmd), from(SETTING(CLIENT_ID)), type(aType) { }
 	explicit AdcCommand(u_int32_t aCmd, const CID& aTarget) : cmdInt(aCmd), from(SETTING(CLIENT_ID)), to(aTarget), type(TYPE_DIRECT) { }
 
-	explicit AdcCommand(const string& aLine, bool nmdc = false) : cmdInt(0), type(TYPE_CLIENT) {
+	explicit AdcCommand(const string& aLine, bool nmdc = false) throw(ParseException) : cmdInt(0), type(TYPE_CLIENT) {
 		parse(aLine, nmdc);
 	}
 
-	void parse(const string& aLine, bool nmdc = false);
+	void parse(const string& aLine, bool nmdc = false) throw(ParseException);
 
 	u_int32_t getCommand() const { return cmdInt; }
 	char getType() const { return type; }
+	void setType(char t) { type = t; }
 
 	StringList& getParameters() { return parameters; }
 	const StringList& getParameters() const { return parameters; }
 
-	string toString(bool nmdc = false) const;
+	string toString(bool nmdc = false, bool old = false) const;
 
 	AdcCommand& addParam(const string& name, const string& value) {
 		parameters.push_back(name);
@@ -124,17 +128,27 @@ public:
 
 	bool operator==(u_int32_t aCmd) { return cmdInt == aCmd; }
 
-	static string escape(const string& str) {
+	static string escape(const string& str, bool old) {
 		string tmp = str;
 		string::size_type i = 0;
 		while( (i = tmp.find_first_of(" \n\\", i)) != string::npos) {
-			tmp.insert(i, 1, '\\');
+			if(old) {
+				tmp.insert(i, "\\");
+			} else {
+				switch(tmp[i]) {
+				case ' ': tmp.replace(i, 1, "\\s"); break;
+				case '\n': tmp.replace(i, 1, "\\n"); break;
+				case '\\': tmp.replace(i, 1, "\\\\"); break;
+				}
+			}
 			i+=2;
 		}
 		return tmp;
 	}
 	const CID& getTo() const { return to; }
+	void setTo(const CID& cid) { to = cid; }
 	const CID& getFrom() const { return from; }
+
 private:
 	StringList parameters;
 	union {
@@ -152,31 +166,36 @@ template<class T>
 class CommandHandler {
 public:
 	void dispatch(const string& aLine, bool nmdc = false) {
-		AdcCommand c(aLine, nmdc);
+		try {
+			AdcCommand c(aLine, nmdc);
 
 #define CMD(n) case AdcCommand::CMD_##n: ((T*)this)->handle(AdcCommand::n(), c); break;
-		switch(c.getCommand()) {
-			CMD(SUP);
-			CMD(STA);
-			CMD(INF);
-			CMD(MSG);
-			CMD(SCH);
-			CMD(RES);
-			CMD(CTM);
-			CMD(RCM);
-			CMD(GPA);
-			CMD(PAS);
-			CMD(QUI);
-			CMD(DSC);
-			CMD(GET);
-			CMD(GFI);
-			CMD(SND);
-			CMD(NTD);
-		default: 
-			dcdebug("Unknown ADC command: %.50s\n", aLine.c_str());
-			break;
+			switch(c.getCommand()) {
+				CMD(SUP);
+				CMD(STA);
+				CMD(INF);
+				CMD(MSG);
+				CMD(SCH);
+				CMD(RES);
+				CMD(CTM);
+				CMD(RCM);
+				CMD(GPA);
+				CMD(PAS);
+				CMD(QUI);
+				CMD(DSC);
+				CMD(GET);
+				CMD(GFI);
+				CMD(SND);
+				CMD(NTD);
+			default: 
+				dcdebug("Unknown ADC command: %.50s\n", aLine.c_str());
+				break;
 #undef CMD
 
+			}
+		} catch(const ParseException&) {
+			dcdebug("Invalid ADC command: %.50s\n", aLine.c_str());
+			return;
 		}
 	}
 };
@@ -184,5 +203,5 @@ public:
 #endif // ADC_COMMAND_H
 /**
 * @file
-* $Id: AdcCommand.h,v 1.2 2005/02/20 22:32:46 paskharen Exp $
+* $Id: AdcCommand.h,v 1.3 2005/05/01 20:54:18 paskharen Exp $
 */

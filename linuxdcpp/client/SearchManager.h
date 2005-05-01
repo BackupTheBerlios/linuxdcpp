@@ -52,6 +52,7 @@ public:
 	typedef List::iterator Iter;
 	
 	SearchResult(Client* aClient, Types aType, int64_t aSize, const string& name, const TTHValue* aTTH, bool aUtf8);
+	SearchResult(Types aType, int64_t aSize, const string& name, const TTHValue* aTTH);
 
 	SearchResult(const User::Ptr& aUser, Types aType, int aSlots, int aFreeSlots, 
 		int64_t aSize, const string& aFile, const string& aHubName, 
@@ -124,7 +125,7 @@ public:
 	enum SizeModes {
 		SIZE_DONTCARE = 0x00,
 		SIZE_ATLEAST = 0x01,
-		SIZE_ATMOST = 0x02,
+		SIZE_ATMOST = 0x02
 	};
 
 	enum TypeModes {
@@ -139,17 +140,19 @@ public:
 		TYPE_TTH
 	};
 	
-	void search(const string& aName, int64_t aSize = 0, TypeModes aTypeMode = TYPE_ANY, SizeModes aSizeMode = SIZE_ATLEAST);
-	void search(const string& aName, const string& aSize, TypeModes aTypeMode = TYPE_ANY, SizeModes aSizeMode = SIZE_ATLEAST) {
-		search(aName, Util::toInt64(aSize), aTypeMode, aSizeMode);
+	void search(const string& aName, int64_t aSize, TypeModes aTypeMode, SizeModes aSizeMode, const string& aToken);
+	void search(const string& aName, const string& aSize, TypeModes aTypeMode, SizeModes aSizeMode, const string& aToken) {
+		search(aName, Util::toInt64(aSize), aTypeMode, aSizeMode, aToken);
 	}
 	
-	void search(StringList& who, const string& aName, int64_t aSize = 0, TypeModes aTypeMode = TYPE_ANY, SizeModes aSizeMode = SIZE_ATLEAST);
-	void search(StringList& who, const string& aName, const string& aSize, TypeModes aTypeMode = TYPE_ANY, SizeModes aSizeMode = SIZE_ATLEAST) {
-		search(who, aName, Util::toInt64(aSize), aTypeMode, aSizeMode);
+	void search(StringList& who, const string& aName, int64_t aSize, TypeModes aTypeMode, SizeModes aSizeMode, const string& aToken);
+	void search(StringList& who, const string& aName, const string& aSize, TypeModes aTypeMode, SizeModes aSizeMode, const string& aToken) {
+		search(who, aName, Util::toInt64(aSize), aTypeMode, aSizeMode, aToken);
 	}
 	static string clean(const string& aSearchString);
 	
+	void respond(const AdcCommand& cmd);
+
 	short getPort()
 	{
 		return port;
@@ -199,5 +202,5 @@ private:
 
 /**
  * @file
- * $Id: SearchManager.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
+ * $Id: SearchManager.h,v 1.3 2005/05/01 20:54:19 paskharen Exp $
  */

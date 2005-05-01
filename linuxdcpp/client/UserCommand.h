@@ -42,7 +42,7 @@ public:
 		CONTEXT_CHAT = 0x02,
 		CONTEXT_SEARCH = 0x04,
 		CONTEXT_FILELIST = 0x08,
-		CONTEXT_MASK = CONTEXT_HUB | CONTEXT_CHAT | CONTEXT_SEARCH | CONTEXT_FILELIST,
+		CONTEXT_MASK = CONTEXT_HUB | CONTEXT_CHAT | CONTEXT_SEARCH | CONTEXT_FILELIST
 	};
 
 	enum {
@@ -78,6 +78,6 @@ public:
 
 /**
  * @file
- * $Id: UserCommand.h,v 1.2 2005/02/20 22:32:47 paskharen Exp $
+ * $Id: UserCommand.h,v 1.3 2005/05/01 20:54:19 paskharen Exp $
  */
 

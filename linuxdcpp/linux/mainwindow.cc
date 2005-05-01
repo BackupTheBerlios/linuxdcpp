@@ -47,6 +47,8 @@ MainWindow::MainWindow():
 	deleteCallback(this, &MainWindow::deleteWindow_gui),
 	switchPageCallback(this, &MainWindow::switchPage_gui),
 
+	lastUpdate(0),
+
 	WIDTH_TYPE(20), 
 	WIDTH_USER(150), 
 	WIDTH_STATUS(250), 
@@ -326,30 +328,39 @@ void MainWindow::startSocket_client() {
 	if (SETTING(CONNECTION_TYPE) != SettingsManager::CONNECTION_ACTIVE)
 		return;
 
-	short lastPort = (short)SETTING(IN_PORT);
-	short firstPort = lastPort;
+	short port = (short)SETTING(IN_PORT);
 
-	while (true) {
+	while(true) {
 		try {
-			ConnectionManager::getInstance()->setPort(lastPort);
+			ConnectionManager::getInstance()->setPort(port);
 			Selecter::WSAASyncSelect(
 				ConnectionManager::getInstance()->getServerSocket());
-
-			SearchManager::getInstance()->setPort(lastPort);
 			break;
-		} catch (const Exception &e) {
-			cout << "startSocket caught " << e.getError() << endl;
-			short newPort = (short)((lastPort == 32000) ? 1025 : lastPort + 1);
-			SettingsManager::getInstance()->
-				setDefault(SettingsManager::IN_PORT, newPort);
-				
-			if (SETTING(IN_PORT) == lastPort || (firstPort == newPort)) {
-				// Changing default didn't change port, a fixed port must be in
-				// use...(or we tried all ports)
-				cout << "Port is busy " << SETTING(IN_PORT) << endl;
+		} catch(const Exception& e) {
+			cout << "StartSocket (tcp): Caught \"" << e.getError() << "\""<< endl;
+			port++;
+			if (port > 32000)
+			{
+				cout << "StartSocket: Can't find a good port (tcp)" << endl;
 				break;
 			}
-			lastPort = newPort;
+		}
+	}
+
+	port = (short)SETTING(UDP_PORT);
+
+	while(true) {
+		try {
+			SearchManager::getInstance()->setPort(port);
+			break;
+		} catch(const Exception& e) {
+			cout << "StartSocket (udp): Caught \"" << e.getError() << "\""<< endl;
+			port++;
+			if (port > 32000)
+			{
+				cout << "StartSocket: Can't find a good port (udp)" << endl;
+				break;
+			}
 		}
 	}
 }

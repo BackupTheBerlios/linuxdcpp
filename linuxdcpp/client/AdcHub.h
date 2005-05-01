@@ -18,6 +18,7 @@
 
 #include "Client.h"
 #include "AdcCommand.h"
+#include "User.h"
 
 class ClientManager;
 
@@ -32,7 +33,7 @@ public:
 	virtual void privateMessage(const User* user, const string& aMessage);
 	virtual void send(const string& aMessage) { socket->write(aMessage); };
 	virtual void sendUserCmd(const string& aUserCmd) { send(aUserCmd); }
-	virtual void search(int aSizeMode, int64_t aSize, int aFileType, const string& aString);
+	virtual void search(int aSizeMode, int64_t aSize, int aFileType, const string& aString, const string& aToken);
 	virtual void password(const string& pwd);
 	virtual void info(bool alwaysSend);
 
@@ -49,6 +50,7 @@ public:
 	}
 
 	void send(const AdcCommand& cmd) { socket->write(cmd.toString(false)); };
+	void sendUDP(const AdcCommand& cmd);
 
 	void handle(AdcCommand::SUP, AdcCommand& c) throw();
 	void handle(AdcCommand::MSG, AdcCommand& c) throw();
@@ -57,8 +59,10 @@ public:
 	void handle(AdcCommand::QUI, AdcCommand& c) throw();
 	void handle(AdcCommand::CTM, AdcCommand& c) throw();
 	void handle(AdcCommand::RCM, AdcCommand& c) throw();
+	void handle(AdcCommand::STA, AdcCommand& c) throw();
+	void handle(AdcCommand::SCH, AdcCommand& c) throw();
 
-	virtual string escape(string const& str) const { return AdcCommand::escape(str); };
+	virtual string escape(string const& str) const { return AdcCommand::escape(str, false); };
 
 private:
 	friend class ClientManager;
@@ -74,10 +78,12 @@ private:
 
 	AdcHub(const AdcHub&);
 	AdcHub& operator=(const AdcHub&);
-	virtual ~AdcHub() throw() { }
+	virtual ~AdcHub() throw();
 	User::NickMap nickMap;
+	User::CIDMap cidMap;
 	User::Ptr hub;
 	StringMap lastInfoMap;
+	CriticalSection cs;
 
 	string salt;
 
@@ -85,6 +91,8 @@ private:
 	 
 	virtual string checkNick(const string& nick);
 	virtual string getHubURL();
+	
+	void clearUsers();
 
 	virtual void on(Connecting) throw() { fire(ClientListener::Connecting(), this); }
 	virtual void on(Connected) throw();
@@ -94,5 +102,5 @@ private:
 
 /**
  * @file
- * $Id: AdcHub.h,v 1.2 2005/02/20 22:32:46 paskharen Exp $
+ * $Id: AdcHub.h,v 1.3 2005/05/01 20:54:18 paskharen Exp $
  */

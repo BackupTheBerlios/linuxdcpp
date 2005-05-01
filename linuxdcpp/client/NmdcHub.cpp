@@ -39,8 +39,7 @@ NmdcHub::NmdcHub(const string& aHubURL) : Client(aHubURL, '|'), supportFlags(0),
 	reconnect(true), lastUpdate(0)
 {
 	TimerManager::getInstance()->addListener(this);
-
-};
+}
 
 NmdcHub::~NmdcHub() throw() {
 	TimerManager::getInstance()->removeListener(this);
@@ -48,7 +47,7 @@ NmdcHub::~NmdcHub() throw() {
 
 	Lock l(cs);
 	clearUsers();
-};
+}
 
 void NmdcHub::connect() {
 	setRegistered(false);
@@ -513,6 +512,8 @@ void NmdcHub::onLine(const string& aLine) throw() {
 			StringList& sl = t.getTokens();
 
 			for(StringIter it = sl.begin(); it != sl.end(); ++it) {
+				if(it->empty())
+					continue;
 				v.push_back(ClientManager::getInstance()->getUser(*it, this));
 			}
 
@@ -546,6 +547,8 @@ void NmdcHub::onLine(const string& aLine) throw() {
 			StringTokenizer<string> t(fromNmdc(param), "$$");
 			StringList& sl = t.getTokens();
 			for(StringIter it = sl.begin(); it != sl.end(); ++it) {
+				if(it->empty())
+					continue;
 				v.push_back(ClientManager::getInstance()->getUser(*it, this));
 				v.back()->setFlag(User::OP);
 			}
@@ -644,14 +647,14 @@ void NmdcHub::myInfo(bool alwaysSend) {
 
 void NmdcHub::disconnect() throw() {	
 	state = STATE_CONNECT;
-	socket->disconnect();
+	Client::disconnect();
 	{ 
 		Lock l(cs);
 		clearUsers();
 	}
 }
 
-void NmdcHub::search(int aSizeType, int64_t aSize, int aFileType, const string& aString){
+void NmdcHub::search(int aSizeType, int64_t aSize, int aFileType, const string& aString, const string&) {
 	checkstate(); 
 	AutoArray<char> buf((char*)NULL);
 	char c1 = (aSizeType == SearchManager::SIZE_DONTCARE) ? 'F' : 'T';
@@ -714,6 +717,6 @@ void NmdcHub::on(BufferedSocketListener::Failed, const string& aLine) throw() {
 
 /**
  * @file
- * $Id: NmdcHub.cpp,v 1.2 2005/02/20 22:32:47 paskharen Exp $
+ * $Id: NmdcHub.cpp,v 1.3 2005/05/01 20:54:19 paskharen Exp $
  */
 
