@@ -2,7 +2,6 @@
 <!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
 
 <glade-interface>
-<requires lib="gnome"/>
 
 <widget class="GtkWindow" id="downloadQueueWindow">
   <property name="width_request">640</property>
@@ -22,10 +21,10 @@
 
   <child>
     <widget class="GtkVBox" id="downloadQueueBox">
-      <property name="border_width">8</property>
+      <property name="border_width">4</property>
       <property name="visible">True</property>
       <property name="homogeneous">False</property>
-      <property name="spacing">0</property>
+      <property name="spacing">4</property>
 
       <child>
 	<widget class="GtkHPaned" id="hpaned1">
@@ -96,7 +95,7 @@
 	<widget class="GtkHBox" id="hbox1">
 	  <property name="visible">True</property>
 	  <property name="homogeneous">False</property>
-	  <property name="spacing">0</property>
+	  <property name="spacing">4</property>
 
 	  <child>
 	    <widget class="GtkStatusbar" id="statusMain">

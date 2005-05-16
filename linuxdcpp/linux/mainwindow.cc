@@ -341,7 +341,7 @@ void MainWindow::startSocket_client() {
 			port++;
 			if (port > 32000)
 			{
-				cout << "StartSocket: Can't find a good port (tcp)" << endl;
+				cout << "StartSocket (tcp): Can't find a good port" << endl;
 				break;
 			}
 		}
@@ -358,7 +358,7 @@ void MainWindow::startSocket_client() {
 			port++;
 			if (port > 32000)
 			{
-				cout << "StartSocket: Can't find a good port (udp)" << endl;
+				cout << "StartSocket (udp): Can't find a good port" << endl;
 				break;
 			}
 		}
@@ -564,7 +564,8 @@ void MainWindow::findId_gui(string id, GtkTreeIter *iter) {
 }
 
 string MainWindow::getId_client(ConnectionQueueItem *item) {
-	string ret = item->getUser()->getFullNick();
+	string ret = item->getUser()->getNick() + "$" + 
+		item->getUser()->getLastHubAddress();
 
 	//The $ is a special char in DC that can't be used in nicks.
 	//Thus nobody can make an evil nick to mess with this list.

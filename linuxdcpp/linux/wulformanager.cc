@@ -43,25 +43,28 @@ void WulforManager::processGuiQueue() {
 	while (true) {
 		sem_wait(&guiSem);
 
-		pthread_mutex_lock(&guiCallLock);
+		//pthread_mutex_lock(&guiCallLock);
+		gdk_threads_enter();
 		pthread_mutex_lock(&guiQueueLock);
 		if (guiFuncs.size() == 0) {
 			pthread_mutex_unlock(&guiQueueLock);
-			pthread_mutex_unlock(&guiCallLock);
+			gdk_threads_leave();
+			//pthread_mutex_unlock(&guiCallLock);
 			continue;
 		}
 		func = guiFuncs.front();
 		pthread_mutex_unlock(&guiQueueLock);
 		
-		gdk_threads_enter();
+		//gdk_threads_enter();
 		func->call();
-		gdk_threads_leave();
+		//gdk_threads_leave();
 
 		pthread_mutex_lock(&guiQueueLock);
 		delete guiFuncs.front();
 		guiFuncs.erase(guiFuncs.begin());
 		pthread_mutex_unlock(&guiQueueLock);
-		pthread_mutex_unlock(&guiCallLock);
+		//pthread_mutex_unlock(&guiCallLock);
+		gdk_threads_leave();
 	}
 }
 
@@ -281,9 +284,12 @@ BookEntry *WulforManager::getBookEntry_client(int type, string id, bool raise) {
 
 void WulforManager::deleteBookEntry_gui(BookEntry *entry) {
 	vector<FuncBase *>::iterator fIt;
+	vector<BookEntry *>::iterator bIt;
 	
 	pthread_mutex_lock(&clientCallLock);
-	pthread_mutex_lock(&guiCallLock);
+	//pthread_mutex_lock(&guiCallLock);
+	//pthread enter is called by gtk for callbacks
+	//so no need to call it here
 
 	//erase any pending calls to this bookentry
 	fIt = clientFuncs.begin();
@@ -309,7 +315,6 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry) {
 	
 	//remove the bookentry from the list
 	pthread_mutex_lock(&bookEntryLock);
-	vector<BookEntry *>::iterator bIt;
 	for (bIt = bookEntrys.begin(); bIt != bookEntrys.end(); bIt++)
 		if ((*bIt)->isEqual(entry)) {
 			delete *bIt;
@@ -318,41 +323,41 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry) {
 		}
 	pthread_mutex_unlock(&bookEntryLock);
 
-	pthread_mutex_unlock(&guiCallLock);
+	//pthread_mutex_unlock(&guiCallLock);
 	pthread_mutex_unlock(&clientCallLock);
 }
 
 void WulforManager::deleteDialogEntry_gui()
 {
-	vector<FuncBase *>::iterator fIt;
+	vector<FuncBase *>::iterator it;
 	
 	pthread_mutex_lock(&clientCallLock);
 	pthread_mutex_lock(&guiCallLock);
 
 	//erase any pending calls to this bookentry
-	fIt = clientFuncs.begin();
-	while (fIt != clientFuncs.end())
-		for (fIt = clientFuncs.begin(); fIt != clientFuncs.end(); fIt++)
-			if ((*fIt)->comparePointer((void *)dialogEntry)) {
-				delete *fIt;
-				clientFuncs.erase(fIt);
+	it = clientFuncs.begin();
+	while (it != clientFuncs.end())
+		for (it = clientFuncs.begin(); it != clientFuncs.end(); it++)
+			if ((*it)->comparePointer((void *)dialogEntry)) {
+				delete *it;
+				clientFuncs.erase(it);
 				break;
 			}
 
-	fIt = guiFuncs.begin();
-	while (fIt != guiFuncs.end())
-		for (fIt = guiFuncs.begin(); fIt != guiFuncs.end(); fIt++)
-			if ((*fIt)->comparePointer((void *)dialogEntry)) {
-				delete *fIt;
-				guiFuncs.erase(fIt);
+	it = guiFuncs.begin();
+	while (it != guiFuncs.end())
+		for (it = guiFuncs.begin(); it != guiFuncs.end(); it++)
+			if ((*it)->comparePointer((void *)dialogEntry)) {
+				delete *it;
+				guiFuncs.erase(it);
 				break;
 			}
 
 	// Hide the dialog
-	if (dialogEntry->getDialog ())
+	if (dialogEntry->getDialog())
 	{
-		gtk_widget_hide (dialogEntry->getDialog ());
-		dialogEntry->setDialog (NULL);
+		gtk_widget_hide(dialogEntry->getDialog());
+		dialogEntry->setDialog(NULL);
 	}
 
 	pthread_mutex_unlock(&guiCallLock);
@@ -382,9 +387,6 @@ DownloadQueue *WulforManager::addDownloadQueue_gui() {
 	mainWin->addPage_gui(dlQueue->getWidget(), dlQueue->getTitle(), true);
 	gtk_widget_unref(dlQueue->getWidget());
 	bookEntrys.push_back(dlQueue);
-	
-	dlQueue->buildList_gui();
-	dlQueue->updateStatus_gui();
 
 	return dlQueue;
 }
@@ -461,7 +463,7 @@ Search *WulforManager::addSearch_gui() {
 
 Hash *WulforManager::openHashDialog_gui() {
 	Hash *h = new Hash();
-	h->applyCallback (G_CALLBACK (dialogCloseEntry_callback));
+	h->applyCallback(G_CALLBACK(dialogCloseEntry_callback));
 	dialogEntry = h;
 	Func0<Hash> *func = new Func0<Hash> (h, &Hash::updateStats_gui);
 	dispatchGuiFunc (func);	
