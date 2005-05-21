@@ -102,7 +102,7 @@ class WulforManager {
 		std::vector<FuncBase *> guiFuncs;
 		std::vector<FuncBase *> clientFuncs;
 
-		pthread_mutex_t guiCallLock, clientCallLock;
+		pthread_mutex_t clientCallLock;
 		pthread_mutex_t guiQueueLock, clientQueueLock;
 		pthread_mutex_t bookEntryLock;
 		sem_t guiSem, clientSem;

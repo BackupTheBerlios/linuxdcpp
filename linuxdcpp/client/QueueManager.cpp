@@ -40,7 +40,7 @@
 #ifdef _WIN32
 #define FILELISTS_DIR "FileLists\\"
 #else
-#define FILELISTS_DIR "filelists/"
+#define FILELISTS_DIR "FileLists/"
 #endif
 
 #ifdef ff
@@ -1369,5 +1369,5 @@ void QueueManager::on(TimerManagerListener::Second, u_int32_t aTick) throw() {
 
 /**
  * @file
- * $Id: QueueManager.cpp,v 1.4 2005/05/01 20:54:19 paskharen Exp $
+ * $Id: QueueManager.cpp,v 1.5 2005/05/21 00:41:48 paskharen Exp $
  */

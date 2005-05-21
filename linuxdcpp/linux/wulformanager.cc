@@ -43,27 +43,25 @@ void WulforManager::processGuiQueue() {
 	while (true) {
 		sem_wait(&guiSem);
 
-		//pthread_mutex_lock(&guiCallLock);
+		//this must be taken before the queuelock to avoid deadlock
 		gdk_threads_enter();
+
 		pthread_mutex_lock(&guiQueueLock);
 		if (guiFuncs.size() == 0) {
 			pthread_mutex_unlock(&guiQueueLock);
 			gdk_threads_leave();
-			//pthread_mutex_unlock(&guiCallLock);
 			continue;
 		}
 		func = guiFuncs.front();
 		pthread_mutex_unlock(&guiQueueLock);
 		
-		//gdk_threads_enter();
 		func->call();
-		//gdk_threads_leave();
 
 		pthread_mutex_lock(&guiQueueLock);
 		delete guiFuncs.front();
 		guiFuncs.erase(guiFuncs.begin());
 		pthread_mutex_unlock(&guiQueueLock);
-		//pthread_mutex_unlock(&guiCallLock);
+
 		gdk_threads_leave();
 	}
 }
@@ -189,7 +187,6 @@ void WulforManager::dialogCloseEntry_callback(GtkWidget *widget, gpointer data) 
 
 WulforManager::WulforManager() {
 	pthread_mutex_init(&guiQueueLock, NULL);
-	pthread_mutex_init(&guiCallLock, NULL);
 	pthread_mutex_init(&clientQueueLock, NULL);
 	pthread_mutex_init(&clientCallLock, NULL);
 	pthread_mutex_init(&bookEntryLock, NULL);
@@ -205,7 +202,6 @@ WulforManager::WulforManager() {
 
 WulforManager::~WulforManager() {
 	pthread_mutex_destroy(&guiQueueLock);
-	pthread_mutex_destroy(&guiCallLock);
 	pthread_mutex_destroy(&clientQueueLock);
 	pthread_mutex_destroy(&clientCallLock);
 	pthread_mutex_destroy(&bookEntryLock);
@@ -286,10 +282,9 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry) {
 	vector<FuncBase *>::iterator fIt;
 	vector<BookEntry *>::iterator bIt;
 	
-	pthread_mutex_lock(&clientCallLock);
-	//pthread_mutex_lock(&guiCallLock);
 	//pthread enter is called by gtk for callbacks
 	//so no need to call it here
+	pthread_mutex_lock(&clientCallLock);
 
 	//erase any pending calls to this bookentry
 	fIt = clientFuncs.begin();
@@ -323,7 +318,6 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry) {
 		}
 	pthread_mutex_unlock(&bookEntryLock);
 
-	//pthread_mutex_unlock(&guiCallLock);
 	pthread_mutex_unlock(&clientCallLock);
 }
 
@@ -331,8 +325,8 @@ void WulforManager::deleteDialogEntry_gui()
 {
 	vector<FuncBase *>::iterator it;
 	
+	//this is a callback, so gtk_thread_enter/leave is called automaticly
 	pthread_mutex_lock(&clientCallLock);
-	pthread_mutex_lock(&guiCallLock);
 
 	//erase any pending calls to this bookentry
 	it = clientFuncs.begin();
@@ -360,7 +354,6 @@ void WulforManager::deleteDialogEntry_gui()
 		dialogEntry->setDialog(NULL);
 	}
 
-	pthread_mutex_unlock(&guiCallLock);
 	pthread_mutex_unlock(&clientCallLock);	
 }
 

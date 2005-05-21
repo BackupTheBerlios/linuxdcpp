@@ -32,6 +32,8 @@ to avoid including that file.
 Most settings in the "Advanced" page are not working. You can change the 
 setting however you like but it won't ever change anything in the program.
 
+Download queue is broken.
+
 License:
 --------
 The GPL (couldn't be any other, could it?)

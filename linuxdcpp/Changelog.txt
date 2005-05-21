@@ -1,3 +1,6 @@
+2005-05-21 - paskharen
+* Made filelists download to the right folder (thanks s4kk3)
+
 2005-05-17 - paskharen
 * Fixed some cases of misaligned rows in transfer view, not sure if all are gone
 * Tried fixing the deadlock when closing a notebook flap, hard to verify as working though
