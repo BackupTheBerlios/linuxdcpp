@@ -1,3 +1,6 @@
+2005-05-23 - phase
+* Fixed the Download Queue (thanks s4kk3)
+
 2005-05-21 - paskharen
 * Made filelists download to the right folder (thanks s4kk3)
 

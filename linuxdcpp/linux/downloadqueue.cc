@@ -457,6 +457,8 @@ DownloadQueue::DownloadQueue(GCallback closeCallback):
 
 	buildStaticMenu_gui ();
 	pthread_mutex_init(&queueLock, NULL);
+
+	buildList_gui();
 }
 
 DownloadQueue::~DownloadQueue() 
