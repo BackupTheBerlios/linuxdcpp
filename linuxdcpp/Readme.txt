@@ -29,10 +29,9 @@ Known problems:
 Fedora core 3 has issues with asm/atomic.h. Try compiling with scons atomic=0
 to avoid including that file.
 
-Most settings in the "Advanced" page are not working. You can change the 
-setting however you like but it won't ever change anything in the program.
-
-Download queue is broken.
+Most settings in the "Advanced" and "Apperance" pages are not working. You can 
+change the settings however you like but it won't ever change anything in the 
+program.
 
 License:
 --------
