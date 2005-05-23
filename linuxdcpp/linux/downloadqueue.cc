@@ -455,9 +455,9 @@ DownloadQueue::DownloadQueue(GCallback closeCallback):
 	fileView->setSortColumn_gui (COLUMN_EXACT_SIZE, COLUMN_REALSIZE);
 	fileView->setSortColumn_gui (COLUMN_DOWNLOADED, COLUMN_DOWNLOAD_SIZE);
 
-	buildStaticMenu_gui ();
 	pthread_mutex_init(&queueLock, NULL);
 
+	buildStaticMenu_gui();
 	buildList_gui();
 }
 
