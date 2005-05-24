@@ -1,3 +1,6 @@
+2005-05-25 - phase
+* Fixed the bug where you couldn't hash files larger than 2gb (thanks obi)
+
 2005-05-23 - phase
 * Fixed the Download Queue (thanks s4kk3)
 
