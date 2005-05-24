@@ -1,3 +1,6 @@
+2005-05-25 - paskharen
+* Added some tweaks to the glade files (thanks Ixan)
+
 2005-05-25 - phase
 * Fixed the bug where you couldn't hash files larger than 2gb (thanks obi)
 
