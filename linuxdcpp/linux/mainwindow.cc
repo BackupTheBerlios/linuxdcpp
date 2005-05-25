@@ -453,6 +453,8 @@ GtkWidget *MainWindow::currentPage_gui() {
 }
 
 void MainWindow::setStatus_gui(GtkStatusbar *status, std::string text) {
+	if (!status) return; 
+
 	if (status != mainStatus) {
 		PangoLayout *pango;
 		int width;

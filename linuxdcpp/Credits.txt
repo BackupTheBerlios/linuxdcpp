@@ -5,6 +5,7 @@ Alexander Nordfelth (phase)
 Dyluck
 s4kk3
 Trent Lloyd
+Kristian Berg/Ixan
 
 DC++:
 -----

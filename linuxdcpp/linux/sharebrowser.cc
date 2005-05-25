@@ -53,6 +53,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	f1.addColumn_gui(COLUMN_TTH, "TTH", TreeViewFactory::STRING, WIDTH_TTH);
 	gtk_tree_view_insert_column(fileView, gtk_tree_view_column_new(), COLUMN_DL_FILE);
 	fileSelection = gtk_tree_view_get_selection(fileView);
+	gtk_tree_view_column_set_sort_order(gtk_tree_view_get_column(fileView, COLUMN_FILE), GTK_SORT_ASCENDING);
 
 	//initiate the dir treeview
 	dirView = GTK_TREE_VIEW(glade_xml_get_widget(xml, "dirView"));
@@ -62,6 +63,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	f2.addColumn_gui(COLUMN_DIR, "", TreeViewFactory::STRING, -1);
 	gtk_tree_view_insert_column(dirView, gtk_tree_view_column_new(), COLUMN_DL_DIR);
 	dirSelection = gtk_tree_view_get_selection(dirView);
+	gtk_tree_view_column_set_sort_order(gtk_tree_view_get_column(dirView, COLUMN_DIR), GTK_SORT_ASCENDING);
 
 	//create popup menus
 	dirMenu = GTK_MENU(gtk_menu_new());
@@ -146,6 +148,8 @@ void ShareBrowser::buildDirs_gui(
 	DirectoryListing::File::Iter file;
 	GtkTreeIter newIter;
 
+	std::sort(dirs.begin(), dirs.end(), DirectoryListing::Directory::DirSort());
+
 	for (it = dirs.begin(); it != dirs.end(); it++) {
 		gtk_tree_store_append(dirStore, &newIter, iter);
 		
@@ -171,6 +175,7 @@ void ShareBrowser::buildDirs_gui(
 		
 		buildDirs_gui((*it)->directories, &newIter);
 	}
+	
 }
 
 void ShareBrowser::updateFiles_gui(bool fromFind) {
@@ -197,9 +202,14 @@ void ShareBrowser::updateFiles_gui(bool fromFind) {
 
 	currentSize = 0;
 	currentItems = 0;
+
+	std::sort(files->begin(), files->end(), DirectoryListing::File::FileSort());
+	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(fileView, COLUMN_FILE), TRUE);
+	
+
 	for (it = files->begin(); it != files->end(); it++) {
 		gtk_list_store_append(fileStore, &iter);
-
+		
 		//data needs to be converted to utf8 if it's not in that form
 		if (listing.getUtf8()) {
 			gtk_list_store_set(fileStore, &iter,

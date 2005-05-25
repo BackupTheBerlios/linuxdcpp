@@ -1,4 +1,8 @@
 2005-05-25 - paskharen
+* Fixed Gtk warnings on startup (thanks Ixan)
+* Added automatic sorting to sharebrowser (thanks Ixan)
+
+2005-05-25 - paskharen
 * Added some tweaks to the glade files (thanks Ixan)
 
 2005-05-25 - phase
