@@ -1479,6 +1479,6 @@ void ShareManager::on(TimerManagerListener::Minute, u_int32_t tick) throw() {
 
 /**
  * @file
- * $Id: ShareManager.cpp,v 1.4 2005/05/01 20:54:19 paskharen Exp $
+ * $Id: ShareManager.cpp,v 1.5 2005/06/25 19:24:03 paskharen Exp $
  */
 

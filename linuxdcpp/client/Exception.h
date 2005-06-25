@@ -57,5 +57,5 @@ public:\
 
 /**
  * @file
- * $Id: Exception.h,v 1.3 2005/05/01 20:54:18 paskharen Exp $
+ * $Id: Exception.h,v 1.4 2005/06/25 19:24:02 paskharen Exp $
  */

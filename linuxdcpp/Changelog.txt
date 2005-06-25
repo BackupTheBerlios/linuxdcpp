@@ -1,3 +1,8 @@
+2005-06-25 - paskharen
+* Added finished uploads and downloads (thanks s4kk3)
+* Added more info to nick list (thanks luusl)
+* Replaced some windows newlines with unix ditto in some files
+
 2005-05-25 - paskharen
 * Fixed Gtk warnings on startup (thanks Ixan)
 * Added automatic sorting to sharebrowser (thanks Ixan)

@@ -37,7 +37,11 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	setFocusCallback(this, &Hub::setChatEntryFocus),
 	WIDTH_ICON(20),
 	WIDTH_NICK(100),
-	WIDTH_SHARED(50)
+	WIDTH_SHARED(75),
+	WIDTH_DESCRIPTION(75),
+	WIDTH_TAG(100),
+	WIDTH_CONNECTION(75),
+	WIDTH_EMAIL(100)
 {
 	string file = WulforManager::get()->getPath() + "/glade/hub.glade";
 	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
@@ -58,13 +62,18 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	usersStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusUsers"));
 	sharedStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusShared"));
 	
-	nickStore = gtk_list_store_new(4, GDK_TYPE_PIXBUF, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT64);
+	nickStore = gtk_list_store_new(8, GDK_TYPE_PIXBUF, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT64);
 	gtk_tree_view_set_model(nickView, GTK_TREE_MODEL(nickStore));
 	nickSelection = gtk_tree_view_get_selection(nickView);
 	TreeViewFactory factory(nickView);
 	factory.addColumn_gui(COLUMN_ICON, "", TreeViewFactory::PIXBUF, WIDTH_ICON);
 	factory.addColumn_gui(COLUMN_NICK, "Nick", TreeViewFactory::STRING, WIDTH_NICK);
 	factory.addColumn_gui(COLUMN_SHARED, "Shared", TreeViewFactory::STRING, WIDTH_SHARED);
+	factory.addColumn_gui(COLUMN_DESCRIPTION, "Description", TreeViewFactory::STRING, WIDTH_DESCRIPTION);
+	factory.addColumn_gui(COLUMN_TAG, "Tag", TreeViewFactory::STRING, WIDTH_TAG);
+	factory.addColumn_gui(COLUMN_CONNECTION, "Connection", TreeViewFactory::STRING, WIDTH_DESCRIPTION);
+	factory.addColumn_gui(COLUMN_EMAIL, "eMail", TreeViewFactory::STRING, WIDTH_EMAIL);
+	
 	factory.setSortColumn_gui(COLUMN_SHARED, COLUMN_SHARED_BYTES);
 
 	chatBuffer = gtk_text_buffer_new(NULL);
@@ -143,8 +152,8 @@ void Hub::connectClient_client(string address, string nick, string desc, string 
 }
 
 void Hub::updateUser_client(User::Ptr user) {
-	typedef Func3<Hub, string, int64_t, string> F3;
-	F3 * func;
+	typedef Func7<Hub, string, int64_t, string, string, string, string, string> F7;
+	F7 * func;
 	string icon, nick = user->getNick();
 	int64_t shared = user->getBytesShared();
 
@@ -152,8 +161,13 @@ void Hub::updateUser_client(User::Ptr user) {
 	else icon += "normal";
 	if (user->isSet(User::PASSIVE)) icon += "-fw";
 	if (user->isSet(User::OP)) icon += "-op";
-
-	func = new F3(this, &Hub::updateUser_gui, nick, shared, icon);
+		
+	string description = user->getDescription();
+	string tag = user->getTag();
+	string connection = user->getConnection();
+	string email = user->getEmail();
+	
+	func = new F7(this, &Hub::updateUser_gui, nick, shared, icon, description, tag, connection, email);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
@@ -182,14 +196,25 @@ void Hub::findUser_gui(string nick, GtkTreeIter *iter) {
 	}
 }
 
-void Hub::updateUser_gui(string nick, int64_t shared, string iconFile) {
+void Hub::updateUser_gui(string nick, int64_t shared, string iconFile,
+		string description,	string tag, string connection, string email) {
+
 	GtkTreeIter iter;
 	GdkPixbuf *icon;
 	string file;
 	ostringstream userStream;
 
 	findUser_gui(nick, &iter);
-	if (!gtk_list_store_iter_is_valid(nickStore, &iter)) {
+
+	std::set<std::string>::const_iterator curNick;
+	bool nickAlreadyInList = 0;
+	for(curNick = nicks.begin(); curNick != nicks.end(); ++curNick) {
+		if(*curNick == nick) {
+			nickAlreadyInList = 1;	// already in list.
+			break;
+		}
+	}
+	if(!nickAlreadyInList) {
 		gtk_list_store_append(nickStore, &iter);
 		nicks.insert(nick);
 	}
@@ -198,7 +223,11 @@ void Hub::updateUser_gui(string nick, int64_t shared, string iconFile) {
 	gtk_list_store_set(nickStore, &iter, 
 		COLUMN_ICON, icon,
 		COLUMN_NICK, nick.c_str(),
-		COLUMN_SHARED, 	Util::formatBytes(shared).c_str(),
+		COLUMN_SHARED, Util::formatBytes(shared).c_str(),
+		COLUMN_DESCRIPTION, description.c_str(),
+		COLUMN_TAG, tag.c_str(),
+		COLUMN_CONNECTION, connection.c_str(),
+		COLUMN_EMAIL, email.c_str(),
 		COLUMN_SHARED_BYTES, shared,
 		-1);
 	

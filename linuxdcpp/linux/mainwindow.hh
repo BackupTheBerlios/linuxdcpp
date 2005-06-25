@@ -83,6 +83,8 @@ class MainWindow:
 		void searchClicked_gui(GtkWidget *widget, gpointer data);
 		void hashClicked_gui(GtkWidget *widget, gpointer data);
 		void quitClicked_gui(GtkWidget *widget, gpointer data);
+		void finishedDLclicked_gui(GtkWidget *widget, gpointer data);
+		void finishedULclicked_gui(GtkWidget *widget, gpointer data);
 
 		gboolean deleteWindow_gui(
 			GtkWidget *widget, GdkEvent *event, gpointer data);
@@ -123,7 +125,8 @@ class MainWindow:
 		Callback2<MainWindow, void, GtkWidget *>
 			connectCallback, pubHubsCallback, dlQueueCallback,
 			settingsCallback, favHubsCallback, searchCallback,
-			hashCallback, quitCallback;
+			hashCallback, quitCallback, finishedDL_Callback,
+			finishedUL_Callback;
 		
 		Callback3<MainWindow, gboolean, GtkWidget *, GdkEvent *>
 			deleteCallback;
@@ -139,7 +142,8 @@ class MainWindow:
 		GtkStatusbar *mainStatus, *hubStatus, *slotStatus, 
 			*dTotStatus, *uTotStatus, *dlStatus, *ulStatus;
 		GtkToolButton *connectButton, *pubHubsButton, *searchButton, *settingsButton, 
-			*hashButton, *queueButton, *favHubsButton, *quitButton;
+			*hashButton, *queueButton, *favHubsButton, *quitButton, *finishedDL_button,
+			*finishedUL_button;
 		GtkNotebook *book;
 		GtkTreeView *transferView;
 		GtkListStore *transferStore;

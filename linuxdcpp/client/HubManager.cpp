@@ -600,5 +600,5 @@ void HubManager::on(TypeBZ2, HttpConnection*) throw() {
 
 /**
  * @file
- * $Id: HubManager.cpp,v 1.3 2005/05/01 20:54:18 paskharen Exp $
+ * $Id: HubManager.cpp,v 1.4 2005/06/25 19:24:02 paskharen Exp $
  */

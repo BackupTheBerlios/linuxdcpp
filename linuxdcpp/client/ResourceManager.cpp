@@ -68,6 +68,6 @@ void ResourceManager::createWide() {
 
 /**
  * @file
- * $Id: ResourceManager.cpp,v 1.3 2005/05/01 20:54:19 paskharen Exp $
+ * $Id: ResourceManager.cpp,v 1.4 2005/06/25 19:24:02 paskharen Exp $
  */
 

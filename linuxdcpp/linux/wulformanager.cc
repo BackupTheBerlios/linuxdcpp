@@ -464,3 +464,15 @@ Hash *WulforManager::openHashDialog_gui() {
 	return h;
 }
 
+FinishedTransfers *WulforManager::addFinishedTransfers_gui(int type, string title)
+{
+	BookEntry *entry = getBookEntry_gui (type, title, true);
+	if (entry) return dynamic_cast<FinishedTransfers*>(entry);
+		
+	FinishedTransfers *ft = new FinishedTransfers (type, title, G_CALLBACK(closeEntry_callback));
+	mainWin->addPage_gui(ft->getWidget (), ft->getTitle (), true);
+	gtk_widget_unref (ft->getWidget ());
+	bookEntrys.push_back(ft);
+	
+	return ft;
+}

@@ -50,7 +50,8 @@ class Hub:
 
 		//to be called from gui thread
 		void setStatus_gui(GtkStatusbar *status, std::string text);
-		void updateUser_gui(std::string nick, int64_t shared, std::string iconFile);
+		void updateUser_gui(std::string nick, int64_t shared, std::string iconFile,
+				std::string description, std::string tag, std::string connection, std::string email);
 		void findUser_gui(std::string nick, GtkTreeIter *iter);
 		void removeUser_gui(std::string nick);
 		void clearNickList_gui();
@@ -137,12 +138,16 @@ class Hub:
 		string prev_nick;
 		string nick_completion;
 		
-		const int WIDTH_ICON, WIDTH_NICK, WIDTH_SHARED;
+		const int WIDTH_ICON, WIDTH_NICK, WIDTH_SHARED, WIDTH_DESCRIPTION, WIDTH_TAG, WIDTH_CONNECTION, WIDTH_EMAIL;
 		
 		enum {
 			COLUMN_ICON,
 			COLUMN_NICK,
 			COLUMN_SHARED,
+			COLUMN_DESCRIPTION,
+			COLUMN_TAG,
+			COLUMN_CONNECTION,
+			COLUMN_EMAIL,
 			COLUMN_SHARED_BYTES
 		};
 };

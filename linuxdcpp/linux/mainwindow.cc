@@ -43,7 +43,8 @@ MainWindow::MainWindow():
 	searchCallback(this, &MainWindow::searchClicked_gui),
 	hashCallback(this, &MainWindow::hashClicked_gui),
 	quitCallback(this, &MainWindow::quitClicked_gui),
-		
+	finishedDL_Callback(this, &MainWindow::finishedDLclicked_gui),
+	finishedUL_Callback(this, &MainWindow::finishedULclicked_gui),		
 	deleteCallback(this, &MainWindow::deleteWindow_gui),
 	switchPageCallback(this, &MainWindow::switchPage_gui),
 
@@ -100,6 +101,8 @@ void MainWindow::createWindow_gui() {
 	settingsButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "settings"));
 	hashButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "hash"));
 	queueButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "queue"));
+	finishedDL_button = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "finishedDownloads"));
+	finishedUL_button = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "finishedUploads"));
 	favHubsButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "favHubs"));
 	quitButton = GTK_TOOL_BUTTON(glade_xml_get_widget(xml, "quit"));
 
@@ -146,6 +149,12 @@ void MainWindow::createWindow_gui() {
 	file = WulforManager::get()->getPath() + "/pixmaps/settings.png";
 	gtk_tool_button_set_icon_widget(settingsButton, 
 		gtk_image_new_from_file(file.c_str()));
+	file = WulforManager::get()->getPath() + "/pixmaps/FinishedDL.png";
+	gtk_tool_button_set_icon_widget(finishedDL_button, 
+		gtk_image_new_from_file(file.c_str()));
+	file = WulforManager::get()->getPath() + "/pixmaps/FinishedUL.png";
+	gtk_tool_button_set_icon_widget(finishedUL_button, 
+		gtk_image_new_from_file(file.c_str()));
 
 	file = WulforManager::get()->getPath() + "/pixmaps/queue.png";
 	gtk_tool_button_set_icon_widget(queueButton, 
@@ -164,7 +173,9 @@ void MainWindow::createWindow_gui() {
 	searchCallback.connect(G_OBJECT(searchButton), "clicked", NULL);
 	hashCallback.connect(G_OBJECT(hashButton), "clicked", NULL);
 	quitCallback.connect(G_OBJECT(quitButton), "clicked", NULL);
-
+	finishedDL_Callback.connect(G_OBJECT(finishedDL_button), "clicked", NULL);
+	finishedUL_Callback.connect(G_OBJECT(finishedUL_button), "clicked", NULL);
+	
 	deleteCallback.connect(G_OBJECT(window), "delete-event", NULL);
 	switchPageCallback.connect(G_OBJECT(book), "switch-page", NULL);
 	
@@ -217,6 +228,18 @@ void MainWindow::dlQueueClicked_gui(GtkWidget *widget, gpointer data) {
 
 void MainWindow::favHubsClicked_gui(GtkWidget *widget, gpointer data) {
 	WulforManager::get()->addFavoriteHubs_gui();
+}
+
+void MainWindow::finishedDLclicked_gui(GtkWidget *widget, gpointer data)
+{
+	WulforManager *wm;
+	wm->get()->addFinishedTransfers_gui(wm->get()->FINISHED_DOWNLOADS, "Finished Downloads"); 
+}
+
+void MainWindow::finishedULclicked_gui(GtkWidget *widget, gpointer data)
+{
+	WulforManager *wm;
+	wm->get()->addFinishedTransfers_gui(wm->get()->FINISHED_UPLOADS, "Finished Uploads");
 }
 
 void MainWindow::settingsClicked_gui(GtkWidget *widget, gpointer data) {
@@ -318,7 +341,10 @@ void MainWindow::autoOpen_gui() {
 		WulforManager::get()->addDownloadQueue_gui();
 	if (SETTING(OPEN_FAVORITE_HUBS))
 		WulforManager::get()->addFavoriteHubs_gui();
-	//if (SETTING (OPEN_FINISHED_DOWNLOADS)) // Can't open since Finished Downloads ain't added yet.
+	if(BOOLSETTING(OPEN_FINISHED_DOWNLOADS)){
+		WulforManager *wm;
+		wm->get()->addFinishedTransfers_gui(wm->get()->FINISHED_DOWNLOADS, "Finished Downloads"); 
+	}
 }
 
 void MainWindow::startSocket_client() {
@@ -659,9 +685,18 @@ void MainWindow::on(DownloadManagerListener::Starting, Download *dl) throw() {
 
 	size = Util::formatBytes(dl->getSize());
 	target = Text::acpToUtf8(dl->getTarget());
-	file = Util::getFileName(target);
-	path = Util::getFilePath(target);
 	status = "Download starting...";
+
+	if (dl->isSet(Download::FLAG_USER_LIST))
+	{
+		file = "Filelist";
+		path = "";
+	}
+	else
+	{
+		file = Util::getFileName(target);
+		path = Util::getFilePath(target);
+	}
 
 	UFunc *func;
 	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_DL, "", status,
@@ -712,8 +747,17 @@ void MainWindow::on(DownloadManagerListener::Failed, Download *dl, const string 
 	status = reason;
 	size = Util::formatBytes(dl->getSize());
 	target = Text::acpToUtf8(dl->getTarget());
-	file = Util::getFileName(target);
-	path = Util::getFilePath(target);
+
+	if (dl->isSet(Download::FLAG_USER_LIST))
+	{
+		file = "Filelist";
+		path = "";
+	}
+	else
+	{
+		file = Util::getFileName(target);
+		path = Util::getFilePath(target);
+	}
 
 	UFunc *func;
 	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, "", 
@@ -728,9 +772,18 @@ void MainWindow::on(UploadManagerListener::Starting, Upload *ul) throw() {
 
 	size = Util::formatBytes(ul->getSize());
 	target = Text::acpToUtf8(ul->getFileName());
-	file = Util::getFileName(target);
-	path = Util::getFilePath(target);
 	status = "Upload starting...";
+
+	if (ul->isSet(Upload::FLAG_USER_LIST))
+	{
+		file = "Filelist";
+		path = "";
+	}
+	else
+	{
+		file = Util::getFileName(target);
+		path = Util::getFilePath(target);
+	}
 
 	UFunc *func;
 	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_UL, "", status,

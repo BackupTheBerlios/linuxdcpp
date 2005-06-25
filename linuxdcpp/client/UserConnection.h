@@ -400,6 +400,6 @@ private:
 
 /**
  * @file
- * $Id: UserConnection.h,v 1.3 2005/05/01 20:54:19 paskharen Exp $
+ * $Id: UserConnection.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
  */
 

@@ -38,6 +38,7 @@
 #include "sharebrowser.hh"
 #include "search.hh"
 #include "hashdialog.hh"
+#include "finishedtransfers.hh"
 
 class WulforManager {
 	public:
@@ -66,6 +67,7 @@ class WulforManager {
 		Hash *openHashDialog_gui ();
 		Search *addSearch_gui();
 		ShareBrowser *addShareBrowser_gui(User::Ptr user, std::string file);
+		FinishedTransfers *addFinishedTransfers_gui(int type, std::string title);
 
 		BookEntry *getBookEntry_gui(int type, string id, bool raise);
 		BookEntry *getBookEntry_gui(int nr);
@@ -84,7 +86,9 @@ class WulforManager {
 			DOWNLOAD_QUEUE,
 			FAVORITE_HUBS,
 			SETTINGS,
-			HASH
+			HASH,
+			FINISHED_UPLOADS,
+			FINISHED_DOWNLOADS
 		};
 
 	private:

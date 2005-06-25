@@ -153,5 +153,5 @@ bool AdcCommand::hasFlag(const char* name, size_t start) const {
 
 /**
  * @file
- * $Id: AdcCommand.cpp,v 1.3 2005/05/01 20:54:18 paskharen Exp $
+ * $Id: AdcCommand.cpp,v 1.4 2005/06/25 19:24:01 paskharen Exp $
  */

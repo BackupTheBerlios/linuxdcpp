@@ -202,5 +202,5 @@ private:
 
 /**
  * @file
- * $Id: SearchManager.h,v 1.3 2005/05/01 20:54:19 paskharen Exp $
+ * $Id: SearchManager.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
  */

@@ -1369,5 +1369,5 @@ void QueueManager::on(TimerManagerListener::Second, u_int32_t aTick) throw() {
 
 /**
  * @file
- * $Id: QueueManager.cpp,v 1.5 2005/05/21 00:41:48 paskharen Exp $
+ * $Id: QueueManager.cpp,v 1.6 2005/06/25 19:24:02 paskharen Exp $
  */

@@ -251,6 +251,6 @@ private:
 
 /**
  * @file
- * $Id: QueueManager.h,v 1.6 2005/05/21 00:41:48 paskharen Exp $
+ * $Id: QueueManager.h,v 1.7 2005/06/25 19:24:02 paskharen Exp $
  */
 
