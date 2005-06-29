@@ -1,3 +1,6 @@
+2005-06-29 - paskharen
+* Fixed some crashes at startup
+
 2005-06-25 - paskharen
 * Added finished uploads and downloads (thanks s4kk3)
 * Added more info to nick list (thanks luusl)

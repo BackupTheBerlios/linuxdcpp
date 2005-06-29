@@ -479,7 +479,8 @@ GtkWidget *MainWindow::currentPage_gui() {
 }
 
 void MainWindow::setStatus_gui(GtkStatusbar *status, std::string text) {
-	if (!status) return; 
+	// Apparently if (!status) ... crashes for some people. Strange.
+	if (status == NULL) return; 
 
 	if (status != mainStatus) {
 		PangoLayout *pango;
