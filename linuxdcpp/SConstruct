@@ -36,6 +36,11 @@ if WhereIs('g++-3.4') != None:
 else:
 	env = Environment(CXX = 'g++')
 
+#import enviroment variables from os
+#this is to find headers and librarys and such
+import os
+env.Append(ENV=os.environ)
+
 conf = Configure(env, custom_tests = {'CheckPKGConfig' : CheckPKGConfig, 
 	'CheckDefine' : CheckDefine,
 	'CheckPKG' : CheckPKG }) 

@@ -46,6 +46,7 @@ MainWindow::MainWindow():
 	finishedDL_Callback(this, &MainWindow::finishedDLclicked_gui),
 	finishedUL_Callback(this, &MainWindow::finishedULclicked_gui),		
 	deleteCallback(this, &MainWindow::deleteWindow_gui),
+//	transferCallback(this, &MainWindow::transferClicked_gui),
 	switchPageCallback(this, &MainWindow::switchPage_gui),
 
 	lastUpdate(0),
@@ -114,10 +115,12 @@ void MainWindow::createWindow_gui() {
 	transferView = GTK_TREE_VIEW(glade_xml_get_widget(xml, "transfers"));
 	connectEntry = GTK_ENTRY(glade_xml_get_widget(xml, "connectEntry"));
 
-	transferStore = gtk_list_store_new(9, GDK_TYPE_PIXBUF, G_TYPE_STRING, G_TYPE_STRING, 
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+	transferStore = gtk_list_store_new(10, GDK_TYPE_PIXBUF, G_TYPE_STRING, G_TYPE_STRING, 
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER);
 	gtk_tree_view_set_model(transferView, GTK_TREE_MODEL(transferStore));
 	transferSel = gtk_tree_view_get_selection(transferView);
+	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(transferView), GTK_SELECTION_MULTIPLE);
+	g_signal_connect (G_OBJECT (transferView), "button_press_event", G_CALLBACK (transferClicked_gui), (gpointer)this);
 	TreeViewFactory factory(transferView);
 	factory.addColumn_gui(COLUMN_TYPE, "", TreeViewFactory::PIXBUF, WIDTH_TYPE);
 	factory.addColumn_gui(COLUMN_USER, "User", TreeViewFactory::STRING, WIDTH_USER);
@@ -163,6 +166,36 @@ void MainWindow::createWindow_gui() {
 	gtk_tool_button_set_icon_widget(favHubsButton, 
 		gtk_image_new_from_file(file.c_str()));
 		
+	popupMenu = gtk_menu_new ();
+	filelist = gtk_menu_item_new_with_label ("Get file list");
+	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), filelist);
+	g_signal_connect (G_OBJECT (filelist), "activate", G_CALLBACK (onGetFileListClicked_gui), (gpointer)this);
+	matchQueue = gtk_menu_item_new_with_label ("Match queue");
+	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), matchQueue);
+	g_signal_connect (G_OBJECT (matchQueue), "activate", G_CALLBACK (onMatchQueueClicked_gui), (gpointer)this);
+	privateMessage = gtk_menu_item_new_with_label ("Send private message");
+	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), privateMessage);
+	g_signal_connect (G_OBJECT (privateMessage), "activate", G_CALLBACK (onPrivateMessageClicked_gui), (gpointer)this);
+	addToFavorites = gtk_menu_item_new_with_label ("Add to favorites");
+	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), addToFavorites);
+	g_signal_connect (G_OBJECT (addToFavorites), "activate", G_CALLBACK (onAddFavoriteUserClicked_gui), (gpointer)this);
+	grantExtraSlot = gtk_menu_item_new_with_label ("Grant extra slot");
+	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), grantExtraSlot);
+	g_signal_connect (G_OBJECT (grantExtraSlot), "activate", G_CALLBACK (onGrantExtraSlotClicked_gui), (gpointer)this);
+	removeUser = gtk_menu_item_new_with_label ("Remove user from queue");
+	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), removeUser);
+	g_signal_connect (G_OBJECT (removeUser), "activate", G_CALLBACK (onRemoveUserFromQueueClicked_gui), (gpointer)this);
+	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), gtk_separator_menu_item_new ());
+	forceAttempt = gtk_menu_item_new_with_label ("Force attempt");
+	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), forceAttempt);
+	g_signal_connect (G_OBJECT (forceAttempt), "activate", G_CALLBACK (onForceAttemptClicked_gui), (gpointer)this);
+	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), gtk_separator_menu_item_new ());
+	closeConnection = gtk_menu_item_new_with_label ("Close connection");
+	g_signal_connect (G_OBJECT (closeConnection), "activate", G_CALLBACK (onCloseConnectionClicked_gui), (gpointer)this);
+	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), closeConnection);
+		
+	gtk_widget_show_all (popupMenu);
+		
 	gtk_widget_show_all(GTK_WIDGET(window));
 
    	connectCallback.connect(G_OBJECT(connectButton), "clicked", NULL);
@@ -177,7 +210,9 @@ void MainWindow::createWindow_gui() {
 	finishedUL_Callback.connect(G_OBJECT(finishedUL_button), "clicked", NULL);
 	
 	deleteCallback.connect(G_OBJECT(window), "delete-event", NULL);
+//	transferCallback.connect(G_OBJECT(window), "button-release-event", this);
 	switchPageCallback.connect(G_OBJECT(book), "switch-page", NULL);
+	
 	
 	GtkWidget *dummy;
 	GtkRequisition req;
@@ -192,6 +227,194 @@ void MainWindow::createWindow_gui() {
 
 GtkWindow *MainWindow::getWindow() {
 	return window;
+}
+
+gboolean MainWindow::transferClicked_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
+{
+	if (event->type == GDK_BUTTON_PRESS)
+	{
+		if (event->button == 3)
+		{
+			MainWindow *mw = (MainWindow*)user_data;
+			GtkTreeSelection *selection;
+			GtkTreeModel *m = GTK_TREE_MODEL (mw->transferStore);
+			selection = mw->transferSel;
+			int count = gtk_tree_selection_count_selected_rows (selection);
+						
+			if (count < 1)
+				return FALSE;
+			else if (count == 1)
+			{
+				gtk_widget_set_sensitive (mw->filelist, true);
+				gtk_widget_set_sensitive (mw->matchQueue, true);
+				gtk_widget_set_sensitive (mw->privateMessage, true);
+				gtk_widget_set_sensitive (mw->grantExtraSlot, true);
+				gtk_widget_set_sensitive (mw->removeUser, true);
+			}	
+			else if (count > 1)
+			{
+				gtk_widget_set_sensitive (mw->filelist, false);
+				gtk_widget_set_sensitive (mw->matchQueue, false);
+				gtk_widget_set_sensitive (mw->privateMessage, false);
+				gtk_widget_set_sensitive (mw->grantExtraSlot, false);
+				gtk_widget_set_sensitive (mw->removeUser, false);			
+			}
+			((MainWindow*)user_data)->popup (event, user_data);
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+void MainWindow::popup (GdkEventButton *event, gpointer user_data)
+{
+    gtk_menu_popup(GTK_MENU (popupMenu), NULL, NULL, NULL, NULL,
+                   (event != NULL) ? 1 : 0,
+                   gdk_event_get_time((GdkEvent*)event));	
+}
+
+User::Ptr MainWindow::getSelectedTransfer_gui ()
+{
+	GtkTreeSelection *selection;
+	GtkTreeModel *m = GTK_TREE_MODEL (transferStore);
+	selection = transferSel;
+
+	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
+	GList *tmp = g_list_first (list);
+	GtkTreeIter iter;
+	
+	if (!tmp)
+		return NULL;
+	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
+		return NULL;	
+	return TreeViewFactory::getValue<gpointer,ConnectionQueueItem*>(m, &iter, COLUMN_USERPTR)->getUser ();
+}
+
+void MainWindow::onGetFileListClicked_gui (GtkMenuItem *item, gpointer user_data)
+{
+	MainWindow *mw = (MainWindow*)user_data;
+	User::Ptr user = mw->getSelectedTransfer_gui ();
+	try 
+	{
+		QueueManager::getInstance()->addList(user, QueueItem::FLAG_CLIENT_VIEW);
+	} 
+	catch(const Exception&) 
+	{
+	}
+}
+
+void MainWindow::onMatchQueueClicked_gui (GtkMenuItem *item, gpointer user_data)
+{
+	MainWindow *mw = (MainWindow*)user_data;
+	User::Ptr user = mw->getSelectedTransfer_gui ();
+	try 
+	{
+		QueueManager::getInstance()->addList(user, QueueItem::FLAG_MATCH_QUEUE);
+	} 
+	catch(const Exception&) 
+	{
+	}
+}
+
+void MainWindow::onPrivateMessageClicked_gui (GtkMenuItem *item, gpointer user_data)
+{
+	MainWindow *mw = (MainWindow*)user_data;
+	User::Ptr user = mw->getSelectedTransfer_gui ();
+	WulforManager::get()->addPrivMsg_gui(user);
+}
+
+void MainWindow::onAddFavoriteUserClicked_gui (GtkMenuItem *item, gpointer user_data)
+{
+	MainWindow *mw = (MainWindow*)user_data;
+	User::Ptr user = mw->getSelectedTransfer_gui ();
+	HubManager::getInstance()->addFavoriteUser(user);
+}
+
+void MainWindow::onGrantExtraSlotClicked_gui (GtkMenuItem *item, gpointer user_data)
+{
+	MainWindow *mw = (MainWindow*)user_data;
+	User::Ptr user = mw->getSelectedTransfer_gui ();
+	UploadManager::getInstance()->reserveSlot(user);
+}
+
+void MainWindow::onRemoveUserFromQueueClicked_gui (GtkMenuItem *item, gpointer user_data)
+{
+	MainWindow *mw = (MainWindow*)user_data;
+	User::Ptr user = mw->getSelectedTransfer_gui ();
+	QueueManager::getInstance()->removeSources(user, QueueItem::Source::FLAG_REMOVED);
+}
+
+void MainWindow::onForceAttemptClicked_gui (GtkMenuItem *item, gpointer user_data)
+{
+
+	MainWindow *mw = (MainWindow*)user_data;
+	GtkTreeSelection *selection;
+	GtkTreeModel *m = GTK_TREE_MODEL (mw->transferStore);
+	selection = mw->transferSel;
+
+	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
+	GList *tmp = g_list_first (list);
+	vector<User::Ptr> user;
+	GtkTreeIter tmpiter;
+	
+	if (!tmp)
+		return;
+	
+	while (1)
+	{
+		if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
+		{
+			user.push_back (TreeViewFactory::getValue<gpointer,ConnectionQueueItem*>(m, &tmpiter, COLUMN_USERPTR)->getUser ());
+			gtk_list_store_set(mw->transferStore, &tmpiter, COLUMN_STATUS, "Connecting (forced)...", -1);
+		}
+		
+		tmp = g_list_next (tmp);
+		if (!tmp)
+			break;
+	}	
+	
+	for (int i=0;i<user.size ();i++)
+		user[i]->connect ();
+}
+
+void MainWindow::onCloseConnectionClicked_gui (GtkMenuItem *item, gpointer user_data)
+{
+	MainWindow *mw = (MainWindow*)user_data;
+	GtkTreeSelection *selection;
+	GtkTreeModel *m = GTK_TREE_MODEL (mw->transferStore);
+	selection = mw->transferSel;
+
+	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
+	GList *tmp = g_list_first (list);
+	vector<User::Ptr> user;
+	vector<bool> isDownload;
+	GtkTreeIter tmpiter;
+	
+	if (!tmp)
+		return;
+	
+	while (1)
+	{
+		if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
+		{
+			ConnectionQueueItem *qi = TreeViewFactory::getValue<gpointer,ConnectionQueueItem*>(m, &tmpiter, COLUMN_USERPTR);
+			if (qi->getConnection())
+			{
+				if (qi->getConnection()->isSet(UserConnection::FLAG_UPLOAD))
+					isDownload.push_back(false);
+				else
+					isDownload.push_back(true);
+				user.push_back (qi->getUser ());
+			}
+		}
+		
+		tmp = g_list_next (tmp);
+		if (!tmp)
+			break;
+	}	
+
+	for (int i=0;i<user.size ();i++)
+		ConnectionManager::getInstance()->removeConnection(user[i], isDownload[i]);
 }
 
 void MainWindow::connectClicked_gui(GtkWidget *widget, gpointer data) {
@@ -511,7 +734,7 @@ void MainWindow::setStats_gui(std::string hub, std::string slot,
 	setStatus_gui(dlStatus, dl);
 }
 
-void MainWindow::updateTransfer_gui(string id, connection_t type, string user, 
+void MainWindow::updateTransfer_gui(string id, connection_t type, ConnectionQueueItem *item, 
 	string status, string time, string speed, string file, string size, string path)
 {
 	GtkTreeIter iter;
@@ -528,8 +751,8 @@ void MainWindow::updateTransfer_gui(string id, connection_t type, string user,
 	if (type == CONNECTION_DL) {
 		gtk_list_store_set(transferStore, &iter, COLUMN_TYPE, downloadPic, -1);
 	}
-	if (user != "") {
-		gtk_list_store_set(transferStore, &iter, COLUMN_USER, user.c_str(), -1);
+	if (item) {
+		gtk_list_store_set(transferStore, &iter, COLUMN_USER, item->getUser ()->getNick ().c_str(), COLUMN_USERPTR, (gpointer)item, -1);
 	}
 	if (status != "") {
 		gtk_list_store_set(transferStore, &iter, COLUMN_STATUS, status.c_str(), -1);
@@ -628,7 +851,7 @@ void MainWindow::transferComplete_client(Transfer *t) {
 	}
 
 	UFunc *func;
-	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, "", status,
+	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, NULL, status,
 		"Done", " ", "", "", "");
 	WulforManager::get()->dispatchGuiFunc(func);
 }
@@ -636,12 +859,11 @@ void MainWindow::transferComplete_client(Transfer *t) {
 //From Connection manager
 void MainWindow::on(ConnectionManagerListener::Added, ConnectionQueueItem *item) throw() {
 	string status = "Connecting...";
-	string user = item->getUser()->getNick();
 	string id = getId_client(item);
 
 	UFunc *func;
 	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, 
-		user, status, "", "", "", "", "");
+		item, status, "", "", "", "", "");
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
@@ -658,7 +880,7 @@ void MainWindow::on(ConnectionManagerListener::Failed, ConnectionQueueItem *item
 	string id = getId_client(item);
 
 	UFunc *func;
-	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, "", status,
+	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, NULL, status,
 		"", "", "", "", "");
 	WulforManager::get()->dispatchGuiFunc(func);
 }
@@ -674,7 +896,7 @@ void MainWindow::on(ConnectionManagerListener::StatusChanged, ConnectionQueueIte
 	}
 
 	UFunc *func;
-	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, "", status,
+	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, NULL, status,
 		"", "", "", "", "");
 	WulforManager::get()->dispatchGuiFunc(func);
 }
@@ -700,7 +922,7 @@ void MainWindow::on(DownloadManagerListener::Starting, Download *dl) throw() {
 	}
 
 	UFunc *func;
-	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_DL, "", status,
+	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_DL, NULL, status,
 		"", "", file, size, path);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
@@ -731,7 +953,7 @@ void MainWindow::on(DownloadManagerListener::Tick, const Download::List &list) t
 		}
 
 		UFunc *func;
-		func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, "", 
+		func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, NULL, 
 			status,	timeLeft, speed, "", "", "");
 		WulforManager::get()->dispatchGuiFunc(func);
 	}
@@ -761,7 +983,7 @@ void MainWindow::on(DownloadManagerListener::Failed, Download *dl, const string 
 	}
 
 	UFunc *func;
-	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, "", 
+	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, NULL, 
 		status,	"", "", file, size, path);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
@@ -787,7 +1009,7 @@ void MainWindow::on(UploadManagerListener::Starting, Upload *ul) throw() {
 	}
 
 	UFunc *func;
-	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_UL, "", status,
+	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_UL, NULL, status,
 		"", "", file, size, path);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
@@ -818,7 +1040,7 @@ void MainWindow::on(UploadManagerListener::Tick, const Upload::List &list) throw
 		}
 
 		UFunc *func;
-		func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, "", 
+		func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, NULL, 
 			status,	timeLeft, speed, "", "", "");
 		WulforManager::get()->dispatchGuiFunc(func);
 	}

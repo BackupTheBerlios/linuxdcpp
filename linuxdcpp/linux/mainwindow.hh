@@ -70,10 +70,23 @@ class MainWindow:
 			CONNECTION_NA
 		} connection_t;
 
-		void updateTransfer_gui(std::string id, connection_t type, std::string user, std::string status, 
+		void updateTransfer_gui(std::string id, connection_t type, ConnectionQueueItem *item, std::string status, 
 			std::string time, std::string speed, std::string file, std::string size, std::string path);
 		void removeTransfer_gui(std::string id);
+		void popup (GdkEventButton *event, gpointer user_data);
 		void findId_gui(std::string id, GtkTreeIter *iter);
+		
+		// Transferview related functions
+		User::Ptr getSelectedTransfer_gui ();
+		static gboolean transferClicked_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
+		static void onGetFileListClicked_gui (GtkMenuItem *item, gpointer user_data);
+		static void onMatchQueueClicked_gui (GtkMenuItem *item, gpointer user_data);
+		static void onPrivateMessageClicked_gui (GtkMenuItem *item, gpointer user_data);
+		static void onAddFavoriteUserClicked_gui (GtkMenuItem *item, gpointer user_data);
+		static void onGrantExtraSlotClicked_gui (GtkMenuItem *item, gpointer user_data);
+		static void onRemoveUserFromQueueClicked_gui (GtkMenuItem *item, gpointer user_data);
+		static void onForceAttemptClicked_gui (GtkMenuItem *item, gpointer user_data);
+		static void onCloseConnectionClicked_gui (GtkMenuItem *item, gpointer user_data);
 
 		void connectClicked_gui(GtkWidget *widget, gpointer data);
 		void pubHubsClicked_gui(GtkWidget *widget, gpointer data);
@@ -145,6 +158,8 @@ class MainWindow:
 			*hashButton, *queueButton, *favHubsButton, *quitButton, *finishedDL_button,
 			*finishedUL_button;
 		GtkNotebook *book;
+		GtkWidget *popupMenu;
+		GtkWidget *filelist, *matchQueue, *privateMessage, *addToFavorites, *grantExtraSlot, *removeUser, *forceAttempt, *closeConnection;
 		GtkTreeView *transferView;
 		GtkListStore *transferStore;
 		GtkTreeSelection *transferSel;
@@ -162,11 +177,12 @@ class MainWindow:
 			COLUMN_FILENAME,
 			COLUMN_SIZE,
 			COLUMN_PATH,
-			COLUMN_ID		//hidden from user
+			COLUMN_ID,		//hidden from user
+			COLUMN_USERPTR
 		};
 		
 		//conviniece thing for the updateTransfer_gui function
-		typedef Func9 <MainWindow, std::string, connection_t, std::string, std::string, 
+		typedef Func9 <MainWindow, std::string, connection_t, ConnectionQueueItem*, std::string, 
 			std::string, std::string, std::string, std::string, std::string> UFunc;
 };
 

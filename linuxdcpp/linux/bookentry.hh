@@ -42,9 +42,10 @@ class BookEntry {
 
 	private:
 		int type;
-		GtkWidget *box;
+		GtkWidget *box, *eventBox;
 		GtkButton *button;
 		GtkLabel *label;
+		GtkTooltips *tips;
 };
 
 #else

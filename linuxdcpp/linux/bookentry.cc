@@ -26,8 +26,13 @@ BookEntry::BookEntry(int type, string id, string title, GCallback closeCallback)
 	
 	box = gtk_hbox_new(FALSE, 5);
 
+	eventBox = gtk_event_box_new();
+	gtk_event_box_set_above_child(GTK_EVENT_BOX(eventBox), TRUE);
+	gtk_event_box_set_visible_window(GTK_EVENT_BOX(eventBox), FALSE);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(eventBox), FALSE, TRUE, 0);
+
 	label = GTK_LABEL(gtk_label_new(title.c_str()));
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(label), FALSE, TRUE, 0);
+	gtk_container_add(GTK_CONTAINER(eventBox), GTK_WIDGET(label));
 
 	button = GTK_BUTTON(gtk_button_new());
 	gtk_container_add(GTK_CONTAINER(button), 
@@ -36,9 +41,13 @@ BookEntry::BookEntry(int type, string id, string title, GCallback closeCallback)
 	gtk_button_set_relief(button, GTK_RELIEF_NONE);
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(button), FALSE, TRUE, 0);
 
+	tips = gtk_tooltips_new();
+	gtk_tooltips_enable(tips);
+	gtk_tooltips_set_tip (tips, eventBox, title.c_str(), title.c_str());
+
 	gtk_widget_show_all(box);
 	
-    g_signal_connect(G_OBJECT(button), "clicked", 
+	g_signal_connect(G_OBJECT(button), "clicked", 
 		closeCallback, (gpointer)this);
 }
 
@@ -50,16 +59,18 @@ GtkWidget *BookEntry::getTitle() {
 }
 
 void BookEntry::setLabel_gui(std::string text) {
+	gtk_tooltips_set_tip (tips, eventBox, text.c_str(), text.c_str());
 	if (text.size() > 15) 
 		text = text.substr(0, 15) + "...";
 	gtk_label_set_text(label, text.c_str());
 }
 
 void BookEntry::setLabelBold_gui(std::string text) {
+	gtk_tooltips_set_tip (tips, eventBox, text.c_str(), text.c_str());
 	if (text.size() > 15)
 		text = text.substr(0, 15) + "...";
 		
-	char *markup = g_markup_printf_escaped ("<b>%s</b>", text.c_str ());
+	const char *markup = g_markup_printf_escaped ("<b>%s</b>", text.c_str ());
 	gtk_label_set_markup (label, markup);
 }
 

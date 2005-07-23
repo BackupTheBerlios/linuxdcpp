@@ -1,3 +1,9 @@
+2005-07-23 - paskharen
+* The scons file now imports enviroment variables from the os, should find headers and libs
+  a lot better now (bug #004490, thanks azatoth)
+* Complete hub name now shown in tooltip on the notebook flap (thanks s4kk3)
+* Added context menu to transfer list (patch from phase?)
+
 2005-06-29 - paskharen
 * Fixed some crashes at startup
 
