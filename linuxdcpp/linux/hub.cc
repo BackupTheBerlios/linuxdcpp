@@ -702,11 +702,11 @@ void Hub::completion_gui(GtkWidget *, GdkEventKey *key, gpointer) {
 
 void Hub::setChatEntryFocus(GtkWidget *, GdkEventKey *key, gpointer)
 {
-  if(key->keyval != GDK_Tab) return;
-  gtk_widget_grab_focus(GTK_WIDGET(chatEntry));
-  //set "cursor" (the blinking thing) at the end of text. this is because of few things
-  //1. "cursor" will be at the beginning of text
-  //2. whole text in entry is painted
-  gtk_entry_set_position(chatEntry, strlen(gtk_entry_get_text(chatEntry)));
-  return;
+	if (key->keyval != GDK_Tab) return;
+	gtk_widget_grab_focus(GTK_WIDGET(chatEntry));
+	//set "cursor" (the blinking thing) at the end of text. this is because of few things
+	//1. "cursor" will be at the beginning of text
+	//2. whole text in entry is painted
+	gtk_entry_set_position(chatEntry, strlen(gtk_entry_get_text(chatEntry)));
+	return;
 }

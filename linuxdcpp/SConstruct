@@ -4,6 +4,8 @@
 #   release=1: Compile the program with optimizations
 #   atomic=0: Don't use /asm/atomic.h (useful for fedora users)
 
+import os, commands, string
+
 def CheckPKGConfig(context): 
      context.Message('Checking for pkg-config... ') 
      ret = context.TryAction('pkg-config --version')[0] 
@@ -31,19 +33,39 @@ def CheckDefine(context, symbol, header, library):
 	context.Result(result)
 	return result
 
-if WhereIs('g++-3.4') != None:
-	env = Environment(CXX = 'g++-3.4')
-else:
-	env = Environment(CXX = 'g++')
+def CheckCXXVersion(context, name, major, minor):
+	context.Message('Checking for %s >= %d.%d...' % (name, major, minor))
+	ret = commands.getoutput('%s -dumpversion' % name)
 
-#import enviroment variables from os
-#this is to find headers and librarys and such
-import os
-env.Append(ENV=os.environ)
+	retval = 0
+	if ((string.atoi(ret[0]) == major and string.atoi(ret[2]) >= minor) 
+	or (string.atoi(ret[0]) > major)):
+		retval = 1
+                
+	context.Result(retval)
+	return retval
+
+# import enviroment variables from os
+# this is to find headers and librarys and such
+env = Environment(ENV=os.environ)
 
 conf = Configure(env, custom_tests = {'CheckPKGConfig' : CheckPKGConfig, 
 	'CheckDefine' : CheckDefine,
-	'CheckPKG' : CheckPKG }) 
+	'CheckPKG' : CheckPKG,
+	'CheckCXXVersion' : CheckCXXVersion}) 
+
+# This looks up the CXX enviroment variable so that people can specify
+# what g++ to use on the command line (eg. prompt:> CXX=foo scons)
+cxx = conf.env.Dictionary()['CXX']
+if not conf.CheckCXXVersion(cxx, 3, 4):
+	if WhereIs('g++-3.4') != None:
+		print 'Found g++-3.4'
+		cxx = 'g++-3.4'
+	else:
+	     print 'Compiler version check failed. g++ 3.4 or later is needed'
+	     Exit(1)
+
+conf.env.Replace(CXX = cxx)
 
 if not conf.CheckPKGConfig(): 
      print 'pkg-config not found.' 

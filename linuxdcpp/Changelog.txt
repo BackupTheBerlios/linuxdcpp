@@ -1,3 +1,6 @@
+2005-08-04 - paskharen
+* The scons file now checks for the right g++ version (thanks s4kk3)
+
 2005-07-23 - paskharen
 * The scons file now imports enviroment variables from the os, should find headers and libs
   a lot better now (bug #004490, thanks azatoth)
