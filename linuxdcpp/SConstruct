@@ -2,7 +2,8 @@
 #Specify arguments with scons arg=value. Argumens:
 #   debug=1: Compile the program with debug information
 #   release=1: Compile the program with optimizations
-#   atomic=0: Don't use /asm/atomic.h (useful for fedora users)
+#   atomic=0: Disable atomic inc/dec in dc++ core. This is iseful if you 
+#		don't have an x86 processor and no /asm/atomic.h.
 
 import os, commands, string
 
@@ -120,13 +121,18 @@ if not conf.CheckLibWithHeader('bz2', 'bzlib.h', 'c'):
 	print 'Note: You might have the lib but not the headers'
 	Exit(1)
 
-atomic = ARGUMENTS.get('atomic', 1)
-if int(atomic):
-	if not conf.CheckHeader('asm/atomic.h'):
-		print 'Did not find the header asm/atomic.h'
-		print 'You can compile without it, but it might cause some instabillity'
-	else:
+atomic = int(ARGUMENTS.get('debug', 1))
+if atomic:
+	cpu = os.uname()[4]
+	if cpu=='i386' or cpu=='i486' or cpu=='i586' or cpu=='i686':
+		conf.env.Append(CXXFLAGS='-DTARGET_I386')
 		conf.env.Append(CXXFLAGS = '-DHAVE_ASM_ATOMIC_H')
+	else :
+		if conf.CheckHeader('asm/atomic.h'):
+			conf.env.Append(CXXFLAGS = '-DHAVE_ASM_ATOMIC_H')
+		else:
+			print 'Warning: Did not find the header asm/atomic.h'
+			print 'You can compile without it, but it might cause some instabillity'
 
 conf.env.Append(CXXFLAGS = '-D_GNU_SOURCE')
 if not conf.CheckDefine('PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP', 'pthread.h', 'pthread'):

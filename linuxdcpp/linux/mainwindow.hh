@@ -31,6 +31,7 @@
 #include <client/DownloadManager.h>
 #include <client/UploadManager.h>
 #include <client/ConnectionManager.h>
+#include <client/LogManager.h>
 
 #include "func.hh"
 #include "callback.hh"
@@ -40,7 +41,8 @@ class MainWindow:
 	public TimerManagerListener,
 	public DownloadManagerListener,
 	public UploadManagerListener,
-	public ConnectionManagerListener
+	public ConnectionManagerListener,
+	public LogManagerListener
 {
 	public:
 		MainWindow();
@@ -98,6 +100,8 @@ class MainWindow:
 		void quitClicked_gui(GtkWidget *widget, gpointer data);
 		void finishedDLclicked_gui(GtkWidget *widget, gpointer data);
 		void finishedULclicked_gui(GtkWidget *widget, gpointer data);
+		void openFList_gui(GtkWidget *widget, gpointer data);
+		void refreshFList_gui(GtkWidget *widget, gpointer data);
 
 		gboolean deleteWindow_gui(
 			GtkWidget *widget, GdkEvent *event, gpointer data);
@@ -134,12 +138,15 @@ class MainWindow:
 		virtual void on(UploadManagerListener::Tick, const Upload::List &list) throw();
 		virtual void on(UploadManagerListener::Complete, Upload *ul) throw();
 
+		//From Log manager
+		virtual void on(LogManagerListener::Message, const string& str) throw();
+
 	private:
 		Callback2<MainWindow, void, GtkWidget *>
 			connectCallback, pubHubsCallback, dlQueueCallback,
 			settingsCallback, favHubsCallback, searchCallback,
 			hashCallback, quitCallback, finishedDL_Callback,
-			finishedUL_Callback;
+			finishedUL_Callback, openFListCallback, refreshFListCallback;
 		
 		Callback3<MainWindow, gboolean, GtkWidget *, GdkEvent *>
 			deleteCallback;
@@ -164,6 +171,9 @@ class MainWindow:
 		GtkListStore *transferStore;
 		GtkTreeSelection *transferSel;
 		GdkPixbuf *uploadPic, *downloadPic;
+		GtkMenuItem *openFList, *openOwnFList, *refreshFList, *openDLdir, *quickConnect, *followRedirect, *reconnectItem,
+				*settingsItem, *quitItem, *pubHubsItem, *queueItem, *finishedDL_item, *finishedUL_item, *favHubsItem,
+				*favUsersItem, *searchItem, *ADLSearchItem, *searchSpyItem, *networkStatsItem, *hashItem;
 
 		const int WIDTH_TYPE, WIDTH_USER, WIDTH_STATUS, WIDTH_TIMELEFT,
 			WIDTH_SPEED, WIDTH_FILENAME, WIDTH_SIZE, WIDTH_PATH;

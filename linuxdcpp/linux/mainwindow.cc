@@ -48,6 +48,8 @@ MainWindow::MainWindow():
 	deleteCallback(this, &MainWindow::deleteWindow_gui),
 //	transferCallback(this, &MainWindow::transferClicked_gui),
 	switchPageCallback(this, &MainWindow::switchPage_gui),
+	openFListCallback(this, &MainWindow::openFList_gui),
+	refreshFListCallback(this, &MainWindow::refreshFList_gui),
 
 	lastUpdate(0),
 
@@ -63,6 +65,7 @@ MainWindow::MainWindow():
 	QueueManager::getInstance()->addListener(this);
 	TimerManager::getInstance()->addListener(this);
 	DownloadManager::getInstance()->addListener(this);
+	LogManager::getInstance()->addListener(this);
 	UploadManager::getInstance()->addListener(this);
 	ConnectionManager::getInstance()->addListener(this);
 	
@@ -73,6 +76,7 @@ MainWindow::~MainWindow() {
 	QueueManager::getInstance()->removeListener(this);
 	TimerManager::getInstance()->removeListener(this);
 	DownloadManager::getInstance()->removeListener(this);
+	LogManager::getInstance()->removeListener(this);
 	UploadManager::getInstance()->removeListener(this);
 	ConnectionManager::getInstance()->removeListener(this);
 
@@ -114,6 +118,36 @@ void MainWindow::createWindow_gui() {
 	book = GTK_NOTEBOOK(glade_xml_get_widget(xml, "book"));
 	transferView = GTK_TREE_VIEW(glade_xml_get_widget(xml, "transfers"));
 	connectEntry = GTK_ENTRY(glade_xml_get_widget(xml, "connectEntry"));
+
+	openFList = GTK_MENU_ITEM(glade_xml_get_widget(xml, "open_file_list_1"));
+	openOwnFList = GTK_MENU_ITEM(glade_xml_get_widget(xml, "open_own_list1"));
+	refreshFList = GTK_MENU_ITEM(glade_xml_get_widget(xml, "refresh_file_list1"));
+	openDLdir = GTK_MENU_ITEM(glade_xml_get_widget(xml, "open_downloads_directory1"));
+	quickConnect = GTK_MENU_ITEM(glade_xml_get_widget(xml, "quick_connect1"));
+	followRedirect = GTK_MENU_ITEM(glade_xml_get_widget(xml, "follow_last_redirect1"));
+	reconnectItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "reconnect1"));
+	settingsItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "settings1"));
+	quitItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "exit1"));
+	
+	pubHubsItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "public_hubs1"));
+	queueItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "download_queue1"));
+	finishedDL_item = GTK_MENU_ITEM(glade_xml_get_widget(xml, "finished_downloads1"));
+	finishedUL_item = GTK_MENU_ITEM(glade_xml_get_widget(xml, "finished_uploads1"));
+	favHubsItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "favorite_hubs1"));
+	favUsersItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "favorite_users1"));
+	searchItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "search1"));
+	ADLSearchItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "adl_search1"));
+	searchSpyItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "search_spy1"));
+	networkStatsItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "network_statistics1"));
+	hashItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "indexing_progress1"));
+
+	gtk_widget_set_sensitive(GTK_WIDGET(openDLdir), false);
+	gtk_widget_set_sensitive(GTK_WIDGET(followRedirect), false);
+	gtk_widget_set_sensitive(GTK_WIDGET(reconnectItem), false);
+	gtk_widget_set_sensitive(GTK_WIDGET(favUsersItem), false);
+	gtk_widget_set_sensitive(GTK_WIDGET(ADLSearchItem), false);
+	gtk_widget_set_sensitive(GTK_WIDGET(searchSpyItem), false);
+	gtk_widget_set_sensitive(GTK_WIDGET(networkStatsItem), false);
 
 	transferStore = gtk_list_store_new(10, GDK_TYPE_PIXBUF, G_TYPE_STRING, G_TYPE_STRING, 
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER);
@@ -199,15 +233,28 @@ void MainWindow::createWindow_gui() {
 	gtk_widget_show_all(GTK_WIDGET(window));
 
    	connectCallback.connect(G_OBJECT(connectButton), "clicked", NULL);
+	connectCallback.connect(G_OBJECT(quickConnect), "activate", NULL);
    	pubHubsCallback.connect(G_OBJECT(pubHubsButton), "clicked", NULL);
+	pubHubsCallback.connect(G_OBJECT(pubHubsItem), "activate", NULL);
    	dlQueueCallback.connect(G_OBJECT(queueButton), "clicked", NULL);
+	dlQueueCallback.connect(G_OBJECT(queueItem), "activate", NULL);
 	favHubsCallback.connect(G_OBJECT(favHubsButton), "clicked", NULL);
+	favHubsCallback.connect(G_OBJECT(favHubsItem), "activate", NULL);
 	settingsCallback.connect(G_OBJECT(settingsButton), "clicked", NULL);
+	settingsCallback.connect(G_OBJECT(settingsItem), "activate", NULL);
 	searchCallback.connect(G_OBJECT(searchButton), "clicked", NULL);
+	searchCallback.connect(G_OBJECT(searchItem), "activate", NULL);
 	hashCallback.connect(G_OBJECT(hashButton), "clicked", NULL);
+	hashCallback.connect(G_OBJECT(hashItem), "activate", NULL);
 	quitCallback.connect(G_OBJECT(quitButton), "clicked", NULL);
+	quitCallback.connect(G_OBJECT(quitItem), "activate", NULL);
 	finishedDL_Callback.connect(G_OBJECT(finishedDL_button), "clicked", NULL);
+	finishedDL_Callback.connect(G_OBJECT(finishedDL_item), "activate", NULL);
 	finishedUL_Callback.connect(G_OBJECT(finishedUL_button), "clicked", NULL);
+	finishedUL_Callback.connect(G_OBJECT(finishedUL_item), "activate", NULL);
+	openFListCallback.connect(G_OBJECT(openFList), "activate", NULL);
+	openFListCallback.connect(G_OBJECT(openOwnFList), "activate", NULL);
+	refreshFListCallback.connect(G_OBJECT(refreshFList), "activate", NULL);
 	
 	deleteCallback.connect(G_OBJECT(window), "delete-event", NULL);
 //	transferCallback.connect(G_OBJECT(window), "button-release-event", this);
@@ -856,6 +903,42 @@ void MainWindow::transferComplete_client(Transfer *t) {
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
+
+void MainWindow::openFList_gui(GtkWidget *widget, gpointer data)
+{
+	string name = "Own List";
+	string path = Util::getDataPath() + "MyList.DcLst";
+
+	if(widget == GTK_WIDGET(openFList)){
+		GtkWidget *listSelection = gtk_file_chooser_dialog_new( "Select filelist to browse",
+                                             NULL,
+                                             GTK_FILE_CHOOSER_ACTION_OPEN,
+                                             GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                             GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
+		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(listSelection), Text::toT(Util::getDataPath() + "FileLists/").c_str());
+	
+ 		int ret = gtk_dialog_run (GTK_DIALOG(listSelection));
+	
+		path = gtk_file_chooser_get_filename( GTK_FILE_CHOOSER(listSelection) );
+		gtk_widget_destroy(listSelection);
+
+		if(ret != GTK_RESPONSE_OK) return;
+
+		name = g_path_get_basename( path.c_str() );
+	}
+
+	WulforManager::get()->openFileList_gui(name, path);
+}
+
+void MainWindow::refreshFList_gui(GtkWidget *widget, gpointer data)
+{
+	//fingers crossed this works, I have no ideas if this works
+	typedef Func3<ShareManager, bool, bool, bool> F0;
+	F0 *func = new F0(ShareManager::getInstance(), &ShareManager::refresh, true, true, false);
+	WulforManager::get()->dispatchGuiFunc(func);
+}
+
+
 //From Connection manager
 void MainWindow::on(ConnectionManagerListener::Added, ConnectionQueueItem *item) throw() {
 	string status = "Connecting...";
@@ -1049,3 +1132,11 @@ void MainWindow::on(UploadManagerListener::Tick, const Upload::List &list) throw
 void MainWindow::on(UploadManagerListener::Complete, Upload *ul) throw() {
 	transferComplete_client(ul);
 }
+
+//From logmanager
+void MainWindow::on(LogManagerListener::Message, const string& str) throw() {
+	typedef Func2<MainWindow, GtkStatusbar *, string> F2;
+	F2 *func = new F2(this, &MainWindow::setStatus_gui, mainStatus, str);
+	WulforManager::get()->dispatchGuiFunc(func);
+}
+

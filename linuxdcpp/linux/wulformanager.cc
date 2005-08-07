@@ -476,3 +476,13 @@ FinishedTransfers *WulforManager::addFinishedTransfers_gui(int type, string titl
 	
 	return ft;
 }
+
+void WulforManager::openFileList_gui(string user, string path) const
+{
+	User::Ptr tmp = new User(user);
+	ShareBrowser *browser = new ShareBrowser(tmp, path, G_CALLBACK(closeEntry_callback));
+	mainWin->addPage_gui(browser->getWidget(), browser->getTitle(), true);
+	gtk_widget_unref(browser->getWidget());
+	WulforManager::get()->bookEntrys.push_back(browser);
+	//browser->setLabel_gui(user);
+}

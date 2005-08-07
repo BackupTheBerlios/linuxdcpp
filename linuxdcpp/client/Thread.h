@@ -29,7 +29,9 @@
 #include <sys/resource.h>
 #endif
 
-#ifdef HAVE_ASM_ATOMIC_H
+#ifdef TARGET_I386
+#include <linux/atomic.h>
+#elif HAVE_ASM_ATOMIC_H
 #include <asm/atomic.h>
 #endif
 
@@ -148,6 +150,6 @@ private:
 
 /**
  * @file
- * $Id: Thread.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
+ * $Id: Thread.h,v 1.5 2005/08/07 18:35:08 paskharen Exp $
  */
 

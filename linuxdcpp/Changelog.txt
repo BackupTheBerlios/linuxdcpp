@@ -1,3 +1,10 @@
+2005-08-07 - paskharen
+* Added menubar (thanks s4kk3)
+* Added a custom atomic.h (only x86 but that's easy to fix, just copy from qt =)
+  (thanks Rikard Björklind)
+* Log messages are now shown in main statusbar 
+  (patch #000518, thanks clairvoyant)
+
 2005-08-04 - paskharen
 * The scons file now checks for the right g++ version (thanks s4kk3)
 
