@@ -473,7 +473,7 @@ void Hub::on(ClientListener::UsersUpdated,
 	Client *client, const User::List &list) throw()
 {
 	User::List::const_iterator it;
-	for (it = list.begin (); it != list.begin (); it++)	{
+	for (it = list.begin(); it != list.end(); it++)	{
 		if (!(*it)->isSet(User::HIDDEN)) {
 			updateUser_client(*it);
 		}

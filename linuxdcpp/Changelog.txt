@@ -1,3 +1,6 @@
+2005-08-09 - paskharen
+* Fixed a bug in the user list code (thanks obi)
+
 2005-08-07 - paskharen
 * Added menubar (thanks s4kk3)
 * Added a custom atomic.h (only x86 but that's easy to fix, just copy from qt =)

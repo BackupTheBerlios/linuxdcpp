@@ -9,6 +9,7 @@ Kristian Berg/Ixan
 luusl
 Rikard Björklind
 clairvoyant
+obi
 
 DC++:
 -----
