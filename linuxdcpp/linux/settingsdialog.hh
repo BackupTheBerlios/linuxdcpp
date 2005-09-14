@@ -36,7 +36,7 @@ public:
 	Settings ();
 	~Settings ();
 
-	GtkWidget *getDialog () { return dialog; }
+	gint run();
 	void saveSettings_client ();
 	void initGeneral_gui ();
 	void initDownloads_gui ();
@@ -46,7 +46,7 @@ public:
 	void initAdvanced_gui ();
 	
 private:
-	GtkWidget *dialog;
+	GtkDialog *dialog;
 	GtkWidget *dirChooser;
 	GtkWidget *favoriteName;
 	GtkWidget *publicHubs;

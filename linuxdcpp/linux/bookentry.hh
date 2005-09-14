@@ -29,13 +29,14 @@ class BookEntry {
 		bool isEqual(int type, std::string id);
 		bool isEqual(BookEntry *entry);
 
-		//only to be called by gui thread
-		void setLabel_gui(std::string text);
-		void setLabelBold_gui (std::string text);
+		void setBookLabel(std::string text);
+		//void setLabelBold(std::string text);
 		GtkWidget *getTitle();
 		virtual GtkWidget *getWidget() = 0;
+		/*
 		virtual void switchedPage () {};
-		int getType () { return type; };
+		int getType() { return type; };
+		*/
 
 	protected:
 		std::string id;

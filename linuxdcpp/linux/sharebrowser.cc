@@ -12,10 +12,6 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	BookEntry(WulforManager::SHARE_BROWSER, 
 		user->getFullNick(), user->getNick(), closeCallback),
 	listing(user),
-	pressedCallback(this, &ShareBrowser::buttonPressed_gui),
-	releasedCallback(this, &ShareBrowser::buttonReleased_gui),
-	menuCallback(this, &ShareBrowser::menuClicked_gui),
-	buttonCallback(this, &ShareBrowser::buttonClicked_gui),
 	posDir(NULL),
 	WIDTH_FILE(400), 
 	WIDTH_SIZE(80), 
@@ -82,19 +78,6 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	gtk_menu_shell_append(GTK_MENU_SHELL(fileMenu), GTK_WIDGET(dlFileTo));
 	gtk_menu_shell_append(GTK_MENU_SHELL(fileMenu), GTK_WIDGET(dlDirTo));
 
-	//connect callbacks
-	pressedCallback.connect(G_OBJECT(fileView), "button-press-event", NULL);
-	pressedCallback.connect(G_OBJECT(dirView), "button-press-event", NULL);
-	releasedCallback.connect_after(G_OBJECT(fileView), "button-release-event", NULL);
-	releasedCallback.connect_after(G_OBJECT(dirView), "button-release-event", NULL);
-
-	menuCallback.connect(G_OBJECT(dlDir), "activate", NULL);
-	menuCallback.connect(G_OBJECT(dlDirTo), "activate", NULL);
-	menuCallback.connect(G_OBJECT(dlFile), "activate", NULL);
-	menuCallback.connect(G_OBJECT(dlFileTo), "activate", NULL);
-	menuCallback.connect(G_OBJECT(dlDirDir), "activate", NULL);
-	menuCallback.connect(G_OBJECT(dlDirToDir), "activate", NULL);
-	
 	//Set the buttons text to small so that the statusbar isn't too high.
 	//This can't be set with glade, needs tyo be done in code.
 	GtkLabel *label;
@@ -112,36 +95,52 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	gtk_widget_set_size_request(GTK_WIDGET(findButton), -1, statusReq.height);
 	gtk_widget_set_size_request(GTK_WIDGET(nextButton), -1, statusReq.height);
 
-	//connect callback to buttons
-	buttonCallback.connect(G_OBJECT(matchButton), "clicked", NULL);
-	buttonCallback.connect(G_OBJECT(findButton), "clicked", NULL);
-	buttonCallback.connect(G_OBJECT(nextButton), "clicked", NULL);
-	
+	//connect callbacks
+	g_signal_connect(fileView, "button-press-event", G_CALLBACK(buttonPressed), this);
+	g_signal_connect(dirView, "button-press-event", G_CALLBACK(buttonPressed), this);
+	g_signal_connect(fileView, "button-release-event", G_CALLBACK(buttonReleased), this);
+	g_signal_connect(dirView, "button-release-event", G_CALLBACK(buttonReleased), this);
+
+	g_signal_connect(dlDir, "activate", G_CALLBACK(menuClicked), this);
+	g_signal_connect(dlDirTo, "activate", G_CALLBACK(menuClicked), this);
+	g_signal_connect(dlFile, "activate", G_CALLBACK(menuClicked), this);
+	g_signal_connect(dlFileTo, "activate", G_CALLBACK(menuClicked), this);
+	g_signal_connect(dlDirDir, "activate", G_CALLBACK(menuClicked), this);
+	g_signal_connect(dlDirToDir, "activate", G_CALLBACK(menuClicked), this);
+
+	g_signal_connect(matchButton, "clicked", G_CALLBACK(buttonClicked), this);
+	g_signal_connect(findButton, "clicked", G_CALLBACK(buttonClicked), this);
+	g_signal_connect(nextButton, "clicked", G_CALLBACK(buttonClicked), this);
+
 	listing.loadFile(file);
 	shareSize = 0;
 	shareItems = 0;
-	buildDirs_gui(listing.getRoot()->directories, NULL);
-	updateStatus_gui();
+	buildDirs(listing.getRoot()->directories, NULL);
+	updateStatus();
 }
 
-ShareBrowser::~ShareBrowser() {
+ShareBrowser::~ShareBrowser()
+{
 	if (posDir) gtk_tree_path_free(posDir);
 }
 
-GtkWidget *ShareBrowser::getWidget() {
+GtkWidget *ShareBrowser::getWidget()
+{
 	return box;
 }
 
-void ShareBrowser::setStatus_gui(GtkStatusbar *status, std::string msg) {
+void ShareBrowser::setStatus(GtkStatusbar *status, std::string msg)
+{
 	gtk_statusbar_pop(status, 0);
 	gtk_statusbar_push(status, 0, msg.c_str());
 }
 
-void ShareBrowser::setPosition_gui(string pos) {
+void ShareBrowser::setPosition(string pos)
+{
 	cout << "try to set path: " << pos << endl;
 }
 
-void ShareBrowser::buildDirs_gui(
+void ShareBrowser::buildDirs(
 	DirectoryListing::Directory::List dirs, GtkTreeIter *iter)
 {
 	DirectoryListing::Directory::Iter it;
@@ -173,12 +172,13 @@ void ShareBrowser::buildDirs_gui(
 			shareSize += (*file)->getSize();
 		}		
 		
-		buildDirs_gui((*it)->directories, &newIter);
+		buildDirs((*it)->directories, &newIter);
 	}
 	
 }
 
-void ShareBrowser::updateFiles_gui(bool fromFind) {
+void ShareBrowser::updateFiles(bool fromFind)
+{
 	DirectoryListing::Directory *dir;
 	DirectoryListing::File::List *files;
 	DirectoryListing::File::Iter it;
@@ -238,10 +238,11 @@ void ShareBrowser::updateFiles_gui(bool fromFind) {
 		currentItems++;
 	}
 
-	updateStatus_gui();
+	updateStatus();
 }
 	
-void ShareBrowser::updateStatus_gui() {
+void ShareBrowser::updateStatus()
+{
 	string items, files, size, total;
 
 	files = "Files: " + Util::toString(shareItems);
@@ -254,75 +255,84 @@ void ShareBrowser::updateStatus_gui() {
 		size = "Size: 0 B";	
 	}
 
-	setStatus_gui(itemsStatus, items);
-	setStatus_gui(sizeStatus, size);
-	setStatus_gui(filesStatus, files);
-	setStatus_gui(totalStatus, total);
+	setStatus(itemsStatus, items);
+	setStatus(sizeStatus, size);
+	setStatus(filesStatus, files);
+	setStatus(totalStatus, total);
 }
 
-gboolean ShareBrowser::buttonPressed_gui(
-	GtkWidget *widget, GdkEventButton *event, gpointer)
+gboolean ShareBrowser::buttonPressed(
+	GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
-	oldType = event->type;
-	oldButton = event->button;
+	ShareBrowser *sb = (ShareBrowser *)data;
+	sb->oldType = event->type;
+	sb->oldButton = event->button;
 	
 	return FALSE;
 }
 
-gboolean ShareBrowser::buttonReleased_gui(
-	GtkWidget *widget, GdkEventButton *event, gpointer)
+gboolean ShareBrowser::buttonReleased(
+	GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
+	ShareBrowser *sb = (ShareBrowser *)data;
 	GtkTreeIter iter;
 	DirectoryListing::File *file;
 	gpointer ptr;
 	string target;
 
-	if (oldButton != event->button) return FALSE;
+	if (sb->oldButton != event->button) return FALSE;
 
-	if (GTK_TREE_VIEW(widget) == fileView) {
-		if (!gtk_tree_selection_get_selected(fileSelection, NULL, NULL))
+	if (GTK_TREE_VIEW(widget) == sb->fileView)
+	{
+		if (!gtk_tree_selection_get_selected(sb->fileSelection, NULL, NULL))
 			return FALSE;
-	} else {
-		if (!gtk_tree_selection_get_selected(dirSelection, NULL, NULL))
+	}
+	else
+	{
+		if (!gtk_tree_selection_get_selected(sb->dirSelection, NULL, NULL))
 			return FALSE;
 	}
 
 	//single click left button
-	if (event->button == 1 && oldType == GDK_BUTTON_PRESS)
-		if (GTK_TREE_VIEW(widget) == dirView) updateFiles_gui(false);
+	if (event->button == 1 && sb->oldType == GDK_BUTTON_PRESS)
+		if (GTK_TREE_VIEW(widget) == sb->dirView) sb->updateFiles(false);
 
 	//single click right button
-	if (event->button == 3 && oldType == GDK_BUTTON_PRESS)
-		if (GTK_TREE_VIEW(widget) == dirView) {
-			gtk_menu_popup(dirMenu, NULL, NULL, NULL, NULL, 3, event->time);
-			gtk_widget_show_all(GTK_WIDGET(dirMenu));
-		} else {
-			gtk_menu_popup(fileMenu, NULL, NULL, NULL, NULL, 3, event->time);
-			gtk_widget_show_all(GTK_WIDGET(fileMenu));
+	if (event->button == 3 && sb->oldType == GDK_BUTTON_PRESS)
+		if (GTK_TREE_VIEW(widget) == sb->dirView)
+		{
+			gtk_menu_popup(sb->dirMenu, NULL, NULL, NULL, NULL, 3, event->time);
+			gtk_widget_show_all(GTK_WIDGET(sb->dirMenu));
+		}
+		else
+		{
+			gtk_menu_popup(sb->fileMenu, NULL, NULL, NULL, NULL, 3, event->time);
+			gtk_widget_show_all(GTK_WIDGET(sb->fileMenu));
 		}
 
 	//double click left button
-	if (event->button == 1 && oldType == GDK_2BUTTON_PRESS)
-		if (GTK_TREE_VIEW(widget) == fileView) {
-			gtk_tree_selection_get_selected(fileSelection, NULL, &iter);
-			gtk_tree_model_get(GTK_TREE_MODEL(fileStore), &iter,
+	if (event->button == 1 && sb->oldType == GDK_2BUTTON_PRESS)
+		if (GTK_TREE_VIEW(widget) == sb->fileView)
+		{
+			gtk_tree_selection_get_selected(sb->fileSelection, NULL, &iter);
+			gtk_tree_model_get(GTK_TREE_MODEL(sb->fileStore), &iter,
 				COLUMN_DL_FILE, &ptr, -1);
 			file = (DirectoryListing::File *)ptr;
 		
-			if (listing.getUtf8())
+			if (sb->listing.getUtf8())
 				target += Text::utf8ToAcp(Util::getFileName(file->getName()));
 			else
 				target += Util::getFileName(file->getName());
 			
-			typedef Func2<ShareBrowser, DirectoryListing::File *, string> F2;
-			F2 * func = new F2(this, &ShareBrowser::downloadFile_client, file, target);
-			WulforManager::get()->dispatchClientFunc(func);
+			sb->downloadFile(file, target);
 		}
 
 	return FALSE;
 }
 
-void ShareBrowser::menuClicked_gui(GtkMenuItem *item, gpointer) {
+void ShareBrowser::menuClicked(GtkMenuItem *item, gpointer data)
+{
+	ShareBrowser *sb = (ShareBrowser *)data;
 	string target;
 	gpointer ptr;
 	DirectoryListing::File *file;
@@ -330,7 +340,8 @@ void ShareBrowser::menuClicked_gui(GtkMenuItem *item, gpointer) {
 	GtkTreeIter iter;
 	int ret;
 
-	if (item == dlFileTo || item == dlDirTo || item == dlDirToDir) {
+	if (item == sb->dlFileTo || item == sb->dlDirTo || item == sb->dlDirToDir)
+	{
 		GtkWidget *chooser = gtk_file_chooser_dialog_new(
 			"Download to",
 			WulforManager::get()->getMainWindow()->getWindow(),
@@ -343,66 +354,73 @@ void ShareBrowser::menuClicked_gui(GtkMenuItem *item, gpointer) {
 		target = Text::toT(gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(chooser))) + Text::toT("/");
 		gtk_widget_destroy(GTK_WIDGET(chooser));
 		if (ret == GTK_RESPONSE_CANCEL) return;
-	} else {
+	}
+	else
+	{
 		target = Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY));
 	}
 
-	if (item == dlFile || item == dlFileTo) {
-		gtk_tree_selection_get_selected(fileSelection, NULL, &iter);
-		gtk_tree_model_get(GTK_TREE_MODEL(fileStore), &iter,
+	if (item == sb->dlFile || item == sb->dlFileTo)
+	{
+		gtk_tree_selection_get_selected(sb->fileSelection, NULL, &iter);
+		gtk_tree_model_get(GTK_TREE_MODEL(sb->fileStore), &iter,
 			COLUMN_DL_FILE, &ptr, -1);
 		file = (DirectoryListing::File *)ptr;
 		
-		if (listing.getUtf8())
+		if (sb->listing.getUtf8())
 			target += Text::utf8ToAcp(Util::getFileName(file->getName()));
 		else
 			target += Util::getFileName(file->getName());
 			
-		typedef Func2<ShareBrowser, DirectoryListing::File *, string> F2;
-		F2 * func = new F2(this, &ShareBrowser::downloadFile_client, file, target);
-		WulforManager::get()->dispatchClientFunc(func);
-	} else {
-		gtk_tree_selection_get_selected(dirSelection, NULL, &iter);
-		gtk_tree_model_get(GTK_TREE_MODEL(dirStore), &iter,
+		sb->downloadFile(file, target);
+	}
+	else
+	{
+		gtk_tree_selection_get_selected(sb->dirSelection, NULL, &iter);
+		gtk_tree_model_get(GTK_TREE_MODEL(sb->dirStore), &iter,
 			COLUMN_DL_DIR, &ptr, -1);
 		dir = (DirectoryListing::Directory *)ptr;
 		
-		typedef Func2<ShareBrowser, DirectoryListing::Directory *, string> F2;
-		F2 * func = new F2(this, &ShareBrowser::downloadDir_client, dir, target);
-		WulforManager::get()->dispatchClientFunc(func);
+		sb->downloadDir(dir, target);
 	}
 }
 
-void ShareBrowser::downloadFile_client(DirectoryListing::File *file, string target) {
+void ShareBrowser::downloadFile(DirectoryListing::File *file, string target)
+{
 	try {
 		listing.download(file, target, false, false);
 	} catch(const Exception& e) {
-		typedef Func2<ShareBrowser, GtkStatusbar *, string> F2;
-		F2 *func = new F2(this, &ShareBrowser::setStatus_gui, mainStatus, e.getError());
-		WulforManager::get()->dispatchGuiFunc(func);
+		setStatus(mainStatus, e.getError());
 	}
 }
 
-void ShareBrowser::downloadDir_client(DirectoryListing::Directory *dir, string target) {
+void ShareBrowser::downloadDir(DirectoryListing::Directory *dir, string target)
+{
 	try {
 		listing.download(dir, target, false);
 	} catch(const Exception& e) {
-		typedef Func2<ShareBrowser, GtkStatusbar *, string> F2;
-		F2 *func = new F2(this, &ShareBrowser::setStatus_gui, mainStatus, e.getError());
-		WulforManager::get()->dispatchGuiFunc(func);
+		setStatus(mainStatus, e.getError());
 	}
 }
 
-void ShareBrowser::buttonClicked_gui(GtkWidget *widget, gpointer) {
+void ShareBrowser::buttonClicked(GtkWidget *widget, gpointer data)
+{
+	ShareBrowser *sb = (ShareBrowser *)data;
 	GtkButton *button = GTK_BUTTON(widget);
 
-	if (button == matchButton) {
-		typedef Func0<ShareBrowser> F0;
-		F0 *f = new F0(this, &ShareBrowser::matchQueue_client);
-		WulforManager::get()->dispatchClientFunc(f);
+	if (button == sb->matchButton)
+	{
+		ostringstream stream;
+		int matched;
+
+		matched = QueueManager::getInstance()->matchListing(&sb->listing);
+		stream << "Matched " << matched << " files";
+
+		sb->setStatus(sb->mainStatus, stream.str());
 	}
 
-	if (button == findButton) {
+	if (button == sb->findButton)
+	{
 		string text;
 		gint ret;
 		GtkDialog *dialog = GTK_DIALOG(gtk_dialog_new_with_buttons(
@@ -424,16 +442,18 @@ void ShareBrowser::buttonClicked_gui(GtkWidget *widget, gpointer) {
 		gtk_widget_destroy(GTK_WIDGET(dialog));
 		if (ret == GTK_RESPONSE_CANCEL) return;
 
-		search = text;
-		findNext_gui(true);
+		sb->search = text;
+		sb->findNext(true);
 	}
 
-	if (button == nextButton) {
-		findNext_gui(false);
+	if (button == sb->nextButton)
+	{
+		sb->findNext(false);
 	}
 }
 
-void ShareBrowser::findNext_gui(bool firstFile) {
+void ShareBrowser::findNext(bool firstFile)
+{
 	DirectoryListing::Directory *dir;
 	DirectoryListing::File::List *files;
 	gpointer ptr;
@@ -491,7 +511,7 @@ void ShareBrowser::findNext_gui(bool firstFile) {
 			}
 
 			if (!found) {
-				setStatus_gui(mainStatus, "No files found");
+				setStatus(mainStatus, "No files found");
 				return;
 			}
 				
@@ -513,7 +533,7 @@ void ShareBrowser::findNext_gui(bool firstFile) {
 			if (updatedPosDir) {
 				gtk_tree_view_expand_row(dirView, posDir, FALSE);
 				gtk_tree_view_set_cursor(dirView, posDir, NULL, FALSE);
-				updateFiles_gui(true);
+				updateFiles(true);
 			}
 			
 			//Select the file in the file view
@@ -540,16 +560,5 @@ void ShareBrowser::findNext_gui(bool firstFile) {
 	}
 }
 
-void ShareBrowser::matchQueue_client() {
-	ostringstream stream;
-	int matched;
-
-	matched = QueueManager::getInstance()->matchListing(&listing);
-	stream << "Matched " << matched << " files";
-
-	typedef Func2<ShareBrowser, GtkStatusbar *, string> F2;
-	F2 *f = new F2(this, &ShareBrowser::setStatus_gui, mainStatus, stream.str());
-	WulforManager::get()->dispatchGuiFunc(f);
-}
 
 

@@ -48,33 +48,21 @@ class Hub:
 		//from bookentry
 		GtkWidget *getWidget();
 
-		//to be called from gui thread
-		void setStatus_gui(GtkStatusbar *status, std::string text);
-		void updateUser_gui(std::string nick, int64_t shared, std::string iconFile,
-				std::string description, std::string tag, std::string connection, std::string email);
-		void findUser_gui(std::string nick, GtkTreeIter *iter);
-		void removeUser_gui(std::string nick);
-		void clearNickList_gui();
-		void getPassword_gui();
-		void addMessage_gui(std::string msg);
-		void sendMessage_gui(GtkEntry *entry, gpointer data);
-		void addPrivateMessage_gui(User::Ptr user, std::string msg);
+		void connectClient(std::string address, std::string nick, std::string desc, std::string password);
+		void setStatus(GtkStatusbar *status, std::string text);
+		void updateUser(User::Ptr user);
+		void findUser(std::string nick, GtkTreeIter *iter);
+		void removeUser(std::string nick);
+		void updateCounts();
 
-		void popupNickMenu_gui(GtkWidget *, GdkEventButton *, gpointer);
-		void browseItemClicked_gui(GtkMenuItem *, gpointer);
-		void msgItemClicked_gui(GtkMenuItem *, gpointer);
-		void grantItemClicked_gui(GtkMenuItem *, gpointer);
-		void completion_gui(GtkWidget *, GdkEventKey *, gpointer);
-                void setChatEntryFocus(GtkWidget *, GdkEventKey *, gpointer);
-
-		//to be called from client thread
-		void connectClient_client(string address, 
-			string nick="", string desc="", string password="");
-		void setPassword_client(std::string password);
-		void updateUser_client(User::Ptr user);
-		void sendMessage_client(std::string message);
-		void getFileList_client(std::string nick);
-		void grantSlot_client(string userName);
+		static void sendMessage(GtkEntry *entry, gpointer data);
+		
+		static gboolean popupNickMenu(GtkWidget *, GdkEventButton *button, gpointer data);
+		static void browseItemClicked(GtkMenuItem *, gpointer data);
+		static void msgItemClicked(GtkMenuItem *, gpointer data);
+		static void grantItemClicked(GtkMenuItem *, gpointer data);
+		static void doTabCompletion(GtkWidget *, GdkEventKey *key, gpointer data);
+		static void setChatEntryFocus(GtkWidget *, GdkEventKey *key, gpointer data);
 
 		//all this from ClientListener...
 		void on(ClientListener::Connecting, Client *client) throw();
@@ -106,15 +94,8 @@ class Hub:
 			int, int64_t, int, const string&) throw();
 
 	private:
+		bool listFrozen;
 		Client *client;
-		
-		Callback2<Hub, void, GtkEntry *> enterCallback;
-		Callback3<Hub, void, GtkWidget *, GdkEventButton *> nickListCallback;
-		Callback2<Hub, void, GtkMenuItem *> browseCallback, msgCallback, grantCallback;
-		Callback3<Hub, void, GtkWidget *, GdkEventKey *> completionCallback, setFocusCallback;
-
-		std::set<std::string> nicks;
-		pthread_mutex_t clientLock;
 
 		GtkMenu *nickMenu;
 		GtkMenuItem *browseItem, *msgItem, *grantItem;

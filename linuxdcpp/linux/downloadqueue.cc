@@ -43,18 +43,22 @@ string DownloadQueue::getTextFromMenu (GtkMenuItem *item)
 
 void DownloadQueue::switchedPage ()
 {
+	/*
 	Func1<BookEntry, string> *func = new Func1<BookEntry, string> (
 		this, &BookEntry::setLabel_gui, string ("Download Queue"));
 	WulforManager::get()->dispatchGuiFunc(func);	
+	*/
 }
 
 void DownloadQueue::contentUpdated ()
 {
+	/*
 	if (WulforManager::get ()->getMainWindow()->currentPage_gui () == getWidget ())
 		return;
 	Func1<BookEntry, string> *func = new Func1<BookEntry, string> (
 		this, &BookEntry::setLabelBold_gui, string ("Download Queue"));
 	WulforManager::get()->dispatchGuiFunc(func);	
+	*/
 }
 
 void DownloadQueue::buildStaticMenu_gui ()
@@ -496,7 +500,7 @@ void DownloadQueue::onSearchAlternatesClicked_gui (GtkMenuItem *item, gpointer u
 	if(!searchString.empty()) 
 	{
 		bool bigFile = (ii->getSize() > 10*1024*1024);
-		Search *s = WulforManager::get ()->addSearch_gui ();
+		Search *s = WulforManager::get ()->addSearch();
 		if(bigFile)
 			s->putValue (searchString, ii->getSize ()-1, SearchManager::SIZE_ATLEAST, ShareManager::getInstance()->getType(target));
 		else
@@ -523,7 +527,7 @@ void DownloadQueue::onSearchByTTHClicked_gui (GtkMenuItem *item, gpointer user_d
 		
 	QueueItemInfo *ii = TreeViewFactory::getValue<gpointer,QueueItemInfo*>(m, &iter[0], COLUMN_INFO);
 		
-	Search *s = WulforManager::get ()->addSearch_gui ();
+	Search *s = WulforManager::get ()->addSearch();
 	s->putValue (ii->getTTH ()->toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
 }
 void DownloadQueue::onGetFileListClicked_gui (GtkMenuItem *item, gpointer user_data)
@@ -678,8 +682,9 @@ gboolean DownloadQueue::dir_onButtonReleased_gui (GtkWidget *widget, GdkEventBut
 		}
 		if (event->button == 1)
 		{
-			WulforManager::get ()->dispatchGuiFunc (new Func0<DownloadQueue>((DownloadQueue*)user_data, &DownloadQueue::update_gui));
-			WulforManager::get ()->dispatchGuiFunc (new Func0<DownloadQueue>((DownloadQueue*)user_data, &DownloadQueue::updateStatus_gui));
+			DownloadQueue *dq = (DownloadQueue*)user_data;
+			dq->update_gui();
+			dq->updateStatus_gui();
 		}
 	}
 
@@ -1264,8 +1269,8 @@ void DownloadQueue::removeFile_gui (string target)
 	if (dirFileMap[path].empty ())
 		removeDir_gui (path);
 		
-	WulforManager::get ()->dispatchGuiFunc (new Func0<DownloadQueue>(this, &DownloadQueue::update_gui));
-	WulforManager::get ()->dispatchGuiFunc (new Func0<DownloadQueue>(this, &DownloadQueue::updateStatus_gui));
+	update_gui();
+	updateStatus_gui();
 }
 
 void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
@@ -1274,6 +1279,9 @@ void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
 	GtkTreeModel *m = GTK_TREE_MODEL (dirStore);
 	QueueItemInfo *i = new QueueItemInfo (aQI);
 	string realpath = "/" + getNextSubDir (Util::getFilePath(aQI->getTarget())) + "/";
+	
+	gdk_threads_enter();
+	
 	if (dirMap.find (realpath) == dirMap.end ())
 	{
 		gtk_tree_store_append (dirStore, &row, NULL);
@@ -1300,17 +1308,21 @@ void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
 	GtkTreeIter iter;
 	selection = gtk_tree_view_get_selection(dirView->get ());
 
-	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
-		return;
+	if (gtk_tree_selection_get_selected (selection, &m, &iter))
+	{
+		if (showingDir == TreeViewFactory::getValue<gchar*,string>(m, &iter, DIRCOLUMN_REALPATH))
+			updateItem_gui(i, true);
+	}
 	
-	if (showingDir == TreeViewFactory::getValue<gchar*,string>(m, &iter, DIRCOLUMN_REALPATH))
-		WulforManager::get ()->dispatchGuiFunc (new Func2<DownloadQueue, QueueItemInfo*, bool> (this, &DownloadQueue::updateItem_gui, i, true));
+	gdk_threads_leave();
 }
 
 void DownloadQueue::on(QueueManagerListener::Removed, QueueItem* aQI) throw()
 {
+	gdk_threads_enter();
 	removeFile_gui (aQI->getTarget ());
 	contentUpdated ();
+	gdk_threads_leave();
 }
 void DownloadQueue::on(QueueManagerListener::Finished, QueueItem* aQI) throw()
 {
@@ -1318,7 +1330,9 @@ void DownloadQueue::on(QueueManagerListener::Finished, QueueItem* aQI) throw()
 }
 void DownloadQueue::on(QueueManagerListener::Moved, QueueItem* aQI) throw()
 {
+	gdk_threads_enter();
 	contentUpdated ();
+	gdk_threads_leave();
 }
 void DownloadQueue::updateFiles_gui (QueueItem *aQI)
 {
@@ -1360,13 +1374,14 @@ void DownloadQueue::updateFiles_gui (QueueItem *aQI)
 	for(QueueItem::Source::Iter j = aQI->getBadSources().begin(); j != aQI->getBadSources().end(); ++j)
 		if(!ii->isBadSource((*j)->getUser()))
 			ii->getBadSources().push_back(QueueItemInfo::SourceInfo(*(*j)));
-	if (showingDir == path)
-		WulforManager::get ()->dispatchGuiFunc (new Func2<DownloadQueue, QueueItemInfo*, bool> (this, &DownloadQueue::updateItem_gui, ii, false));
-	WulforManager::get ()->dispatchGuiFunc (new Func0<DownloadQueue> (this, &DownloadQueue::updateStatus_gui));
+
+	if (showingDir == path)	updateItem_gui(ii, false);
+	
+	updateStatus_gui();
 }
 void DownloadQueue::QueueItemInfo::sendPrivateMessage (string text)
 {
 	for(SourceIter i = sources.begin(); i != sources.end(); ++i)
 		if(i->getUser()->getFullNick () == text)			
-			WulforManager::get()->addPrivMsg_gui(i->getUser ());
+			WulforManager::get()->addPrivMsg(i->getUser ());
 }	

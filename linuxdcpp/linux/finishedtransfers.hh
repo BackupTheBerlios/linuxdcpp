@@ -12,55 +12,54 @@ class FinishedTransfers:
 {
 	public:
 	
-	FinishedTransfers(int type, std::string title, GCallback closeCallback);
-	~FinishedTransfers();
+		FinishedTransfers(int type, std::string title, GCallback closeCallback);
+		~FinishedTransfers();
 	
-	GtkWidget *getWidget();
+		GtkWidget *getWidget();
 	
-	void popupMenu_gui(GtkWidget *, GdkEventButton *, gpointer);
-	void removeItems_gui(GtkMenuItem *, gpointer);
-	void removeAll_gui(GtkMenuItem *, gpointer);
-	void updateList(FinishedItem::List& list);
-	void addEntry(FinishedItem *entry);
-	void updateStatus();
-	void openWith_gui(GtkMenuItem *, gpointer);
+		static void popupMenu(GtkWidget *, GdkEventButton *, gpointer);
+		static void removeItems(GtkMenuItem *, gpointer);
+		static void removeAll(GtkMenuItem *, gpointer);
+		static void openWith(GtkMenuItem *, gpointer);
+
+		void updateList(FinishedItem::List& list);
+		void addEntry(FinishedItem *entry);
+		void updateStatus();
 	
-	//from FinishedManagerListener
-	void on(AddedDl, FinishedItem* entry) throw();
-	void on(AddedUl, FinishedItem* entry) throw();
+		//from FinishedManagerListener
+		void on(AddedDl, FinishedItem* entry) throw();
+		void on(AddedUl, FinishedItem* entry) throw();
 	
 	private:
 	
-	GtkWidget *mainBox;
-	GtkListStore *transferStore;
-	GtkTreeView *transferView;
-	GtkTreeIter treeIter;
-	GtkStatusbar *totalItems, *totalSize, *averageSpeed;
-	GtkTreeSelection *transferSelection;
+		GtkWidget *mainBox;
+		GtkListStore *transferStore;
+		GtkTreeView *transferView;
+		GtkTreeIter treeIter;
+		GtkStatusbar *totalItems, *totalSize, *averageSpeed;
+		GtkTreeSelection *transferSelection;
+		GtkDialog *openDialog;
+		GtkEntry *openEntry;
 	
-	int items;
-	bool getType;
-	int64_t totalBytes, totalTime;
-	std::map<string, FinishedItem*> finishedList;
+		int items;
+		bool isUpload;
+		int64_t totalBytes, totalTime;
 	
-	GtkMenu *finishedTransfersMenu;
-	GtkMenuItem *openWith, *remove, *removeAll;
+		GtkMenu *finishedTransfersMenu;
+		GtkMenuItem *openItem, *removeItem, *removeAllItem;
 	
-	Callback3<FinishedTransfers, void, GtkWidget *, GdkEventButton *> menuCallback;
-	Callback2<FinishedTransfers, void, GtkMenuItem *> removeCallback, removeAllCallback, openWithCallback;
-	
-	enum
-	{
-		COLUMN_TIME,
-		COLUMN_FILENAME,
-		COLUMN_PATH,
-		COLUMN_NICK,
-		COLUMN_HUB,
-		COLUMN_SIZE,
-		COLUMN_SPEED,
-		COLUMN_CRC,
-		COLUMN_TARGET
-	};
+		enum
+		{
+			COLUMN_TIME,
+			COLUMN_FILENAME,
+			COLUMN_PATH,
+			COLUMN_NICK,
+			COLUMN_HUB,
+			COLUMN_SIZE,
+			COLUMN_SPEED,
+			COLUMN_CRC,
+			COLUMN_TARGET
+		};
 	
 };
 #else

@@ -31,13 +31,14 @@
 #include <client/TimerManager.h>
 #include <client/CriticalSection.h>
 
-class Hash : public DialogEntry, public TimerManagerListener
+class Hash: public TimerManagerListener
 {
 public:
-	Hash ();
-	~Hash ();
+	Hash();
+	~Hash();
 	
-	void updateStats_gui ();
+	void updateStats();
+	gint run();
 	
 	virtual void on(TimerManagerListener::Second, u_int32_t tics) throw();
 	
@@ -47,12 +48,11 @@ private:
 	size_t startFiles;
 	u_int32_t startTime;
 
+	GtkDialog *dialog;
 	GtkLabel *lFile;
 	GtkLabel *lSpeed;
 	GtkLabel *lTime;
 	GtkProgressBar *pProgress;
-	
-	CriticalSection cs;
 };
 
 #else

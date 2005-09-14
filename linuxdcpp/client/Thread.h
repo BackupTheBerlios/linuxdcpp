@@ -84,13 +84,13 @@ public:
 	};
 	Thread() throw() : threadHandle(0) { };
 	virtual ~Thread() { 
-		if(threadHandle != 0) {
+		if (threadHandle != 0) {
 			pthread_detach(threadHandle);
 		}
 	};
 	void start() throw(ThreadException);
 	void join() throw() { 
-		if (threadHandle) {
+		if (threadHandle != 0) {
 			pthread_join(threadHandle, 0);
 			threadHandle = 0;
 		}
@@ -150,6 +150,6 @@ private:
 
 /**
  * @file
- * $Id: Thread.h,v 1.5 2005/08/07 18:35:08 paskharen Exp $
+ * $Id: Thread.h,v 1.6 2005/09/14 08:49:58 paskharen Exp $
  */
 

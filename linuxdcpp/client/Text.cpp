@@ -181,7 +181,7 @@ string& Text::wideToAcp(const wstring& str, string& tmp) throw() {
 #else
 	const wchar_t* src = str.c_str();
 	int n = wcsrtombs(NULL, &src, 0, NULL);
-	if(n < 1) {
+	if (n < 1) {
 		return tmp;
 	}
 	tmp.resize(n);
@@ -256,5 +256,5 @@ string& Text::toLower(const string& str, string& tmp) throw() {
 
 /**
  * @file
- * $Id: Text.cpp,v 1.4 2005/06/25 19:24:03 paskharen Exp $
+ * $Id: Text.cpp,v 1.5 2005/09/14 08:49:58 paskharen Exp $
  */

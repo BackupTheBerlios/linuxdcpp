@@ -33,21 +33,14 @@
 
 class PrivateMessage: public BookEntry {
 	public:
-		//constructor is only to be called from gui thread
 		PrivateMessage(User::Ptr userName, GCallback closeCallback);
 		
 		GtkWidget *getWidget();
 		
-		//client thread functions
-		void sendMessage_client(std::string message);
-		
-		//gui thread functions
-		void addMessage_gui(std::string message);
-		void sendMessage_gui(GtkEntry *entry, gpointer data);
+		void addMessage(std::string message);
+		static void sendMessage(GtkEntry *entry, gpointer data);
 
 	private:
-		Callback2<PrivateMessage, void, GtkEntry *> enterCallback;
-	
 		User::Ptr user;
 
 		GtkWidget *box;

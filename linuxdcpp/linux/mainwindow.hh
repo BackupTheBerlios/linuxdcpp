@@ -48,72 +48,58 @@ class MainWindow:
 		MainWindow();
 		~MainWindow();
 
-		GtkWindow *getWindow();
-
-		//gui functions
-		void createWindow_gui();
-		void setStatus_gui(GtkStatusbar *status, std::string text);
-		void setStats_gui(std::string hub, std::string slot, 
-			std::string dTot, std::string uTot, std::string dl, std::string ul);
-		void addShareBrowser_gui(User::Ptr user, 
-			std::string searchString, std::string listName);
-			
-		void addPage_gui(GtkWidget *page, GtkWidget *label, bool raise);
-		void removePage_gui(GtkWidget *page);
-		void raisePage_gui(GtkWidget *page);
-		GtkWidget *currentPage_gui();
-		
-		void autoOpen_gui();
-		void openHub_gui(string server, string nick, string desc, string password);
-		
 		typedef enum {
 			CONNECTION_UL,
 			CONNECTION_DL,
 			CONNECTION_NA
 		} connection_t;
 
-		void updateTransfer_gui(std::string id, connection_t type, ConnectionQueueItem *item, std::string status, 
-			std::string time, std::string speed, std::string file, std::string size, std::string path);
-		void removeTransfer_gui(std::string id);
-		void popup (GdkEventButton *event, gpointer user_data);
-		void findId_gui(std::string id, GtkTreeIter *iter);
+		User::Ptr getSelectedTransfer();
+		GtkWindow *getWindow();
+		void createWindow();
 		
-		// Transferview related functions
-		User::Ptr getSelectedTransfer_gui ();
-		static gboolean transferClicked_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
-		static void onGetFileListClicked_gui (GtkMenuItem *item, gpointer user_data);
-		static void onMatchQueueClicked_gui (GtkMenuItem *item, gpointer user_data);
-		static void onPrivateMessageClicked_gui (GtkMenuItem *item, gpointer user_data);
-		static void onAddFavoriteUserClicked_gui (GtkMenuItem *item, gpointer user_data);
-		static void onGrantExtraSlotClicked_gui (GtkMenuItem *item, gpointer user_data);
-		static void onRemoveUserFromQueueClicked_gui (GtkMenuItem *item, gpointer user_data);
-		static void onForceAttemptClicked_gui (GtkMenuItem *item, gpointer user_data);
-		static void onCloseConnectionClicked_gui (GtkMenuItem *item, gpointer user_data);
+		static gboolean onTransferClicked (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
+		static void onGetFileListClicked(GtkMenuItem *item, gpointer user_data);
+		static void onMatchQueueClicked(GtkMenuItem *item, gpointer user_data);
+		static void onPrivateMessageClicked(GtkMenuItem *item, gpointer user_data);
+		static void onAddFavoriteUserClicked(GtkMenuItem *item, gpointer user_data);
+		static void onGrantExtraSlotClicked(GtkMenuItem *item, gpointer user_data);
+		static void onRemoveUserFromQueueClicked(GtkMenuItem *item, gpointer user_data);
+		static void onForceAttemptClicked(GtkMenuItem *item, gpointer user_data);
+		static void onCloseConnectionClicked(GtkMenuItem *item, gpointer user_data);
 
-		void connectClicked_gui(GtkWidget *widget, gpointer data);
-		void pubHubsClicked_gui(GtkWidget *widget, gpointer data);
-		void dlQueueClicked_gui(GtkWidget *widget, gpointer data);
-		void settingsClicked_gui(GtkWidget *widget, gpointer data);
-		void favHubsClicked_gui(GtkWidget *widget, gpointer data);
-		void searchClicked_gui(GtkWidget *widget, gpointer data);
-		void hashClicked_gui(GtkWidget *widget, gpointer data);
-		void quitClicked_gui(GtkWidget *widget, gpointer data);
-		void finishedDLclicked_gui(GtkWidget *widget, gpointer data);
-		void finishedULclicked_gui(GtkWidget *widget, gpointer data);
-		void openFList_gui(GtkWidget *widget, gpointer data);
-		void refreshFList_gui(GtkWidget *widget, gpointer data);
+		static void onConnectClicked(GtkWidget *widget, gpointer data);
+		static void onPubHubsClicked(GtkWidget *widget, gpointer data);
+		static void onSearchClicked(GtkWidget *widget, gpointer data);
+		static void onHashClicked(GtkWidget *widget, gpointer data);
+		static void onDlQueueClicked(GtkWidget *widget, gpointer data);
+		static void onFavHubsClicked(GtkWidget *widget, gpointer data);
+		static void onFinishedDLClicked(GtkWidget *widget, gpointer data);
+		static void onFinishedULClicked(GtkWidget *widget, gpointer data);
+		static void onSettingsClicked(GtkWidget *widget, gpointer data);
+		static void onRefreshListClicked(GtkWidget *widget, gpointer data);
+		static void onOpenFileListClicked(GtkWidget *widget, gpointer data);
+		static void onQuitClicked(GtkWidget *widget, gpointer data);
 
-		gboolean deleteWindow_gui(
-			GtkWidget *widget, GdkEvent *event, gpointer data);
-		void switchPage_gui (GtkNotebook *notebook, 
-			GtkNotebookPage *page, guint page_num, gpointer user_data);
+		static gboolean deleteWindow(GtkWidget *widget, GdkEvent *event, gpointer data);
+		
+		void autoConnect();
+		void autoOpen();
+		void startSocket();
+		
+		void addPage(GtkWidget *page, GtkWidget *label, bool raise);
+		void removePage(GtkWidget *page);
+		void raisePage(GtkWidget *page);
+		GtkWidget *getCurrentPage();
+		void setStatus(GtkStatusbar *status, std::string text);
 
-		//client functions
-		void autoConnect_client();
-		void startSocket_client();
-		std::string getId_client(ConnectionQueueItem *item);
-		std::string getId_client(Transfer *t);
-		void transferComplete_client(Transfer *t);
+		void updateTransfer(std::string id, connection_t type, ConnectionQueueItem *item, 
+			std::string status, std::string time, std::string speed, std::string file, std::string size, std::string path);
+		void removeTransfer(std::string id);
+		void findTransferId(std::string id, GtkTreeIter *iter);
+		std::string getTransferId(ConnectionQueueItem *item);
+		std::string getTransferId(Transfer *t);
+		void transferComplete(Transfer *t);
 
 		//From Timer manager
 		virtual void on(TimerManagerListener::Second, u_int32_t ticks) throw();
@@ -142,17 +128,6 @@ class MainWindow:
 		virtual void on(LogManagerListener::Message, const string& str) throw();
 
 	private:
-		Callback2<MainWindow, void, GtkWidget *>
-			connectCallback, pubHubsCallback, dlQueueCallback,
-			settingsCallback, favHubsCallback, searchCallback,
-			hashCallback, quitCallback, finishedDL_Callback,
-			finishedUL_Callback, openFListCallback, refreshFListCallback;
-		
-		Callback3<MainWindow, gboolean, GtkWidget *, GdkEvent *>
-			deleteCallback;
-		Callback4<MainWindow, void, GtkNotebook *, GtkNotebookPage *, guint>
-			switchPageCallback;
-			
 		int64_t lastUpdate, lastUp, lastDown;
 		int emptyStatusWidth;
 
@@ -187,13 +162,9 @@ class MainWindow:
 			COLUMN_FILENAME,
 			COLUMN_SIZE,
 			COLUMN_PATH,
-			COLUMN_ID,		//hidden from user
-			COLUMN_USERPTR
+			COLUMN_ID,		//not shown in gui
+			COLUMN_USERPTR	//likewise ^^
 		};
-		
-		//conviniece thing for the updateTransfer_gui function
-		typedef Func9 <MainWindow, std::string, connection_t, ConnectionQueueItem*, std::string, 
-			std::string, std::string, std::string, std::string, std::string> UFunc;
 };
 
 #else

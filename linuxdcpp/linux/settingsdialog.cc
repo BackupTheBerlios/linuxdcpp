@@ -74,13 +74,14 @@ SettingsManager::IntSetting Settings::advancedSettings[] = { SettingsManager::AU
 Settings::~Settings ()
 {
 	pthread_mutex_destroy(&settingsLock);
+	gtk_widget_destroy(GTK_WIDGET(dialog));
 }
 Settings::Settings ()
 {
 	string file = WulforManager::get()->getPath() + "/glade/settingsdialog.glade";
 	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
 
-	dialog = glade_xml_get_widget(xml, "settingsDialog");
+	dialog = GTK_DIALOG(glade_xml_get_widget(xml, "settingsDialog"));
 	favoriteName = glade_xml_get_widget (xml, "favoriteName");
 	publicHubs = glade_xml_get_widget (xml, "publicDialog");
 	editPublic = glade_xml_get_widget (xml, "editPublic");
@@ -210,6 +211,10 @@ Settings::Settings ()
 	initAppearance_gui ();
 	initLog_gui ();
 	initAdvanced_gui ();
+}
+gint Settings::run()
+{
+	return gtk_dialog_run(dialog);
 }
 void Settings::saveSettings_client ()
 {
@@ -874,9 +879,9 @@ gboolean Settings::onShareHiddenPressed_gui (GtkToggleButton *togglebutton, gpoi
 	Settings *s = (Settings*)user_data;
 	
 	if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (s->shareItems["Hidden"])))
-		WulforManager::get ()->dispatchClientFunc (new Func1<Settings, bool> (s, &Settings::shareHidden_client, true));
+		s->shareHidden_client(true);
 	else
-		WulforManager::get ()->dispatchClientFunc (new Func1<Settings, bool> (s, &Settings::shareHidden_client, false));
+		s->shareHidden_client(false);
 		
 	gtk_list_store_clear (s->shareStore);
 	StringPairList directories = ShareManager::getInstance()->getDirectories();

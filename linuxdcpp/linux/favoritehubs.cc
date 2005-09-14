@@ -131,10 +131,7 @@ void FavoriteHubs::onToggledClicked_gui (GtkCellRendererToggle *cell,
   	gtk_list_store_set (GTK_LIST_STORE (m), &iter, FavoriteHubs::COLUMN_AUTOCONNECT, fixed, -1);
 
 	FavoriteHubEntry *e = TreeViewFactory::getValue<gpointer,FavoriteHubEntry*>(m, &iter, COLUMN_ENTRY);
-	typedef Func2<FavoriteHubs, FavoriteHubEntry*, bool> F2;
-	F2 *func;
-	func = new F2 ((FavoriteHubs*)data, &FavoriteHubs::setConnect_client, e, fixed);
-	WulforManager::get()->dispatchClientFunc(func);
+	((FavoriteHubs *)data)->setConnect_client(e, fixed);
 }
 GtkTreeIter FavoriteHubs::addEntry_gui(const FavoriteHubEntry* entry, int pos)
 {
@@ -187,7 +184,7 @@ gboolean FavoriteHubs::onButtonReleased_gui (GtkWidget *widget, GdkEventButton *
 	else if (((FavoriteHubs*)user_data)->previous == GDK_2BUTTON_PRESS)
 	{
 		if (event->button == 1)
-			WulforManager::get()->addHub_gui(	TreeViewFactory::getValue<gchar*,string>(m, &iter, COLUMN_SERVER),
+			WulforManager::get()->addHub(	TreeViewFactory::getValue<gchar*,string>(m, &iter, COLUMN_SERVER),
 											TreeViewFactory::getValue<gchar*,string>(m, &iter, COLUMN_NICK),
 											TreeViewFactory::getValue<gchar*,string>(m, &iter, COLUMN_USERDESCRIPTION),
 											TreeViewFactory::getValue<gchar*,string>(m, &iter, COLUMN_PASSWORD));					
@@ -229,7 +226,7 @@ void FavoriteHubs::remove_gui (GtkWidget *widget, gpointer data)
 			return;
 	}
 		
-	WulforManager::get ()->dispatchClientFunc (new Func1<FavoriteHubs, FavoriteHubEntry*> (f, &FavoriteHubs::remove_client, TreeViewFactory::getValue<gpointer,FavoriteHubEntry*>(m, &iter, COLUMN_ENTRY)));
+	f->remove_client(TreeViewFactory::getValue<gpointer,FavoriteHubEntry*>(m, &iter, COLUMN_ENTRY));
 	
 	gtk_widget_set_sensitive (f->button["Properties"], FALSE);
 	gtk_widget_set_sensitive (f->button["Remove"], FALSE);
@@ -327,7 +324,7 @@ void FavoriteHubs::connect_gui (GtkWidget *widget, gpointer data)
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 
-	WulforManager::get()->addHub_gui(	TreeViewFactory::getValue<gchar*,string>(m, &iter, COLUMN_SERVER),
+	WulforManager::get()->addHub(	TreeViewFactory::getValue<gchar*,string>(m, &iter, COLUMN_SERVER),
 																TreeViewFactory::getValue<gchar*,string>(m, &iter, COLUMN_NICK),
 																TreeViewFactory::getValue<gchar*,string>(m, &iter, COLUMN_USERDESCRIPTION),
 																TreeViewFactory::getValue<gchar*,string>(m, &iter, COLUMN_PASSWORD));
@@ -385,7 +382,7 @@ void FavoriteHubs::addDialog_gui (bool edit, string uname, string uaddress, stri
 			e.setNick (gtk_entry_get_text (GTK_ENTRY (dialog["Nick"])));
 			e.setPassword (gtk_entry_get_text (GTK_ENTRY (dialog["Password"])));
 			e.setUserDescription (gtk_entry_get_text (GTK_ENTRY (dialog["User description"])));
-			WulforManager::get ()->dispatchClientFunc (new Func1<FavoriteHubs, FavoriteHubEntry> (this, &FavoriteHubs::add_client, e));
+			add_client(e);
 		}
 		else
 		{
@@ -401,7 +398,7 @@ void FavoriteHubs::addDialog_gui (bool edit, string uname, string uaddress, stri
 			{
 				if (fh[i] == TreeViewFactory::getValue<gpointer,FavoriteHubEntry*>(m, &iter, COLUMN_ENTRY))
 				{
-					WulforManager::get ()->dispatchClientFunc (new Func1<FavoriteHubs, FavoriteHubEntry*> (this, &FavoriteHubs::edit_client, fh[i]));
+					edit_client(fh[i]);
 					gtk_list_store_set (favoriteStore, &iter, 	COLUMN_NAME, fh[i]->getName ().c_str (),
 																	COLUMN_SERVER, fh[i]->getServer ().c_str (),
 																	COLUMN_DESCRIPTION, fh[i]->getDescription ().c_str (),
@@ -418,15 +415,21 @@ void FavoriteHubs::addDialog_gui (bool edit, string uname, string uaddress, stri
 }
 void FavoriteHubs::on(HubManagerListener::FavoriteAdded, const FavoriteHubEntry *entry) throw()
 {
+	gdk_threads_enter();
 	addEntry_gui(entry, entrys);
+	gdk_threads_leave();
 }
 void FavoriteHubs::on(HubManagerListener::FavoriteRemoved, const FavoriteHubEntry *entry) throw()
 {
 	GtkTreeIter it;
-	if (!gtk_tree_model_get_iter_first(GTK_TREE_MODEL (favoriteStore), &it))
-		return;
+	bool quit = false;
 
-	while (1)
+	gdk_threads_enter();
+
+	if (!gtk_tree_model_get_iter_first(GTK_TREE_MODEL (favoriteStore), &it))
+		quit = true;
+
+	while (!quit)
 	{
 		if (TreeViewFactory::getValue<gpointer,FavoriteHubEntry*>(GTK_TREE_MODEL (favoriteStore), &it, COLUMN_ENTRY) == entry)
 		{
@@ -435,6 +438,8 @@ void FavoriteHubs::on(HubManagerListener::FavoriteRemoved, const FavoriteHubEntr
 			break;
 		}
 		if (!gtk_tree_model_iter_next(GTK_TREE_MODEL (favoriteStore), &it))
-			return;
+			quit = true;
 	}
+
+	gdk_threads_leave();
 }

@@ -25,8 +25,7 @@ using namespace std;
 
 PrivateMessage::PrivateMessage(User::Ptr user, GCallback closeCallback):
 	BookEntry(WulforManager::PRIVATE_MSG, user->getFullNick(), 
-		user->getNick(), closeCallback),
-	enterCallback(this, &PrivateMessage::sendMessage_gui)
+		user->getNick(), closeCallback)
 {
 	string file = WulforManager::get()->getPath() + "/glade/privatemessage.glade";
 	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
@@ -47,20 +46,18 @@ PrivateMessage::PrivateMessage(User::Ptr user, GCallback closeCallback):
 	gtk_text_buffer_get_end_iter(buffer, &iter);
 	mark = gtk_text_buffer_create_mark(buffer, NULL, &iter, FALSE);
 	
-	enterCallback.connect(G_OBJECT(entry), "activate", NULL);
+	g_signal_connect(entry, "activate", G_CALLBACK(sendMessage), this);
 
 	this->user = user;
 }
 
-GtkWidget *PrivateMessage::getWidget() {
+GtkWidget *PrivateMessage::getWidget()
+{
 	return box;
 }
 
-void PrivateMessage::sendMessage_client(std::string message) {
-	user->privateMessage(message);
-}
-
-void PrivateMessage::addMessage_gui(std::string message) {
+void PrivateMessage::addMessage(std::string message)
+{
 	GtkTextIter iter;
 	string msg = "[" + Util::getShortTimeString() + "] " + message + "\n";
 	GtkAdjustment *adj;
@@ -72,24 +69,25 @@ void PrivateMessage::addMessage_gui(std::string message) {
 	gtk_text_buffer_get_end_iter(buffer, &iter);
 	gtk_text_buffer_insert(buffer, &iter, msg.c_str(), msg.size());
 	
-	if (setBottom) {
+	if (setBottom)
+	{
 		gtk_text_buffer_get_end_iter(buffer, &iter);
 		gtk_text_buffer_move_mark(buffer, mark, &iter);
 		gtk_text_view_scroll_to_mark(text, mark, 0, FALSE, 0, 0);
 	}
 }
 
-void PrivateMessage::sendMessage_gui(GtkEntry *e, gpointer d) {
-	string message, text = gtk_entry_get_text(entry);
-	typedef Func1<PrivateMessage, string> F1;
-	F1 *func;
+void PrivateMessage::sendMessage(GtkEntry *e, gpointer d)
+{
+	PrivateMessage *pm = (PrivateMessage *)d;
+	string message, text = gtk_entry_get_text(pm->entry);
 
-	if (!text.empty()) {
-		gtk_entry_set_text(entry, "");
-		message = "<" + user->getClientNick() + "> " + text;
-		addMessage_gui(message);
-		func = new F1(this, &PrivateMessage::sendMessage_client, text);
-		WulforManager::get()->dispatchClientFunc(func);
+	if (!text.empty())
+	{
+		gtk_entry_set_text(pm->entry, "");
+		message = "<" + pm->user->getClientNick() + "> " + text;
+		pm->addMessage(message);
+		pm->user->privateMessage(text);
 	}
 }
 
