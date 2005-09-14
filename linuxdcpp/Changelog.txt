@@ -2,6 +2,7 @@
 * Removed the dispatcher.
 * Removed the callback class, it was just confusing.
 * Made entering large hubs faster.
+* Removed dialogentry, it was not necessary when the dispatcher is gone.
 * Maybe hopefully finally solved the startup crashes.
 
 2005-08-09 - paskharen
