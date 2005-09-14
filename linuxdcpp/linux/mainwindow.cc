@@ -48,7 +48,6 @@ MainWindow::MainWindow():
 {
 	createWindow();
 	autoOpen();
-	autoConnect();
 	startSocket();
 
 	QueueManager::getInstance()->addListener(this);
@@ -601,7 +600,7 @@ void MainWindow::autoConnect()
 				string nick;
 			
 				if (entry->getNick().empty())
-					nick =  SETTING(NICK);
+					nick = SETTING(NICK);
 				else
 					nick = entry->getNick();
 			

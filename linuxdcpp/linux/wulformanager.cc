@@ -46,6 +46,12 @@ WulforManager *WulforManager::get() {
 
 MainWindow *WulforManager::createMainWindow() {
 	mainWin = new MainWindow;
+	/*
+	autoConnect can't be called from the constructor because it calls 
+	WulforManager::addHub, which requires WulforManager::mainWin to be defined. 
+	It isn't defined until after the mainWin = new MainWindow statement however.
+	*/
+	mainWin->autoConnect();
 	return mainWin;
 }
 
