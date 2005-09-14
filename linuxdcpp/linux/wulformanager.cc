@@ -210,7 +210,7 @@ Search *WulforManager::addSearch()
 	BookEntry *entry = getBookEntry(SEARCH, "", true);
 	if (entry) return dynamic_cast<Search*>(entry);
 
-	Search *s = new Search (G_CALLBACK(closeEntry_callback));
+	Search *s = new Search(G_CALLBACK(closeEntry_callback));
 	mainWin->addPage(s->getWidget(), s->getTitle(), true);
 	gtk_widget_unref (s->getWidget());
 	bookEntrys.push_back(s);
