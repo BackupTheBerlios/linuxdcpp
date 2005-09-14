@@ -23,8 +23,6 @@
 #include <glade/glade.h>
 #include <iostream>
 
-#include "dialogentry.hh"
-
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/HashManager.h>
@@ -33,26 +31,26 @@
 
 class Hash: public TimerManagerListener
 {
-public:
-	Hash();
-	~Hash();
+	public:
+		Hash();
+		~Hash();
 	
-	void updateStats();
-	gint run();
+		void updateStats();
+		gint run();
 	
-	virtual void on(TimerManagerListener::Second, u_int32_t tics) throw();
+		virtual void on(TimerManagerListener::Second, u_int32_t tics) throw();
 	
-private:
-	bool autoClose;
-	int64_t startBytes;
-	size_t startFiles;
-	u_int32_t startTime;
+	private:
+		bool autoClose;
+		int64_t startBytes;
+		size_t startFiles;
+		u_int32_t startTime;
 
-	GtkDialog *dialog;
-	GtkLabel *lFile;
-	GtkLabel *lSpeed;
-	GtkLabel *lTime;
-	GtkProgressBar *pProgress;
+		GtkDialog *dialog;
+		GtkLabel *lFile;
+		GtkLabel *lSpeed;
+		GtkLabel *lTime;
+		GtkProgressBar *pProgress;
 };
 
 #else

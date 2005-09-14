@@ -3,7 +3,6 @@
 
 #include "bookentry.hh"
 #include "wulformanager.hh"
-#include "callback.hh"
 #include <client/FinishedManager.h>
 
 class FinishedTransfers:

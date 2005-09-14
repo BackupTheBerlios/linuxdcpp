@@ -25,10 +25,8 @@
 #include <string>
 #include <vector>
 
-#include "func.hh"
 #include "mainwindow.hh"
 #include "bookentry.hh"
-#include "dialogentry.hh"
 #include "hub.hh"
 #include "publichubs.hh"
 #include "privatemessage.hh"

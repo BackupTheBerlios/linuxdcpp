@@ -29,7 +29,6 @@
 #include <client/DirectoryListing.h>
 
 #include "bookentry.hh"
-#include "callback.hh"
 
 class ShareBrowser:
 	public BookEntry

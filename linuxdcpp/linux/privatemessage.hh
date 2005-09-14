@@ -29,7 +29,6 @@
 #include <string>
 
 #include "bookentry.hh"
-#include "callback.hh"
 
 class PrivateMessage: public BookEntry {
 	public:

@@ -1,3 +1,9 @@
+2006-09-14 - paskharen
+* Removed the dispatcher.
+* Removed the callback class, it was just confusing.
+* Made entering large hubs faster.
+* Maybe hopefully finally solved the startup crashes.
+
 2005-08-09 - paskharen
 * Fixed a bug in the user list code (thanks obi)
 

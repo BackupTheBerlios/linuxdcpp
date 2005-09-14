@@ -121,7 +121,7 @@ if not conf.CheckLibWithHeader('bz2', 'bzlib.h', 'c'):
 	print 'Note: You might have the lib but not the headers'
 	Exit(1)
 
-atomic = int(ARGUMENTS.get('debug', 1))
+atomic = int(ARGUMENTS.get('atomic', 1))
 if atomic:
 	cpu = os.uname()[4]
 	if cpu=='i386' or cpu=='i486' or cpu=='i586' or cpu=='i686':

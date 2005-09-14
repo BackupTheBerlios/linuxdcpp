@@ -34,7 +34,6 @@
 #include <client/User.h>
 
 #include "bookentry.hh"
-#include "callback.hh"
 
 class Hub:
 	public BookEntry,

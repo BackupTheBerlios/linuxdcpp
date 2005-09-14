@@ -24,7 +24,6 @@
 #include <pthread.h>
 
 #include "bookentry.hh"
-#include "callback.hh"
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>

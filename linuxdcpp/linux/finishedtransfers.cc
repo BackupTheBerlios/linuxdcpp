@@ -1,5 +1,4 @@
 #include "finishedtransfers.hh"
-#include "func.hh"
 #include "wulformanager.hh"
 
 using namespace std;

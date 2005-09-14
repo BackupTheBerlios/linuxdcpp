@@ -33,9 +33,6 @@
 #include <client/ConnectionManager.h>
 #include <client/LogManager.h>
 
-#include "func.hh"
-#include "callback.hh"
-
 class MainWindow:
 	public QueueManagerListener,
 	public TimerManagerListener,

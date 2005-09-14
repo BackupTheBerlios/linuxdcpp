@@ -442,9 +442,6 @@ void MainWindow::onCloseConnectionClicked(GtkMenuItem *item, gpointer user_data)
 		}
 	}	
 
-	g_list_foreach(list, gtk_tree_path_free, NULL);
-	g_list_free(list);
-	
 	for (int i=0; i<users.size(); i++)
 		ConnectionManager::getInstance()->removeConnection(users[i], isDownload[i]);
 }
