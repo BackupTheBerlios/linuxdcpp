@@ -1,3 +1,6 @@
+2006-09-15 - paskharen
+* Fixed? renaming files across partitions (patch from unknown)
+
 2006-09-14 - paskharen
 * Removed the dispatcher.
 * Removed the callback class, it was just confusing.
