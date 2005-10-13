@@ -1,6 +1,6 @@
 2006-10-13 - paskharen
 * Undid the previous cleanup, it wasn't possible to rip out the dispatcher =(
-* Ficed crashing on startups again
+* Fixed crashing on startup again
 * Improvements to hub and sharebrowser (thanks John Armstrong)
 
 2006-09-15 - paskharen
