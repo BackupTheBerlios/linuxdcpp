@@ -27,19 +27,8 @@
 #include "wulformanager.hh"
 #include <iostream>
 #include <signal.h>
-#include <pthread.h>
 
 using namespace std;
-
-pthread_mutex_t threadMutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
-
-void enterThread() {
-	pthread_mutex_lock(&threadMutex);
-}
-
-void leaveThread() {
-	pthread_mutex_unlock(&threadMutex);
-}
 
 void callBack(void* x, const string& a) {
 	cout << "Loading: " << a << endl;
@@ -53,7 +42,6 @@ int main(int argc, char *argv[]) {
 	TimerManager::getInstance()->start();
 
 	g_thread_init(NULL);
-	gdk_threads_set_lock_functions(enterThread, leaveThread);
 	gdk_threads_init();
 	gtk_init(&argc, &argv);
 	glade_init();
@@ -62,8 +50,12 @@ int main(int argc, char *argv[]) {
 	signal(SIGPIPE, SIG_IGN);
 
 	WulforManager::start();
+	MainWindow *mw = WulforManager::get()->createMainWindow();
+	//autoconnect needs to be here because it uses the dispatcher,
+	//and the mainwindow isn't registered to it intil after the constructor
+	mw->autoConnect_client();
+
 	gdk_threads_enter();
-	WulforManager::get()->createMainWindow();
 	gtk_main();
 	gdk_threads_leave();
 	WulforManager::stop();

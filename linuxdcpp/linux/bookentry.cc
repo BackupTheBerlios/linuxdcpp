@@ -58,14 +58,13 @@ GtkWidget *BookEntry::getTitle() {
 	return box;
 }
 
-void BookEntry::setBookLabel(std::string text) {
+void BookEntry::setLabel_gui(std::string text) {
 	gtk_tooltips_set_tip (tips, eventBox, text.c_str(), text.c_str());
 	if (text.size() > 15) 
 		text = text.substr(0, 15) + "...";
 	gtk_label_set_text(label, text.c_str());
 }
 
-/*
 void BookEntry::setLabelBold_gui(std::string text) {
 	gtk_tooltips_set_tip (tips, eventBox, text.c_str(), text.c_str());
 	if (text.size() > 15)
@@ -74,7 +73,6 @@ void BookEntry::setLabelBold_gui(std::string text) {
 	const char *markup = g_markup_printf_escaped ("<b>%s</b>", text.c_str ());
 	gtk_label_set_markup (label, markup);
 }
-*/
 
 bool BookEntry::isEqual(int type, string id) {
 	if (this->type == type) 

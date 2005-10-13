@@ -27,16 +27,18 @@ class TreeViewFactory {
 	public:
 		typedef enum {
 			STRING,
+			STRINGR,
 			INT,
 			BOOL,
 			PIXBUF,
+			PIXBUF_STRING,
 			EDIT_STRING
 			//PROGRESS
 		} type_t;
 	
 		TreeViewFactory(GtkTreeView *view);
 		GtkTreeView *get();
-		void addColumn_gui(int id, std::string title, type_t type, int width);
+		void addColumn_gui(int id, std::string title, type_t type, int width, int id_pixbuf=-1);
 		void setSortColumn_gui(int id, int sortColumn);
 
 		template<class T, class C>

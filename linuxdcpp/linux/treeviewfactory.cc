@@ -29,32 +29,50 @@ GtkTreeView *TreeViewFactory::get() {
 	return view;
 }
 
-void TreeViewFactory::addColumn_gui(int id, std::string title, type_t type, int width) {
+void TreeViewFactory::addColumn_gui(int id, std::string title, type_t type, int width, int id_pixbuf) {
 	GtkTreeViewColumn *col;
-	
+	GtkCellRenderer *renderer;
+	GtkCellRenderer *renderer_pixbuf;
+
 	switch (type) {
 		case STRING:
 			col = gtk_tree_view_column_new_with_attributes(
 				title.c_str(), gtk_cell_renderer_text_new(), "text", id, NULL);
+			break;
+		case STRINGR:
+			renderer = gtk_cell_renderer_text_new();
+			g_object_set(renderer, "xalign", 1.0, NULL);
+			col = gtk_tree_view_column_new_with_attributes(title.c_str(), renderer, "text", id, NULL);
+			gtk_tree_view_column_set_alignment(col, 1.0);
+
 			break;
 		case INT:
 			col = gtk_tree_view_column_new_with_attributes(
 				title.c_str(), gtk_cell_renderer_text_new(), "text", id, NULL);
 			break;
 		case BOOL:
-		  	GtkCellRenderer *renderer;
-  			renderer = gtk_cell_renderer_toggle_new ();
-  			col = gtk_tree_view_column_new_with_attributes (title.c_str (), renderer, "active", id, NULL);
+  			renderer = gtk_cell_renderer_toggle_new();
+  			col = gtk_tree_view_column_new_with_attributes(title.c_str (), renderer, "active", id, NULL);
 			break;
 		case PIXBUF:
 			col = gtk_tree_view_column_new_with_attributes(
 				title.c_str(), gtk_cell_renderer_pixbuf_new(), "pixbuf", id, NULL);
 			break;
+		case PIXBUF_STRING:
+			renderer = gtk_cell_renderer_text_new();
+			renderer_pixbuf = gtk_cell_renderer_pixbuf_new();
+			col = gtk_tree_view_column_new();
+			gtk_tree_view_column_set_title(col, title.c_str());
+			gtk_tree_view_column_pack_start(col, renderer_pixbuf, false);
+			gtk_tree_view_column_add_attribute(col, renderer_pixbuf, "pixbuf", id_pixbuf);
+			gtk_tree_view_column_pack_start(col, renderer, true);
+			gtk_tree_view_column_add_attribute(col, renderer, "text", id);
+
+			break;
 		case EDIT_STRING:
-			GtkCellRenderer *r = gtk_cell_renderer_text_new();
- 			g_object_set(r, "editable", TRUE, NULL);
-			col = gtk_tree_view_column_new_with_attributes(
-				title.c_str(), r, "text", id, NULL);
+			renderer = gtk_cell_renderer_text_new();
+ 			g_object_set(renderer, "editable", TRUE, NULL);
+			col = gtk_tree_view_column_new_with_attributes(title.c_str(), renderer, "text", id, NULL);
 			break;
 		/*
 		case PROGRESS:
@@ -85,3 +103,4 @@ void TreeViewFactory::setSortColumn_gui(int id, int sortColumn) {
 	col = gtk_tree_view_get_column(view, id);
 	gtk_tree_view_column_set_sort_column_id(col, sortColumn);
 }
+

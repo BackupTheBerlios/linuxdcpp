@@ -402,7 +402,7 @@ void Search::onPrivateMessageClicked_gui (GtkMenuItem *item, gpointer user_data)
 	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
 		return;
 	SearchInfo *si = TreeViewFactory::getValue<gpointer,SearchInfo*>(m, &iter, RESULT_INFO);
-	WulforManager::get()->addPrivMsg(si->result->getUser ());
+	WulforManager::get()->addPrivMsg_gui(si->result->getUser ());
 }
 
 void Search::onAddFavoriteUserClicked_gui (GtkMenuItem *item, gpointer user_data)
@@ -1056,7 +1056,11 @@ void Search::changeHubs_gui (int mode, HubInfo *i)
 }
 void Search::addResult_client (SearchResult *aResult)
 {
-	addResult_gui(new SearchInfo (aResult));
+	typedef Func1<Search,SearchInfo*> F1;
+	F1 *func;
+	
+	func = new F1 (this, &Search::addResult_gui, new SearchInfo (aResult));
+	WulforManager::get ()->dispatchGuiFunc (func);
 }
 void Search::addResult_gui (SearchInfo *info)
 {
@@ -1166,28 +1170,23 @@ void Search::addResult_gui (SearchInfo *info)
 }
 void Search::on(ClientManagerListener::ClientConnected, Client *c) throw ()
 {
-	gdk_threads_enter();
+	Lock l(cs);
 	changeHubs_gui (0, new HubInfo (c->getIpPort (), c->getName (), c->getOp ()));
-	gdk_threads_leave();
 }
 void Search::on(ClientManagerListener::ClientUpdated, Client *c) throw ()
 {
-	gdk_threads_enter();
+	Lock l(cs);
 	changeHubs_gui (1, new HubInfo (c->getIpPort (), c->getName (), c->getOp ()));
-	gdk_threads_leave();
 }
 void Search::on(ClientManagerListener::ClientDisconnected, Client *c) throw ()
 {
-	gdk_threads_enter();
+	Lock l(cs);
 	changeHubs_gui (2, new HubInfo (c->getIpPort (), c->getName (), c->getOp ()));
-	gdk_threads_leave();
 }
 
 void Search::on(SearchManagerListener::SR, SearchResult* aResult) throw()
 {
-	gdk_threads_enter();
 	addResult_client (aResult);
-	gdk_threads_leave();
 }
 
 void Search::SearchInfo::browse (bool file)

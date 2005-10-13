@@ -10,6 +10,7 @@ luusl
 Rikard Björklind
 clairvoyant
 obi
+John Armstrong
 
 DC++:
 -----

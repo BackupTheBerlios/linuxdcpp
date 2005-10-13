@@ -29,6 +29,7 @@
 #include <client/DirectoryListing.h>
 
 #include "bookentry.hh"
+#include "callback.hh"
 
 class ShareBrowser:
 	public BookEntry
@@ -38,27 +39,35 @@ class ShareBrowser:
 		ShareBrowser(User::Ptr user, std::string file, GCallback closeCallback);
 		~ShareBrowser();
 	
-		GtkWidget *ShareBrowser::getWidget();
+		GtkWidget *getWidget();
 
-		void setStatus(GtkStatusbar *status, std::string msg);
-		void setPosition(string pos);
-		void buildDirs(
-			DirectoryListing::Directory::List dirs, GtkTreeIter *iter);
-		void updateFiles(bool fromFind);
-		void updateStatus();
-
-		static gboolean buttonPressed(
-			GtkWidget *widget, GdkEventButton *event, gpointer data);
-		static gboolean buttonReleased(
-			GtkWidget *widget, GdkEventButton *event, gpointer data);
-		static void buttonClicked(GtkWidget *widget, gpointer data);
-		static void menuClicked(GtkMenuItem *item, gpointer data);
-
-		void downloadFile(DirectoryListing::File *file, string target);
-		void downloadDir(DirectoryListing::Directory *dir, string target);
-		void findNext(bool firstFile);
+		//these functions should only be called from the client thread
+		void matchQueue_client();
+		void findNext_gui(bool firstFile);
+	
+		//these functions should only be called from the gui thread
+		void setStatus_gui(GtkStatusbar *status, std::string msg);
+		void setPosition_gui(std::string pos);
 
 	private:
+		//only call these from gui thread
+		gboolean buttonPressed_gui(GtkWidget *, GdkEventButton *, gpointer);
+		gboolean buttonReleased_gui(GtkWidget *, GdkEventButton *, gpointer);
+		void menuClicked_gui(GtkMenuItem *item, gpointer);
+		void buttonClicked_gui(GtkWidget *widget, gpointer);
+
+		void buildDirs_gui(DirectoryListing::Directory::List dir, GtkTreeIter *iter);
+		void updateFiles_gui(bool fromFind);
+		void updateStatus_gui();
+
+		//only call these from client thread
+		void downloadFile_client(DirectoryListing::File *file, std::string target);
+		void downloadDir_client(DirectoryListing::Directory *dir, std::string target);
+
+		Callback3<ShareBrowser, gboolean, GtkWidget *, GdkEventButton *> 
+			pressedCallback, releasedCallback;
+		Callback2<ShareBrowser, void, GtkMenuItem *> menuCallback;
+		Callback2<ShareBrowser, void, GtkWidget *> buttonCallback;
 		GdkEventType oldType;
 		guint oldButton;
 
@@ -78,24 +87,30 @@ class ShareBrowser:
 		GtkTreeSelection *fileSelection, *dirSelection;
 		GtkWidget *box;
 		GtkButton *matchButton, *findButton, *nextButton;
+		GdkPixbuf *iconFile, *iconDirectory;
 		
 		GtkMenu *fileMenu, *dirMenu;
-		GtkMenuItem *dlDir, *dlFile, *dlDirTo, *dlFileTo, *dlDirDir, *dlDirToDir;
+		GtkMenuItem *dlDir, *dlFile, *dlDirTo, *dlFileTo;
 		
 		enum {
 			COLUMN_FILE,
 			COLUMN_SIZE,
 			COLUMN_TYPE,
 			COLUMN_TTH,
-			COLUMN_DL_FILE
+			COLUMN_EXACT_SIZE,
+			COLUMN_DL_FILE,
+			COLUMN_ICON,
+			COLUMN_SIZE_ORDER,
+			COLUMN_FILE_ORDER
 		};
 
 		enum {
 			COLUMN_DIR,
-			COLUMN_DL_DIR
+			COLUMN_DL_DIR,
+			COLUMN_ICON_DIR
 		};
 
-		const int WIDTH_FILE, WIDTH_SIZE, WIDTH_TYPE, WIDTH_TTH;
+		const int WIDTH_FILE, WIDTH_SIZE, WIDTH_TYPE, WIDTH_TTH, WIDTH_EXACT_SIZE;
 };
 
 #else

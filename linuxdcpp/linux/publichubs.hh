@@ -24,6 +24,7 @@
 #include <pthread.h>
 
 #include "bookentry.hh"
+#include "callback.hh"
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
@@ -41,23 +42,30 @@ class PublicHubs:
 
 		GtkWidget *getWidget();
 
-		void downloadList();
-		void updateList();
-		
-		static gboolean buttonEvent(
-			GtkWidget *widget, GdkEventButton *event, gpointer data);
-		static void addFav(GtkMenuItem *i, gpointer d);
-		static void filterHubs(GtkWidget *w, gpointer d);
-		static void connect(GtkWidget *w, gpointer d);
-		static void refresh (GtkWidget *widget, gpointer data);
-		static void configure (GtkWidget *widget, gpointer data);
-		static void add (GtkWidget *widget, gpointer data);
-		static void moveUp (GtkWidget *widget, gpointer data);
-		static void moveDown (GtkWidget *widget, gpointer data);
-		static void remove (GtkWidget *widget, gpointer data);
-		static void cellEdited(GtkCellRendererText *cell, 
+		//only to be called from client thread
+		void downloadList_client();
+		void refresh_client();
+		void addFav_client(FavoriteHubEntry entry);
+
+		//only to be called from the gui thread
+		void filterHubs_gui(GtkWidget *widget, gpointer data);
+		void connect_gui(GtkWidget *widget, gpointer data);
+		void refresh_gui(GtkWidget *widget, gpointer data);
+		void configure_gui(GtkWidget *widget, gpointer data);
+
+		void moveUp_gui(GtkWidget *widget, gpointer data);
+		void moveDown_gui(GtkWidget *widget, gpointer data);
+		void add_gui(GtkWidget *widget, gpointer data);
+		void remove_gui(GtkWidget *widget, gpointer data);
+
+		void cellEdited_gui(GtkCellRendererText *cell, 
 			char *path, char *text, gpointer data);
-		static void setStatus (GtkStatusbar *status, string text);
+		gboolean buttonEvent_gui(
+			GtkWidget *widget, GdkEventButton *event, gpointer);
+		void addFav_gui(GtkMenuItem *i, gpointer d);
+
+		void updateList_gui();
+		void setStatus_gui(GtkStatusbar *status, std::string text);
 
 		//from HubManagerListener
 		void on(HubManagerListener::DownloadStarting, 
@@ -68,6 +76,16 @@ class PublicHubs:
 			const string &file) throw();
 
 	private:
+		Callback2<PublicHubs, void, GtkWidget *> 
+			filterCallback, connectCallback, refreshCallback, configureCallback;
+		Callback2<PublicHubs, void, GtkWidget *> 
+			upCallback, downCallback, addCallback, removeCallback;
+		Callback4<PublicHubs, void, GtkCellRendererText *, char *, char *>
+			editCallback;
+		Callback3<PublicHubs, gboolean, GtkWidget *, GdkEventButton *> 
+			mouseButtonCallback;
+		Callback2<PublicHubs, void, GtkMenuItem *> addFavCallback;
+		
 		pthread_mutex_t hubLock;
 
 		HubEntry::List hubs;
