@@ -64,7 +64,6 @@ MainWindow::MainWindow():
 {
 	createWindow_gui();
 	startSocket_client();
-	autoOpen_gui();
 
 	QueueManager::getInstance()->addListener(this);
 	TimerManager::getInstance()->addListener(this);

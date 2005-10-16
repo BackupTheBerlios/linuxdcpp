@@ -174,6 +174,10 @@ WulforManager *WulforManager::get() {
 
 MainWindow *WulforManager::createMainWindow() {
 	mainWin = new MainWindow;
+	//Autoconnect and autoopen calls stuff in wulformanager that needs to know
+	//what mainWin is, so these cannot be called by the mainwindow constructor.
+	mainWin->autoConnect_client();
+	mainWin->autoOpen_gui();
 	return mainWin;
 }
 

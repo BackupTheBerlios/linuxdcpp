@@ -51,9 +51,6 @@ int main(int argc, char *argv[]) {
 
 	WulforManager::start();
 	MainWindow *mw = WulforManager::get()->createMainWindow();
-	//autoconnect needs to be here because it uses the dispatcher,
-	//and the mainwindow isn't registered to it intil after the constructor
-	mw->autoConnect_client();
 
 	gdk_threads_enter();
 	gtk_main();

@@ -1,3 +1,6 @@
+2006-10-16 - paskharen
+* Fixed the crashing when you set it to open some page on startup.
+
 2006-10-13 - paskharen
 * Undid the previous cleanup, it wasn't possible to rip out the dispatcher =(
 * Fixed crashing on startup again
