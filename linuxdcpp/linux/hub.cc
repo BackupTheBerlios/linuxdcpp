@@ -40,7 +40,8 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	WIDTH_DESCRIPTION(75),
 	WIDTH_TAG(100),
 	WIDTH_CONNECTION(75),
-	WIDTH_EMAIL(100)
+	WIDTH_EMAIL(100),
+	lastUpdate(0)
 {
 	string file = WulforManager::get()->getPath() + "/glade/hub.glade";
 	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
@@ -213,17 +214,12 @@ void Hub::updateUser_gui(string nick, int64_t shared, string iconFile,
 
 	findUser_gui(nick, &iter);
 
-	std::set<std::string>::const_iterator curNick;
-	bool nickAlreadyInList = 0;
-	for(curNick = nicks.begin(); curNick != nicks.end(); ++curNick) {
-		if(*curNick == nick) {
-			nickAlreadyInList = 1;	// already in list.
-			break;
-		}
-	}
-	if(!nickAlreadyInList) {
+	NicksMapIter curNick;
+	curNick = nicks.find(nick);
+
+	if(curNick == nicks.end()) {
 		gtk_list_store_append(nickStore, &iter);
-		nicks.insert(nick);
+		nicks[nick] = nick;
 	}
 
 	icon = userIcons[iconFile];
@@ -238,17 +234,22 @@ void Hub::updateUser_gui(string nick, int64_t shared, string iconFile,
 		COLUMN_ICON, icon,
 		COLUMN_NICK_ORDER, nick_order.c_str(),
 		-1);
-	
-	pthread_mutex_lock(&clientLock);
-	if (client) {
-		userStream << client->getUserCount() << " User(s)";
-		setStatus_gui(usersStatus, userStream.str());
-		setStatus_gui(sharedStatus, Util::formatBytes(client->getAvailable()));
 
-        	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(nickStore), COLUMN_NICK_ORDER, GTK_SORT_ASCENDING);
-	        gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(nickView, COLUMN_NICK), TRUE);
+	u_int32_t ticks = GET_TICK();	
+	if (client && ticks > lastUpdate + 1000) {
+		lastUpdate = ticks;
+
+		pthread_mutex_lock(&clientLock);
+		{
+			userStream << client->getUserCount() << " User(s)";
+			setStatus_gui(usersStatus, userStream.str());
+			setStatus_gui(sharedStatus, Util::formatBytes(client->getAvailable()));
+
+//        	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(nickStore), COLUMN_NICK_ORDER, GTK_SORT_ASCENDING);
+//	        gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(nickView, COLUMN_NICK), TRUE);
+		}
+		pthread_mutex_unlock(&clientLock);
 	}
-	pthread_mutex_unlock(&clientLock);
 }
 
 void Hub::removeUser_gui(string nick) {

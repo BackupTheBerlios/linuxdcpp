@@ -11,6 +11,7 @@ Rikard Björklind
 clairvoyant
 obi
 John Armstrong
+Naga
 
 DC++:
 -----

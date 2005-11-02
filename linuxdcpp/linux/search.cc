@@ -1054,14 +1054,7 @@ void Search::changeHubs_gui (int mode, HubInfo *i)
 		}	
 	}
 }
-void Search::addResult_client (SearchResult *aResult)
-{
-	typedef Func1<Search,SearchInfo*> F1;
-	F1 *func;
-	
-	func = new F1 (this, &Search::addResult_gui, new SearchInfo (aResult));
-	WulforManager::get ()->dispatchGuiFunc (func);
-}
+
 void Search::addResult_gui (SearchInfo *info)
 {
 	SearchResult *aResult = info->result;
@@ -1147,22 +1140,42 @@ void Search::addResult_gui (SearchInfo *info)
 	ip = r->getIP ();
 	if(r->getTTH() != NULL)
 		TTH = r->getTTH ()->toBase32 ();
+
+	//Check that it's not a duplicate
+	GtkTreeIter i;
+	gtk_tree_model_get_iter_first(GTK_TREE_MODEL(resultStore), &i);
+	while (gtk_list_store_iter_is_valid(resultStore, &i)) {
+		char *fileChar, *ipChar;
+		string fileString, ipString;
+		gtk_tree_model_get(GTK_TREE_MODEL(resultStore), &i,
+			RESULT_FILE, &fileChar,
+			RESULT_IP, &ipChar,
+			-1);
+		fileString = fileChar;
+		ipString = ipChar;
+		g_free(fileChar);
+		g_free(ipChar);
+		if (ipString == ip && fileString == fileName) return;
+
+		gtk_tree_model_iter_next(GTK_TREE_MODEL(resultStore), &i);
+	}
 	
 	gtk_list_store_append (resultStore, &iter);
-	gtk_list_store_set (resultStore, &iter, 	RESULT_NICK, r->getUser()->getNick().c_str(),
-													RESULT_FILE, fileName.c_str (),
-													RESULT_SLOTS, slots.c_str (),
-													RESULT_FILESIZE, size.c_str (),
-													RESULT_PATH, path.c_str (),
-													RESULT_TYPE, type.c_str (),
-													RESULT_CONNECTION, connection.c_str (),
-													RESULT_HUB, hubName.c_str (),
-													RESULT_EXACT_SIZE, exactSize.c_str (),
-													RESULT_IP, ip.c_str (),
-													RESULT_TTH, TTH.c_str (),
-													RESULT_INFO, (gpointer)(new SearchInfo(aResult)), 
-													RESULT_SIZE, r->getSize (),
-													-1);
+	gtk_list_store_set (resultStore, &iter,
+		RESULT_NICK, r->getUser()->getNick().c_str(),
+		RESULT_FILE, fileName.c_str (),
+		RESULT_SLOTS, slots.c_str (),
+		RESULT_FILESIZE, size.c_str (),
+		RESULT_PATH, path.c_str (),
+		RESULT_TYPE, type.c_str (),
+		RESULT_CONNECTION, connection.c_str (),
+		RESULT_HUB, hubName.c_str (),
+		RESULT_EXACT_SIZE, exactSize.c_str (),
+		RESULT_IP, ip.c_str (),
+		RESULT_TTH, TTH.c_str (),
+		RESULT_INFO, (gpointer)(new SearchInfo(aResult)), 
+		RESULT_SIZE, r->getSize (),
+		-1);
 	searchHits++;
 	gtk_statusbar_pop(GTK_STATUSBAR (searchItems["Status2"]), 0);
 	gtk_statusbar_push(GTK_STATUSBAR (searchItems["Status2"]), 0, string (Util::toString(searchHits) + " items").c_str ());
@@ -1186,7 +1199,10 @@ void Search::on(ClientManagerListener::ClientDisconnected, Client *c) throw ()
 
 void Search::on(SearchManagerListener::SR, SearchResult* aResult) throw()
 {
-	addResult_client (aResult);
+	typedef Func1<Search, SearchInfo*> F1;
+	F1 *func;
+	func = new F1 (this, &Search::addResult_gui, new SearchInfo(aResult));
+	WulforManager::get()->dispatchGuiFunc (func);
 }
 
 void Search::SearchInfo::browse (bool file)
@@ -1245,9 +1261,13 @@ void Search::SearchInfo::browse (bool file)
 
 void Search::SearchInfo::download ()
 {
-	string dir = SETTING (DOWNLOAD_DIRECTORY);
+	string dir = Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY));
 	string target = dir;
 	target += Util::getFileName (linuxSeparator (result->getFile ()));
+	
+	if (result->getUtf8())
+		target = Text::utf8ToAcp(target);
+	
 	try 
 	{
 		if(result->getType() == SearchResult::TYPE_FILE) 

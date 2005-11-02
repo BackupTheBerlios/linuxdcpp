@@ -342,7 +342,7 @@ public:
 		return 0;
 	}
 
-	static void deleteFile(const string& aFileName) throw() { ::remove(aFileName.c_str()); };
+	static void deleteFile(const string& aFileName) throw() { ::unlink(aFileName.c_str()); };
 	
 	/* ::rename seems to have problems when source and target is on different partitions
 	   from "man 2 rename" EXDEV  oldpath  and  newpath are not on the same mounted
@@ -436,6 +436,6 @@ private:
 
 /**
  * @file
- * $Id: File.h,v 1.5 2005/09/15 15:37:19 paskharen Exp $
+ * $Id: File.h,v 1.6 2005/11/02 15:46:00 paskharen Exp $
  */
 

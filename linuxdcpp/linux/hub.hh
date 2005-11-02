@@ -32,6 +32,7 @@
 #include <client/Client.h>
 #include <client/ClientManager.h>
 #include <client/User.h>
+#include <client/TimerManager.h>
 
 #include "bookentry.hh"
 #include "callback.hh"
@@ -114,8 +115,12 @@ class Hub:
 		Callback2<Hub, void, GtkMenuItem *> browseCallback, msgCallback, grantCallback;
 		Callback3<Hub, void, GtkWidget *, GdkEventKey *> completionCallback, setFocusCallback;
 
-		std::set<std::string> nicks;
+		typedef StringMap NicksMap;
+		typedef NicksMap::iterator NicksMapIter;
+
+		NicksMap nicks;
 		pthread_mutex_t clientLock;
+		u_int32_t lastUpdate;
 
 		GtkMenu *nickMenu;
 		GtkMenuItem *browseItem, *msgItem, *grantItem;

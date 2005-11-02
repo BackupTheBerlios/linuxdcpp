@@ -1,5 +1,10 @@
+2006-11-02 - paskharen
+* Improved performance on large hubs (thanks Naga)
+* Unicode fixes in downloadqueue and search
+* Removed duplicate search results
+
 2006-10-16 - paskharen
-* Fixed the crashing when you set it to open some page on startup.
+* Fixed the crashing when you set it to open a notebook page on startup.
 
 2006-10-13 - paskharen
 * Undid the previous cleanup, it wasn't possible to rip out the dispatcher =(

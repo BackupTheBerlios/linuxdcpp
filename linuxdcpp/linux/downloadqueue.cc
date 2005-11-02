@@ -744,7 +744,7 @@ void DownloadQueue::buildList_gui ()
 		{
 			gtk_tree_store_append (dirStore, &row, NULL);
 			gtk_tree_store_set (	dirStore, &row, 
-						DIRCOLUMN_DIR, getNextSubDir (Util::getFilePath(it->second->getTarget())).c_str (),
+						DIRCOLUMN_DIR, Text::acpToUtf8(getNextSubDir (Util::getFilePath(it->second->getTarget()))).c_str(),
 						DIRCOLUMN_REALPATH, realpath.c_str (),
 						-1);
 			dirMap[realpath] = row;
@@ -783,7 +783,7 @@ void DownloadQueue::addDir_gui (string path, GtkTreeIter *row, string &current)
 	{
 		gtk_tree_store_append (dirStore, &newRow, row);
 		gtk_tree_store_set (	dirStore, &newRow,
-					DIRCOLUMN_DIR, tmp.c_str (),
+					DIRCOLUMN_DIR, Text::acpToUtf8(tmp).c_str(),
 					DIRCOLUMN_REALPATH, realpath.c_str (),
 					-1);
 		dirMap[realpath] = newRow;
@@ -1005,7 +1005,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 		gtk_list_store_append (dq->fileStore, &it);
 		// Item
 		gtk_list_store_set (dq->fileStore, &it, COLUMN_INFO, (gpointer)this, -1);
-		gtk_list_store_set (dq->fileStore, &it, COLUMN_TARGET, Util::getFileName (getTarget()).c_str (), -1);
+		gtk_list_store_set (dq->fileStore, &it, COLUMN_TARGET, Text::acpToUtf8(Util::getFileName(getTarget())).c_str (), -1);
 		// Users
 		int online=0;
 		{

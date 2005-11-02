@@ -91,7 +91,6 @@ private:
 	void changeHubs_gui (int mode, HubInfo *i); // Add, remove and changes name on hubs.
 	void initHubs_gui ();  // Adds the current connected hubs to the list.
 	void buildDownloadMenu_gui (int menu);
-	void addResult_client (SearchResult *aResult);
 	void addResult_gui (SearchInfo *info);
 	void search_gui ();
 	static void onToggledClicked_gui (GtkCellRendererToggle *cell, gchar *path_str, gpointer data); // Is called when the checkbox in the "Hubs" is clicked.
