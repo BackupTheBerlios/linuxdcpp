@@ -1155,7 +1155,10 @@ void Search::addResult_gui (SearchInfo *info)
 		ipString = ipChar;
 		g_free(fileChar);
 		g_free(ipChar);
-		if (ipString == ip && fileString == fileName) return;
+		if (ipString == ip && fileString == fileName) {
+			pthread_mutex_unlock (&searchLock);
+			return;
+		}
 
 		gtk_tree_model_iter_next(GTK_TREE_MODEL(resultStore), &i);
 	}
