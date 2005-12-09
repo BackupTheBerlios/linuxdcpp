@@ -97,6 +97,7 @@ class MainWindow:
 		void favHubsClicked_gui(GtkWidget *widget, gpointer data);
 		void searchClicked_gui(GtkWidget *widget, gpointer data);
 		void hashClicked_gui(GtkWidget *widget, gpointer data);
+		void aboutClicked_gui(GtkWidget *widget, gpointer data);
 		void quitClicked_gui(GtkWidget *widget, gpointer data);
 		void finishedDLclicked_gui(GtkWidget *widget, gpointer data);
 		void finishedULclicked_gui(GtkWidget *widget, gpointer data);
@@ -146,7 +147,8 @@ class MainWindow:
 			connectCallback, pubHubsCallback, dlQueueCallback,
 			settingsCallback, favHubsCallback, searchCallback,
 			hashCallback, quitCallback, finishedDL_Callback,
-			finishedUL_Callback, openFListCallback, refreshFListCallback;
+			finishedUL_Callback, openFListCallback, refreshFListCallback,
+			aboutCallback;
 		
 		Callback3<MainWindow, gboolean, GtkWidget *, GdkEvent *>
 			deleteCallback;
@@ -157,7 +159,7 @@ class MainWindow:
 		int emptyStatusWidth;
 
 		GtkWindow *window;
-		GtkDialog *exitDialog, *connectDialog;
+		GtkDialog *exitDialog, *connectDialog, *flistDialog, *aboutDialog;
 		GtkEntry *connectEntry;
 		GtkStatusbar *mainStatus, *hubStatus, *slotStatus, 
 			*dTotStatus, *uTotStatus, *dlStatus, *ulStatus;
@@ -173,7 +175,7 @@ class MainWindow:
 		GdkPixbuf *uploadPic, *downloadPic;
 		GtkMenuItem *openFList, *openOwnFList, *refreshFList, *openDLdir, *quickConnect, *followRedirect, *reconnectItem,
 				*settingsItem, *quitItem, *pubHubsItem, *queueItem, *finishedDL_item, *finishedUL_item, *favHubsItem,
-				*favUsersItem, *searchItem, *ADLSearchItem, *searchSpyItem, *networkStatsItem, *hashItem;
+				*favUsersItem, *searchItem, *ADLSearchItem, *searchSpyItem, *networkStatsItem, *hashItem, *aboutItem;
 
 		const int WIDTH_TYPE, WIDTH_USER, WIDTH_STATUS, WIDTH_TIMELEFT,
 			WIDTH_SPEED, WIDTH_FILENAME, WIDTH_SIZE, WIDTH_PATH;

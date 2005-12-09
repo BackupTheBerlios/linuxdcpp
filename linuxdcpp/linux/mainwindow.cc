@@ -22,6 +22,7 @@
 #include "settingsdialog.hh"
 #include "treeviewfactory.hh"
 
+#include <client/version.h>
 #include <client/Socket.h>
 #include <client/Client.h>
 #include <client/SettingsManager.h>
@@ -42,6 +43,7 @@ MainWindow::MainWindow():
 	favHubsCallback(this, &MainWindow::favHubsClicked_gui),
 	searchCallback(this, &MainWindow::searchClicked_gui),
 	hashCallback(this, &MainWindow::hashClicked_gui),
+	aboutCallback(this, &MainWindow::aboutClicked_gui),
 	quitCallback(this, &MainWindow::quitClicked_gui),
 	finishedDL_Callback(this, &MainWindow::finishedDLclicked_gui),
 	finishedUL_Callback(this, &MainWindow::finishedULclicked_gui),		
@@ -83,6 +85,8 @@ MainWindow::~MainWindow() {
 
 	gtk_widget_destroy(GTK_WIDGET(connectDialog));
 	gtk_widget_destroy(GTK_WIDGET(exitDialog));
+	gtk_widget_destroy(GTK_WIDGET(flistDialog));
+	gtk_widget_destroy(GTK_WIDGET(aboutDialog));
 
 	//this makes sure the pixmaps are freed (using gtk:s ref counting)
 	g_object_unref(G_OBJECT(uploadPic));
@@ -114,6 +118,8 @@ void MainWindow::createWindow_gui() {
 
 	exitDialog = GTK_DIALOG(glade_xml_get_widget(xml, "exitDialog"));
 	connectDialog = GTK_DIALOG(glade_xml_get_widget(xml, "connectDialog"));
+	flistDialog = GTK_DIALOG(glade_xml_get_widget(xml, "flistDialog"));
+	aboutDialog = GTK_DIALOG(glade_xml_get_widget(xml, "aboutDialog"));
 
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "mainWindow"));
 	book = GTK_NOTEBOOK(glade_xml_get_widget(xml, "book"));
@@ -141,6 +147,7 @@ void MainWindow::createWindow_gui() {
 	searchSpyItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "search_spy1"));
 	networkStatsItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "network_statistics1"));
 	hashItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "indexing_progress1"));
+	aboutItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "about"));
 
 	gtk_widget_set_sensitive(GTK_WIDGET(openDLdir), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(followRedirect), false);
@@ -247,8 +254,9 @@ void MainWindow::createWindow_gui() {
 	searchCallback.connect(G_OBJECT(searchItem), "activate", NULL);
 	hashCallback.connect(G_OBJECT(hashButton), "clicked", NULL);
 	hashCallback.connect(G_OBJECT(hashItem), "activate", NULL);
-	quitCallback.connect(G_OBJECT(quitButton), "clicked", NULL);
+	aboutCallback.connect(G_OBJECT(aboutItem), "activate", NULL);
 	quitCallback.connect(G_OBJECT(quitItem), "activate", NULL);
+	aboutItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "about"));
 	finishedDL_Callback.connect(G_OBJECT(finishedDL_button), "clicked", NULL);
 	finishedDL_Callback.connect(G_OBJECT(finishedDL_item), "activate", NULL);
 	finishedUL_Callback.connect(G_OBJECT(finishedUL_button), "clicked", NULL);
@@ -260,6 +268,27 @@ void MainWindow::createWindow_gui() {
 	deleteCallback.connect(G_OBJECT(window), "delete-event", NULL);
 //	transferCallback.connect(G_OBJECT(window), "button-release-event", this);
 	switchPageCallback.connect(G_OBJECT(book), "switch-page", NULL);
+
+	//Create text in about window
+	GtkLabel *al = GTK_LABEL(glade_xml_get_widget(xml, "aboutLabel"));
+	string text =	string("<big>Linux DC++</big>\n") +
+					string("Bringing DC++ to Linux!\n") +
+					string("<b>Version:</b> 0.1-rc1\n") +
+					string("<b>Core version:</b> ") + string(VERSIONSTRING) + string("\n") +
+					string("<b>Developers:</b>\n ") +
+					string("Jens Oknelid (paskharen)\n") +
+					string("Alexander Nordfelth (phase)\n") +
+					string("Dyluck\n") +
+					string("s4kk3\n") +
+					string("Trent Lloyd\n") +
+					string("Kristian Berg/Ixan\n") +
+					string("luusl\n") +
+					string("Rikard Björklind\n") +
+					string("clairvoyant\n") +
+					string("obi\n") +
+					string("John Armstrong\n") +
+					string("Naga");
+	gtk_label_set_markup(al, Text::acpToUtf8(text).c_str());
 	
 	GtkWidget *dummy;
 	GtkRequisition req;
@@ -538,6 +567,12 @@ void MainWindow::settingsClicked_gui(GtkWidget *widget, gpointer data) {
 void MainWindow::quitClicked_gui(GtkWidget *widget, gpointer data) {
 	gboolean retVal;		// Not interested in the value though.
 	g_signal_emit_by_name(G_OBJECT(window), "delete-event", NULL, &retVal);
+}
+
+void MainWindow::aboutClicked_gui(GtkWidget *widget, gpointer data) {
+	gtk_widget_show_all(GTK_WIDGET(aboutDialog));
+	gtk_dialog_run(aboutDialog);
+	gtk_widget_hide(GTK_WIDGET(aboutDialog));
 }
 
 gboolean MainWindow::deleteWindow_gui(
@@ -905,26 +940,25 @@ void MainWindow::transferComplete_client(Transfer *t) {
 
 void MainWindow::openFList_gui(GtkWidget *widget, gpointer data)
 {
-	string name = "Own List";
-	string path = Util::getDataPath() + "MyList.DcLst";
+	string name;
+	string path;
 
-	if(widget == GTK_WIDGET(openFList)){
-		GtkWidget *listSelection = gtk_file_chooser_dialog_new( "Select filelist to browse",
-                                             NULL,
-                                             GTK_FILE_CHOOSER_ACTION_OPEN,
-                                             GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-                                             GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
-		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(listSelection), Text::toT(Util::getDataPath() + "FileLists/").c_str());
+	if (widget == GTK_WIDGET(openFList))
+	{
+		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(flistDialog), 
+			Text::toT(Util::getDataPath() + "FileLists/").c_str());
+		gtk_widget_show_all(GTK_WIDGET(flistDialog));
+ 		int ret = gtk_dialog_run(flistDialog);
+		gtk_widget_hide(GTK_WIDGET(flistDialog));
 	
- 		int ret = gtk_dialog_run (GTK_DIALOG(listSelection));
+		if (ret != GTK_RESPONSE_ACCEPT) return;
 	
-		path = gtk_file_chooser_get_filename( GTK_FILE_CHOOSER(listSelection) );
-		gtk_widget_destroy(listSelection);
-
-		if(ret != GTK_RESPONSE_OK) return;
-
-		name = g_path_get_basename( path.c_str() );
-	}
+		path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(flistDialog));
+		name = g_path_get_basename(path.c_str());
+	} else {
+		name = "Own List";
+		path = Util::getDataPath() + "MyList.DcLst";
+	}	
 
 	WulforManager::get()->openFileList_gui(name, path);
 }
