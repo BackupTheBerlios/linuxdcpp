@@ -29,11 +29,7 @@
 #include <sys/resource.h>
 #endif
 
-#ifdef TARGET_I386
 #include <linux/atomic.h>
-#elif HAVE_ASM_ATOMIC_H
-#include <asm/atomic.h>
-#endif
 
 #include "Exception.h"
 STANDARD_EXCEPTION(ThreadException);
@@ -150,6 +146,6 @@ private:
 
 /**
  * @file
- * $Id: Thread.h,v 1.6 2005/09/14 08:49:58 paskharen Exp $
+ * $Id: Thread.h,v 1.7 2005/12/09 13:44:43 paskharen Exp $
  */
 
