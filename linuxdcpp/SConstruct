@@ -5,8 +5,6 @@
 #
 #	debug=1:	Compile the program with debug information
 #	release=1:	Compile the program with optimizations
-#   atomic=0:	Disable atomic inc/dec in dc++ core. This is iseful if you 
-#				don't have a processor supported by linux/atomic.h.
 #
 ###########################################################################
 
@@ -126,26 +124,34 @@ if not conf.CheckLibWithHeader('bz2', 'bzlib.h', 'c'):
 	print 'Note: You might have the lib but not the headers'
 	Exit(1)
 
-atomic = int(ARGUMENTS.get('atomic', 1))
-if atomic:
+detected = 1
+cpu = os.uname()[4]
+if cpu=='i386' or cpu=='i486' or cpu=='i586' or cpu=='i686':
+	conf.env.Append(CXXFLAGS='-DTARGET_X86')
+elif cpu=='x86_64':
+	conf.env.Append(CXXFLAGS='-DTARGET_X86_64')
+elif cpu=='alpha':
+	conf.env.Append(CXXFLAGS='-DTARGET_ALPHA')
+elif cpu=='ppc':
+	conf.env.Append(CXXFLAGS='-DTARGET_POWERPC')
+elif cpu=='sparc':
+#	conf.env.Append(CXXFLAGS='-DTARGET_SPARC')
+	print 'Warning: Atomic operations for sparc not avaliable. Disabling.'
+	detected = 0
+elif cpu=='arm':
+	conf.env.Append(CXXFLAGS='-DTARGET_ARM')
+elif cpu=='mips':
+	conf.env.Append(CXXFLAGS='-DTARGET_MIPS')
+elif cpu=='ia64':
+	conf.env.Append(CXXFLAGS='-DTARGET_IA64')
+else:
+	print 'Warning: Unknown cpu architecture. Disabling atomic operations.'
+	print 'Cpu string reported was \"' + cpu + '\".'
+	detected = 0
+
+if detected:
 	conf.env.Append(CXXFLAGS = '-DHAVE_ASM_ATOMIC_H')
-	cpu = os.uname()[4]
-	if cpu=='i386' or cpu=='i486' or cpu=='i586' or cpu=='i686':
-		conf.env.Append(CXXFLAGS='-DTARGET_X86')
-	elif cpu=='x86_64':
-		conf.env.Append(CXXFLAGS='-DTARGET_X86_64')
-	elif cpu=='alpha':
-		conf.env.Append(CXXFLAGS='-DTARGET_ALPHA')
-	elif cpu=='ppc':
-		conf.env.Append(CXXFLAGS='-DTARGET_POWERPC')
-	elif cpu=='sparc':
-		conf.env.Append(CXXFLAGS='-DTARGET_SPARC')
-	elif cpu=='arm':
-		conf.env.Append(CXXFLAGS='-DTARGET_ARM')
-	else:
-		print 'Error: Unknown cpu architecture. Try compiling with atomic=0.'
-		print 'Cpu string reported was \"' + cpu + '\".'
-		Exit(1)
+
 
 conf.env.Append(CXXFLAGS = '-D_GNU_SOURCE')
 if not conf.CheckDefine('PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP', 'pthread.h', 'pthread'):

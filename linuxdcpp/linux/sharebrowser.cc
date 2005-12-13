@@ -258,17 +258,21 @@ void ShareBrowser::updateFiles_gui(bool fromFind) {
 	for (it_file = files->begin(); it_file != files->end(); it_file++) {
 		gtk_list_store_append(fileStore, &iter);
 
+		//If ext is empty we cannot do substr on it
+		string ext = Util::getFileExt((*it_file)->getName());
+		if (ext.length() > 0) ext = ext.substr(1);
+
 		//data needs to be converted to utf8 if it's not in that form
-		if (listing.getUtf8()) {
+ 		if (listing.getUtf8()) {
 			gtk_list_store_set(fileStore, &iter,
 				COLUMN_FILE, Util::getFileName((*it_file)->getName()).c_str(),
-				COLUMN_TYPE, Util::getFileExt((*it_file)->getName()).substr(1).c_str(),
+				COLUMN_TYPE, ext.c_str(),
 				COLUMN_FILE_ORDER, Util::getFileName("f"+(*it_file)->getName()).c_str(),
 				-1);
 		} else {
 			gtk_list_store_set(fileStore, &iter,
 				COLUMN_FILE, Text::acpToUtf8(Util::getFileName((*it_file)->getName())).c_str(),
-				COLUMN_TYPE, Text::acpToUtf8(Util::getFileExt((*it_file)->getName())).substr(1).c_str(),
+				COLUMN_TYPE, Text::acpToUtf8(ext).c_str(),
 				COLUMN_FILE_ORDER, Text::acpToUtf8(Util::getFileName("f"+(*it_file)->getName())).c_str(),
 				-1);
 		}

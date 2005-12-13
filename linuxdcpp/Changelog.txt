@@ -1,3 +1,10 @@
+2006-12-13 - paskharen
+* Fixed bug in sharebrowser when a file has no extension (thanks Vikram Aggarwal)
+* Added atomic code for mips and ia64 (thanks Romain Beauxis)
+* Changed behaivour when cpu type is not supported, it now disables atomic 
+  operations automatically.
+* Made finished ul and dl icons same size as the others.
+
 2006-12-09 - paskharen
 * Added asm code (atomic inc/dec) for more cpu architectures.
 * Fixed the crash when closing the open file list dialog.

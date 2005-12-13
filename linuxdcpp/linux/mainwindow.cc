@@ -256,6 +256,7 @@ void MainWindow::createWindow_gui() {
 	hashCallback.connect(G_OBJECT(hashItem), "activate", NULL);
 	aboutCallback.connect(G_OBJECT(aboutItem), "activate", NULL);
 	quitCallback.connect(G_OBJECT(quitItem), "activate", NULL);
+	quitCallback.connect(G_OBJECT(quitButton), "clicked", NULL);
 	aboutItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "about"));
 	finishedDL_Callback.connect(G_OBJECT(finishedDL_button), "clicked", NULL);
 	finishedDL_Callback.connect(G_OBJECT(finishedDL_item), "activate", NULL);
