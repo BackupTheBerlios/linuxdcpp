@@ -1,3 +1,6 @@
+2005-12-19 - phase
+* Fixed a typo in the seach. (thanks x-term)
+
 2006-12-13 - paskharen
 * Fixed bug in sharebrowser when a file has no extension (thanks Vikram Aggarwal)
 * Added atomic code for mips and ia64 (thanks Romain Beauxis)

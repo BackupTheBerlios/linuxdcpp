@@ -923,7 +923,7 @@ void Search::search_gui ()
 			s += *si + ' ';	//Shouldn't get 0-length tokens, so safely assume at least a first char.
 	s = s.substr(0, max(s.size(), static_cast<tstring::size_type>(1)) - 1);
 
-	SearchManager::SizeModes mode((SearchManager::SizeModes)gtk_combo_box_get_active (GTK_COMBO_BOX (searchItems["Unit"])));
+	SearchManager::SizeModes mode((SearchManager::SizeModes)gtk_combo_box_get_active (GTK_COMBO_BOX (searchItems["Diffrence"])));
 	if(llsize == 0)
 		mode = SearchManager::SIZE_DONTCARE;
 
