@@ -78,8 +78,6 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	factory.addColumn_gui(COLUMN_DESC, "Description", TreeViewFactory::STRING, WIDTH_DESC);
 	factory.addColumn_gui(COLUMN_USERS, "Users", TreeViewFactory::INT, WIDTH_USERS);
 	factory.addColumn_gui(COLUMN_ADDRESS, "Address", TreeViewFactory::STRING, WIDTH_ADDRESS);
-	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(hubStore), COLUMN_USERS, GTK_SORT_DESCENDING);
-	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(hubView, COLUMN_USERS), true);
 
 	menu = GTK_MENU(gtk_menu_new()); 
 	conItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Connect"));

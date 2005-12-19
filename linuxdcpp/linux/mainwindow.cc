@@ -173,8 +173,6 @@ void MainWindow::createWindow_gui() {
 	factory.addColumn_gui(COLUMN_SIZE, "Size", TreeViewFactory::STRING, WIDTH_SIZE);
 	factory.addColumn_gui(COLUMN_PATH, "Path", TreeViewFactory::STRING, WIDTH_PATH);
 	gtk_tree_view_insert_column(transferView, gtk_tree_view_column_new(), COLUMN_ID);
-	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(transferStore), COLUMN_USER, GTK_SORT_ASCENDING);
-	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(transferView, COLUMN_USER), true);
 
 	file = WulforManager::get()->getPath() + "/pixmaps/upload.png";
 	uploadPic = gdk_pixbuf_new_from_file(file.c_str(), NULL);
