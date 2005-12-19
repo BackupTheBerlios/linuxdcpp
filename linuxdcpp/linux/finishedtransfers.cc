@@ -38,6 +38,7 @@ FinishedTransfers::FinishedTransfers(int type, std::string title, GCallback clos
 	fc.addColumn_gui(COLUMN_SIZE, "Size", TreeViewFactory::STRING, 100);
 	fc.addColumn_gui(COLUMN_SPEED, "Speed", TreeViewFactory::STRING, 100);
 	fc.addColumn_gui(COLUMN_CRC, "CRC Checked", TreeViewFactory::STRING, 100);
+	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(transferView, COLUMN_TIME), true);
 	
 	finishedTransfersMenu = GTK_MENU(gtk_menu_new());
 	openWith = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Open with"));

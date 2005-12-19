@@ -83,6 +83,8 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	nickViewFactory.addColumn_gui(COLUMN_EMAIL, "eMail", TreeViewFactory::STRING, WIDTH_EMAIL);
 	nickViewFactory.setSortColumn_gui(COLUMN_NICK, COLUMN_NICK_ORDER);
 	nickViewFactory.setSortColumn_gui(COLUMN_SHARED, COLUMN_SHARED_BYTES);
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(nickStore), COLUMN_NICK_ORDER, GTK_SORT_ASCENDING);
+	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(nickView, COLUMN_NICK), true);
 
 	chatBuffer = gtk_text_buffer_new(NULL);
 	gtk_text_view_set_buffer(chatText, chatBuffer);

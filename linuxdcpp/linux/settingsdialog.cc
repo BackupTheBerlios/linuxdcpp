@@ -449,6 +449,9 @@ void Settings::initDownloads_gui ()
 
 	downloadTo->addColumn_gui (DOWNLOADTO_NAME, "Favorite name", TreeViewFactory::STRING, 100);
 	downloadTo->addColumn_gui (DOWNLOADTO_DIR, "Directory", TreeViewFactory::STRING, 200);
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(downloadToStore), DOWNLOADTO_NAME, GTK_SORT_ASCENDING);
+	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(view, DOWNLOADTO_NAME), true);
+
 	gtk_widget_set_sensitive (downloadItems["Remove"], FALSE);
 	StringPairList directories = HubManager::getInstance()->getFavoriteDirs();
 	for(StringPairIter j = directories.begin(); j != directories.end(); j++)
@@ -749,6 +752,8 @@ void Settings::initSharing_gui ()
 	shares->addColumn_gui (SHARE_DIR, "Directory", TreeViewFactory::STRING, 200);
 	shares->addColumn_gui (SHARE_SIZE, "Size", TreeViewFactory::STRING, 100);
 	shares->setSortColumn_gui (SHARE_SIZE, SHARE_REALSIZE);
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(shareStore), SHARE_NAME, GTK_SORT_ASCENDING);
+	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(view, SHARE_NAME), true);
 	gtk_widget_set_sensitive (shareItems["Remove"], FALSE);
 
 	StringPairList directories = ShareManager::getInstance()->getDirectories();
@@ -902,7 +907,8 @@ void Settings::initAppearance_gui ()
 	
 	appearance->addColumn_gui (APPEARANCE_USE, "", TreeViewFactory::BOOL, -1);
 	appearance->addColumn_gui (APPEARANCE_NAME, "", TreeViewFactory::STRING, -1);
-	
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(appearanceStore), APPEARANCE_NAME, GTK_SORT_ASCENDING);
+
 	GList *list = gtk_tree_view_column_get_cell_renderers (gtk_tree_view_get_column(GTK_TREE_VIEW (appearanceItems["Options"]), APPEARANCE_USE));
 	GtkCellRenderer *renderer = (GtkCellRenderer*)list->data;
 	g_signal_connect (renderer, "toggled", G_CALLBACK (onAppearanceToggledClicked_gui), (gpointer)this);	
@@ -1037,6 +1043,7 @@ void Settings::initAdvanced_gui ()
 	
 	advanced->addColumn_gui (ADVANCED_USE, "", TreeViewFactory::BOOL, -1);
 	advanced->addColumn_gui (ADVANCED_NAME, "", TreeViewFactory::STRING, -1);
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(advancedStore), ADVANCED_NAME, GTK_SORT_ASCENDING);
 	
 	GList *list = gtk_tree_view_column_get_cell_renderers (gtk_tree_view_get_column(GTK_TREE_VIEW (advancedItems["Advanced"]), ADVANCED_USE));
 	GtkCellRenderer *renderer = (GtkCellRenderer*)list->data;
