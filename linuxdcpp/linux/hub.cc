@@ -224,7 +224,7 @@ void Hub::updateUser_gui(string nick, int64_t shared, string iconFile,
 
 	icon = userIcons[iconFile];
 	gtk_list_store_set(nickStore, &iter, 
-		COLUMN_NICK, Text::acpToUtf8(nick).c_str(),
+		COLUMN_NICK, nick.c_str(),
 		COLUMN_SHARED, Util::formatBytes(shared).c_str(),
 		COLUMN_DESCRIPTION, description.c_str(),
 		COLUMN_TAG, tag.c_str(),
