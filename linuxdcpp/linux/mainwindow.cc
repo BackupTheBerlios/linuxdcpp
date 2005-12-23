@@ -952,7 +952,7 @@ void MainWindow::openFList_gui(GtkWidget *widget, gpointer data)
  		int ret = gtk_dialog_run(flistDialog);
 		gtk_widget_hide(GTK_WIDGET(flistDialog));
 	
-		if (ret != GTK_RESPONSE_ACCEPT) return;
+		if (ret != GTK_RESPONSE_OK || ret != GTK_RESPONSE_ACCEPT) return;
 	
 		path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(flistDialog));
 		name = g_path_get_basename(path.c_str());
