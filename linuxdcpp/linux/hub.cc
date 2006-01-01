@@ -675,8 +675,8 @@ void Hub::completion_gui(GtkWidget *, GdkEventKey *key, gpointer) {
 		string name = g_utf8_strdown(t, length);
 
 		//check for [ or ( prefix and remove [] or () with text inside them
-		while(g_str_has_prefix(name.c_str(), "[") || g_str_has_prefix(name.c_str(), "(")){
-			if(g_str_has_prefix(name.c_str(), "[")){
+		while (g_str_has_prefix(name.c_str(), "[") || g_str_has_prefix(name.c_str(), "(")) {
+			if (g_str_has_prefix(name.c_str(), "[")) {
 				string::size_type start = name.find_first_of("[", 0);
 				string::size_type end = name.find_first_of("]", start);
 				if (end == string::npos) end = start; //if end == string::npos it looks like there isn't closing bracket so we can safely remove [ and continue completion.. or can we???

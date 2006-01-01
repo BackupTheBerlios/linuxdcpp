@@ -72,7 +72,6 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	fileViewFactory.setSortColumn_gui(COLUMN_SIZE, COLUMN_SIZE_ORDER);
 	fileViewFactory.setSortColumn_gui(COLUMN_EXACT_SIZE, COLUMN_SIZE_ORDER);
 	fileSelection = gtk_tree_view_get_selection(fileView);
-//	gtk_tree_view_column_set_sort_order(gtk_tree_view_get_column(fileView, COLUMN_FILE), GTK_SORT_ASCENDING);
 
 	//initiate the dir treeview
 	dirView = GTK_TREE_VIEW(glade_xml_get_widget(xml, "dirView"));
@@ -85,7 +84,6 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	dirViewFactory.addColumn_gui(COLUMN_DIR, "", TreeViewFactory::PIXBUF_STRING, -1, COLUMN_ICON_DIR);
 	dirViewFactory.setSortColumn_gui(COLUMN_DIR, COLUMN_DIR);
 	dirSelection = gtk_tree_view_get_selection(dirView);
-//	gtk_tree_view_column_set_sort_order(gtk_tree_view_get_column(dirView, COLUMN_DIR), GTK_SORT_ASCENDING);
 
 	//create popup menus
 	dirMenu = GTK_MENU(gtk_menu_new());
@@ -205,6 +203,7 @@ void ShareBrowser::updateFiles_gui(bool fromFind) {
 	DirectoryListing::File::Iter it_file;
 	gpointer ptr;
 	GtkTreeIter iter;
+	int64_t size;
 	
 	//If this function is called from the find stuff the selection is not
 	//yet updated sometimes. Thus we need to look at posDir.
@@ -242,15 +241,16 @@ void ShareBrowser::updateFiles_gui(bool fromFind) {
 				-1);
 		}
 
+		size = (*it_dir)->getTotalSize(false);
 		gtk_list_store_set(fileStore, &iter,
 			COLUMN_ICON, iconDirectory,
-			COLUMN_SIZE, Util::formatBytes((*it_dir)->getSize()).c_str(),
-			COLUMN_EXACT_SIZE, Util::formatExactSize((*it_dir)->getSize()).c_str(),
-			COLUMN_SIZE_ORDER, (*it_dir)->getSize(),
+			COLUMN_SIZE, Util::formatBytes(size).c_str(),
+			COLUMN_EXACT_SIZE, Util::formatExactSize(size).c_str(),
+			COLUMN_SIZE_ORDER, (gdouble)size,
 			COLUMN_DL_FILE, (gpointer)(*it_dir),
 			-1);
 
-		currentSize += (*it_dir)->getSize();
+		currentSize += size;
 		currentItems++;
 	}
 
@@ -277,11 +277,12 @@ void ShareBrowser::updateFiles_gui(bool fromFind) {
 				-1);
 		}
 
+		size = (*it_file)->getSize();
 		gtk_list_store_set(fileStore, &iter,
 			COLUMN_ICON, iconFile,
-			COLUMN_SIZE, Util::formatBytes((*it_file)->getSize()).c_str(),
-			COLUMN_EXACT_SIZE, Util::formatExactSize((*it_file)->getSize()).c_str(),
-			COLUMN_SIZE_ORDER, (*it_file)->getSize(),
+			COLUMN_SIZE, Util::formatBytes(size).c_str(),
+			COLUMN_EXACT_SIZE, Util::formatExactSize(size).c_str(),
+			COLUMN_SIZE_ORDER, (gdouble)size,
 			COLUMN_DL_FILE, (gpointer)(*it_file),
 			-1);
 
@@ -291,13 +292,13 @@ void ShareBrowser::updateFiles_gui(bool fromFind) {
 		else
 			gtk_list_store_set(fileStore, &iter, COLUMN_TTH, "N/A", -1);
 
-		currentSize += (*it_file)->getSize();
+		currentSize += size;
 		currentItems++;
 	}
 
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(fileStore), COLUMN_FILE_ORDER, GTK_SORT_ASCENDING);
 	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(fileView, COLUMN_FILE), TRUE);
-
+    gtk_tree_view_scroll_to_point(fileView, 0, 0);
 	updateStatus_gui();
 }
 	

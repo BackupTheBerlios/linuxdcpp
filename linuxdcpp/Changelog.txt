@@ -1,3 +1,8 @@
+2006-01-01 - paskharen
+* Improvements to Open own list and Open File List. (thanks Steven)
+* Improvements to favourite hubs. (thanks Steven)
+* Various cleanups. (thanks Steven)
+
 2005-12-24 - phase
 * Fixed a bug with the Open File List. (Thanks Steven Sheehy)
 

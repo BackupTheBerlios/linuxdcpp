@@ -57,6 +57,8 @@ private:
 
 	GtkWidget *mainBox;
 	GtkDialog *deleteDialog;
+	GtkDialog *errorDialog;
+	GtkLabel *errorLabel;
 	std::map<string,GtkWidget*> button;
 	std::map<string,GtkWidget*> dialog;
 	std::map<string,GtkWidget*> menuItems;
@@ -83,9 +85,8 @@ private:
 	void add_client (FavoriteHubEntry e);
 	void remove_client (FavoriteHubEntry *e);
 	static void remove_gui (GtkWidget *widget, gpointer data);
-	static void moveUp_gui (GtkWidget *widget, gpointer data);
-	static void moveDown_gui (GtkWidget *widget, gpointer data);
 	static void connect_gui (GtkWidget *widget, gpointer data);
+	void showErrorDialog(string description);
 
 	static void onToggledClicked_gui (GtkCellRendererToggle *cell, gchar *path_str, gpointer data);
 	void setConnect_client (FavoriteHubEntry *e, bool a);

@@ -76,8 +76,6 @@ class WulforManager {
 		
 		void deleteDialogEntry_gui();
 
-		void openFileList_gui(std::string user, std::string path) const;
-
 		enum {
 			PUBLIC_HUBS,
 			HUB,

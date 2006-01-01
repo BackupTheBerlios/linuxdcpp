@@ -941,8 +941,8 @@ void MainWindow::transferComplete_client(Transfer *t) {
 
 void MainWindow::openFList_gui(GtkWidget *widget, gpointer data)
 {
-	string name;
-	string path;
+	User::Ptr user;
+	string path, filename;
 
 	if (widget == GTK_WIDGET(openFList))
 	{
@@ -955,13 +955,29 @@ void MainWindow::openFList_gui(GtkWidget *widget, gpointer data)
 		if (ret != GTK_RESPONSE_OK && ret != GTK_RESPONSE_ACCEPT) return;
 	
 		path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(flistDialog));
-		name = g_path_get_basename(path.c_str());
-	} else {
-		name = "Own List";
-		path = Util::getDataPath() + "MyList.DcLst";
-	}	
+		filename = g_path_get_basename(path.c_str());
+		if (filename.substr(filename.length()-8, 8) != ".xml.bz2" && Util::getFileExt(filename) != ".DcLst")
+			return;
+		user = new User(filename);
+	}
+	else
+	{
+		user = new User("My List");
+		path = Util::getDataPath() + "files.xml.bz2";
+		try
+		{
+			// Test if file list already exists
+			::File myFileList(path, ::File::READ, ::File::OPEN);
+			myFileList.close();
+		}
+		catch (const FileException&)
+		{
+			// No existing file list; create one instead
+			ShareManager::getInstance()->getOwnListFile();
+		}
+	}
 
-	WulforManager::get()->openFileList_gui(name, path);
+	WulforManager::get()->addShareBrowser_gui(user, path);
 }
 
 void MainWindow::refreshFList_gui(GtkWidget *widget, gpointer data)
