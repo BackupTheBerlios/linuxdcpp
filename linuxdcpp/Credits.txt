@@ -14,6 +14,7 @@ John Armstrong
 Naga
 Vikram Aggarwal
 Romain Beauxis
+Steven Sheehy
 
 DC++:
 -----
