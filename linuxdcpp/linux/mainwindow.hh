@@ -72,6 +72,8 @@ class MainWindow:
 			CONNECTION_NA
 		} connection_t;
 
+		static const int STATE_NORMAL, STATE_MAXIMIZED;
+
 		void updateTransfer_gui(std::string id, connection_t type, ConnectionQueueItem *item, std::string status, 
 			std::string time, std::string speed, std::string file, std::string size, std::string path);
 		void removeTransfer_gui(std::string id);

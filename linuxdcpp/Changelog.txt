@@ -1,3 +1,6 @@
+2006-01-13 - paskharen
+* Made main window remember size, position and state (Bug #3348)(thanks Tom Lofts)
+
 2006-01-01 - paskharen
 * Improvements to Open own list and Open File List. (thanks Steven)
 * Improvements to favourite hubs. (thanks Steven)

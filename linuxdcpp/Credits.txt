@@ -15,6 +15,7 @@ Naga
 Vikram Aggarwal
 Romain Beauxis
 Steven Sheehy
+Tom Lofts
 
 DC++:
 -----

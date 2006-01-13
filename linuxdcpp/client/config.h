@@ -29,7 +29,7 @@
 
 // Changing this number will change the maximum number of simultaneous users
 // we can handle (when using select)...
-#define FD_SETSIZE 4096
+//#define FD_SETSIZE 4096
 
 // Remove this line if hashes are not available in your stl
 #define HAVE_HASH 1
@@ -123,5 +123,5 @@ typedef unsigned __int64 u_int64_t;
 
 /**
  * @file
- * $Id: config.h,v 1.5 2005/06/25 19:24:03 paskharen Exp $
+ * $Id: config.h,v 1.6 2006/01/13 15:51:54 paskharen Exp $
  */

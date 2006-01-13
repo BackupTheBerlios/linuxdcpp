@@ -35,6 +35,9 @@
 
 using namespace std;
 
+const int MainWindow::STATE_NORMAL = 0;
+const int MainWindow::STATE_MAXIMIZED = 1;
+
 MainWindow::MainWindow():
 	connectCallback(this, &MainWindow::connectClicked_gui),
 	pubHubsCallback(this, &MainWindow::pubHubsClicked_gui),
@@ -83,10 +86,36 @@ MainWindow::~MainWindow() {
 	UploadManager::getInstance()->removeListener(this);
 	ConnectionManager::getInstance()->removeListener(this);
 
+	//Save window state and position
+	int posX, posY, sizeX, sizeY, state;
+	GdkWindowState gdkState;
+	SettingsManager *sm = SettingsManager::getInstance();
+	//The gtk move/get position cause drift, one adds window decorations, one does not
+	gdk_window_get_position(GTK_WIDGET(window)->window, &posX, &posY);
+	gtk_window_get_size(window, &sizeX, &sizeY);
+	gdkState = gdk_window_get_state(GTK_WIDGET(window)->window);
+
+	if (gdkState & GDK_WINDOW_STATE_MAXIMIZED || 
+		(posX < 0) || (posY < 0) ||(sizeX < 0) ||(sizeY < 0))
+	{
+		state = STATE_MAXIMIZED;
+	} else {
+		state = STATE_NORMAL;
+		//The get pos/size functions return junk when window is maximized
+		sm->set (SettingsManager::MAIN_WINDOW_POS_X, posX);
+		sm->set (SettingsManager::MAIN_WINDOW_POS_Y, posY);
+		sm->set (SettingsManager::MAIN_WINDOW_SIZE_X, sizeX);
+		sm->set (SettingsManager::MAIN_WINDOW_SIZE_Y, sizeY);
+	}
+	
+	sm->set (SettingsManager::MAIN_WINDOW_STATE, state);
+
+	//Make sure all windows are deallocated (probably not necessary)
 	gtk_widget_destroy(GTK_WIDGET(connectDialog));
 	gtk_widget_destroy(GTK_WIDGET(exitDialog));
 	gtk_widget_destroy(GTK_WIDGET(flistDialog));
 	gtk_widget_destroy(GTK_WIDGET(aboutDialog));
+	gtk_widget_destroy(GTK_WIDGET(window));
 
 	//this makes sure the pixmaps are freed (using gtk:s ref counting)
 	g_object_unref(G_OBJECT(uploadPic));
@@ -269,6 +298,18 @@ void MainWindow::createWindow_gui() {
 	deleteCallback.connect(G_OBJECT(window), "delete-event", NULL);
 //	transferCallback.connect(G_OBJECT(window), "button-release-event", this);
 	switchPageCallback.connect(G_OBJECT(book), "switch-page", NULL);
+
+	//Load window state and position from settings manager
+	int posX =  SETTING(MAIN_WINDOW_POS_X);
+	int posY = SETTING(MAIN_WINDOW_POS_Y);
+	int sizeX = SETTING(MAIN_WINDOW_SIZE_X);
+	int sizeY = SETTING(MAIN_WINDOW_SIZE_Y);
+ 	
+	//The gtk move/get position cause drift, one adds window decorations, one does not
+ 	gdk_window_move(GTK_WIDGET(window)->window, posX, posY);
+ 	gtk_window_resize(window, sizeX, sizeY);
+ 	if (SETTING(MAIN_WINDOW_STATE) == STATE_MAXIMIZED)
+		gtk_window_maximize(window);
 
 	//Create text in about window
 	GtkLabel *al = GTK_LABEL(glade_xml_get_widget(xml, "aboutLabel"));
@@ -834,7 +875,7 @@ void MainWindow::updateTransfer_gui(string id, connection_t type, ConnectionQueu
 		gtk_list_store_set(transferStore, &iter, COLUMN_TYPE, downloadPic, -1);
 	}
 	if (item) {
-		gtk_list_store_set(transferStore, &iter, COLUMN_USER, item->getUser ()->getNick ().c_str(), COLUMN_USERPTR, (gpointer)item, -1);
+		gtk_list_store_set(transferStore, &iter, COLUMN_USER, item->getUser()->getNick().c_str(), COLUMN_USERPTR, (gpointer)item, -1);
 	}
 	if (status != "") {
 		gtk_list_store_set(transferStore, &iter, COLUMN_STATUS, status.c_str(), -1);
