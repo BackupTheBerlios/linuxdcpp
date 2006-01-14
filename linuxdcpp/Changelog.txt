@@ -1,3 +1,6 @@
+2006-01-14 - paskharen
+* Fixed the bug saving bogus values for main window size/position
+
 2006-01-13 - paskharen
 * Made main window remember size, position and state (Bug #3348)(thanks Tom Lofts)
 

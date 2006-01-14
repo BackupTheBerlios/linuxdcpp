@@ -95,9 +95,7 @@ MainWindow::~MainWindow() {
 	gtk_window_get_size(window, &sizeX, &sizeY);
 	gdkState = gdk_window_get_state(GTK_WIDGET(window)->window);
 
-	if (gdkState & GDK_WINDOW_STATE_MAXIMIZED || 
-		(posX < 0) || (posY < 0) ||(sizeX < 0) ||(sizeY < 0))
-	{
+	if (gdkState & GDK_WINDOW_STATE_MAXIMIZED) {
 		state = STATE_MAXIMIZED;
 	} else {
 		state = STATE_NORMAL;
@@ -624,7 +622,7 @@ gboolean MainWindow::deleteWindow_gui(
 	
 	if (!BOOLSETTING(CONFIRM_EXIT)) {
 		gtk_main_quit();
-		return FALSE;
+		return TRUE;
 	}
 	
 	gtk_widget_show_all(GTK_WIDGET(exitDialog));
@@ -633,7 +631,7 @@ gboolean MainWindow::deleteWindow_gui(
 
 	if (response == GTK_RESPONSE_OK) {
 		gtk_main_quit();
-		return FALSE;
+		return TRUE;
 	}
 
 	return TRUE;
