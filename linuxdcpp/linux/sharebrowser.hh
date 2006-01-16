@@ -51,27 +51,39 @@ class ShareBrowser:
 
 	private:
 		//only call these from gui thread
-		gboolean buttonPressed_gui(GtkWidget *, GdkEventButton *, gpointer);
-		gboolean buttonReleased_gui(GtkWidget *, GdkEventButton *, gpointer);
-		void menuClicked_gui(GtkMenuItem *item, gpointer);
-		void buttonClicked_gui(GtkWidget *widget, gpointer);
+		static gboolean fileButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
+		static gboolean filePopupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
+		static gboolean dirButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
+		static gboolean dirButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
+		static gboolean dirPopupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
+		static void matchButtonClicked_gui(GtkWidget *widget, gpointer user_data);
+		static void findButtonClicked_gui(GtkWidget *widget, gpointer);
+		static void nextButtonClicked_gui(GtkWidget *widget, gpointer);
+		static void downloadClicked_gui(GtkMenuItem *item, gpointer user_data);
+		static void downloadToClicked_gui(GtkMenuItem *item, gpointer user_data);
+		static void downloadFavoriteClicked_gui(GtkMenuItem *item, gpointer user_data);
+		static void downloadDirClicked_gui(GtkMenuItem *item, gpointer user_data);
+		static void downloadDirToClicked_gui(GtkMenuItem *item, gpointer user_data);
+		static void downloadFavoriteDirClicked_gui(GtkMenuItem *item, gpointer user_data);
+		static void searchAlternatesClicked_gui(GtkMenuItem *item, gpointer user_data);
 
 		void buildDirs_gui(DirectoryListing::Directory::List dir, GtkTreeIter *iter);
 		void updateFiles_gui(bool fromFind);
 		void updateStatus_gui();
 
 		//only call these from client thread
+		void downloadSelectedFiles_gui(std::string target);
 		void downloadFile_client(DirectoryListing::File *file, std::string target);
+		void downloadSelectedDirs_gui(std::string target);
 		void downloadDir_client(DirectoryListing::Directory *dir, std::string target);
 
-		Callback3<ShareBrowser, gboolean, GtkWidget *, GdkEventButton *> 
-			pressedCallback, releasedCallback;
-		Callback2<ShareBrowser, void, GtkMenuItem *> menuCallback;
-		Callback2<ShareBrowser, void, GtkWidget *> buttonCallback;
+		void buildDownloadMenus_gui(int menu);
+
 		GdkEventType oldType;
 		guint oldButton;
 
 		DirectoryListing listing;
+		std::string lastDir;
 		int64_t shareSize;
 		int64_t currentSize;
 		int shareItems;
@@ -89,8 +101,12 @@ class ShareBrowser:
 		GtkButton *matchButton, *findButton, *nextButton;
 		GdkPixbuf *iconFile, *iconDirectory;
 		
-		GtkMenu *fileMenu, *dirMenu;
-		GtkMenuItem *dlDir, *dlFile, *dlDirTo, *dlFileTo;
+		GtkMenu *fileMenu, *dirMenu, *fileDownloadMenu, *dirDownloadMenu;
+		std::map<string, GtkWidget*> dirMenuItems;
+		std::map<string, GtkWidget*> fileMenuItems;
+		std::vector<GtkWidget*> fileDownloadItems, dirDownloadItems;
+		typedef pair<ShareBrowser*, string> userData;
+		std::vector<userData*> menuUserData;
 		
 		enum {
 			COLUMN_FILE,

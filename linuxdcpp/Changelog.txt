@@ -1,3 +1,6 @@
+2006-01-16 - phase
+* Added Favorite Downloads, select multiple files and search for alternates to
+the sharebrowser.
 2006-01-14 - paskharen
 * Fixed the bug saving bogus values for main window size/position
 

@@ -58,11 +58,11 @@ GtkWidget *Search::getWidget()
 string getTextFromMenu (GtkMenuItem *item)
 {
 	if (GTK_BIN (item)->child)
-    	{
-      		GtkWidget *child = GTK_BIN (item)->child;
+	{
+		GtkWidget *child = GTK_BIN (item)->child;
 		gchar *text;
 		if (GTK_IS_LABEL (child))
-    		{
+		{
 			gtk_label_get (GTK_LABEL (child), &text);
 			return string (text);
 		}
