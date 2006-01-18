@@ -24,6 +24,22 @@ scons
 Scons will tell you if something's missing in a clear and human-readable way. 
 Hopefully. Fingers crossed. Knock on wood. Etc, etc. 
 
+For compile options, look in the main SConstruct file.
+
+Installing:
+-----------
+With binreloc:
+Using binreloc, which is the default, you can just copy the binary and the
+pixmaps and glade directorys to wherever you like. Then you can add the program
+to your menu or create a symlink in /bin for easy access. As long as the binary
+and the pixmaps and glade directorys are in the same place it will find them.
+
+Using explicitly defined directory:
+To install the program in a more traditional way by hard-coding data locations,
+use scons PREFIX=/path/to/install/under to compile and
+scons PREFIX=/path/to/install/under install to copy the files to the right
+location.
+
 Known problems/rants =):
 ------------------------
 Utf8 locales are currently very buggy/not supported. A workaround is to specify
@@ -51,5 +67,4 @@ Contact:
 --------
 Website: linuxdcpp.berlios.de
 Irc: #linuxdc++ @ freenode.org
-
 

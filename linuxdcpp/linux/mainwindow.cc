@@ -35,8 +35,8 @@
 
 using namespace std;
 
-const int MainWindow::STATE_NORMAL = 0;
-const int MainWindow::STATE_MAXIMIZED = 1;
+const int MainWindow::STATE_NORMAL = 1;
+const int MainWindow::STATE_MAXIMIZED = 3;
 
 MainWindow::MainWindow():
 	connectCallback(this, &MainWindow::connectClicked_gui),
@@ -90,8 +90,8 @@ MainWindow::~MainWindow() {
 	int posX, posY, sizeX, sizeY, state;
 	GdkWindowState gdkState;
 	SettingsManager *sm = SettingsManager::getInstance();
-	//The gtk move/get position cause drift, one adds window decorations, one does not
-	gdk_window_get_position(GTK_WIDGET(window)->window, &posX, &posY);
+
+	gtk_window_get_position(window, &posX, &posY);
 	gtk_window_get_size(window, &sizeX, &sizeY);
 	gdkState = gdk_window_get_state(GTK_WIDGET(window)->window);
 
@@ -303,10 +303,9 @@ void MainWindow::createWindow_gui() {
 	int sizeX = SETTING(MAIN_WINDOW_SIZE_X);
 	int sizeY = SETTING(MAIN_WINDOW_SIZE_Y);
  	
-	//The gtk move/get position cause drift, one adds window decorations, one does not
- 	gdk_window_move(GTK_WIDGET(window)->window, posX, posY);
- 	gtk_window_resize(window, sizeX, sizeY);
- 	if (SETTING(MAIN_WINDOW_STATE) == STATE_MAXIMIZED)
+	gtk_window_move(window, posX, posY);
+	gtk_window_resize(window, sizeX, sizeY);
+	if (SETTING(MAIN_WINDOW_STATE) == STATE_MAXIMIZED)
 		gtk_window_maximize(window);
 
 	//Create text in about window

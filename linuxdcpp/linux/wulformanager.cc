@@ -215,7 +215,12 @@ WulforManager::~WulforManager() {
 }
 
 string WulforManager::getPath() {
+#ifdef _LIBDIR
+	string ret = _LIBDIR;
+	ret += "/ldcpp";
+#else
 	string ret = br_extract_dir(SELFPATH);
+#endif
 	return ret;
 }
 

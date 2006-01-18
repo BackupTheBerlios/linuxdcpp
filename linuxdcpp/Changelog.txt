@@ -1,6 +1,13 @@
+2006-01-18 - paskharen
+* Disabled asm code for ia64 (thanks Romain Beauxis 	
+* Added install targets to SConstruct file (thanks Naga)
+* Tweaked the window position save/load code to work for more people
+* Changed constants for window state to be the same as for main DC++
+
 2006-01-16 - phase
 * Added Favorite Downloads, select multiple files and search for alternates to
 the sharebrowser.
+
 2006-01-14 - paskharen
 * Fixed the bug saving bogus values for main window size/position
 

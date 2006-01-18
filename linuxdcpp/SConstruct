@@ -3,8 +3,21 @@
 #	This is the dcpp construction file. To use it type scons
 #	Specify arguments with scons arg=value. Argumens:
 #
-#	debug=1:	Compile the program with debug information
-#	release=1:	Compile the program with optimizations
+#      debug=1:                Compile the program with debug information
+#      release=1:              Compile the program with optimizations
+#      PREFIX="path":          Compile the program with PREFIX as the root
+#                              for installation.
+#                              eg. PREFIX=/usr/local -> ldcpp goes into
+#                              PREFIX/bin/ and other files into PREFIX/lib/
+#                              and PREFIX/share/
+#      BINDIR="path":          Place the program (ldcpp executable) in BINDIR
+#                              defaluts to PREFIX/bin/
+#      LIBDIR="path":          Place the glade and pixmap files under LIBDIR
+#                              defaults to PREFIX/lib/
+#      DOCDIR="path":          Place the program docs into DOCDIR
+#                              defaults to PREFIX/share/doc/
+#      FAKE_ROOT="path":       Make scons install ldcpp under a fake root
+#                              (for gentoo ebuilds)
 #
 ###########################################################################
 
@@ -143,7 +156,9 @@ elif cpu=='arm':
 elif cpu=='mips':
 	conf.env.Append(CXXFLAGS='-DTARGET_MIPS')
 elif cpu=='ia64':
-	conf.env.Append(CXXFLAGS='-DTARGET_IA64')
+#	conf.env.Append(CXXFLAGS='-DTARGET_IA64')
+	print 'Warning: Atomic operations for ia64 not avaliable. Disabling.'
+	detected = 0
 else:
 	print 'Warning: Unknown cpu architecture. Disabling atomic operations.'
 	print 'Cpu string reported was \"' + cpu + '\".'
@@ -151,7 +166,6 @@ else:
 
 if detected:
 	conf.env.Append(CXXFLAGS = '-DHAVE_ASM_ATOMIC_H')
-
 
 conf.env.Append(CXXFLAGS = '-D_GNU_SOURCE')
 if not conf.CheckDefine('PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP', 'pthread.h', 'pthread'):
@@ -170,13 +184,53 @@ env.Append(CXXFLAGS = ['-I.', '-DENABLE_BINRELOC', '-D_FILE_OFFSET_BITS=64'])
 
 debug = ARGUMENTS.get('debug', 0)
 if int(debug):
-	env.Append(CXXFLAGS = '-g')
+	env.Append(CXXFLAGS = '-g -ggdb -D_DEBUG')
+	env.Append(LDFLAGS = '-g -ggdb')
 
 release = ARGUMENTS.get('release', 0)
 if int(release):
 	env.Append(CXXFLAGS = '-O3')
 
+prefix = ARGUMENTS.get('PREFIX','')
+root = ARGUMENTS.get('FAKE_ROOT','')
+_dir = ''
+bindir = ARGUMENTS.get('BINDIR', prefix + '/bin')
+libdir = ARGUMENTS.get('LIBDIR', prefix + '/lib')
+docdir = ARGUMENTS.get('DOCDIR', prefix + '/share/doc')
+if str(prefix):
+	env.Append(CXXFLAGS = '-D_PREFIX=\'\"' + prefix + '\"\'')
+	env.Append(CXXFLAGS = '-D_LIBDIR=\'\"' + libdir + '\"\'')
+_dir = root
+
 objs = []
 objs.append(SConscript('client/SConstruct', exports='env', build_dir='build/client', duplicate=0))
 objs.append(SConscript('linux/SConstruct', exports='env', build_dir='build/gui', duplicate=0))
-Default(env.Program('dcpp', objs))
+Default(env.Program('ldcpp', objs))
+
+glade_files=['glade/favoritehubs.glade','glade/hash.glade',
+	'glade/mainwindow.glade','glade/publichubs.glade',
+	'glade/settingsdialog.glade','glade/downloadqueue.glade',
+	'glade/finishedtransfers.glade','glade/hub.glade',
+	'glade/privatemessage.glade','glade/search.glade',
+	'glade/sharebrowser.glade']
+pixmap_files=['pixmaps/dc++-fw.png','pixmaps/dc++.png',
+	'pixmaps/favhubs.png','pixmaps/FinishedUL.png',
+	'pixmaps/normal-fw.png','pixmaps/normal.png',
+	'pixmaps/queue.png','pixmaps/settings.png',
+	'pixmaps/dc++-fw-op.png','pixmaps/dc++-op.png',
+	'pixmaps/download.png','pixmaps/FinishedDL.png',
+	'pixmaps/normal-fw-op.png','pixmaps/normal-op.png',
+	'pixmaps/publichubs.png','pixmaps/search.png',
+	'pixmaps/upload.png']
+
+text_files=['Changelog.txt','Credits.txt','License.txt','Readme.txt']
+
+env.Install(dir = _dir + libdir + '/ldcpp/glade', source = glade_files)
+env.Install(dir = _dir + libdir + '/ldcpp/pixmaps', source = pixmap_files)
+env.Install(dir = _dir + docdir + '/ldcpp', source = text_files)
+env.Install(dir = _dir + bindir, source = 'ldcpp')
+
+env.Alias('install',[_dir + libdir + '/ldcpp/glade',
+	_dir + libdir + '/ldcpp/pixmaps',
+	_dir + docdir + '/ldcpp',
+	_dir + bindir])
