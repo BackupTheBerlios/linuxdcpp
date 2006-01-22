@@ -45,7 +45,7 @@ Known problems/rants =):
 Utf8 locales are currently very buggy/not supported. A workaround is to specify
 a non utf8 locale when running the program, assuming you have a non utf8 
 locale on your system. For example, I'm from Sweden so my utf8 locale would be
-sv_SE.UTF8. Starting the program like this: prompt# LC_CTYPE=sv_SE ./dcpp
+sv_SE.UTF8. Starting the program like this: prompt# LANG=sv_SE.ISO-8859-1 ./dcpp
 would run dcpp with a non utf8 locale.
 
 Most settings in the "Advanced" and "Apperance" pages are not working. You can 
