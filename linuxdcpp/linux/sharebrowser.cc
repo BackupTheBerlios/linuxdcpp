@@ -122,11 +122,11 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	//This can't be set with glade, needs to be done in code.
 	GtkLabel *label;
 	label = GTK_LABEL(gtk_bin_get_child(GTK_BIN(matchButton)));
-	gtk_label_set_markup(label, "<small>Match Queue</small>");
+	gtk_label_set_markup(label, "<span size=\"x-small\">Match Queue</span>");
 	label = GTK_LABEL(gtk_bin_get_child(GTK_BIN(findButton)));
-	gtk_label_set_markup(label, "<small>Find</small>");
+	gtk_label_set_markup(label, "<span size=\"x-small\">Find</span>");
 	label = GTK_LABEL(gtk_bin_get_child(GTK_BIN(nextButton)));
-	gtk_label_set_markup(label, "<small>Next</small>");
+	gtk_label_set_markup(label, "<span size=\"x-small\">Next</span>");
 	
 	//set the buttons in statusbar to same height as statusbar
 	GtkRequisition statusReq;
