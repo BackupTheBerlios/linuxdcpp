@@ -17,23 +17,6 @@
 */
 
 #include "mainwindow.hh"
-#include "wulformanager.hh"
-#include "selecter.hh"
-#include "settingsdialog.hh"
-#include "treeviewfactory.hh"
-
-#include <client/version.h>
-#include <client/Socket.h>
-#include <client/Client.h>
-#include <client/SettingsManager.h>
-#include <client/SearchManager.h>
-#include <client/Exception.h>
-
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-
-using namespace std;
 
 const int MainWindow::STATE_NORMAL = 1;
 const int MainWindow::STATE_MAXIMIZED = 3;
@@ -55,17 +38,7 @@ MainWindow::MainWindow():
 	switchPageCallback(this, &MainWindow::switchPage_gui),
 	openFListCallback(this, &MainWindow::openFList_gui),
 	refreshFListCallback(this, &MainWindow::refreshFList_gui),
-
-	lastUpdate(0),
-
-	WIDTH_TYPE(20), 
-	WIDTH_USER(150), 
-	WIDTH_STATUS(250), 
-	WIDTH_TIMELEFT(75),
-	WIDTH_SPEED(175), 
-	WIDTH_FILENAME(200), 
-	WIDTH_SIZE(175), 
-	WIDTH_PATH(200)
+	lastUpdate(0)
 {
 	createWindow_gui();
 	startSocket_client();
@@ -150,7 +123,6 @@ void MainWindow::createWindow_gui() {
 
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "mainWindow"));
 	book = GTK_NOTEBOOK(glade_xml_get_widget(xml, "book"));
-	transferView = GTK_TREE_VIEW(glade_xml_get_widget(xml, "transfers"));
 	connectEntry = GTK_ENTRY(glade_xml_get_widget(xml, "connectEntry"));
 
 	openFList = GTK_MENU_ITEM(glade_xml_get_widget(xml, "open_file_list_1"));
@@ -184,22 +156,29 @@ void MainWindow::createWindow_gui() {
 	gtk_widget_set_sensitive(GTK_WIDGET(searchSpyItem), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(networkStatsItem), false);
 
-	transferStore = gtk_list_store_new(10, GDK_TYPE_PIXBUF, G_TYPE_STRING, G_TYPE_STRING, 
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER);
-	gtk_tree_view_set_model(transferView, GTK_TREE_MODEL(transferStore));
-	transferSel = gtk_tree_view_get_selection(transferView);
-	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(transferView), GTK_SELECTION_MULTIPLE);
-	g_signal_connect (G_OBJECT (transferView), "button_press_event", G_CALLBACK (transferClicked_gui), (gpointer)this);
-	TreeViewFactory factory(transferView);
-	factory.addColumn_gui(COLUMN_TYPE, "", TreeViewFactory::PIXBUF, WIDTH_TYPE);
-	factory.addColumn_gui(COLUMN_USER, "User", TreeViewFactory::STRING, WIDTH_USER);
-	factory.addColumn_gui(COLUMN_STATUS, "Status", TreeViewFactory::STRING, WIDTH_STATUS);
-	factory.addColumn_gui(COLUMN_TIMELEFT, "Time Left", TreeViewFactory::STRING, WIDTH_TIMELEFT);
-	factory.addColumn_gui(COLUMN_SPEED, "Speed", TreeViewFactory::STRING, WIDTH_SPEED);
-	factory.addColumn_gui(COLUMN_FILENAME, "File", TreeViewFactory::STRING, WIDTH_FILENAME);
-	factory.addColumn_gui(COLUMN_SIZE, "Size", TreeViewFactory::STRING, WIDTH_SIZE);
-	factory.addColumn_gui(COLUMN_PATH, "Path", TreeViewFactory::STRING, WIDTH_PATH);
-	gtk_tree_view_insert_column(transferView, gtk_tree_view_column_new(), COLUMN_ID);
+	// Initialize transfer treeview
+	transferView.setView(
+		GTK_TREE_VIEW(glade_xml_get_widget(xml, "transfers")), 
+		true, 
+		SettingsManager::MAINFRAME_ORDER, 
+		SettingsManager::MAINFRAME_WIDTHS);
+	transferView.insertColumn(" ", 0, GDK_TYPE_PIXBUF, TreeView::PIXBUF, 20); // column for transfer type icon; didn't need title displayed so a space was used
+	transferView.insertColumn("User", 1, G_TYPE_STRING, TreeView::STRING, 150);
+	transferView.insertColumn("Status", 2, G_TYPE_STRING, TreeView::STRING, 250);
+	transferView.insertColumn("Time Left", 3, G_TYPE_STRING, TreeView::STRING, 75);
+	transferView.insertColumn("Speed", 4, G_TYPE_STRING, TreeView::STRING, 175);
+	transferView.insertColumn("Filename", 5, G_TYPE_STRING, TreeView::STRING, 200);
+	transferView.insertColumn("Size", 6, G_TYPE_STRING, TreeView::STRING, 175);
+	transferView.insertColumn("Path", 7, G_TYPE_STRING, TreeView::STRING, 200);
+	transferView.insertHiddenColumn("ID", 8, G_TYPE_STRING);
+	transferView.insertHiddenColumn("User Ptr", 9, G_TYPE_POINTER);
+	transferView.finalize();
+	transferStore = gtk_list_store_newv(transferView.getSize(), transferView.getGTypes());
+	gtk_tree_view_set_model(transferView.get(), GTK_TREE_MODEL(transferStore));
+	transferSel = gtk_tree_view_get_selection(transferView.get());
+	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(transferView.get()), GTK_SELECTION_MULTIPLE);
+
+	g_signal_connect(G_OBJECT(transferView.get()), "button_press_event", G_CALLBACK(transferClicked_gui), (gpointer)this);
 
 	file = WulforManager::get()->getPath() + "/pixmaps/upload.png";
 	uploadPic = gdk_pixbuf_new_from_file(file.c_str(), NULL);
@@ -322,7 +301,7 @@ void MainWindow::createWindow_gui() {
 					string("Trent Lloyd\n") +
 					string("Kristian Berg/Ixan\n") +
 					string("luusl\n") +
-					string("Rikard Björklind\n") +
+					string("Rikard Bj\303\266rklind\n") +
 					string("clairvoyant\n") +
 					string("obi\n") +
 					string("John Armstrong\n") +
@@ -401,7 +380,7 @@ User::Ptr MainWindow::getSelectedTransfer_gui()
 		return NULL;
 	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
 		return NULL;	
-	return TreeViewFactory::getValue<gpointer,ConnectionQueueItem*>(m, &iter, COLUMN_USERPTR)->getUser ();
+	return transferView.getValue<gpointer,ConnectionQueueItem*>(&iter, "User Ptr")->getUser();
 }
 
 void MainWindow::onGetFileListClicked_gui (GtkMenuItem *item, gpointer user_data)
@@ -478,8 +457,8 @@ void MainWindow::onForceAttemptClicked_gui (GtkMenuItem *item, gpointer user_dat
 	{
 		if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
 		{
-			user.push_back (TreeViewFactory::getValue<gpointer,ConnectionQueueItem*>(m, &tmpiter, COLUMN_USERPTR)->getUser ());
-			gtk_list_store_set(mw->transferStore, &tmpiter, COLUMN_STATUS, "Connecting (forced)...", -1);
+			user.push_back(mw->transferView.getValue<gpointer,ConnectionQueueItem*>(&tmpiter, "User Ptr")->getUser ());
+			gtk_list_store_set(mw->transferStore, &tmpiter, mw->transferView.col("Status"), "Connecting (forced)...", -1);
 		}
 		
 		tmp = g_list_next (tmp);
@@ -511,7 +490,7 @@ void MainWindow::onCloseConnectionClicked_gui (GtkMenuItem *item, gpointer user_
 	{
 		if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
 		{
-			ConnectionQueueItem *qi = TreeViewFactory::getValue<gpointer,ConnectionQueueItem*>(m, &tmpiter, COLUMN_USERPTR);
+			ConnectionQueueItem *qi = mw->transferView.getValue<gpointer,ConnectionQueueItem*>(&tmpiter, "User Ptr");
 			if (qi->getConnection())
 			{
 				if (qi->getConnection()->isSet(UserConnection::FLAG_UPLOAD))
@@ -618,8 +597,10 @@ gboolean MainWindow::deleteWindow_gui(
 	GtkWidget *widget, GdkEvent *event, gpointer data)
 {
 	int response;
-	
-	if (!BOOLSETTING(CONFIRM_EXIT)) {
+
+	if (!BOOLSETTING(CONFIRM_EXIT))
+	{
+		WulforManager::get()->deleteAllBookEntries();
 		gtk_main_quit();
 		return TRUE;
 	}
@@ -628,7 +609,9 @@ gboolean MainWindow::deleteWindow_gui(
 	response = gtk_dialog_run(exitDialog);
 	gtk_widget_hide(GTK_WIDGET(exitDialog));
 
-	if (response == GTK_RESPONSE_OK) {
+	if (response == GTK_RESPONSE_OK)
+	{
+		WulforManager::get()->deleteAllBookEntries();
 		gtk_main_quit();
 		return TRUE;
 	}
@@ -862,35 +845,38 @@ void MainWindow::updateTransfer_gui(string id, connection_t type, ConnectionQueu
 	
 	if (!gtk_list_store_iter_is_valid(transferStore, &iter)) {
 		gtk_list_store_append(transferStore, &iter);
-		gtk_list_store_set(transferStore, &iter, COLUMN_ID, id.c_str(), -1);
+		gtk_list_store_set(transferStore, &iter, transferView.col("ID"), id.c_str(), -1);
 	}
 
 	if (type == CONNECTION_UL) {
-		gtk_list_store_set(transferStore, &iter, COLUMN_TYPE, uploadPic, -1);
+		gtk_list_store_set(transferStore, &iter, transferView.col(" "), uploadPic, -1);
 	}
 	if (type == CONNECTION_DL) {
-		gtk_list_store_set(transferStore, &iter, COLUMN_TYPE, downloadPic, -1);
+		gtk_list_store_set(transferStore, &iter, transferView.col(" "), downloadPic, -1);
 	}
 	if (item) {
-		gtk_list_store_set(transferStore, &iter, COLUMN_USER, item->getUser()->getNick().c_str(), COLUMN_USERPTR, (gpointer)item, -1);
+		gtk_list_store_set(transferStore, &iter,
+			transferView.col("User"), item->getUser()->getNick().c_str(),
+			transferView.col("User Ptr"), (gpointer)item,
+			-1);
 	}
 	if (status != "") {
-		gtk_list_store_set(transferStore, &iter, COLUMN_STATUS, status.c_str(), -1);
+		gtk_list_store_set(transferStore, &iter, transferView.col("Status"), status.c_str(), -1);
 	}
 	if (time != "") {
-		gtk_list_store_set(transferStore, &iter, COLUMN_TIMELEFT, time.c_str(), -1);
+		gtk_list_store_set(transferStore, &iter, transferView.col("Time Left"), time.c_str(), -1);
 	}
 	if (speed != "") {
-		gtk_list_store_set(transferStore, &iter, COLUMN_SPEED, speed.c_str(), -1);
+		gtk_list_store_set(transferStore, &iter, transferView.col("Speed"), speed.c_str(), -1);
 	}
 	if (file != "") {
-		gtk_list_store_set(transferStore, &iter, COLUMN_FILENAME, file.c_str(), -1);
+		gtk_list_store_set(transferStore, &iter, transferView.col("Filename"), file.c_str(), -1);
 	}
 	if (size != "") {
-		gtk_list_store_set(transferStore, &iter, COLUMN_SIZE, size.c_str(), -1);
+		gtk_list_store_set(transferStore, &iter, transferView.col("Size"), size.c_str(), -1);
 	}
 	if (path != "") {
-		gtk_list_store_set(transferStore, &iter, COLUMN_PATH, path.c_str(), -1);
+		gtk_list_store_set(transferStore, &iter, transferView.col("Path"), path.c_str(), -1);
 	}
 }
 
@@ -910,7 +896,7 @@ void MainWindow::findId_gui(string id, GtkTreeIter *iter) {
 		char *t;
 		string text;
 		gtk_tree_model_get(GTK_TREE_MODEL(transferStore), iter, 
-			COLUMN_ID, &t, -1);
+			transferView.col("ID"), &t, -1);
 		text = t;
 		g_free(t);
 
@@ -926,7 +912,7 @@ void MainWindow::findId_gui(string id, GtkTreeIter *iter) {
 				id.substr(0, id.find('$', 0)))
 			{
 				gtk_list_store_set(transferStore, iter, 
-					COLUMN_ID, id.c_str(), -1);
+					transferView.col("ID"), id.c_str(), -1);
 				return;
 			}
 		}

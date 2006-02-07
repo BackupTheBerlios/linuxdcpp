@@ -22,19 +22,34 @@
 #include <gtk/gtk.h>
 #include <glade/glade.h>
 #include <string>
-
-#include <client/stdinc.h>
-#include <client/DCPlusPlus.h>
-#include <client/QueueManager.h>
-#include <client/TimerManager.h>
-#include <client/HubManager.h>
-#include <client/DownloadManager.h>
-#include <client/UploadManager.h>
-#include <client/ConnectionManager.h>
-#include <client/LogManager.h>
-
-#include "func.hh"
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+ 
 #include "callback.hh"
+#include "func.hh"
+#include "selecter.hh"
+#include "settingsdialog.hh"
+#include "treeview.hh"
+#include "wulformanager.hh"
+
+#include <client/Client.h>
+#include <client/ConnectionManager.h>
+#include <client/DCPlusPlus.h>
+#include <client/DownloadManager.h>
+#include <client/Exception.h>
+#include <client/HubManager.h>
+#include <client/LogManager.h>
+#include <client/QueueManager.h>
+#include <client/SearchManager.h>
+#include <client/SettingsManager.h>
+#include <client/Socket.h>
+#include <client/stdinc.h>
+#include <client/TimerManager.h>
+#include <client/UploadManager.h>
+#include <client/version.h>
+
+using namespace std;
 
 class MainWindow:
 	public QueueManagerListener,
@@ -159,6 +174,7 @@ class MainWindow:
 			
 		int64_t lastUpdate, lastUp, lastDown;
 		int emptyStatusWidth;
+		TreeView transferView;
 
 		GtkWindow *window;
 		GtkDialog *exitDialog, *connectDialog, *flistDialog, *aboutDialog;
@@ -171,31 +187,14 @@ class MainWindow:
 		GtkNotebook *book;
 		GtkWidget *popupMenu;
 		GtkWidget *filelist, *matchQueue, *privateMessage, *addToFavorites, *grantExtraSlot, *removeUser, *forceAttempt, *closeConnection;
-		GtkTreeView *transferView;
 		GtkListStore *transferStore;
 		GtkTreeSelection *transferSel;
 		GdkPixbuf *uploadPic, *downloadPic;
 		GtkMenuItem *openFList, *openOwnFList, *refreshFList, *openDLdir, *quickConnect, *followRedirect, *reconnectItem,
 				*settingsItem, *quitItem, *pubHubsItem, *queueItem, *finishedDL_item, *finishedUL_item, *favHubsItem,
 				*favUsersItem, *searchItem, *ADLSearchItem, *searchSpyItem, *networkStatsItem, *hashItem, *aboutItem;
-
-		const int WIDTH_TYPE, WIDTH_USER, WIDTH_STATUS, WIDTH_TIMELEFT,
-			WIDTH_SPEED, WIDTH_FILENAME, WIDTH_SIZE, WIDTH_PATH;
 		
-		enum {
-			COLUMN_TYPE,
-			COLUMN_USER,
-			COLUMN_STATUS,
-			COLUMN_TIMELEFT,
-			COLUMN_SPEED,
-			COLUMN_FILENAME,
-			COLUMN_SIZE,
-			COLUMN_PATH,
-			COLUMN_ID,		//hidden from user
-			COLUMN_USERPTR
-		};
-		
-		//conviniece thing for the updateTransfer_gui function
+		//convenience thing for the updateTransfer_gui function
 		typedef Func9 <MainWindow, std::string, connection_t, ConnectionQueueItem*, std::string, 
 			std::string, std::string, std::string, std::string, std::string> UFunc;
 };

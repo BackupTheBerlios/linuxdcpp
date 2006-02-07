@@ -1,8 +1,22 @@
-#include "finishedtransfers.hh"
-#include "func.hh"
-#include "wulformanager.hh"
+/* 
+* Copyright (C) 2004 Jens Oknelid, paskharen@gmail.com
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+*/
 
-using namespace std;
+#include "finishedtransfers.hh"
 
 FinishedTransfers::FinishedTransfers(int type, std::string title, GCallback closeCallback):
 			BookEntry(type, title, title, closeCallback),
@@ -20,25 +34,30 @@ FinishedTransfers::FinishedTransfers(int type, std::string title, GCallback clos
 	gtk_container_remove(GTK_CONTAINER(window), mainBox);
 	gtk_widget_destroy(window);
 	
-	transferView = GTK_TREE_VIEW (glade_xml_get_widget (xml, "view"));
-	transferStore = gtk_list_store_new (9, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
-	gtk_tree_view_set_model(transferView, GTK_TREE_MODEL (transferStore));
-	transferSelection = gtk_tree_view_get_selection(transferView);
-	
 	totalItems = GTK_STATUSBAR(glade_xml_get_widget(xml, "totalItems"));
 	totalSize = GTK_STATUSBAR(glade_xml_get_widget(xml, "totalSize"));
 	averageSpeed = GTK_STATUSBAR(glade_xml_get_widget(xml, "averageSpeed"));
-	
-	TreeViewFactory fc(transferView);
-	fc.addColumn_gui(COLUMN_TIME, "Time", TreeViewFactory::STRING, 150);
-	fc.addColumn_gui(COLUMN_FILENAME, "Filename", TreeViewFactory::STRING, 100);
-	fc.addColumn_gui(COLUMN_PATH, "Path", TreeViewFactory::STRING, 200);
-	fc.addColumn_gui(COLUMN_NICK, "Nick", TreeViewFactory::STRING, 100);
-	fc.addColumn_gui(COLUMN_HUB, "Hub", TreeViewFactory::STRING, 200);
-	fc.addColumn_gui(COLUMN_SIZE, "Size", TreeViewFactory::STRING, 100);
-	fc.addColumn_gui(COLUMN_SPEED, "Speed", TreeViewFactory::STRING, 100);
-	fc.addColumn_gui(COLUMN_CRC, "CRC Checked", TreeViewFactory::STRING, 100);
-	
+
+	// Initialize transfer treeview
+	transferView.setView(
+		GTK_TREE_VIEW(glade_xml_get_widget(xml, "view")),
+		true,
+		SettingsManager::FINISHED_ORDER,
+		SettingsManager::FINISHED_WIDTHS);
+	transferView.insertColumn("Time", 0, G_TYPE_STRING, TreeView::STRING, 150);
+	transferView.insertColumn("Filename", 1, G_TYPE_STRING, TreeView::STRING, 100);
+	transferView.insertColumn("Path", 2, G_TYPE_STRING, TreeView::STRING, 200);
+	transferView.insertColumn("Nick", 3, G_TYPE_STRING, TreeView::STRING, 100);
+	transferView.insertColumn("Hub", 4, G_TYPE_STRING, TreeView::STRING, 200);
+	transferView.insertColumn("Size", 5, G_TYPE_STRING, TreeView::STRING, 100);
+	transferView.insertColumn("Speed", 6, G_TYPE_STRING, TreeView::STRING, 100);
+	transferView.insertColumn("CRC Checked", 7, G_TYPE_STRING, TreeView::STRING, 100);
+	transferView.insertHiddenColumn("Target", 8, G_TYPE_STRING);
+	transferView.finalize();
+	transferStore = gtk_list_store_newv(transferView.getSize(), transferView.getGTypes());
+	gtk_tree_view_set_model(transferView.get(), GTK_TREE_MODEL(transferStore));
+	transferSelection = gtk_tree_view_get_selection(transferView.get());
+
 	finishedTransfersMenu = GTK_MENU(gtk_menu_new());
 	openWith = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Open with"));
 	remove = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Remove"));
@@ -58,7 +77,7 @@ FinishedTransfers::FinishedTransfers(int type, std::string title, GCallback clos
 	this->updateList(FinishedManager::getInstance()->lockList(getType));
 	FinishedManager::getInstance()->unlockList();
 	
-	menuCallback.connect_after(G_OBJECT(transferView), "button-release-event", NULL);
+	menuCallback.connect_after(G_OBJECT(transferView.get()), "button-release-event", NULL);
 	removeCallback.connect(G_OBJECT(remove), "activate", NULL);
 	removeAllCallback.connect(G_OBJECT(removeAll), "activate", NULL);
 	openWithCallback.connect(G_OBJECT(openWith), "activate", NULL);
@@ -91,7 +110,7 @@ void FinishedTransfers::removeItems_gui(GtkMenuItem *, gpointer)
 	std::map<string, FinishedItem*>::iterator iter;
 	
 	gtk_tree_selection_get_selected(transferSelection, NULL, &it);
-	gtk_tree_model_get(GTK_TREE_MODEL(transferStore), &it, COLUMN_TIME, &time, -1);
+	gtk_tree_model_get(GTK_TREE_MODEL(transferStore), &it, transferView.col("Time"), &time, -1);
 	
 	iter = finishedList.find(time);
 	entry = iter->second;
@@ -127,15 +146,15 @@ void FinishedTransfers::addEntry(FinishedItem *entry)
 {
 	gtk_list_store_append(transferStore, &treeIter);
 	gtk_list_store_set(transferStore, &treeIter,
-										COLUMN_FILENAME, Util::getFileName(entry->getTarget()).c_str(),
-										COLUMN_TIME, Util::formatTime("%Y-%m-%d %H:%M:%S", entry->getTime()).c_str(),
-										COLUMN_PATH, Util::getFilePath(entry->getTarget()).c_str(),
-										COLUMN_NICK, entry->getUser().c_str(),
-										COLUMN_HUB, entry->getHub().c_str(),
-										COLUMN_SIZE, Util::formatBytes(entry->getSize()).c_str(),
-										COLUMN_SPEED, (Util::formatBytes(entry->getAvgSpeed()) + "/s").c_str(),
-										COLUMN_CRC, "",
-										COLUMN_TARGET, entry->getTarget().c_str(),
+										transferView.col("Filename"), Util::getFileName(entry->getTarget()).c_str(),
+										transferView.col("Time"), Util::formatTime("%Y-%m-%d %H:%M:%S", entry->getTime()).c_str(),
+										transferView.col("Path"), Util::getFilePath(entry->getTarget()).c_str(),
+										transferView.col("Nick"), entry->getUser().c_str(),
+										transferView.col("Hub"), entry->getHub().c_str(),
+										transferView.col("Size"), Util::formatBytes(entry->getSize()).c_str(),
+										transferView.col("Speed"), (Util::formatBytes(entry->getAvgSpeed()) + "/s").c_str(),
+										transferView.col("CRC Checked"), "",
+										transferView.col("Target"), entry->getTarget().c_str(),
 										-1);
 	finishedList[Util::formatTime("%Y-%m-%d %H:%M:%S", entry->getTime()).c_str()] = entry;
 	totalBytes += entry->getChunkSize();
@@ -192,7 +211,7 @@ void FinishedTransfers::openWith_gui(GtkMenuItem *, gpointer)
 	if (ret != GTK_RESPONSE_ACCEPT) return;
 		
 	gtk_tree_selection_get_selected(transferSelection, NULL, &iter);
-	gtk_tree_model_get(GTK_TREE_MODEL(transferStore), &iter, COLUMN_TARGET, &target, -1);
+	gtk_tree_model_get(GTK_TREE_MODEL(transferStore), &iter, transferView.col("Target"), &target, -1);
 	pid_t pid= fork();
 	if(pid == 0){
 		system(Text::toT(command + " \"" + target + "\"").c_str());

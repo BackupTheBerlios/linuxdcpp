@@ -21,20 +21,23 @@
 
 #include <gtk/gtk.h>
 #include <glade/glade.h>
-#include "bookentry.hh"
-#include "treeviewfactory.hh"
 
-#include <client/stdinc.h>
-#include <client/DCPlusPlus.h>
-#include <client/User.h>
-#include <client/Util.h>
+#include "bookentry.hh"
+#include "treeview.hh"
+#include "wulformanager.hh"
+
 #include <client/Client.h>
-#include <client/SearchManager.h>
-#include <client/CriticalSection.h>
 #include <client/ClientManagerListener.h>
+#include <client/CriticalSection.h>
+#include <client/DCPlusPlus.h>
 #include <client/HubManager.h>
 #include <client/QueueManager.h>
+#include <client/SearchManager.h>
+#include <client/stdinc.h>
+#include <client/StringTokenizer.h>
 #include <client/TimerManager.h>
+#include <client/User.h>
+#include <client/Util.h>
 
 class Search : public BookEntry,
 			public SearchManagerListener,
@@ -46,7 +49,8 @@ public:
 
 	void putValue (const string &str, int64_t size, SearchManager::SizeModes mode, SearchManager::TypeModes type);
 		
-	GtkWidget *getWidget ();
+	// From BookEntry
+	GtkWidget *getWidget();
 	
 	virtual void on(SearchManagerListener::SR, SearchResult* aResult) throw();
 
@@ -60,9 +64,8 @@ private:
 	GtkWidget *mainBox;	
 	
 	std::map<string,GtkWidget*> searchItems;
-	
-	TreeViewFactory *hubs;
-	TreeViewFactory *result;
+
+	TreeView hubView, resultView;
 	GtkListStore *hubStore;
 	GtkListStore *resultStore;
 	GtkWidget *dirChooser;
@@ -81,13 +84,13 @@ private:
 	int listItems;
 	CriticalSection cs;
 	static TStringList lastSearches;
-	static int columnSize[];
 	
 	pthread_mutex_t searchLock;
 	
 	class HubInfo;
 	class SearchInfo;
-	
+
+	string getTextFromMenu(GtkMenuItem *item);
 	void changeHubs_gui (int mode, HubInfo *i); // Add, remove and changes name on hubs.
 	void initHubs_gui ();  // Adds the current connected hubs to the list.
 	void buildDownloadMenu_gui (int menu);
@@ -113,25 +116,7 @@ private:
 	static gboolean onButtonPressed_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
   	static gboolean onPopupMenu_gui (GtkWidget *widget, gpointer user_data);
 	void popup_menu_gui (GdkEventButton *event, gpointer user_data);
-	
-	// Result columns
-	enum {
-		RESULT_FIRST,
-		RESULT_FILE = RESULT_FIRST,
-		RESULT_NICK,
-		RESULT_TYPE,
-		RESULT_FILESIZE,
-		RESULT_PATH,
-		RESULT_SLOTS,
-		RESULT_CONNECTION,
-		RESULT_HUB,
-		RESULT_EXACT_SIZE,
-		RESULT_IP,
-		RESULT_TTH,
-		RESULT_INFO,
-		RESULT_SIZE,
-		RESULT_LAST
-	};
+
 	// Hub columns
 	enum {
 		HUB_FIRST,

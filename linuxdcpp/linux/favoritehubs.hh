@@ -21,56 +21,48 @@
 
 #include <gtk/gtk.h>
 #include <glade/glade.h>
+#include <iostream>
+#include <sstream>
+
 #include "bookentry.hh"
-#include "treeviewfactory.hh"
+#include "treeview.hh"
+#include "wulformanager.hh"
+#include "WulforUtil.hh"
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/HubManager.h>
 
+using namespace std;
+
 class FavoriteHubs : 	public BookEntry,
-					public HubManagerListener
+						public HubManagerListener
 {
 public:
 	FavoriteHubs (GCallback closeCallback);
 	~FavoriteHubs ();
 
+	// From BookEntry
 	GtkWidget *getWidget();
 
 	virtual	void on(HubManagerListener::FavoriteAdded, const FavoriteHubEntry *entry) throw();
 	virtual void on(HubManagerListener::FavoriteRemoved, const FavoriteHubEntry *entry) throw();
-	
+
 private:
-
-	enum {
-		COLUMN_FIRST,
-		COLUMN_AUTOCONNECT = COLUMN_FIRST,
-		COLUMN_NAME,
-		COLUMN_DESCRIPTION,
-		COLUMN_NICK,
-		COLUMN_PASSWORD,
-		COLUMN_SERVER,
-		COLUMN_USERDESCRIPTION,
-		COLUMN_ENTRY,
-		COLUMN_LAST
-	};
-
 	GtkWidget *mainBox;
 	GtkDialog *deleteDialog;
 	GtkDialog *errorDialog;
 	GtkLabel *errorLabel;
+	GtkMenu *menu;
 	std::map<string,GtkWidget*> button;
 	std::map<string,GtkWidget*> dialog;
 	std::map<string,GtkWidget*> menuItems;
-	TreeViewFactory *favoriteView;
+	TreeView favoriteView;
 	GtkListStore *favoriteStore;
-	GtkMenu *menu;
-	pthread_mutex_t favoriteLock;
 
-	static int columnSize[];
 	int entrys;
 	GdkEventType previous;
-	
+
 	void updateList_gui ()
 	{
 		const FavoriteHubEntry::List& fl = HubManager::getInstance ()->getFavoriteHubs();

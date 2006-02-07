@@ -18,6 +18,7 @@
 
 #include "settingsdialog.hh"
 #include "wulformanager.hh"
+#include "WulforUtil.hh"
 #include <iostream>
 #include <sstream>
 
@@ -262,7 +263,7 @@ void Settings::saveSettings_client ()
 	{
 		while (1)
 		{
-			o.push_back (TreeViewFactory::getValue<gboolean>(m, &iter, APPEARANCE_USE));
+			o.push_back (WulforUtil::getValue<gboolean>(m, &iter, APPEARANCE_USE));
 			if (!gtk_tree_model_iter_next (m, &iter))
 				break;
 		}
@@ -298,7 +299,7 @@ void Settings::saveSettings_client ()
 	{
 		while (1)
 		{
-			o.push_back (TreeViewFactory::getValue<gboolean>(m, &iter, ADVANCED_USE));
+			o.push_back (WulforUtil::getValue<gboolean>(m, &iter, ADVANCED_USE));
 			if (!gtk_tree_model_iter_next (m, &iter))
 				break;
 		}
@@ -445,10 +446,10 @@ void Settings::initDownloads_gui ()
 
 	downloadToStore = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_STRING);
 	gtk_tree_view_set_model (view, GTK_TREE_MODEL (downloadToStore));
-	downloadTo = new TreeViewFactory (view);
+	downloadTo.setView(view);
 
-	downloadTo->addColumn_gui (DOWNLOADTO_NAME, "Favorite name", TreeViewFactory::STRING, 100);
-	downloadTo->addColumn_gui (DOWNLOADTO_DIR, "Directory", TreeViewFactory::STRING, 200);
+	downloadTo.addColumn_gui (DOWNLOADTO_NAME, "Favorite name", TreeView::STRING, 100);
+	downloadTo.addColumn_gui (DOWNLOADTO_DIR, "Directory", TreeView::STRING, 200);
 	gtk_widget_set_sensitive (downloadItems["Remove"], FALSE);
 	StringPairList directories = HubManager::getInstance()->getFavoriteDirs();
 	for(StringPairIter j = directories.begin(); j != directories.end(); j++)
@@ -465,8 +466,8 @@ void Settings::initDownloads_gui ()
 	publicListStore = gtk_list_store_new (1, G_TYPE_STRING);
 	gtk_tree_view_set_model (view2, GTK_TREE_MODEL (publicListStore));
 
-	publicList = new TreeViewFactory (view2);
-	publicList->addColumn_gui (0, "List", TreeViewFactory::STRING, 200);
+	publicList.setView(view2);
+	publicList.addColumn_gui (0, "List", TreeView::STRING, 200);
 }
 void Settings::onBrowseF_gui (GtkWidget *widget, gpointer user_data)
 {
@@ -526,7 +527,7 @@ void Settings::onPublicHubs_gui (GtkWidget *widget, gpointer user_data)
 	{
 		string tmp;
 		vector<string> items;
-		TreeViewFactory::getColumn (GTK_TREE_MODEL (s->publicListStore), 0, &items);
+		s->publicList.getColumn (0, &items);
 		for(int i = 0; i < items.size (); i++)
 			tmp += items[i] + ';';
 		if(items.size () > 0)
@@ -553,15 +554,15 @@ void Settings::onPublicMU_gui (GtkWidget *widget, gpointer user_data)
 	Settings *s = (Settings*)user_data;
 	GtkTreeIter iter;
 	GtkTreeModel *m = GTK_TREE_MODEL (s->publicListStore);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->publicList->get ());
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->publicList.get ());
 
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 		
-	string tmp = TreeViewFactory::getValue<gchar*,string>(m, &iter, 0);
+	string tmp = WulforUtil::getValue<gchar*,string>(m, &iter, 0);
 	vector<string> items;
-	TreeViewFactory::getColumn (m, 0, &items);
-	for(int i = 1; i < TreeViewFactory::getCount (m); i++)
+	s->publicList.getColumn (0, &items);
+	for(int i = 1; i < s->publicList.getCount(); i++)
 	{
 		if (items[i] == tmp)
 		{
@@ -577,15 +578,15 @@ void Settings::onPublicMD_gui (GtkWidget *widget, gpointer user_data)
 	Settings *s = (Settings*)user_data;
 	GtkTreeIter iter;
 	GtkTreeModel *m = GTK_TREE_MODEL (s->publicListStore);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->publicList->get ());
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->publicList.get ());
 
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 		
-	string tmp = TreeViewFactory::getValue<gchar*,string>(m, &iter, 0);
+	string tmp = WulforUtil::getValue<gchar*,string>(m, &iter, 0);
 	vector<string> items;
-	TreeViewFactory::getColumn (m, 0, &items);
-	for(int i = TreeViewFactory::getCount (m)-2; i >=0; i--)
+	s->publicList.getColumn (0, &items);
+	for(int i = s->publicList.getCount()-2; i >=0; i--)
 	{
 		if (items[i] == tmp)
 		{
@@ -601,12 +602,12 @@ void Settings::onPublicEdit_gui (GtkWidget *widget, gpointer user_data)
 	Settings *s = (Settings*)user_data;
 	GtkTreeIter iter;
 	GtkTreeModel *m = GTK_TREE_MODEL (s->publicListStore);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->publicList->get ());
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->publicList.get ());
 
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 
-	gtk_entry_set_text (GTK_ENTRY (s->downloadItems["Edit public"]), TreeViewFactory::getValue<gchar*> (m, &iter, 0));
+	gtk_entry_set_text (GTK_ENTRY (s->downloadItems["Edit public"]), WulforUtil::getValue<gchar*> (m, &iter, 0));
 	gint response = gtk_dialog_run (GTK_DIALOG (s->editPublic));
 	if (response == GTK_RESPONSE_OK)
 		gtk_list_store_set (s->publicListStore, &iter, 0, gtk_entry_get_text (GTK_ENTRY (s->downloadItems["Edit public"])), -1);
@@ -618,7 +619,7 @@ void Settings::onPublicRemove_gui (GtkWidget *widget, gpointer user_data)
 	Settings *s = (Settings*)user_data;
 	GtkTreeIter iter;
 	GtkTreeModel *m = GTK_TREE_MODEL (s->publicListStore);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->publicList->get ());
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->publicList.get ());
 
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
@@ -711,12 +712,12 @@ void Settings::onRemoveFavorite_gui (GtkWidget *widget, gpointer user_data)
 	Settings *s = (Settings*)user_data;
 	GtkTreeIter iter;
 	GtkTreeModel *m = GTK_TREE_MODEL (s->downloadToStore);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->downloadTo->get ());
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->downloadTo.get ());
 
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 
-	if (s->removeFavoriteDir_client (TreeViewFactory::getValue<gchar*,string>(m, &iter, DOWNLOADTO_DIR)))
+	if (s->removeFavoriteDir_client (WulforUtil::getValue<gchar*,string>(m, &iter, DOWNLOADTO_DIR)))
 	{
 		gtk_list_store_remove (s->downloadToStore, &iter);
 		gtk_widget_set_sensitive (s->downloadItems["Remove"], FALSE);
@@ -727,7 +728,7 @@ gboolean Settings::onFavoriteButtonReleased_gui (GtkWidget *widget, GdkEventButt
 	Settings *s = (Settings*)user_data;
 	GtkTreeIter iter;
 	GtkTreeModel *m = GTK_TREE_MODEL (s->downloadToStore);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->downloadTo->get ());
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->downloadTo.get ());
 
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 	{
@@ -743,12 +744,13 @@ void Settings::initSharing_gui ()
 	shareStore = gtk_list_store_new (4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT64);
 	gtk_tree_view_set_model (view, GTK_TREE_MODEL (shareStore));
 	g_signal_connect(G_OBJECT (view), "button_release_event", G_CALLBACK(onShareButtonReleased_gui), (gpointer)this);
-	shares = new TreeViewFactory (view);
+	shares.setView(view);
 
-	shares->addColumn_gui (SHARE_NAME, "Virtual name", TreeViewFactory::STRING, 100);
-	shares->addColumn_gui (SHARE_DIR, "Directory", TreeViewFactory::STRING, 200);
-	shares->addColumn_gui (SHARE_SIZE, "Size", TreeViewFactory::STRING, 100);
-	shares->setSortColumn_gui (SHARE_SIZE, SHARE_REALSIZE);
+	shares.addColumn_gui (SHARE_NAME, "Virtual name", TreeView::STRING, 100);
+	shares.addColumn_gui (SHARE_DIR, "Directory", TreeView::STRING, 200);
+	shares.addColumn_gui (SHARE_SIZE, "Size", TreeView::STRING, 100);
+	shares.insertHiddenColumn ("Real Size", SHARE_REALSIZE, TreeView::INT);
+	shares.setSortColumn_gui ("Size", "Real Size");
 	gtk_widget_set_sensitive (shareItems["Remove"], FALSE);
 
 	StringPairList directories = ShareManager::getInstance()->getDirectories();
@@ -839,12 +841,12 @@ void Settings::onRemoveShare_gui (GtkWidget *widget, gpointer user_data)
 	Settings *s = (Settings*)user_data;
 	GtkTreeIter iter;
 	GtkTreeModel *m = GTK_TREE_MODEL (s->shareStore);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->shares->get ());
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->shares.get ());
 
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 
-	s->modifyShare_client( false, TreeViewFactory::getValue<gchar*,string>(m, &iter, SHARE_DIR), "");
+	s->modifyShare_client( false, WulforUtil::getValue<gchar*,string>(m, &iter, SHARE_DIR), "");
 	gtk_list_store_remove (s->shareStore, &iter);
 	gtk_widget_set_sensitive (s->shareItems["Remove"], FALSE);
 }
@@ -898,10 +900,10 @@ void Settings::initAppearance_gui ()
 {
 	appearanceStore = gtk_list_store_new (2, G_TYPE_BOOLEAN, G_TYPE_STRING);
 	gtk_tree_view_set_model(GTK_TREE_VIEW (appearanceItems["Options"]), GTK_TREE_MODEL (appearanceStore));
-	appearance = new TreeViewFactory (GTK_TREE_VIEW (appearanceItems["Options"]));
+	appearance.setView(GTK_TREE_VIEW (appearanceItems["Options"]));
 	
-	appearance->addColumn_gui (APPEARANCE_USE, "", TreeViewFactory::BOOL, -1);
-	appearance->addColumn_gui (APPEARANCE_NAME, "", TreeViewFactory::STRING, -1);
+	appearance.addColumn_gui (APPEARANCE_USE, "", TreeView::BOOL, -1);
+	appearance.addColumn_gui (APPEARANCE_NAME, "", TreeView::STRING, -1);
 	
 	GList *list = gtk_tree_view_column_get_cell_renderers (gtk_tree_view_get_column(GTK_TREE_VIEW (appearanceItems["Options"]), APPEARANCE_USE));
 	GtkCellRenderer *renderer = (GtkCellRenderer*)list->data;
@@ -933,7 +935,7 @@ void Settings::onAppearanceToggledClicked_gui (GtkCellRendererToggle *cell, gcha
 {
   	GtkTreeIter iter;
   	gboolean fixed;
-	GtkTreeModel *m = gtk_tree_view_get_model (((Settings*)data)->appearance->get ());
+	GtkTreeModel *m = gtk_tree_view_get_model (((Settings*)data)->appearance.get ());
   	gtk_tree_model_get_iter (m, &iter, gtk_tree_path_new_from_string (path_str));
   	gtk_tree_model_get (m, &iter, Settings::APPEARANCE_USE, &fixed, -1);
   	fixed = !fixed;
@@ -1033,10 +1035,10 @@ void Settings::initAdvanced_gui ()
 {
 	advancedStore = gtk_list_store_new (2, G_TYPE_BOOLEAN, G_TYPE_STRING);
 	gtk_tree_view_set_model(GTK_TREE_VIEW (advancedItems["Advanced"]), GTK_TREE_MODEL (advancedStore));
-	advanced = new TreeViewFactory (GTK_TREE_VIEW (advancedItems["Advanced"]));
+	advanced.setView(GTK_TREE_VIEW (advancedItems["Advanced"]));
 	
-	advanced->addColumn_gui (ADVANCED_USE, "", TreeViewFactory::BOOL, -1);
-	advanced->addColumn_gui (ADVANCED_NAME, "", TreeViewFactory::STRING, -1);
+	advanced.addColumn_gui (ADVANCED_USE, "", TreeView::BOOL, -1);
+	advanced.addColumn_gui (ADVANCED_NAME, "", TreeView::STRING, -1);
 	
 	GList *list = gtk_tree_view_column_get_cell_renderers (gtk_tree_view_get_column(GTK_TREE_VIEW (advancedItems["Advanced"]), ADVANCED_USE));
 	GtkCellRenderer *renderer = (GtkCellRenderer*)list->data;
@@ -1094,7 +1096,7 @@ void Settings::onAdvancedToggledClicked_gui (GtkCellRendererToggle *cell, gchar 
 {
   	GtkTreeIter iter;
   	gboolean fixed;
-	GtkTreeModel *m = gtk_tree_view_get_model (((Settings*)data)->advanced->get ());
+	GtkTreeModel *m = gtk_tree_view_get_model (((Settings*)data)->advanced.get ());
   	gtk_tree_model_get_iter (m, &iter, gtk_tree_path_new_from_string (path_str));
   	gtk_tree_model_get (m, &iter, Settings::ADVANCED_USE, &fixed, -1);
   	fixed = !fixed;

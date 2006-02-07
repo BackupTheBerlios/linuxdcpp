@@ -17,12 +17,6 @@
 */
 
 #include "publichubs.hh"
-#include "wulformanager.hh"
-#include "treeviewfactory.hh"
-#include <iostream>
-#include <sstream>
-
-using namespace std;
 
 PublicHubs::PublicHubs(GCallback closeCallback):
 	BookEntry(WulforManager::PUBLIC_HUBS, "", "Public Hubs", closeCallback),
@@ -38,11 +32,7 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	mouseButtonCallback(this, &PublicHubs::buttonEvent_gui),
 	addFavCallback(this, &PublicHubs::addFav_gui),
 	hubs(0),
-	filter(""),
-	WIDTH_NAME(200),
-	WIDTH_DESC(350),
-	WIDTH_USERS(50),
-	WIDTH_ADDRESS(100)
+	filter("")
 {
 	HubManager *hman = HubManager::getInstance();
 	GObject *o;
@@ -61,23 +51,26 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	gtk_widget_destroy(window);
 
 	filterEntry = GTK_ENTRY(glade_xml_get_widget(xml, "filterEntry"));
-	hubView = GTK_TREE_VIEW(glade_xml_get_widget(xml, "hubView"));
-	listsView = GTK_TREE_VIEW(glade_xml_get_widget(xml, "listsView"));
 	combo = GTK_COMBO_BOX(glade_xml_get_widget(xml, "hubListBox"));
 	configureDialog = GTK_DIALOG(glade_xml_get_widget(xml, "configureDialog"));
 
 	statusMain = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusMain"));
 	statusHubs = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusHubs"));
 	statusUsers = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusUsers"));
-	
-	hubStore = gtk_list_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_STRING);
-	gtk_tree_view_set_model(hubView, GTK_TREE_MODEL(hubStore));
 
-	TreeViewFactory factory(hubView);
-	factory.addColumn_gui(COLUMN_NAME, "Name", TreeViewFactory::STRING, WIDTH_NAME);
-	factory.addColumn_gui(COLUMN_DESC, "Description", TreeViewFactory::STRING, WIDTH_DESC);
-	factory.addColumn_gui(COLUMN_USERS, "Users", TreeViewFactory::INT, WIDTH_USERS);
-	factory.addColumn_gui(COLUMN_ADDRESS, "Address", TreeViewFactory::STRING, WIDTH_ADDRESS);
+	// Initialize public hub list treeview
+	hubView.setView(
+		GTK_TREE_VIEW(glade_xml_get_widget(xml, "hubView")), 
+		true, 
+		SettingsManager::PUBLICHUBSFRAME_ORDER, 
+		SettingsManager::PUBLICHUBSFRAME_WIDTHS);
+	hubView.insertColumn("Name", 0, G_TYPE_STRING, TreeView::STRING, 200);
+	hubView.insertColumn("Description", 1, G_TYPE_STRING, TreeView::STRING, 350);
+	hubView.insertColumn("Users", 2, G_TYPE_INT, TreeView::INT, 50);
+	hubView.insertColumn("Address", 3, G_TYPE_STRING, TreeView::STRING, 100);
+	hubView.finalize();
+	hubStore = gtk_list_store_newv(hubView.getSize(), hubView.getGTypes());
+	gtk_tree_view_set_model(hubView.get(), GTK_TREE_MODEL(hubStore));
 
 	menu = GTK_MENU(gtk_menu_new()); 
 	conItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Connect"));
@@ -102,13 +95,14 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	}
 	gtk_combo_box_set_active(combo, hman->getSelectedHubList());
 
-	gtk_tree_view_set_headers_visible(listsView, FALSE);
+	// Initialize list of hub lists treeview
+	listsView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "listsView")));
+	gtk_tree_view_set_headers_visible(listsView.get(), FALSE);
 	listsStore = gtk_list_store_new(1, G_TYPE_STRING);
-	gtk_tree_view_set_model(listsView, GTK_TREE_MODEL(listsStore));
-	TreeViewFactory factory2(listsView);
-	factory2.addColumn_gui(0, "", TreeViewFactory::EDIT_STRING, -1);
+	gtk_tree_view_set_model(listsView.get(), GTK_TREE_MODEL(listsStore));
+	listsView.addColumn_gui(0, "", TreeView::EDIT_STRING, -1);
 
-	GtkTreeViewColumn *c = gtk_tree_view_get_column(listsView, 0);
+	GtkTreeViewColumn *c = gtk_tree_view_get_column(listsView.get(), 0);
 	GList *l = gtk_tree_view_column_get_cell_renderers(c);
 	o = G_OBJECT(l->data);
 	editCallback.connect(o, "edited", NULL);
@@ -134,8 +128,8 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 
 	addFavCallback.connect(G_OBJECT(favItem), "activate", NULL);
 	connectCallback.connect(G_OBJECT(conItem), "activate", NULL);
-	mouseButtonCallback.connect(G_OBJECT(hubView), "button-press-event", NULL);
-	mouseButtonCallback.connect(G_OBJECT(hubView), "button-release-event", NULL);
+	mouseButtonCallback.connect(G_OBJECT(hubView.get()), "button-press-event", NULL);
+	mouseButtonCallback.connect(G_OBJECT(hubView.get()), "button-release-event", NULL);
 
 	filterCallback.connect(G_OBJECT(filterEntry), "activate", NULL);
 	refreshCallback.connect(G_OBJECT(combo), "changed", NULL);
@@ -180,10 +174,10 @@ void PublicHubs::updateList_gui() {
 		{
 			gtk_list_store_append(hubStore, &iter);
 			gtk_list_store_set(hubStore, &iter, 
-				COLUMN_NAME, i->getName().c_str(),
-				COLUMN_DESC, i->getDescription().c_str(),
-				COLUMN_USERS, i->getUsers(),
-				COLUMN_ADDRESS, i->getServer().c_str(),
+				hubView.col("Name"), i->getName().c_str(),
+				hubView.col("Description"), i->getDescription().c_str(),
+				hubView.col("Users"), i->getUsers(),
+				hubView.col("Address"), i->getServer().c_str(),
 				-1);
 				
 			numUsers += i->getUsers();
@@ -216,7 +210,7 @@ gboolean PublicHubs::buttonEvent_gui(
 	
 	if (oldButton != event->button) return FALSE;
 
-	sel = gtk_tree_view_get_selection(hubView);
+	sel = gtk_tree_view_get_selection(hubView.get());
 	if (!gtk_tree_selection_get_selected(sel, NULL, NULL)) return FALSE;
 
 	//single click right button
@@ -239,12 +233,12 @@ void PublicHubs::addFav_gui(GtkMenuItem *i, gpointer d) {
 	GtkTreeSelection *selection;
 	GtkTreeIter iter;
 
-	selection = gtk_tree_view_get_selection(hubView);
+	selection = gtk_tree_view_get_selection(hubView.get());
 	if (!gtk_tree_selection_get_selected(selection, NULL, &iter)) return;
 	gtk_tree_model_get(GTK_TREE_MODEL(hubStore), &iter, 
-		COLUMN_NAME, &name,
-		COLUMN_DESC, &description,
-		COLUMN_ADDRESS, &address,
+		hubView.col("Name"), &name,
+		hubView.col("Description"), &description,
+		hubView.col("Address"), &address,
 		-1);
 
 	entry.setName(name);
@@ -278,9 +272,9 @@ void PublicHubs::connect_gui(GtkWidget *w, gpointer d) {
 	GtkTreeSelection *selection;
 	char *text;
 	
-	selection = gtk_tree_view_get_selection(hubView);
+	selection = gtk_tree_view_get_selection(hubView.get());
 	if (gtk_tree_selection_get_selected(selection, NULL, &iter)) {
-		gtk_tree_model_get(GTK_TREE_MODEL(hubStore), &iter, COLUMN_ADDRESS, &text, -1);
+		gtk_tree_model_get(GTK_TREE_MODEL(hubStore), &iter, hubView.col("Address"), &text, -1);
 		address = text;
 		WulforManager::get()->addHub_gui(address);
 	}
@@ -343,15 +337,15 @@ void PublicHubs::add_gui(GtkWidget *widget, gpointer data) {
 	gtk_list_store_set(listsStore, &it, 0, "New list", -1);
 	s = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(listsStore), &it);
 	p = gtk_tree_path_new_from_string(s);
-	gtk_tree_view_set_cursor(listsView, p, 
-		gtk_tree_view_get_column(listsView, 0), TRUE);
+	gtk_tree_view_set_cursor(listsView.get(), p, 
+		gtk_tree_view_get_column(listsView.get(), 0), TRUE);
 	
 	g_free(s);
 	gtk_tree_path_free(p);
 }
 
 void PublicHubs::moveUp_gui(GtkWidget *widget, gpointer data) {
-	GtkTreeSelection *sel = gtk_tree_view_get_selection(listsView);
+	GtkTreeSelection *sel = gtk_tree_view_get_selection(listsView.get());
 	GtkTreeIter cur, prev, next;
 	
 	if (!gtk_tree_selection_get_selected(sel, NULL, &cur)) return;
@@ -373,7 +367,7 @@ void PublicHubs::moveUp_gui(GtkWidget *widget, gpointer data) {
 }
 
 void PublicHubs::moveDown_gui(GtkWidget *widget, gpointer data) {
-	GtkTreeSelection *sel = gtk_tree_view_get_selection(listsView);
+	GtkTreeSelection *sel = gtk_tree_view_get_selection(listsView.get());
 	GtkTreeIter it, next;
 
 	if (!gtk_tree_selection_get_selected(sel, NULL, &next)) return;
@@ -383,7 +377,7 @@ void PublicHubs::moveDown_gui(GtkWidget *widget, gpointer data) {
 }
 
 void PublicHubs::remove_gui(GtkWidget *widget, gpointer data) {
-	GtkTreeSelection *sel = gtk_tree_view_get_selection(listsView);
+	GtkTreeSelection *sel = gtk_tree_view_get_selection(listsView.get());
 	GtkTreeIter cur;
 	if (!gtk_tree_selection_get_selected(sel, NULL, &cur)) return;
 	gtk_list_store_remove(listsStore, &cur);

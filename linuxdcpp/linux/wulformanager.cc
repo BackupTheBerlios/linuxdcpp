@@ -163,9 +163,8 @@ void WulforManager::stop() {
 	pthread_detach(manager->guiThread);
 	pthread_detach(manager->clientThread);
 
-	if (manager->mainWin) delete manager->mainWin;
-	for (int i=0; i<manager->bookEntrys.size(); i++)
-		delete manager->bookEntrys[i];
+	if (manager->mainWin)
+		delete manager->mainWin;
 }
 
 WulforManager *WulforManager::get() {
@@ -290,6 +289,8 @@ BookEntry *WulforManager::getBookEntry_client(int type, string id, bool raise) {
 void WulforManager::deleteBookEntry_gui(BookEntry *entry) {
 	vector<FuncBase *>::iterator fIt;
 	vector<BookEntry *>::iterator bIt;
+	//Save a pointer to the page before the entry is deleted
+	GtkWidget *notebookPage = entry->getWidget();
 	
 	//pthread enter is called by gtk for callbacks
 	//so no need to call it here
@@ -314,20 +315,26 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry) {
 				break;
 			}
 
-	//remove the flap from the notebook
-	mainWin->removePage_gui(entry->getWidget());
-	
 	//remove the bookentry from the list
 	pthread_mutex_lock(&bookEntryLock);
 	for (bIt = bookEntrys.begin(); bIt != bookEntrys.end(); bIt++)
 		if ((*bIt)->isEqual(entry)) {
-			delete *bIt;
+			delete entry;
 			bookEntrys.erase(bIt);
 			break;
 		}
 	pthread_mutex_unlock(&bookEntryLock);
 
 	pthread_mutex_unlock(&clientCallLock);
+
+	//remove the flap from the notebook
+	mainWin->removePage_gui(notebookPage);
+}
+
+void WulforManager::deleteAllBookEntries()
+{
+	for (int i = 0; i < bookEntrys.size(); i++)
+		deleteBookEntry_gui(bookEntrys[i]);
 }
 
 void WulforManager::deleteDialogEntry_gui()

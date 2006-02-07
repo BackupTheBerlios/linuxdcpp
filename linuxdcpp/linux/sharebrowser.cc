@@ -1,27 +1,29 @@
+/* 
+* Copyright (C) 2004 Jens Oknelid, paskharen@gmail.com
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+*/
 
 #include "sharebrowser.hh"
-#include "wulformanager.hh"
-#include "treeviewfactory.hh"
-#include "search.hh"
-
-#include <client/Text.h>
-#include <client/ShareManager.h>
-#include <iostream>
-#include <sstream>
-
-using namespace std;
 
 ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCallback):
 	BookEntry(WulforManager::SHARE_BROWSER, 
 		user->getFullNick(), user->getNick(), closeCallback),
 	listing(user),
 	lastDir(""),
-	posDir(NULL),
-	WIDTH_FILE(400), 
-	WIDTH_SIZE(80), 
-	WIDTH_TYPE(50), 
-	WIDTH_TTH(150),
-	WIDTH_EXACT_SIZE(105)
+	posDir(NULL)
 {
 	string gladeFile = WulforManager::get()->getPath() + "/glade/sharebrowser.glade";
 	GladeXML *xml = glade_xml_new(gladeFile.c_str(), NULL, NULL);
@@ -50,48 +52,46 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 		"gnome-fs-regular", 16, (GtkIconLookupFlags) 0, NULL);
 	iconDirectory = gtk_icon_theme_load_icon(gtk_icon_theme_get_default(), 
 		"gnome-fs-directory", 16, (GtkIconLookupFlags) 0, NULL);
-	
-	//initiate the file treeview
-	fileView = GTK_TREE_VIEW(glade_xml_get_widget(xml, "fileView"));
-	fileStore = gtk_list_store_new(9, 
-		G_TYPE_STRING, 		// COLUMN_FILE
-		G_TYPE_STRING, 		// COLUMN_SIZE
-		G_TYPE_STRING, 		// COLUMN_TYPE
-		G_TYPE_STRING, 		// COLUMN_TTH
-		G_TYPE_STRING, 		// COLUMN_EXACT_SIZE
-		G_TYPE_POINTER, 	// COLUMN_DL_FILE
-		GDK_TYPE_PIXBUF, 	// COLUMN_ICON
-		G_TYPE_DOUBLE, 		// COLUMN_SIZE_ORDER
-		G_TYPE_STRING);		// COLUMN_FILE_ORDER
-	gtk_tree_view_set_model(fileView, GTK_TREE_MODEL(fileStore));
-	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(fileView), GTK_SELECTION_MULTIPLE);
-	g_signal_connect(G_OBJECT (fileView), "button_press_event", G_CALLBACK(fileButtonPressed_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT (fileView), "popup_menu", G_CALLBACK(filePopupMenu_gui), (gpointer)this);
-	TreeViewFactory fileViewFactory(fileView);
-	fileViewFactory.addColumn_gui(COLUMN_FILE, "File", TreeViewFactory::PIXBUF_STRING, WIDTH_FILE, COLUMN_ICON);
-	fileViewFactory.addColumn_gui(COLUMN_SIZE, "Size", TreeViewFactory::STRINGR, WIDTH_SIZE);
-	fileViewFactory.addColumn_gui(COLUMN_TYPE, "Type", TreeViewFactory::STRING, WIDTH_TYPE);
-	fileViewFactory.addColumn_gui(COLUMN_TTH, "TTH", TreeViewFactory::STRING, WIDTH_TTH);
-	fileViewFactory.addColumn_gui(COLUMN_EXACT_SIZE, "Exact Size", TreeViewFactory::STRINGR, WIDTH_EXACT_SIZE);
-	fileViewFactory.setSortColumn_gui(COLUMN_FILE, COLUMN_FILE_ORDER);
-	fileViewFactory.setSortColumn_gui(COLUMN_SIZE, COLUMN_SIZE_ORDER);
-	fileViewFactory.setSortColumn_gui(COLUMN_EXACT_SIZE, COLUMN_SIZE_ORDER);
-	fileSelection = gtk_tree_view_get_selection(fileView);
 
-	//initiate the dir treeview
-	dirView = GTK_TREE_VIEW(glade_xml_get_widget(xml, "dirView"));
+	//initiate the file treeview
+	fileView.setView(
+		GTK_TREE_VIEW(glade_xml_get_widget(xml, "fileView")), 
+		true, 
+		SettingsManager::DIRECTORLISTINGFRAME_ORDER, 
+		SettingsManager::DIRECTORLISTINGFRAME_WIDTHS);
+	fileView.insertColumn("Filename", 0, G_TYPE_STRING, TreeView::PIXBUF_STRING, 400, 6);
+	fileView.insertColumn("Size", 1, G_TYPE_STRING, TreeView::STRINGR, 80);
+	fileView.insertColumn("Type", 2, G_TYPE_STRING, TreeView::STRING, 50);
+	fileView.insertColumn("TTH", 3, G_TYPE_STRING, TreeView::STRING, 150);
+	fileView.insertColumn("Exact Size", 4, G_TYPE_STRING, TreeView::STRINGR, 105);
+	fileView.insertHiddenColumn("DL File", 5, G_TYPE_POINTER);
+	fileView.insertHiddenColumn("Icon", 6, GDK_TYPE_PIXBUF);
+	fileView.insertHiddenColumn("Size Order", 7, G_TYPE_DOUBLE);
+	fileView.insertHiddenColumn("File Order", 8, G_TYPE_STRING);
+	fileView.finalize();
+	fileStore = gtk_list_store_newv(fileView.getSize(), fileView.getGTypes());
+	gtk_tree_view_set_model(fileView.get(), GTK_TREE_MODEL(fileStore));
+	fileSelection = gtk_tree_view_get_selection(fileView.get());
+	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(fileView.get()), GTK_SELECTION_MULTIPLE);
+	fileView.setSortColumn_gui("Filename", "File Order");
+	fileView.setSortColumn_gui("Size", "Size Order");
+	fileView.setSortColumn_gui("Exact Size", "Size Order");
+
+	g_signal_connect(G_OBJECT(fileView.get()), "button_press_event", G_CALLBACK(fileButtonPressed_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(fileView.get()), "popup_menu", G_CALLBACK(filePopupMenu_gui), (gpointer)this);
+
+	// Initialize the directory treeview
+	dirView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "dirView")));
 	dirStore = gtk_tree_store_new(3, 
 		G_TYPE_STRING, 		// COLUMN_DIR
 		G_TYPE_POINTER,		// COLUMN_DL_DIR
 		GDK_TYPE_PIXBUF);	// COLUMN_ICON_DIR
-	gtk_tree_view_set_model(dirView, GTK_TREE_MODEL(dirStore));
-	g_signal_connect(G_OBJECT(dirView), "button_press_event", G_CALLBACK(dirButtonPressed_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(dirView), "button_release_event", G_CALLBACK(dirButtonReleased_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(dirView), "popup_menu", G_CALLBACK(dirPopupMenu_gui), (gpointer)this);
-	TreeViewFactory dirViewFactory(dirView);
-	dirViewFactory.addColumn_gui(COLUMN_DIR, "", TreeViewFactory::PIXBUF_STRING, -1, COLUMN_ICON_DIR);
-	dirViewFactory.setSortColumn_gui(COLUMN_DIR, COLUMN_DIR);
-	dirSelection = gtk_tree_view_get_selection(dirView);
+	gtk_tree_view_set_model(dirView.get(), GTK_TREE_MODEL(dirStore));
+	g_signal_connect(G_OBJECT(dirView.get()), "button_press_event", G_CALLBACK(dirButtonPressed_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(dirView.get()), "button_release_event", G_CALLBACK(dirButtonReleased_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(dirView.get()), "popup_menu", G_CALLBACK(dirPopupMenu_gui), (gpointer)this);
+	dirView.addColumn_gui(COLUMN_DIR, "", TreeView::PIXBUF_STRING, -1, COLUMN_ICON_DIR);
+	dirSelection = gtk_tree_view_get_selection(dirView.get());
 
 	//create popup menus
 	dirMenu = GTK_MENU(gtk_menu_new());
@@ -119,7 +119,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	g_signal_connect(G_OBJECT(fileMenuItems["SearchForAlternates"]), "activate", G_CALLBACK(searchAlternatesClicked_gui), (gpointer)this);
 	
 	//Set the buttons text to small so that the statusbar isn't too high.
-	//This can't be set with glade, needs tyo be done in code.
+	//This can't be set with glade, needs to be done in code.
 	GtkLabel *label;
 	label = GTK_LABEL(gtk_bin_get_child(GTK_BIN(matchButton)));
 	gtk_label_set_markup(label, "<small>Match Queue</small>");
@@ -235,23 +235,23 @@ void ShareBrowser::updateFiles_gui(bool fromFind) {
 		//data needs to be converted to utf8 if it's not in that form
 		if (listing.getUtf8()) {
 			gtk_list_store_set(fileStore, &iter,
-				COLUMN_FILE, Util::getFileName((*it_dir)->getName()).c_str(),
-				COLUMN_FILE_ORDER, Util::getFileName("d"+(*it_dir)->getName()).c_str(),
+				fileView.col("Filename"), Util::getFileName((*it_dir)->getName()).c_str(),
+				fileView.col("File Order"), Util::getFileName("d"+(*it_dir)->getName()).c_str(),
 				-1);
 		} else {
 			gtk_list_store_set(fileStore, &iter,
-				COLUMN_FILE, Text::acpToUtf8(Util::getFileName((*it_dir)->getName())).c_str(),
-				COLUMN_FILE_ORDER, Text::acpToUtf8(Util::getFileName("d"+(*it_dir)->getName())).c_str(),
+				fileView.col("Filename"), Text::acpToUtf8(Util::getFileName((*it_dir)->getName())).c_str(),
+				fileView.col("File Order"), Text::acpToUtf8(Util::getFileName("d"+(*it_dir)->getName())).c_str(),
 				-1);
 		}
 
 		size = (*it_dir)->getTotalSize(false);
 		gtk_list_store_set(fileStore, &iter,
-			COLUMN_ICON, iconDirectory,
-			COLUMN_SIZE, Util::formatBytes(size).c_str(),
-			COLUMN_EXACT_SIZE, Util::formatExactSize(size).c_str(),
-			COLUMN_SIZE_ORDER, (gdouble)size,
-			COLUMN_DL_FILE, (gpointer)(*it_dir),
+			fileView.col("Icon"), iconDirectory,
+			fileView.col("Size"), Util::formatBytes(size).c_str(),
+			fileView.col("Exact Size"), Util::formatExactSize(size).c_str(),
+			fileView.col("Size Order"), (gdouble)size,
+			fileView.col("DL File"), (gpointer)(*it_dir),
 			-1);
 
 		currentSize += size;
@@ -269,40 +269,40 @@ void ShareBrowser::updateFiles_gui(bool fromFind) {
 		//data needs to be converted to utf8 if it's not in that form
  		if (listing.getUtf8()) {
 			gtk_list_store_set(fileStore, &iter,
-				COLUMN_FILE, Util::getFileName((*it_file)->getName()).c_str(),
-				COLUMN_TYPE, ext.c_str(),
-				COLUMN_FILE_ORDER, Util::getFileName("f"+(*it_file)->getName()).c_str(),
+				fileView.col("Filename"), Util::getFileName((*it_file)->getName()).c_str(),
+				fileView.col("Type"), ext.c_str(),
+				fileView.col("File Order"), Util::getFileName("f"+(*it_file)->getName()).c_str(),
 				-1);
 		} else {
 			gtk_list_store_set(fileStore, &iter,
-				COLUMN_FILE, Text::acpToUtf8(Util::getFileName((*it_file)->getName())).c_str(),
-				COLUMN_TYPE, Text::acpToUtf8(ext).c_str(),
-				COLUMN_FILE_ORDER, Text::acpToUtf8(Util::getFileName("f"+(*it_file)->getName())).c_str(),
+				fileView.col("Filename"), Text::acpToUtf8(Util::getFileName((*it_file)->getName())).c_str(),
+				fileView.col("Type"), Text::acpToUtf8(ext).c_str(),
+				fileView.col("File Order"), Text::acpToUtf8(Util::getFileName("f"+(*it_file)->getName())).c_str(),
 				-1);
 		}
 
 		size = (*it_file)->getSize();
 		gtk_list_store_set(fileStore, &iter,
-			COLUMN_ICON, iconFile,
-			COLUMN_SIZE, Util::formatBytes(size).c_str(),
-			COLUMN_EXACT_SIZE, Util::formatExactSize(size).c_str(),
-			COLUMN_SIZE_ORDER, (gdouble)size,
-			COLUMN_DL_FILE, (gpointer)(*it_file),
+			fileView.col("Icon"), iconFile,
+			fileView.col("Size"), Util::formatBytes(size).c_str(),
+			fileView.col("Exact Size"), Util::formatExactSize(size).c_str(),
+			fileView.col("Size Order"), (gdouble)size,
+			fileView.col("DL File"), (gpointer)(*it_file),
 			-1);
 
 		TTHValue *tth;
 		if (tth = (*it_file)->getTTH())
-			gtk_list_store_set(fileStore, &iter, COLUMN_TTH, tth->toBase32().c_str(), -1);
+			gtk_list_store_set(fileStore, &iter, fileView.col("TTH"), tth->toBase32().c_str(), -1);
 		else
-			gtk_list_store_set(fileStore, &iter, COLUMN_TTH, "N/A", -1);
+			gtk_list_store_set(fileStore, &iter, fileView.col("TTH"), "N/A", -1);
 
 		currentSize += size;
 		currentItems++;
 	}
 
-	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(fileStore), COLUMN_FILE_ORDER, GTK_SORT_ASCENDING);
-	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(fileView, COLUMN_FILE), TRUE);
-    gtk_tree_view_scroll_to_point(fileView, 0, 0);
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(fileStore), fileView.col("File Order"), GTK_SORT_ASCENDING);
+	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(fileView.get(), fileView.col("Filename")), TRUE);
+    gtk_tree_view_scroll_to_point(fileView.get(), 0, 0);
 	updateStatus_gui();
 }
 	
@@ -410,24 +410,24 @@ gboolean ShareBrowser::fileButtonPressed_gui(GtkWidget *widget, GdkEventButton *
 			if(!gtk_tree_model_get_iter(GTK_TREE_MODEL(sb->fileStore), &iter, (GtkTreePath*)tmp->data))
 				return FALSE;
 				
-			ptr = TreeViewFactory::getValue<gpointer>(GTK_TREE_MODEL(sb->fileStore), &iter, COLUMN_DL_FILE);
-			file_order = TreeViewFactory::getValue<gchar*>(GTK_TREE_MODEL(sb->fileStore), &iter, COLUMN_FILE_ORDER);
+			ptr = sb->fileView.getValue<gpointer>(&iter, "DL File");
+			file_order = sb->fileView.getValue<gchar*>(&iter, "File Order");
 			
 			if((file_order != NULL) && (file_order[0] == 'd')) {
 				dir = (DirectoryListing::Directory *)ptr;
 
 				gtk_tree_selection_get_selected(sb->dirSelection, NULL, &parent_iter);
 				gtk_tree_model_iter_children(GTK_TREE_MODEL(sb->dirStore), &iter, &parent_iter);
-				ptr2 = TreeViewFactory::getValue<gpointer>(GTK_TREE_MODEL(sb->dirStore), &iter, COLUMN_DL_DIR);
+				ptr2 = WulforUtil::getValue<gpointer>(GTK_TREE_MODEL(sb->dirStore), &iter, COLUMN_DL_DIR);
 				
 				while ((ptr != ptr2) && gtk_tree_model_iter_next(GTK_TREE_MODEL(sb->dirStore), &iter)) {
-					ptr2 = TreeViewFactory::getValue<gpointer>(GTK_TREE_MODEL(sb->dirStore), &iter, COLUMN_DL_DIR);
+					ptr2 = WulforUtil::getValue<gpointer>(GTK_TREE_MODEL(sb->dirStore), &iter, COLUMN_DL_DIR);
 				}
 
 				path = gtk_tree_model_get_path(GTK_TREE_MODEL(sb->dirStore), &iter);
 
-				gtk_tree_view_expand_to_path(sb->dirView, path);
-				gtk_tree_view_set_cursor(sb->dirView, path, NULL, FALSE);
+				gtk_tree_view_expand_to_path(sb->dirView.get(), path);
+				gtk_tree_view_set_cursor(sb->dirView.get(), path, NULL, FALSE);
 
 				gtk_tree_path_free(path);
 				
@@ -466,7 +466,7 @@ gboolean ShareBrowser::dirButtonReleased_gui(GtkWidget *widget, GdkEventButton *
 	if(sb->oldButton != event->button)
 		return FALSE;
 
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(sb->dirView);
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(sb->dirView.get());
 	
 	if(!gtk_tree_selection_get_selected(selection, NULL, NULL))
 		return FALSE;
@@ -485,7 +485,7 @@ gboolean ShareBrowser::dirButtonReleased_gui(GtkWidget *widget, GdkEventButton *
 	if(event->button == 1 && sb->oldType == GDK_2BUTTON_PRESS) {
 		gtk_tree_selection_get_selected(selection, NULL, &iter);
 		path = gtk_tree_model_get_path(GTK_TREE_MODEL(sb->dirStore), &iter);
-		gtk_tree_view_expand_row(sb->dirView, path, FALSE);
+		gtk_tree_view_expand_row(sb->dirView.get(), path, FALSE);
 		gtk_tree_path_free(path);
 	}
 	
@@ -613,7 +613,7 @@ void ShareBrowser::downloadSelectedDirs_gui(string target) {
 	gpointer ptr;
 	DirectoryListing::Directory *dir;
 	GtkTreeIter iter;
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(dirView);
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(dirView.get());
 	gtk_tree_selection_get_selected(selection, NULL, &iter);
 	gtk_tree_model_get(GTK_TREE_MODEL(dirStore), &iter,
 					   COLUMN_DL_DIR, &ptr, -1);
@@ -629,7 +629,7 @@ void ShareBrowser::downloadSelectedFiles_gui(string target) {
 	DirectoryListing::File *file;
 	DirectoryListing::Directory *dir;
 	gchar *file_order;
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(fileView);
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(fileView.get());
 	GtkTreeModel *m = GTK_TREE_MODEL(fileStore);
 	GList *list = gtk_tree_selection_get_selected_rows(selection, &m);
 	GList *tmp = g_list_first(list);
@@ -650,8 +650,8 @@ void ShareBrowser::downloadSelectedFiles_gui(string target) {
 	g_list_free(tmp);
 	g_list_free(list);
 	for (int i=0;i<iters.size ();i++) {
-		ptr = TreeViewFactory::getValue<gpointer>(m, &iters[i], COLUMN_DL_FILE);
-		file_order = TreeViewFactory::getValue<gchar*>(m, &iters[i], COLUMN_FILE_ORDER);
+		ptr = fileView.getValue<gpointer>(&iters[i], "DL File");
+		file_order = fileView.getValue<gchar*>(&iters[i], "File Order");
 		if ((file_order != NULL) && (file_order[0] == 'd')) {
 			dir = (DirectoryListing::Directory *)ptr;
 	
@@ -701,7 +701,7 @@ void ShareBrowser::searchAlternatesClicked_gui(GtkMenuItem *item, gpointer user_
 	gpointer ptr;
 	DirectoryListing::File *file;
 	gchar *file_order;
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(sb->fileView);
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(sb->fileView.get());
 	GtkTreeModel *m = GTK_TREE_MODEL(sb->fileStore);
 	GList *list = gtk_tree_selection_get_selected_rows(selection, &m);
 	GList *tmp = g_list_first(list);
@@ -722,8 +722,8 @@ void ShareBrowser::searchAlternatesClicked_gui(GtkMenuItem *item, gpointer user_
 	g_list_free(tmp);
 	g_list_free(list);
 	for (int i=0;i<iters.size ();i++) {
-		ptr = TreeViewFactory::getValue<gpointer>(m, &iters[i], COLUMN_DL_FILE);
-		file_order = TreeViewFactory::getValue<gchar*>(m, &iters[i], COLUMN_FILE_ORDER);
+		ptr = sb->fileView.getValue<gpointer>(&iters[i], "DL File");
+		file_order = sb->fileView.getValue<gchar*>(&iters[i], "File Order");
 		string target;
 
 		if ((file_order != NULL) && (file_order[0] == 'd')) {
@@ -828,8 +828,8 @@ void ShareBrowser::findNext_gui(bool firstFile) {
 		//expand its dir in the dir view
 		if(filename.find(search, 0) != string::npos) {
 			if(updatedPosDir) {
-				gtk_tree_view_expand_row(dirView, posDir, FALSE);
-				gtk_tree_view_set_cursor(dirView, posDir, NULL, FALSE);
+				gtk_tree_view_expand_row(dirView.get(), posDir, FALSE);
+				gtk_tree_view_set_cursor(dirView.get(), posDir, NULL, FALSE);
 				updateFiles_gui(true);
 			}
 			
@@ -839,12 +839,12 @@ void ShareBrowser::findNext_gui(bool firstFile) {
 				assert(gtk_list_store_iter_is_valid(fileStore, &iter));
 
 				gtk_tree_model_get(GTK_TREE_MODEL(fileStore), &iter,
-					COLUMN_DL_FILE, &ptr, -1);
+					fileView.col("DL File"), &ptr, -1);
 				DirectoryListing::File *file = (DirectoryListing::File *)ptr;
 				if (file == *posFile) {
 					GtkTreePath *path;
 					path = gtk_tree_model_get_path(GTK_TREE_MODEL(fileStore), &iter);
-					gtk_tree_view_set_cursor(fileView, path, NULL, FALSE);
+					gtk_tree_view_set_cursor(fileView.get(), path, NULL, FALSE);
 					gtk_tree_path_free(path);
 					return;
 				}

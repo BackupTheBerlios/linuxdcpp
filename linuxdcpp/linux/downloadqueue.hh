@@ -19,18 +19,23 @@
 #ifndef WULFOR_DOWNLOAD_QUEUE_HH
 #define WULFOR_DOWNLOAD_QUEUE_HH
 
-#include <iostream>
-
 #include <gtk/gtk.h>
 #include <glade/glade.h>
+#include <iostream>
+#include <sstream>
+
 #include "bookentry.hh"
-#include "treeviewfactory.hh"
+#include "search.hh"
+#include "treeview.hh"
+#include "wulformanager.hh"
 #include "wulformanager.hh"
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/QueueManager.h>
 #include <client/User.h>
+
+using namespace std;
 
 class DownloadQueue : 	public BookEntry,
 					public QueueManagerListener
@@ -40,8 +45,9 @@ public:
 	DownloadQueue (GCallback closeCallback);
 	~DownloadQueue ();
 
-	GtkWidget *getWidget(); // From BookEntry
-	void switchedPage (); // From BookEntry
+	// From BookEntry
+	GtkWidget *getWidget();
+	void switchedPage();
 
 	void buildList_gui ();
 	void updateStatus_gui ();
@@ -54,24 +60,6 @@ public:
 	virtual void on(QueueManagerListener::StatusUpdated, QueueItem* aQI) throw() { updateFiles_gui (aQI); }
 
 private:
-	enum {
-		COLUMN_FIRST,
-		COLUMN_TARGET = COLUMN_FIRST,
-		COLUMN_STATUS,
-		COLUMN_SIZE,
-		COLUMN_DOWNLOADED,
-		COLUMN_PRIORITY,
-		COLUMN_USERS,
-		COLUMN_PATH,
-		COLUMN_EXACT_SIZE,
-		COLUMN_ERRORS,
-		COLUMN_ADDED,
-		COLUMN_TTH,
-		COLUMN_INFO,
-		COLUMN_REALSIZE,
-		COLUMN_DOWNLOAD_SIZE,
-		COLUMN_LAST
-	};
 	enum {
 		DIRCOLUMN_FIRST,
 		DIRCOLUMN_DIR = DIRCOLUMN_FIRST,
@@ -87,6 +75,7 @@ private:
 		STATUS_TOTAL_SIZE,
 		STATUS_LAST
 	};
+
 	class QueueItemInfo;
 
 	GtkWidget *mainBox;
@@ -94,7 +83,7 @@ private:
 	pthread_mutex_t queueLock;
 
 	// TreeView related stuff
-	TreeViewFactory *dirView, *fileView;
+	TreeView dirView, fileView;
 	GtkTreeStore *dirStore;
 	GtkListStore *fileStore;
 	static gboolean dir_onButtonPressed_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
@@ -162,7 +151,6 @@ private:
 	std::map<string, std::vector<QueueItemInfo*> > dirFileMap;
 	std::map<string, QueueItem*> fileMap;
 
-	static int columnSize[COLUMN_LAST];
 	int64_t queueSize;
 	int queueItems;
 	string showingDir;

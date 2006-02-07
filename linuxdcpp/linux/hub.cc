@@ -17,14 +17,6 @@
 */
 
 #include "hub.hh"
-#include "wulformanager.hh"
-#include "treeviewfactory.hh"
-
-#include <iostream>
-#include <sstream>
-#include <gdk/gdkkeysyms.h>
-
-using namespace std;
 
 Hub::Hub(std::string address, GCallback closeCallback):
 	BookEntry(WulforManager::HUB, address, address, closeCallback),
@@ -35,12 +27,6 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	grantCallback(this, &Hub::grantItemClicked_gui),
 	completionCallback(this, &Hub::completion_gui),
 	setFocusCallback(this, &Hub::setChatEntryFocus),
-	WIDTH_NICK(100),
-	WIDTH_SHARED(75),
-	WIDTH_DESCRIPTION(75),
-	WIDTH_TAG(100),
-	WIDTH_CONNECTION(75),
-	WIDTH_EMAIL(100),
 	lastUpdate(0)
 {
 	string file = WulforManager::get()->getPath() + "/glade/hub.glade";
@@ -57,32 +43,31 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	chatEntry = GTK_ENTRY(glade_xml_get_widget(xml, "chatEntry"));
 	chatText = GTK_TEXT_VIEW(glade_xml_get_widget(xml, "chatText"));
 	chatScroll = GTK_SCROLLED_WINDOW(glade_xml_get_widget(xml, "chatScroll"));
-	nickView = GTK_TREE_VIEW(glade_xml_get_widget(xml, "nickView"));
 	mainStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusMain"));
 	usersStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusUsers"));
 	sharedStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusShared"));
-	
-	nickStore = gtk_list_store_new(9, 
-		G_TYPE_STRING, 		// COLUMN_NICK
-		G_TYPE_STRING, 		// COLUMN_SHARED
-		G_TYPE_STRING, 		// COLUMN_DESCRIPTION
-		G_TYPE_STRING, 		// COLUMN_TAG
-		G_TYPE_STRING, 		// COLUMN_CONNECTION
-		G_TYPE_STRING, 		// COLUMN_EMAIL
-		G_TYPE_INT64, 		// COLUMN_SHARED_BYTES
-		GDK_TYPE_PIXBUF, 	// COLUMN_ICON
-		G_TYPE_STRING);		// COLUMN_NICK_ORDER
-	gtk_tree_view_set_model(nickView, GTK_TREE_MODEL(nickStore));
-	nickSelection = gtk_tree_view_get_selection(nickView);
-	TreeViewFactory nickViewFactory(nickView);
-	nickViewFactory.addColumn_gui(COLUMN_NICK, "Nick", TreeViewFactory::PIXBUF_STRING, WIDTH_NICK, COLUMN_ICON);
-	nickViewFactory.addColumn_gui(COLUMN_SHARED, "Shared", TreeViewFactory::STRING, WIDTH_SHARED);
-	nickViewFactory.addColumn_gui(COLUMN_DESCRIPTION, "Description", TreeViewFactory::STRING, WIDTH_DESCRIPTION);
-	nickViewFactory.addColumn_gui(COLUMN_TAG, "Tag", TreeViewFactory::STRING, WIDTH_TAG);
-	nickViewFactory.addColumn_gui(COLUMN_CONNECTION, "Connection", TreeViewFactory::STRING, WIDTH_DESCRIPTION);
-	nickViewFactory.addColumn_gui(COLUMN_EMAIL, "eMail", TreeViewFactory::STRING, WIDTH_EMAIL);
-	nickViewFactory.setSortColumn_gui(COLUMN_NICK, COLUMN_NICK_ORDER);
-	nickViewFactory.setSortColumn_gui(COLUMN_SHARED, COLUMN_SHARED_BYTES);
+
+	// Initialize nick treeview
+	nickView.setView(
+		GTK_TREE_VIEW(glade_xml_get_widget(xml, "nickView")), 
+		true, 
+		SettingsManager::HUBFRAME_ORDER, 
+		SettingsManager::HUBFRAME_WIDTHS);
+	nickView.insertColumn("Nick", 0, G_TYPE_STRING, TreeView::PIXBUF_STRING, 100, 7);
+	nickView.insertColumn("Shared", 1, G_TYPE_STRING, TreeView::STRING, 75);
+	nickView.insertColumn("Description", 2, G_TYPE_STRING, TreeView::STRING, 75);
+	nickView.insertColumn("Tag", 3, G_TYPE_STRING, TreeView::STRING, 100);
+	nickView.insertColumn("Connection", 4, G_TYPE_STRING, TreeView::STRING, 75);
+	nickView.insertColumn("eMail", 5, G_TYPE_STRING, TreeView::STRING, 100);
+	nickView.insertHiddenColumn("Shared Bytes", 6, G_TYPE_INT64);
+	nickView.insertHiddenColumn("Icon", 7, GDK_TYPE_PIXBUF);
+	nickView.insertHiddenColumn("Nick Order", 8, G_TYPE_STRING);
+	nickView.finalize();
+	nickStore = gtk_list_store_newv(nickView.getSize(), nickView.getGTypes());
+	gtk_tree_view_set_model(nickView.get(), GTK_TREE_MODEL(nickStore));
+	nickSelection = gtk_tree_view_get_selection(nickView.get());
+	nickView.setSortColumn_gui("Nick", "Nick Order");
+	nickView.setSortColumn_gui("Shared", "Shared Bytes");
 
 	chatBuffer = gtk_text_buffer_new(NULL);
 	gtk_text_view_set_buffer(chatText, chatBuffer);
@@ -121,7 +106,7 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	userIcons["dc++-fw-op"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
 	
 	enterCallback.connect(G_OBJECT(chatEntry), "activate", NULL);
-	nickListCallback.connect_after(G_OBJECT(nickView), "button-release-event", NULL);
+	nickListCallback.connect_after(G_OBJECT(nickView.get()), "button-release-event", NULL);
 	browseCallback.connect(G_OBJECT(browseItem), "activate", NULL);
 	msgCallback.connect(G_OBJECT(msgItem), "activate", NULL);
 	grantCallback.connect(G_OBJECT(grantItem), "activate", NULL);
@@ -129,8 +114,10 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	setFocusCallback.connect_after(G_OBJECT(chatEntry), "key-press-event", NULL);
 }
 
-Hub::~Hub() {
-	if (client) {
+Hub::~Hub()
+{
+	if (client)
+	{
 		client->removeListener(this);
 		ClientManager::getInstance()->putClient(client);
 	}
@@ -141,7 +128,8 @@ Hub::~Hub() {
 		g_object_unref(G_OBJECT(it->second));
 }
 
-GtkWidget *Hub::getWidget() {
+GtkWidget *Hub::getWidget()
+{
 	return mainBox;
 }
 
@@ -195,7 +183,7 @@ void Hub::findUser_gui(string nick, GtkTreeIter *iter) {
 	while (gtk_list_store_iter_is_valid(nickStore, iter)) {
 		char *t;
 		string text;
-		gtk_tree_model_get(GTK_TREE_MODEL(nickStore), iter, COLUMN_NICK, &t, -1);
+		gtk_tree_model_get(GTK_TREE_MODEL(nickStore), iter, nickView.col("Nick"), &t, -1);
 		text = t;
 		g_free(t);
 		
@@ -224,15 +212,15 @@ void Hub::updateUser_gui(string nick, int64_t shared, string iconFile,
 
 	icon = userIcons[iconFile];
 	gtk_list_store_set(nickStore, &iter, 
-		COLUMN_NICK, nick.c_str(),
-		COLUMN_SHARED, Util::formatBytes(shared).c_str(),
-		COLUMN_DESCRIPTION, description.c_str(),
-		COLUMN_TAG, tag.c_str(),
-		COLUMN_CONNECTION, connection.c_str(),
-		COLUMN_EMAIL, email.c_str(),
-		COLUMN_SHARED_BYTES, shared,
-		COLUMN_ICON, icon,
-		COLUMN_NICK_ORDER, nick_order.c_str(),
+		nickView.col("Nick"), nick.c_str(),
+		nickView.col("Shared"), Util::formatBytes(shared).c_str(),
+		nickView.col("Description"), description.c_str(),
+		nickView.col("Tag"), tag.c_str(),
+		nickView.col("Connection"), connection.c_str(),
+		nickView.col("eMail"), email.c_str(),
+		nickView.col("Shared Bytes"), shared,
+		nickView.col("Icon"), icon,
+		nickView.col("Nick Order"), nick_order.c_str(),
 		-1);
 
 	u_int32_t ticks = GET_TICK();	
@@ -245,8 +233,8 @@ void Hub::updateUser_gui(string nick, int64_t shared, string iconFile,
 			setStatus_gui(usersStatus, userStream.str());
 			setStatus_gui(sharedStatus, Util::formatBytes(client->getAvailable()));
 
-//        	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(nickStore), COLUMN_NICK_ORDER, GTK_SORT_ASCENDING);
-//	        gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(nickView, COLUMN_NICK), TRUE);
+//        	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(nickStore), nickView->col("Nick Order"), GTK_SORT_ASCENDING);
+//	        gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(nickView->get(), nickView->col("Nick")), TRUE);
 		}
 		pthread_mutex_unlock(&clientLock);
 	}
@@ -355,7 +343,7 @@ void Hub::browseItemClicked_gui(GtkMenuItem *, gpointer) {
 	char *text;
 	gtk_tree_selection_get_selected(nickSelection, NULL, &iter);
 	gtk_tree_model_get(GTK_TREE_MODEL(nickStore), &iter,
-		COLUMN_NICK, &text,
+		nickView.col("Nick"), &text,
 		-1);
 		
 	typedef Func1<Hub, string> F1;
@@ -370,7 +358,7 @@ void Hub::msgItemClicked_gui(GtkMenuItem *, gpointer) {
 	char *text;
 	gtk_tree_selection_get_selected(nickSelection, NULL, &iter);
 	gtk_tree_model_get(GTK_TREE_MODEL(nickStore), &iter,
-		COLUMN_NICK, &text,
+		nickView.col("Nick"), &text,
 		-1);
 
 	pthread_mutex_lock(&clientLock);
@@ -388,7 +376,7 @@ void Hub::grantItemClicked_gui(GtkMenuItem *, gpointer) {
 	char *text;
 	gtk_tree_selection_get_selected(nickSelection, NULL, &iter);
 	gtk_tree_model_get(GTK_TREE_MODEL(nickStore), &iter,
-		COLUMN_NICK, &text,
+		nickView.col("Nick"), &text,
 		-1);
 
 	typedef Func1<Hub, string> F1;
@@ -669,7 +657,8 @@ void Hub::completion_gui(GtkWidget *, GdkEventKey *key, gpointer) {
 	while (gtk_list_store_iter_is_valid(nickStore, &completion_iter)) {
 		const char *t;
 
-		gtk_tree_model_get(GTK_TREE_MODEL(nickStore), &completion_iter, COLUMN_NICK, &t, -1);
+		gtk_tree_model_get(GTK_TREE_MODEL(nickStore), &completion_iter, 
+			nickView.col("Nick"), &t, -1);
 
 		int length = strlen(t); //length is needed for few things
 		string name = g_utf8_strdown(t, length);

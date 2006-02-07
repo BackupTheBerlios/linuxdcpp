@@ -73,6 +73,7 @@ class WulforManager {
 		BookEntry *getBookEntry_gui(int nr);
 		BookEntry *getBookEntry_client(int type, string id, bool raise);
 		void deleteBookEntry_gui(BookEntry *entry);
+		void deleteAllBookEntries();
 		
 		void deleteDialogEntry_gui();
 

@@ -1,9 +1,29 @@
+/* 
+* Copyright (C) 2004 Jens Oknelid, paskharen@gmail.com
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+*/
+
 #ifndef WULFOR_FINISHED_TRANSFERS
 #define WULFOR_FINISHED_TRANSFERS
 
 #include "bookentry.hh"
-#include "wulformanager.hh"
 #include "callback.hh"
+#include "func.hh"
+#include "wulformanager.hh"
+
 #include <client/FinishedManager.h>
 
 class FinishedTransfers:
@@ -12,56 +32,42 @@ class FinishedTransfers:
 {
 	public:
 	
-	FinishedTransfers(int type, std::string title, GCallback closeCallback);
-	~FinishedTransfers();
+		FinishedTransfers(int type, std::string title, GCallback closeCallback);
+		~FinishedTransfers();
 	
-	GtkWidget *getWidget();
+		// From BookEntry
+		GtkWidget *getWidget();
 	
-	void popupMenu_gui(GtkWidget *, GdkEventButton *, gpointer);
-	void removeItems_gui(GtkMenuItem *, gpointer);
-	void removeAll_gui(GtkMenuItem *, gpointer);
-	void updateList(FinishedItem::List& list);
-	void addEntry(FinishedItem *entry);
-	void updateStatus();
-	void openWith_gui(GtkMenuItem *, gpointer);
+		void popupMenu_gui(GtkWidget *, GdkEventButton *, gpointer);
+		void removeItems_gui(GtkMenuItem *, gpointer);
+		void removeAll_gui(GtkMenuItem *, gpointer);
+		void updateList(FinishedItem::List& list);
+		void addEntry(FinishedItem *entry);
+		void updateStatus();
+		void openWith_gui(GtkMenuItem *, gpointer);
 	
-	//from FinishedManagerListener
-	void on(AddedDl, FinishedItem* entry) throw();
-	void on(AddedUl, FinishedItem* entry) throw();
+		//from FinishedManagerListener
+		void on(AddedDl, FinishedItem* entry) throw();
+		void on(AddedUl, FinishedItem* entry) throw();
 	
 	private:
+		GtkWidget *mainBox;
+		GtkListStore *transferStore;
+		TreeView transferView;
+		GtkTreeSelection *transferSelection;
+		GtkTreeIter treeIter;
+		GtkStatusbar *totalItems, *totalSize, *averageSpeed;
+
+		int items;
+		bool getType;
+		int64_t totalBytes, totalTime;
+		std::map<string, FinishedItem*> finishedList;
+		
+		GtkMenu *finishedTransfersMenu;
+		GtkMenuItem *openWith, *remove, *removeAll;
 	
-	GtkWidget *mainBox;
-	GtkListStore *transferStore;
-	GtkTreeView *transferView;
-	GtkTreeIter treeIter;
-	GtkStatusbar *totalItems, *totalSize, *averageSpeed;
-	GtkTreeSelection *transferSelection;
-	
-	int items;
-	bool getType;
-	int64_t totalBytes, totalTime;
-	std::map<string, FinishedItem*> finishedList;
-	
-	GtkMenu *finishedTransfersMenu;
-	GtkMenuItem *openWith, *remove, *removeAll;
-	
-	Callback3<FinishedTransfers, void, GtkWidget *, GdkEventButton *> menuCallback;
-	Callback2<FinishedTransfers, void, GtkMenuItem *> removeCallback, removeAllCallback, openWithCallback;
-	
-	enum
-	{
-		COLUMN_TIME,
-		COLUMN_FILENAME,
-		COLUMN_PATH,
-		COLUMN_NICK,
-		COLUMN_HUB,
-		COLUMN_SIZE,
-		COLUMN_SPEED,
-		COLUMN_CRC,
-		COLUMN_TARGET
-	};
-	
+		Callback3<FinishedTransfers, void, GtkWidget *, GdkEventButton *> menuCallback;
+		Callback2<FinishedTransfers, void, GtkMenuItem *> removeCallback, removeAllCallback, openWithCallback;	
 };
 #else
 class FinishedTransfers;

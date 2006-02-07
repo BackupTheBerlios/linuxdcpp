@@ -21,15 +21,20 @@
 
 #include <gtk/gtk.h>
 #include <glade/glade.h>
-#include <string>
-
-#include <client/stdinc.h>
-#include <client/DCPlusPlus.h>
-#include <client/User.h>
-#include <client/DirectoryListing.h>
+#include <sstream>
 
 #include "bookentry.hh"
 #include "callback.hh"
+#include "treeview.hh"
+#include "wulformanager.hh"
+
+#include <client/stdinc.h>
+#include <client/DCPlusPlus.h>
+#include <client/DirectoryListing.h>
+#include <client/Text.h>
+#include <client/User.h>
+
+using namespace std;
 
 class ShareBrowser:
 	public BookEntry
@@ -39,6 +44,7 @@ class ShareBrowser:
 		ShareBrowser(User::Ptr user, std::string file, GCallback closeCallback);
 		~ShareBrowser();
 	
+		// From BookEntry
 		GtkWidget *getWidget();
 
 		//these functions should only be called from the client thread
@@ -91,9 +97,9 @@ class ShareBrowser:
 		std::string search;
 		GtkTreePath *posDir;
 		DirectoryListing::File::Iter posFile;
+		TreeView dirView, fileView;
 	
 		GtkStatusbar *mainStatus, *itemsStatus, *sizeStatus, *filesStatus, *totalStatus;
-		GtkTreeView *dirView, *fileView;
 		GtkListStore *fileStore;
 		GtkTreeStore *dirStore;
 		GtkTreeSelection *fileSelection, *dirSelection;
@@ -107,26 +113,12 @@ class ShareBrowser:
 		std::vector<GtkWidget*> fileDownloadItems, dirDownloadItems;
 		typedef pair<ShareBrowser*, string> userData;
 		std::vector<userData*> menuUserData;
-		
-		enum {
-			COLUMN_FILE,
-			COLUMN_SIZE,
-			COLUMN_TYPE,
-			COLUMN_TTH,
-			COLUMN_EXACT_SIZE,
-			COLUMN_DL_FILE,
-			COLUMN_ICON,
-			COLUMN_SIZE_ORDER,
-			COLUMN_FILE_ORDER
-		};
 
 		enum {
 			COLUMN_DIR,
 			COLUMN_DL_DIR,
 			COLUMN_ICON_DIR
 		};
-
-		const int WIDTH_FILE, WIDTH_SIZE, WIDTH_TYPE, WIDTH_TTH, WIDTH_EXACT_SIZE;
 };
 
 #else

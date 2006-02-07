@@ -19,23 +19,30 @@
 #ifndef WULFOR_HUB_HH
 #define WULFOR_HUB_HH
 
-#include <gtk/gtk.h>
+#include <gdk/gdkkeysyms.h>
 #include <glade/glade.h>
+#include <gtk/gtk.h>
+#include <iostream>
+#include <map>
 #include <pthread.h>
 #include <semaphore.h>
-#include <string>
 #include <set>
-#include <map>
-
-#include <client/stdinc.h>
-#include <client/DCPlusPlus.h>
-#include <client/Client.h>
-#include <client/ClientManager.h>
-#include <client/User.h>
-#include <client/TimerManager.h>
+#include <sstream>
+#include <string>
 
 #include "bookentry.hh"
 #include "callback.hh"
+#include "treeview.hh"
+#include "wulformanager.hh"
+
+#include <client/Client.h>
+#include <client/ClientManager.h>
+#include <client/DCPlusPlus.h>
+#include <client/stdinc.h>
+#include <client/TimerManager.h>
+#include <client/User.h>
+
+using namespace std;
 
 class Hub:
 	public BookEntry,
@@ -46,7 +53,7 @@ class Hub:
 		Hub(std::string address, GCallback closeCallback);
 		~Hub();
 
-		//from bookentry
+		// From BookEntry
 		GtkWidget *getWidget();
 
 		//to be called from gui thread
@@ -134,7 +141,7 @@ class Hub:
 		GtkTextView *chatText;
 		GtkTextBuffer *chatBuffer;
 		GtkStatusbar *mainStatus, *usersStatus, *sharedStatus;
-		GtkTreeView *nickView;
+		TreeView nickView;
 		GtkListStore *nickStore;
 		GtkTreeSelection *nickSelection;
 		GtkScrolledWindow *chatScroll;
@@ -143,20 +150,6 @@ class Hub:
 
 		string prev_nick;
 		string nick_completion;
-		
-		const int WIDTH_NICK, WIDTH_SHARED, WIDTH_DESCRIPTION, WIDTH_TAG, WIDTH_CONNECTION, WIDTH_EMAIL;
-		
-		enum {
-			COLUMN_NICK,
-			COLUMN_SHARED,
-			COLUMN_DESCRIPTION,
-			COLUMN_TAG,
-			COLUMN_CONNECTION,
-			COLUMN_EMAIL,
-			COLUMN_SHARED_BYTES,
-			COLUMN_ICON,
-			COLUMN_NICK_ORDER
-		};
 };
 
 #else

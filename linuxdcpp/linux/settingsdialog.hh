@@ -21,7 +21,7 @@
 
 #include <gtk/gtk.h>
 #include <glade/glade.h>
-#include "treeviewfactory.hh"
+#include "treeview.hh"
 //#include "favoritedirectory.hh"
 
 #include <client/stdinc.h>
@@ -82,8 +82,8 @@ private:
 		DOWNLOADTO_DIR,
 		DOWNLOADTO_LAST
 	};
-	TreeViewFactory *downloadTo;
-	TreeViewFactory *publicList;
+	TreeView downloadTo;
+	TreeView publicList;
 	GtkListStore *downloadToStore;
 	GtkListStore *publicListStore;
 	// Sharing
@@ -101,7 +101,7 @@ private:
 		SHARE_REALSIZE,
 		SHARE_LAST
 	};
-	TreeViewFactory *shares;
+	TreeView shares;
 	GtkListStore *shareStore;
 	GdkEventType sharePrevious;
 	// Appearance
@@ -113,7 +113,7 @@ private:
 		APPEARANCE_NAME,
 		APPEARANCE_LAST
 	};
-	TreeViewFactory *appearance;
+	TreeView appearance;
 	GtkListStore *appearanceStore;
 	static SettingsManager::IntSetting optionSettings[];
 	
@@ -134,7 +134,7 @@ private:
 		ADVANCED_NAME,
 		ADVANCED_LAST
 	};
-	TreeViewFactory *advanced;
+	TreeView advanced;
 	GtkListStore *advancedStore;
 	static SettingsManager::IntSetting advancedSettings[];
 

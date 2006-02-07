@@ -21,15 +21,21 @@
 
 #include <gtk/gtk.h>
 #include <glade/glade.h>
+#include <iostream>
 #include <pthread.h>
+#include <sstream>
 
 #include "bookentry.hh"
 #include "callback.hh"
+#include "treeview.hh"
+#include "wulformanager.hh"
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/HubManager.h>
 #include <client/StringSearch.h>
+
+using namespace std;
 
 class PublicHubs: 
 	public BookEntry,
@@ -40,6 +46,7 @@ class PublicHubs:
 		PublicHubs(GCallback closeCallback);
 		~PublicHubs();
 
+		// From BookEntry
 		GtkWidget *getWidget();
 
 		//only to be called from client thread
@@ -93,24 +100,14 @@ class PublicHubs:
 
 		GtkDialog *configureDialog;
 		GtkComboBox *combo;
-		GtkListStore *comboStore, *listsStore;
 		GtkWidget *mainBox;
 		GtkEntry *filterEntry;
-		GtkTreeView *hubView, *listsView;
-		GtkListStore *hubStore;
+		TreeView listsView, hubView;
+		GtkListStore *hubStore, *comboStore, *listsStore;
 		GtkStatusbar *statusMain, *statusHubs, *statusUsers;
 		
 		GtkMenu *menu;
 		GtkMenuItem *conItem, *favItem;
-
-		enum {
-			COLUMN_NAME,
-			COLUMN_DESC,
-			COLUMN_USERS,
-			COLUMN_ADDRESS
-		};
-
-		const int WIDTH_NAME, WIDTH_DESC, WIDTH_USERS, WIDTH_ADDRESS;
 };
 
 #else
