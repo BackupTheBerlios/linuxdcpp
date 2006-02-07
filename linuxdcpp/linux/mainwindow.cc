@@ -20,7 +20,7 @@
 #include "wulformanager.hh"
 #include "selecter.hh"
 #include "settingsdialog.hh"
-#include "treeviewfactory.hh"
+#include "treeview.hh"
 #include "settingsmanager.hh"
 
 #include <client/version.h>
@@ -80,7 +80,6 @@ MainWindow::~MainWindow() {
 	//Save window state and position
 	int posX, posY, sizeX, sizeY, state;
 	GdkWindowState gdkState;
-	//SettingsManager *sm = SettingsManager::getInstance();
 	WulforSettingsManager *sm = WulforSettingsManager::get();
 
 	gtk_window_get_position(window, &posX, &posY);

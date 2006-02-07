@@ -1,7 +1,7 @@
 gui_files = [	'selecter.cc',				'wulformanager.cc',
 				'bookentry.cc',				'mainwindow.cc',
 				'wulfor.cc', 				'prefix.cc',
-				'publichubs.cc',			'treeviewfactory.cc',
+				'publichubs.cc',			'treeview.cc',
 				'hub.cc',					'privatemessage.cc',
 				'downloadqueue.cc',			'favoritehubs.cc',
 				'settingsdialog.cc',		'sharebrowser.cc',
