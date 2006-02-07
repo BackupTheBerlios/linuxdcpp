@@ -1,3 +1,13 @@
+2006-02-08 - paskharen
+* Made treeview columns reorderable (thanks Steven)
+* Made treeview a general treeview wrapper class. This is not complete and 
+  the settingsdialog isn't fully updated to use this.
+* Made it possible to have more than one search tab open.
+* Fixed an assertion failure when downloading a directory.
+* Made a custom settingsmanager for the linux part and made mainwindow use it.
+* Made the text on the Find buttons in sharebrowser smaller to avoid it being
+  chopped off because of lack of space on the button.
+
 2006-01-18 - paskharen
 * Disabled asm code for ia64 (thanks Romain Beauxis 	
 * Added install targets to SConstruct file (thanks Naga)
