@@ -25,6 +25,7 @@
 #include <client/ShareManager.h>
 
 #include "wulformanager.hh"
+#include "settingsmanager.hh"
 #include <iostream>
 #include <signal.h>
 
@@ -38,14 +39,7 @@ int main(int argc, char *argv[]) {
 	//starts the dc++ client part
 	startup(callBack, NULL);
 	
-	//Set default values for some settings, needs to be done before Smgr::load()
-	SettingsManager *smgr = SettingsManager::getInstance();
-	smgr->setDefault(SettingsManager::MAIN_WINDOW_STATE, MainWindow::STATE_NORMAL);
-	smgr->setDefault(SettingsManager::MAIN_WINDOW_SIZE_X, 800);
-	smgr->setDefault(SettingsManager::MAIN_WINDOW_SIZE_Y, 600);
-	smgr->setDefault(SettingsManager::MAIN_WINDOW_POS_X, 100);
-	smgr->setDefault(SettingsManager::MAIN_WINDOW_POS_Y, 100);
-	
+	WulforSettingsManager::get()->load();
 	SettingsManager::getInstance()->load();
 	TimerManager::getInstance()->start();
 
@@ -64,6 +58,8 @@ int main(int argc, char *argv[]) {
 	gtk_main();
 	gdk_threads_leave();
 	WulforManager::stop();
+
+	WulforSettingsManager::get()->save();
 
 	cout << "Shutting down..." << endl;
 	shutdown();
