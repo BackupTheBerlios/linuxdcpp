@@ -283,8 +283,10 @@ void DirectoryListing::download(Directory* aDir, const string& aTarget, bool hig
 
 void DirectoryListing::download(const string& aDir, const string& aTarget, bool highPrio) {
 	dcassert(aDir.size() > 2);
-	dcassert(aDir[aDir.size() - 1] == PATH_SEPARATOR);
-	Directory* d = find(aDir, getRoot());
+	dcassert(aDir[aDir.size() - 1] == '\\');
+	//^^ This should NOT be PATH_SEPARATOR, aDir is what's sent to other client => DC notation
+
+	Directory* d = find(aDir, getRoot()); 
 	if(d != NULL)
 		download(d, aTarget, highPrio);
 }
@@ -332,5 +334,5 @@ size_t DirectoryListing::Directory::getTotalFileCount(bool adl) {
 
 /**
  * @file
- * $Id: DirectoryListing.cpp,v 1.5 2005/06/25 19:24:02 paskharen Exp $
+ * $Id: DirectoryListing.cpp,v 1.6 2006/02/07 22:44:30 paskharen Exp $
  */
