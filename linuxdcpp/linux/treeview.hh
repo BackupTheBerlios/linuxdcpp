@@ -83,6 +83,7 @@ class TreeViewFactory {
 		}
 	private:
 		GtkTreeView *view;
+		std::string name;
 };
 
 #else
