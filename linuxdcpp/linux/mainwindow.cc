@@ -17,6 +17,24 @@
 */
 
 #include "mainwindow.hh"
+#include "wulformanager.hh"
+#include "selecter.hh"
+#include "settingsdialog.hh"
+#include "treeviewfactory.hh"
+#include "settingsmanager.hh"
+
+#include <client/version.h>
+#include <client/Socket.h>
+#include <client/Client.h>
+#include <client/SettingsManager.h>
+#include <client/SearchManager.h>
+#include <client/Exception.h>
+
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+
+using namespace std;
 
 const int MainWindow::STATE_NORMAL = 1;
 const int MainWindow::STATE_MAXIMIZED = 3;
@@ -62,7 +80,8 @@ MainWindow::~MainWindow() {
 	//Save window state and position
 	int posX, posY, sizeX, sizeY, state;
 	GdkWindowState gdkState;
-	SettingsManager *sm = SettingsManager::getInstance();
+	//SettingsManager *sm = SettingsManager::getInstance();
+	WulforSettingsManager *sm = WulforSettingsManager::get();
 
 	gtk_window_get_position(window, &posX, &posY);
 	gtk_window_get_size(window, &sizeX, &sizeY);
@@ -73,13 +92,14 @@ MainWindow::~MainWindow() {
 	} else {
 		state = STATE_NORMAL;
 		//The get pos/size functions return junk when window is maximized
-		sm->set (SettingsManager::MAIN_WINDOW_POS_X, posX);
-		sm->set (SettingsManager::MAIN_WINDOW_POS_Y, posY);
-		sm->set (SettingsManager::MAIN_WINDOW_SIZE_X, sizeX);
-		sm->set (SettingsManager::MAIN_WINDOW_SIZE_Y, sizeY);
+		sm->set("main-window-pos-x", posX);
+		sm->set("main-window-pos-y", posY);
+		sm->set("main-window-size-x", sizeX);
+		sm->set("main-window-size-y", sizeY);
 	}
 	
-	sm->set (SettingsManager::MAIN_WINDOW_STATE, state);
+	sm->set("main-window-state", state);
+	//sm->set (SettingsManager::MAIN_WINDOW_STATE, state);
 
 	//Make sure all windows are deallocated (probably not necessary)
 	gtk_widget_destroy(GTK_WIDGET(connectDialog));
@@ -277,14 +297,15 @@ void MainWindow::createWindow_gui() {
 	switchPageCallback.connect(G_OBJECT(book), "switch-page", NULL);
 
 	//Load window state and position from settings manager
-	int posX =  SETTING(MAIN_WINDOW_POS_X);
-	int posY = SETTING(MAIN_WINDOW_POS_Y);
-	int sizeX = SETTING(MAIN_WINDOW_SIZE_X);
-	int sizeY = SETTING(MAIN_WINDOW_SIZE_Y);
+	WulforSettingsManager *sm = WulforSettingsManager::get();
+	int posX =  sm->getInt("main-window-pos-x");
+	int posY = sm->getInt("main-window-pos-x");
+	int sizeX = sm->getInt("main-window-size-x");
+	int sizeY = sm->getInt("main-window-size-y");
  	
 	gtk_window_move(window, posX, posY);
 	gtk_window_resize(window, sizeX, sizeY);
-	if (SETTING(MAIN_WINDOW_STATE) == STATE_MAXIMIZED)
+	if (sm->getInt("main-window-state") == STATE_MAXIMIZED)
 		gtk_window_maximize(window);
 
 	//Create text in about window
