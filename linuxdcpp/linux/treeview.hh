@@ -22,8 +22,14 @@
 #include <gtk/gtk.h>
 #include <string>
 #include <vector>
+#include <list>
+#include <map>
+#include <client/stdinc.h>
+#include <client/DCPlusPlus.h>
+#include <client/SettingsManager.h>
+#include "WulforUtil.hh"
 
-class TreeViewFactory {
+class TreeView {
 	public:
 		typedef enum {
 			STRING,
@@ -34,58 +40,81 @@ class TreeViewFactory {
 			PIXBUF_STRING,
 			EDIT_STRING
 			//PROGRESS
-		} type_t;
-	
-		TreeViewFactory(GtkTreeView *view);
+		} columnType;
+
+		class Column
+		{
+			public:
+				Column(std::string title, int id, GType gtype, TreeView::columnType type, int width, int id_pixbuf = -1) :
+					title(title), id(id), gtype(gtype), type(type), width(width), pos(id), id_pixbuf(id_pixbuf) {};
+				std::string title;
+				int id;
+				GType gtype;
+				TreeView::columnType type;
+				int width;
+				int pos;
+				int id_pixbuf;
+				bool operator<(const Column &right) const
+				{
+					return pos < right.pos;
+				}
+		};
+
+		TreeView();
+		~TreeView();
+		void setView(GtkTreeView *view);
+		void setView(GtkTreeView *view, bool padding, SettingsManager::StrSetting orderSetting, SettingsManager::StrSetting widthSetting);
 		GtkTreeView *get();
-		void addColumn_gui(int id, std::string title, type_t type, int width, int id_pixbuf=-1);
-		void setSortColumn_gui(int id, int sortColumn);
+		void insertColumn(const std::string &title, const int id, const GType gtype, const columnType type, const int width, const int id_pixbuf = -1);
+		void insertHiddenColumn(const std::string &title, const int id, const GType gtype);
+		void finalize();
+		int getSize();
+		GType* getGTypes();
+		void addColumn_gui(Column column);
+		void addColumn_gui(int id, std::string title, columnType type, int width, int id_pixbuf=-1);
+		void setSortColumn_gui(std::string column, std::string sortColumn);
+		int col(const std::string &title);
 
 		template<class T, class C>
-		static C getValue (GtkTreeModel *m, GtkTreeIter *i, gint c)
+		C getValue(GtkTreeIter *i, std::string column)
 		{
 			T value;
-			gtk_tree_model_get (m, i, c, &value, -1);
+			GtkTreeModel *m = gtk_tree_view_get_model(view);
+			gtk_tree_model_get (m, i, col(column), &value, -1);
 			return C (value);
 		}
 		template<class T>
-		static T getValue (GtkTreeModel *m, GtkTreeIter *i, gint c)
+		T getValue(GtkTreeIter *i, std::string column)
 		{
 			T value;
-			gtk_tree_model_get (m, i, c, &value, -1);
+			GtkTreeModel *m = gtk_tree_view_get_model(view);
+			gtk_tree_model_get (m, i, col(column), &value, -1);
 			return value;
 		}
-		static int getCount (GtkTreeModel *m)
-		{
-			GtkTreeIter it;
-			if (!gtk_tree_model_get_iter_first (m, &it))
-				return 0;
-			int count=0;
-			while (1)
-			{
-				count++;
-				if (!gtk_tree_model_iter_next (m, &it))
-					return count;
-			}
-		}
-		static void getColumn (GtkTreeModel *m, gint c, std::vector<std::string> *l)
-		{
-			GtkTreeIter it;
-			if (!gtk_tree_model_get_iter_first (m, &it))
-				return;
-		
-			while (1)
-			{
-				l->push_back (getValue<gchar*,std::string>(m, &it, c));
-				if (!gtk_tree_model_iter_next (m, &it))
-					break;
-			}
-		}
+
+		int getCount();
+		void getColumn(std::string column, std::vector<std::string> *l);
+
 	private:
+		void restoreSettings();
+		int getColumnWidth(int position);
+		std::string getColumnTitle(int position);
+
 		GtkTreeView *view;
-		std::string name;
+
+		std::list<Column> columns;
+		typedef list<Column>::iterator ColIter;
+		std::map<std::string, int> currentPosition;
+		std::map<std::string, int> defaultPosition;
+
+		std::map<std::string, int> hiddenColumns;
+		std::list<GType> hiddenGTypes;
+
+		SettingsManager::StrSetting orderSetting;
+		SettingsManager::StrSetting widthSetting;
+		bool padding;
 };
 
 #else
-class TreeViewFactory;
+class TreeView;
 #endif

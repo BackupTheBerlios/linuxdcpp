@@ -18,63 +18,129 @@
 
 #include "treeview.hh"
 
-using namespace std;
-
-TreeView::TreeView(string name):
-	view(NULL)
+TreeView::TreeView(): view(NULL)
 {
-	this->name = name;
 }
 
-TreeView::~TreeView() {
-	string widths, order, isVisible;
-	GtkTreeViewColumn *col;
-	int pos;
-	
-	assert(view);
+TreeView::~TreeView()
+{
+	string columnOrder, columnWidth, title;
 
-	for (pos = 0, col = gtk_tree_view_get_column(view, pos);
-		col != NULL;
-		pos++, col = gtk_tree_view_get_column(view, pos))
+	for(int i = 0; i < columns.size(); i++)
 	{
-		widths += Util::toString(gtk_tree_view_column_get_width(col)) + ", ";
-		order += Util::toString(defaultPosition[title]) + ",";
-		if (gtk_tree_view_column_get_visible(col))
-			isVisible += "1,";
-		else
-			isVisible += "0,";
+		title = getColumnTitle(i);
+		if (title.empty())
+			return; // error: a col was moved to the right of the padding col
+		columnOrder += Util::toString(defaultPosition[title]) + ",";
 	}
+	columnOrder.erase(columnOrder.size() - 1, 1);
 
-	//remove last ,
-	if (pos > 1) {
-		widths.erase(widths.size() - 1, 1);
-		order.erase(order.size() - 1, 1);
-		isVisible.erase(isVisible.size() - 1, 1);
-	}
+	for(int i = 0; i < columns.size(); i++)
+		columnWidth += Util::toString(getColumnWidth(i)) + ",";
+	columnWidth.erase(columnWidth.size() - 1, 1);
 
-	WulforSettingsManager::get()->set(name + "-order", order);
-	WulforSettingsManager::get()->set(name + "-widths", widths);
-	WulforSettingsManager::get()->set(name + "-visible", isVisible);
+	SettingsManager::getInstance()->set(orderSetting, columnOrder);
+	SettingsManager::getInstance()->set(widthSetting, columnWidth);
 }
 
-
-
-//This can't be set in the constructor since the view is loaded by libglade usually
-void TreeView::setView_gui(GtkTreeView *view) {
+void TreeView::setView(GtkTreeView *view)
+{
 	this->view = view;
 	gtk_tree_view_set_headers_clickable(view, TRUE);
 }
 
-GtkTreeView *TreeView::get() {
+void TreeView::setView(GtkTreeView *view, bool padding, SettingsManager::StrSetting orderSetting, SettingsManager::StrSetting widthSetting)
+{
+	this->view = view;
+	this->padding = padding;
+	this->orderSetting = orderSetting;
+	this->widthSetting = widthSetting;
+	gtk_tree_view_set_headers_clickable(view, TRUE);
+}
+
+GtkTreeView *TreeView::get()
+{
 	return view;
 }
 
-void TreeView::addColumn_gui(int id, std::string title, type_t type, int width, int id_pixbuf) {
+void TreeView::insertColumn(const string &title, const int id, const GType gtype, const columnType type, const int width, const int id_pixbuf)
+{
+	columns.push_back(Column(title, id, gtype, type, width, id_pixbuf));
+	defaultPosition[title] = currentPosition[title] = id;
+}
+
+void TreeView::insertHiddenColumn(const string &title, const int id, const GType gtype)
+{
+	hiddenColumns[title] = id;
+	hiddenGTypes.push_back(gtype);
+}
+
+void TreeView::finalize()
+{
+	restoreSettings();
+	columns.sort();
+
+	for (ColIter iter = columns.begin(); iter != columns.end(); iter++)
+		addColumn_gui(*iter);
+
+	if (padding)
+		gtk_tree_view_insert_column(view, gtk_tree_view_column_new(), columns.size() + hiddenColumns.size());
+}
+
+int TreeView::getCount() {
+	GtkTreeIter it;
+	GtkTreeModel *m = gtk_tree_view_get_model(view);
+
+	if (!gtk_tree_model_get_iter_first(m, &it)) return 0;
+
+	int count = 0;
+	while (1) {
+		count++;
+		if (!gtk_tree_model_iter_next (m, &it))
+			return count;
+	}
+}
+
+void TreeView::getColumn(string column, std::vector<std::string> *l) {
+	GtkTreeModel *m = gtk_tree_view_get_model(view);
+	GtkTreeIter it;
+
+	if (!gtk_tree_model_get_iter_first(m, &it)) return;
+		
+	while (1) {
+		l->push_back(getValue<gchar*,std::string>(&it, column));
+		if (!gtk_tree_model_iter_next (m, &it))	break;
+	}
+}
+
+int TreeView::getSize()
+{
+	return columns.size() + hiddenColumns.size();
+}
+
+GType* TreeView::getGTypes()
+{
+	int i = 0;
+	GType *gtypes = new GType[columns.size() + hiddenColumns.size()];
+
+	for (ColIter iter = columns.begin(); iter != columns.end(); iter++)
+		gtypes[i++] = iter->gtype;
+	for (list<GType>::const_iterator iter = hiddenGTypes.begin(); iter != hiddenGTypes.end(); iter++)
+		gtypes[i++] = *iter;
+
+	return gtypes;
+}
+
+void TreeView::addColumn_gui(Column column)
+{
+	addColumn_gui(column.pos, column.title, column.type, column.width, column.id_pixbuf);
+}
+
+void TreeView::addColumn_gui(int id, std::string title, columnType type, int width, int id_pixbuf)
+{
 	GtkTreeViewColumn *col;
 	GtkCellRenderer *renderer;
 	GtkCellRenderer *renderer_pixbuf;
-
-	assert(view);
 
 	switch (type) {
 		case STRING:
@@ -137,12 +203,52 @@ void TreeView::addColumn_gui(int id, std::string title, type_t type, int width, 
 		gtk_tree_view_column_set_sort_indicator(col, TRUE);
 	}
 
+	gtk_tree_view_column_set_reorderable(col, true);
+
 	gtk_tree_view_insert_column(view, col, id);
 }
 
-void TreeView::setSortColumn_gui(int id, int sortColumn) {
-	GtkTreeViewColumn *col;
-	col = gtk_tree_view_get_column(view, id);
-	gtk_tree_view_column_set_sort_column_id(col, sortColumn);
+void TreeView::setSortColumn_gui(string column, string sortColumn) {
+	GtkTreeViewColumn *gtkColumn;
+	gtkColumn = gtk_tree_view_get_column(view, col(column));
+	gtk_tree_view_column_set_sort_column_id(gtkColumn, col(sortColumn));
 }
 
+int TreeView::getColumnWidth(int position)
+{
+	return gtk_tree_view_column_get_width(gtk_tree_view_get_column(view, position));
+}
+
+string TreeView::getColumnTitle(int position)
+{
+	return string(gtk_tree_view_column_get_title(gtk_tree_view_get_column(view, position)));
+}
+
+int TreeView::col(const string &title)
+{
+	return (currentPosition.find(title) != currentPosition.end()) ? currentPosition[title] : hiddenColumns[title];
+}
+
+void TreeView::restoreSettings()
+{
+	vector<int> columnOrder = WulforUtil::splitString(SettingsManager::getInstance()->get(orderSetting), ",");
+	vector<int> columnWidth = WulforUtil::splitString(SettingsManager::getInstance()->get(widthSetting), ",");
+
+	if (!columnOrder.empty() && columnOrder.size() == columns.size() && 
+		!columnWidth.empty() && columnWidth.size() == columns.size())
+	{
+		for (ColIter iter = columns.begin(); iter != columns.end(); iter++)
+		{
+			for (int j = 0; j < columns.size(); j++)
+			{
+				if (iter->id == columnOrder.at(j))
+				{
+					iter->pos = j;
+					currentPosition[iter->title] = j;
+					iter->width = columnWidth.at(j);
+					break;
+				}
+			}
+		}
+	}
+}
