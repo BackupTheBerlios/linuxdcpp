@@ -22,7 +22,7 @@ TStringList Search::lastSearches;
 string Search::lastDir;
 
 Search::Search (GCallback closeCallback): 
-	BookEntry (WulforManager::SEARCH, Util::toString((int)this), "Search", closeCallback)
+	BookEntry (WulforManager::SEARCH, Util::toString((long)this), "Search", closeCallback)
 {
 	ClientManager::getInstance()->addListener(this);
 	SearchManager::getInstance()->addListener(this);
@@ -55,14 +55,13 @@ Search::Search (GCallback closeCallback):
 
 	// Initialize hub list treeview
 	hubView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "treeviewHubs")));
-	hubStore = gtk_list_store_new (3,
-		G_TYPE_BOOLEAN,	// HUB_SEARCH
-		G_TYPE_STRING,	// HUB_NAME
-		G_TYPE_POINTER);// HUB_INFO
+	hubView.insertColumn("Search", G_TYPE_BOOLEAN, TreeView::BOOL, -1);
+	hubView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, -1);
+	hubView.insertHiddenColumn("Info", G_TYPE_POINTER);
+	hubView.finalize();
+	hubStore = gtk_list_store_newv(hubView.getCount(), hubView.getGTypes());
 	gtk_tree_view_set_model(hubView.get(), GTK_TREE_MODEL(hubStore));
-	hubView.addColumn_gui(HUB_SEARCH, "", TreeView::BOOL, -1);
-	hubView.addColumn_gui(HUB_NAME, "", TreeView::STRING, -1);
-	GList *list = gtk_tree_view_column_get_cell_renderers(gtk_tree_view_get_column(hubView.get(), HUB_SEARCH));
+	GList *list = gtk_tree_view_column_get_cell_renderers(gtk_tree_view_get_column(hubView.get(), hubView.col("Search")));
 	GtkCellRenderer *renderer = (GtkCellRenderer*)list->data;
 	g_signal_connect (renderer, "toggled", G_CALLBACK (onToggledClicked_gui), (gpointer)this);	
 
@@ -72,21 +71,21 @@ Search::Search (GCallback closeCallback):
 		true,
 		SettingsManager::SEARCHFRAME_ORDER,
 		SettingsManager::SEARCHFRAME_WIDTHS);
-	resultView.insertColumn("Filename", 0, G_TYPE_STRING, TreeView::STRING, 200);
-	resultView.insertColumn("Nick", 1, G_TYPE_STRING, TreeView::STRING, 100);
-	resultView.insertColumn("Type", 2, G_TYPE_STRING, TreeView::STRING, 50);
-	resultView.insertColumn("Size", 3, G_TYPE_STRING, TreeView::STRING, 80);
-	resultView.insertColumn("Path", 4, G_TYPE_STRING, TreeView::STRING, 100);
-	resultView.insertColumn("Slots", 5, G_TYPE_STRING, TreeView::STRING, 40);
-	resultView.insertColumn("Connection", 6, G_TYPE_STRING, TreeView::STRING, 70);
-	resultView.insertColumn("Hub", 7, G_TYPE_STRING, TreeView::STRING, 150);
-	resultView.insertColumn("Exact Size", 8, G_TYPE_STRING, TreeView::STRING, 80);
-	resultView.insertColumn("IP", 9, G_TYPE_STRING, TreeView::STRING, 100);
-	resultView.insertColumn("TTH", 10, G_TYPE_STRING, TreeView::STRING, 125);
-	resultView.insertHiddenColumn("Info", 11, G_TYPE_POINTER);
-	resultView.insertHiddenColumn("Real Size", 12, G_TYPE_INT64);
+	resultView.insertColumn("Filename", G_TYPE_STRING, TreeView::STRING, 200);
+	resultView.insertColumn("Nick", G_TYPE_STRING, TreeView::STRING, 100);
+	resultView.insertColumn("Type", G_TYPE_STRING, TreeView::STRING, 50);
+	resultView.insertColumn("Size", G_TYPE_STRING, TreeView::STRING, 80);
+	resultView.insertColumn("Path", G_TYPE_STRING, TreeView::STRING, 100);
+	resultView.insertColumn("Slots", G_TYPE_STRING, TreeView::STRING, 40);
+	resultView.insertColumn("Connection", G_TYPE_STRING, TreeView::STRING, 70);
+	resultView.insertColumn("Hub", G_TYPE_STRING, TreeView::STRING, 150);
+	resultView.insertColumn("Exact Size", G_TYPE_STRING, TreeView::STRING, 80);
+	resultView.insertColumn("IP", G_TYPE_STRING, TreeView::STRING, 100);
+	resultView.insertColumn("TTH", G_TYPE_STRING, TreeView::STRING, 125);
+	resultView.insertHiddenColumn("Info", G_TYPE_POINTER);
+	resultView.insertHiddenColumn("Real Size", G_TYPE_INT64);
 	resultView.finalize();
-	resultStore = gtk_list_store_newv(resultView.getSize(), resultView.getGTypes());
+	resultStore = gtk_list_store_newv(resultView.getCount(), resultView.getGTypes());
 	gtk_tree_view_set_model(resultView.get(), GTK_TREE_MODEL(resultStore));
 	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(resultView.get()), GTK_SELECTION_MULTIPLE);
 	resultView.setSortColumn_gui("Size", "Real Size");
@@ -618,13 +617,15 @@ void Search::popup_menu_gui (GdkEventButton *event, gpointer user_data)
 
 void Search::onToggledClicked_gui (GtkCellRendererToggle *cell, gchar *path_str, gpointer data)
 {
-  	GtkTreeIter iter;
-  	gboolean fixed;
-	GtkTreeModel *m = gtk_tree_view_get_model(((Search*)data)->hubView.get());
-  	gtk_tree_model_get_iter (m, &iter, gtk_tree_path_new_from_string (path_str));
-  	gtk_tree_model_get (m, &iter, Search::HUB_SEARCH, &fixed, -1);
-  	fixed = !fixed;
-  	gtk_list_store_set (GTK_LIST_STORE (m), &iter, Search::HUB_SEARCH, fixed, -1);
+	Search *s = (Search *)data;
+	GtkTreeIter iter;
+	gboolean fixed;
+	GtkTreeModel *m = gtk_tree_view_get_model(s->hubView.get());
+  	
+	gtk_tree_model_get_iter (m, &iter, gtk_tree_path_new_from_string (path_str));
+	fixed = s->hubView.getValue<gboolean>(&iter, "Search");
+	fixed = !fixed;
+	gtk_list_store_set(GTK_LIST_STORE (m), &iter, s->hubView.col("Search"), fixed, -1);
 }
 
 void Search::onSearchButtonClicked_gui (GtkWidget *widget, gpointer user_data)
@@ -861,16 +862,16 @@ void Search::search_gui ()
 	if (!gtk_tree_model_get_iter_first (GTK_TREE_MODEL (hubStore), &iter))
 		return;
 	
-	bool op = WulforUtil::getValue<gboolean>(GTK_TREE_MODEL (hubStore), &iter, HUB_SEARCH);
-	while (1)
-	{
-		HubInfo *hi = WulforUtil::getValue<gpointer,HubInfo*> (GTK_TREE_MODEL (hubStore), &iter, HUB_INFO);
-		if (op)
-		{
-			if (hi->op)
-				clients.push_back (hi->ipPort);
-		}
-		else if (WulforUtil::getValue<gboolean>(GTK_TREE_MODEL (hubStore), &iter, HUB_SEARCH))
+	bool op = hubView.getValue<gboolean>(&iter, "Search");
+ 	while (1)
+ 	{
+		HubInfo *hi = hubView.getValue<gpointer,HubInfo*> (&iter, "Info");
+ 		if (op)
+ 		{
+ 			if (hi->op)
+ 				clients.push_back (hi->ipPort);
+ 		}
+		else if (hubView.getValue<gboolean>(&iter, "Search"))
 		{
 			clients.push_back (hi->ipPort);
 		}
@@ -968,7 +969,11 @@ void Search::initHubs_gui ()
 {
 	GtkTreeIter iter;
 	gtk_list_store_append (hubStore, &iter);
-	gtk_list_store_set (hubStore, &iter, HUB_SEARCH, false, HUB_NAME, "Only where I'm op", HUB_INFO, new HubInfo ("", "Only where I'm op", false), -1);
+	gtk_list_store_set (hubStore, &iter, 
+		hubView.col("Search"), false,
+		hubView.col("Name"), "Only where I'm op",
+		hubView.col("Info"), new HubInfo ("", "Only where I'm op", false),
+		-1);
 
 	ClientManager* clientMgr = ClientManager::getInstance();
 	clientMgr->lock();
@@ -995,7 +1000,11 @@ void Search::changeHubs_gui (int mode, HubInfo *i)
 		GtkTreeIter iter;
 		pthread_mutex_lock (&searchLock);
 		gtk_list_store_append (hubStore, &iter);	
-		gtk_list_store_set (hubStore, &iter, HUB_SEARCH, true, HUB_NAME, (i->name=="") ? "Connecting..." : i->name.c_str (), HUB_INFO, (gpointer)i, -1);
+		gtk_list_store_set (hubStore, &iter,
+			hubView.col("Search"), true,
+			hubView.col("Name"), (i->name=="") ? "Connecting..." : i->name.c_str (),
+			hubView.col("Info"), (gpointer)i,
+			-1);
 		pthread_mutex_unlock (&searchLock);
 	}
 	else if (mode == 1)
@@ -1006,13 +1015,16 @@ void Search::changeHubs_gui (int mode, HubInfo *i)
 			
 		while (1)
 		{
-			HubInfo *hi = WulforUtil::getValue<gpointer,HubInfo*>(GTK_TREE_MODEL (hubStore), &iter, HUB_INFO);
-			if (hi->ipPort == i->ipPort)
-			{
-				if (hi->name == i->name)
-					return;
-				pthread_mutex_lock (&searchLock);
-				gtk_list_store_set (hubStore, &iter, HUB_NAME, i->name.c_str (), HUB_INFO, (gpointer)i, -1);
+			HubInfo *hi = hubView.getValue<gpointer,HubInfo*>(&iter, "Info");
+ 			if (hi->ipPort == i->ipPort)
+ 			{
+ 				if (hi->name == i->name)
+ 					return;
+ 				pthread_mutex_lock (&searchLock);
+				gtk_list_store_set (hubStore, &iter,
+					hubView.col("Name"), i->name.c_str (),
+					hubView.col("Info"), (gpointer)i,
+					-1);
 				pthread_mutex_unlock (&searchLock);
 				return;
 			}
@@ -1028,7 +1040,7 @@ void Search::changeHubs_gui (int mode, HubInfo *i)
 			
 		while (1)
 		{
-			if (WulforUtil::getValue<gpointer,HubInfo*>(GTK_TREE_MODEL (hubStore), &iter, HUB_INFO)->ipPort == i->ipPort)
+			if (hubView.getValue<gpointer,HubInfo*>(&iter, "Info")->ipPort == i->ipPort)
 			{
 				pthread_mutex_lock (&searchLock);
 				gtk_list_store_remove (hubStore, &iter);

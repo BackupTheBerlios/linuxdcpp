@@ -40,12 +40,11 @@ DownloadQueue::DownloadQueue(GCallback closeCallback):
 
 	// Initialize directory treeview
 	dirView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "dirView")));
-	dirStore = gtk_tree_store_new(2,
-		G_TYPE_STRING,	// DIRCOLUMN_DIR
-		G_TYPE_STRING);	// DIRCOLUMN_REALPATH
+	dirView.insertColumn("Dir", G_TYPE_STRING, TreeView::STRING, -1);
+	dirView.insertHiddenColumn("Path", G_TYPE_STRING);
+	dirView.finalize();
+	dirStore = gtk_tree_store_newv(dirView.getCount(), dirView.getGTypes());
 	gtk_tree_view_set_model(dirView.get(), GTK_TREE_MODEL (dirStore));
-	dirView.addColumn_gui(DIRCOLUMN_DIR, "Directory", TreeView::STRING, -1);
-	dirView.insertHiddenColumn("Path", DIRCOLUMN_REALPATH, TreeView::STRING);
 	gtk_widget_set_events(GTK_WIDGET(dirView.get()), GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
  	g_signal_connect(G_OBJECT(dirView.get()), "button_press_event", G_CALLBACK(dir_onButtonPressed_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(dirView.get()), "button_release_event", G_CALLBACK(dir_onButtonReleased_gui), (gpointer)this);
@@ -57,22 +56,22 @@ DownloadQueue::DownloadQueue(GCallback closeCallback):
 		true, 
 		SettingsManager::QUEUEFRAME_ORDER, 
 		SettingsManager::QUEUEFRAME_WIDTHS);
-	fileView.insertColumn("Filename", 0, G_TYPE_STRING, TreeView::STRING, 200);
-	fileView.insertColumn("Status", 1, G_TYPE_STRING, TreeView::STRING, 100);
-	fileView.insertColumn("Size", 2, G_TYPE_STRING, TreeView::STRING, 100);
-	fileView.insertColumn("Downloaded", 3, G_TYPE_STRING, TreeView::STRING, 150);
-	fileView.insertColumn("Priority", 4, G_TYPE_STRING, TreeView::STRING, 75);
-	fileView.insertColumn("Users", 5, G_TYPE_STRING, TreeView::STRING, 200);
-	fileView.insertColumn("Path", 6, G_TYPE_STRING, TreeView::STRING, 200);
-	fileView.insertColumn("Exact Size", 7, G_TYPE_STRING, TreeView::STRING, 100);
-	fileView.insertColumn("Error", 8, G_TYPE_STRING, TreeView::STRING, 200);
-	fileView.insertColumn("Added", 9, G_TYPE_STRING, TreeView::STRING, 120);
-	fileView.insertColumn("TTH", 10, G_TYPE_STRING, TreeView::STRING, 125);
-	fileView.insertHiddenColumn("Info", 11, G_TYPE_POINTER);
-	fileView.insertHiddenColumn("Real Size", 12, G_TYPE_INT64);
-	fileView.insertHiddenColumn("Download Size", 13, G_TYPE_INT64);
+	fileView.insertColumn("Filename", G_TYPE_STRING, TreeView::STRING, 200);
+	fileView.insertColumn("Status", G_TYPE_STRING, TreeView::STRING, 100);
+	fileView.insertColumn("Size", G_TYPE_STRING, TreeView::STRING, 100);
+	fileView.insertColumn("Downloaded", G_TYPE_STRING, TreeView::STRING, 150);
+	fileView.insertColumn("Priority", G_TYPE_STRING, TreeView::STRING, 75);
+	fileView.insertColumn("Users", G_TYPE_STRING, TreeView::STRING, 200);
+	fileView.insertColumn("Path", G_TYPE_STRING, TreeView::STRING, 200);
+	fileView.insertColumn("Exact Size", G_TYPE_STRING, TreeView::STRING, 100);
+	fileView.insertColumn("Error", G_TYPE_STRING, TreeView::STRING, 200);
+	fileView.insertColumn("Added", G_TYPE_STRING, TreeView::STRING, 120);
+	fileView.insertColumn("TTH", G_TYPE_STRING, TreeView::STRING, 125);
+	fileView.insertHiddenColumn("Info", G_TYPE_POINTER);
+	fileView.insertHiddenColumn("Real Size", G_TYPE_INT64);
+	fileView.insertHiddenColumn("Download Size", G_TYPE_INT64);
 	fileView.finalize();
-	fileStore = gtk_list_store_newv(fileView.getSize(), fileView.getGTypes());
+	fileStore = gtk_list_store_newv(fileView.getCount(), fileView.getGTypes());
 	gtk_tree_view_set_model(fileView.get(), GTK_TREE_MODEL(fileStore));
 	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(fileView.get()), GTK_SELECTION_MULTIPLE);
 	fileView.setSortColumn_gui("Size", "Real Size");
@@ -753,8 +752,8 @@ void DownloadQueue::buildList_gui ()
 		{
 			gtk_tree_store_append (dirStore, &row, NULL);
 			gtk_tree_store_set (	dirStore, &row, 
-						DIRCOLUMN_DIR, Text::acpToUtf8(getNextSubDir (Util::getFilePath(it->second->getTarget()))).c_str(),
-						"Path", realpath.c_str (),
+						dirView.col("Dir"), Text::acpToUtf8(getNextSubDir(Util::getFilePath(it->second->getTarget()))).c_str(),
+						dirView.col("Path"), realpath.c_str(),
 						-1);
 			dirMap[realpath] = row;
 			string tmp;
@@ -792,8 +791,8 @@ void DownloadQueue::addDir_gui (string path, GtkTreeIter *row, string &current)
 	{
 		gtk_tree_store_append (dirStore, &newRow, row);
 		gtk_tree_store_set (	dirStore, &newRow,
-					DIRCOLUMN_DIR, Text::acpToUtf8(tmp).c_str(),
-					"Path", realpath.c_str (),
+					dirView.col("Dir"), Text::acpToUtf8(tmp).c_str(),
+					dirView.col("Path"), realpath.c_str(),
 					-1);
 		dirMap[realpath] = newRow;
 		addDir_gui (getRemainingDir (path), &newRow, current);
@@ -1311,8 +1310,8 @@ void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
 	{
 		gtk_tree_store_append (dirStore, &row, NULL);
 		gtk_tree_store_set (	dirStore, &row, 
-					DIRCOLUMN_DIR, getNextSubDir (Util::getFilePath(aQI->getTarget())).c_str (),
-					"Path", realpath.c_str (),
+					dirView.col("Dir"), getNextSubDir (Util::getFilePath(aQI->getTarget())).c_str(),
+					dirView.col("Path"), realpath.c_str(),
 					-1);
 		dirMap[realpath] = row;
 		string tmp;

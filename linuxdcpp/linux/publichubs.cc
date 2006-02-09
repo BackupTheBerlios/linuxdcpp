@@ -64,12 +64,12 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 		true, 
 		SettingsManager::PUBLICHUBSFRAME_ORDER, 
 		SettingsManager::PUBLICHUBSFRAME_WIDTHS);
-	hubView.insertColumn("Name", 0, G_TYPE_STRING, TreeView::STRING, 200);
-	hubView.insertColumn("Description", 1, G_TYPE_STRING, TreeView::STRING, 350);
-	hubView.insertColumn("Users", 2, G_TYPE_INT, TreeView::INT, 50);
-	hubView.insertColumn("Address", 3, G_TYPE_STRING, TreeView::STRING, 100);
+	hubView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, 200);
+	hubView.insertColumn("Description", G_TYPE_STRING, TreeView::STRING, 350);
+	hubView.insertColumn("Users", G_TYPE_INT, TreeView::INT, 50);
+	hubView.insertColumn("Address", G_TYPE_STRING, TreeView::STRING, 100);
 	hubView.finalize();
-	hubStore = gtk_list_store_newv(hubView.getSize(), hubView.getGTypes());
+	hubStore = gtk_list_store_newv(hubView.getCount(), hubView.getGTypes());
 	gtk_tree_view_set_model(hubView.get(), GTK_TREE_MODEL(hubStore));
 
 	menu = GTK_MENU(gtk_menu_new()); 
@@ -97,10 +97,11 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 
 	// Initialize list of hub lists treeview
 	listsView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "listsView")));
-	gtk_tree_view_set_headers_visible(listsView.get(), FALSE);
-	listsStore = gtk_list_store_new(1, G_TYPE_STRING);
+	listsView.insertColumn("List", G_TYPE_STRING, TreeView::EDIT_STRING, -1);
+	listsView.finalize();
+	listsStore = gtk_list_store_newv(listsView.getCount(), listsView.getGTypes());
 	gtk_tree_view_set_model(listsView.get(), GTK_TREE_MODEL(listsStore));
-	listsView.addColumn_gui(0, "", TreeView::EDIT_STRING, -1);
+	gtk_tree_view_set_headers_visible(listsView.get(), FALSE);
 
 	GtkTreeViewColumn *c = gtk_tree_view_get_column(listsView.get(), 0);
 	GList *l = gtk_tree_view_column_get_cell_renderers(c);
@@ -298,7 +299,7 @@ void PublicHubs::configure_gui(GtkWidget *widget, gpointer data) {
 		gtk_tree_model_get(GTK_TREE_MODEL(comboStore), &it1, 0, &tmp, -1);
 		gtk_tree_model_iter_next(GTK_TREE_MODEL(comboStore), &it1);
 		gtk_list_store_append(listsStore, &it2);
-		gtk_list_store_set(listsStore, &it2, 0, tmp, -1);
+		gtk_list_store_set(listsStore, &it2, listsView.col("List"), tmp, -1);
 	}
 	
 	gtk_widget_show_all(GTK_WIDGET(configureDialog));
@@ -334,7 +335,7 @@ void PublicHubs::add_gui(GtkWidget *widget, gpointer data) {
 	char *s;
 		
 	gtk_list_store_append(listsStore, &it);
-	gtk_list_store_set(listsStore, &it, 0, "New list", -1);
+	gtk_list_store_set(listsStore, &it, listsView.col("List"), "New list", -1);
 	s = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(listsStore), &it);
 	p = gtk_tree_path_new_from_string(s);
 	gtk_tree_view_set_cursor(listsView.get(), p, 
@@ -388,7 +389,7 @@ void PublicHubs::cellEdited_gui(GtkCellRendererText *cell,
 {
 	GtkTreeIter it;
 	gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(listsStore), &it, path);
-	gtk_list_store_set(listsStore, &it, 0, text, -1);
+	gtk_list_store_set(listsStore, &it, listsView.col("List"), text, -1);
 }
 
 void PublicHubs::setStatus_gui(GtkStatusbar *status, string text) {

@@ -59,17 +59,17 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 		true, 
 		SettingsManager::DIRECTORLISTINGFRAME_ORDER, 
 		SettingsManager::DIRECTORLISTINGFRAME_WIDTHS);
-	fileView.insertColumn("Filename", 0, G_TYPE_STRING, TreeView::PIXBUF_STRING, 400, 6);
-	fileView.insertColumn("Size", 1, G_TYPE_STRING, TreeView::STRINGR, 80);
-	fileView.insertColumn("Type", 2, G_TYPE_STRING, TreeView::STRING, 50);
-	fileView.insertColumn("TTH", 3, G_TYPE_STRING, TreeView::STRING, 150);
-	fileView.insertColumn("Exact Size", 4, G_TYPE_STRING, TreeView::STRINGR, 105);
-	fileView.insertHiddenColumn("DL File", 5, G_TYPE_POINTER);
-	fileView.insertHiddenColumn("Icon", 6, GDK_TYPE_PIXBUF);
-	fileView.insertHiddenColumn("Size Order", 7, G_TYPE_DOUBLE);
-	fileView.insertHiddenColumn("File Order", 8, G_TYPE_STRING);
+	fileView.insertColumn("Filename", G_TYPE_STRING, TreeView::PIXBUF_STRING, 400, 6); // link to "Icon"
+	fileView.insertColumn("Size", G_TYPE_STRING, TreeView::STRINGR, 80);
+	fileView.insertColumn("Type", G_TYPE_STRING, TreeView::STRING, 50);
+	fileView.insertColumn("TTH", G_TYPE_STRING, TreeView::STRING, 150);
+	fileView.insertColumn("Exact Size", G_TYPE_STRING, TreeView::STRINGR, 105);
+	fileView.insertHiddenColumn("DL File", G_TYPE_POINTER);
+	fileView.insertHiddenColumn("Icon", GDK_TYPE_PIXBUF);
+	fileView.insertHiddenColumn("Size Order", G_TYPE_DOUBLE);
+	fileView.insertHiddenColumn("File Order", G_TYPE_STRING);
 	fileView.finalize();
-	fileStore = gtk_list_store_newv(fileView.getSize(), fileView.getGTypes());
+	fileStore = gtk_list_store_newv(fileView.getCount(), fileView.getGTypes());
 	gtk_tree_view_set_model(fileView.get(), GTK_TREE_MODEL(fileStore));
 	fileSelection = gtk_tree_view_get_selection(fileView.get());
 	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(fileView.get()), GTK_SELECTION_MULTIPLE);
@@ -82,16 +82,16 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 
 	// Initialize the directory treeview
 	dirView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "dirView")));
-	dirStore = gtk_tree_store_new(3, 
-		G_TYPE_STRING, 		// COLUMN_DIR
-		G_TYPE_POINTER,		// COLUMN_DL_DIR
-		GDK_TYPE_PIXBUF);	// COLUMN_ICON_DIR
+	dirView.insertColumn("Dir", G_TYPE_STRING, TreeView::PIXBUF_STRING, -1, 2);
+	dirView.insertHiddenColumn("DL Dir", G_TYPE_POINTER);
+	dirView.insertHiddenColumn("Icon", GDK_TYPE_PIXBUF);
+	dirView.finalize();
+	dirStore = gtk_tree_store_newv(dirView.getCount(), dirView.getGTypes());
 	gtk_tree_view_set_model(dirView.get(), GTK_TREE_MODEL(dirStore));
+	dirSelection = gtk_tree_view_get_selection(dirView.get());
 	g_signal_connect(G_OBJECT(dirView.get()), "button_press_event", G_CALLBACK(dirButtonPressed_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(dirView.get()), "button_release_event", G_CALLBACK(dirButtonReleased_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(dirView.get()), "popup_menu", G_CALLBACK(dirPopupMenu_gui), (gpointer)this);
-	dirView.addColumn_gui(COLUMN_DIR, "", TreeView::PIXBUF_STRING, -1, COLUMN_ICON_DIR);
-	dirSelection = gtk_tree_view_get_selection(dirView.get());
 
 	//create popup menus
 	dirMenu = GTK_MENU(gtk_menu_new());
@@ -176,17 +176,17 @@ void ShareBrowser::buildDirs_gui(
 		//add the name and check if the name is in UTF8
 		if (listing.getUtf8()) {
 			gtk_tree_store_set(dirStore, &newIter, 
-				COLUMN_DIR, (*it)->getName().c_str(),
+				dirView.col("Dir"), (*it)->getName().c_str(),
 				-1);
 		} else {
 			gtk_tree_store_set(dirStore, &newIter, 
-				COLUMN_DIR, Text::acpToUtf8((*it)->getName()).c_str(),
+				dirView.col("Dir"), Text::acpToUtf8((*it)->getName()).c_str(),
 				-1);
 		}
 		
 		gtk_tree_store_set(dirStore, &newIter, 
-			COLUMN_DL_DIR, (gpointer)*it,
-			COLUMN_ICON_DIR, iconDirectory,
+			dirView.col("DL Dir"), (gpointer)*it,
+			dirView.col("Icon"), iconDirectory,
 			-1);
 
 		for (file = (*it)->files.begin(); file != (*it)->files.end(); file++) {
@@ -217,7 +217,7 @@ void ShareBrowser::updateFiles_gui(bool fromFind) {
 		gtk_tree_selection_get_selected(dirSelection, NULL, &iter);
 
 	gtk_tree_model_get(GTK_TREE_MODEL(dirStore), &iter,
-		COLUMN_DL_DIR, &ptr,
+		dirView.col("DL Dir"), &ptr,
 		-1);
 	dir = (DirectoryListing::Directory *)ptr;
 	dirs = &(dir->directories);
@@ -418,10 +418,10 @@ gboolean ShareBrowser::fileButtonPressed_gui(GtkWidget *widget, GdkEventButton *
 
 				gtk_tree_selection_get_selected(sb->dirSelection, NULL, &parent_iter);
 				gtk_tree_model_iter_children(GTK_TREE_MODEL(sb->dirStore), &iter, &parent_iter);
-				ptr2 = WulforUtil::getValue<gpointer>(GTK_TREE_MODEL(sb->dirStore), &iter, COLUMN_DL_DIR);
+				ptr2 = sb->dirView.getValue<gpointer>(&iter, "DL Dir");
 				
 				while ((ptr != ptr2) && gtk_tree_model_iter_next(GTK_TREE_MODEL(sb->dirStore), &iter)) {
-					ptr2 = WulforUtil::getValue<gpointer>(GTK_TREE_MODEL(sb->dirStore), &iter, COLUMN_DL_DIR);
+					ptr2 = sb->dirView.getValue<gpointer>(&iter, "DL Dir");
 				}
 
 				path = gtk_tree_model_get_path(GTK_TREE_MODEL(sb->dirStore), &iter);
@@ -616,7 +616,7 @@ void ShareBrowser::downloadSelectedDirs_gui(string target) {
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(dirView.get());
 	gtk_tree_selection_get_selected(selection, NULL, &iter);
 	gtk_tree_model_get(GTK_TREE_MODEL(dirStore), &iter,
-					   COLUMN_DL_DIR, &ptr, -1);
+					   dirView.col("DL Dir"), &ptr, -1);
 	dir = (DirectoryListing::Directory *)ptr;
 		
 	typedef Func2<ShareBrowser, DirectoryListing::Directory *, string> F2;
@@ -772,7 +772,7 @@ void ShareBrowser::findNext_gui(bool firstFile) {
 	if (!gtk_tree_model_get_iter(GTK_TREE_MODEL(dirStore), &iter, posDir)) 
 		return;
 	gtk_tree_model_get(GTK_TREE_MODEL(dirStore), &iter,
-		COLUMN_DL_DIR, &ptr,
+		dirView.col("DL Dir"), &ptr,
 		-1);
 	dir = (DirectoryListing::Directory *)ptr;
 	files = &(dir->files);
@@ -814,7 +814,7 @@ void ShareBrowser::findNext_gui(bool firstFile) {
 				return;
 			}
 				
-			gtk_tree_model_get(GTK_TREE_MODEL(dirStore), &iter, COLUMN_DL_DIR, &ptr, -1);
+			gtk_tree_model_get(GTK_TREE_MODEL(dirStore), &iter, dirView.col("DL Dir"), &ptr, -1);
 			dir = (DirectoryListing::Directory *)ptr;
 			files = &(dir->files);
 			posFile = files->begin();

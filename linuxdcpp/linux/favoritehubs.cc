@@ -73,16 +73,16 @@ FavoriteHubs::FavoriteHubs (GCallback closeCallback):
 		GTK_TREE_VIEW(glade_xml_get_widget(xml, "favoriteView")), 
 		true, SettingsManager::FAVORITESFRAME_ORDER,
 		SettingsManager::FAVORITESFRAME_WIDTHS);
-	favoriteView.insertColumn("Auto Connect", 0, G_TYPE_BOOLEAN, TreeView::BOOL, 95);
-	favoriteView.insertColumn("Name", 1, G_TYPE_STRING, TreeView::STRING, 150);
-	favoriteView.insertColumn("Description", 2, G_TYPE_STRING, TreeView::STRING, 250);
-	favoriteView.insertColumn("Nick", 3, G_TYPE_STRING, TreeView::STRING, 100);
-	favoriteView.insertColumn("Password", 4, G_TYPE_STRING, TreeView::STRING, 100);
-	favoriteView.insertColumn("Server", 5, G_TYPE_STRING, TreeView::STRING, 175);
-	favoriteView.insertColumn("User Description", 6, G_TYPE_STRING, TreeView::STRING, 125);
-	favoriteView.insertHiddenColumn("Entry", 7, G_TYPE_POINTER);
+	favoriteView.insertColumn("Auto Connect", G_TYPE_BOOLEAN, TreeView::BOOL, 95);
+	favoriteView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, 150);
+	favoriteView.insertColumn("Description", G_TYPE_STRING, TreeView::STRING, 250);
+	favoriteView.insertColumn("Nick", G_TYPE_STRING, TreeView::STRING, 100);
+	favoriteView.insertColumn("Password", G_TYPE_STRING, TreeView::STRING, 100);
+	favoriteView.insertColumn("Server", G_TYPE_STRING, TreeView::STRING, 175);
+	favoriteView.insertColumn("User Description", G_TYPE_STRING, TreeView::STRING, 125);
+	favoriteView.insertHiddenColumn("Entry", G_TYPE_POINTER);
 	favoriteView.finalize();
-	favoriteStore = gtk_list_store_newv(favoriteView.getSize(), favoriteView.getGTypes());
+	favoriteStore = gtk_list_store_newv(favoriteView.getCount(), favoriteView.getGTypes());
 	gtk_tree_view_set_model(favoriteView.get(), GTK_TREE_MODEL(favoriteStore));
 
 	GList *list = gtk_tree_view_column_get_cell_renderers(gtk_tree_view_get_column(favoriteView.get(), favoriteView.col("Auto Connect")));

@@ -53,17 +53,17 @@ Hub::Hub(std::string address, GCallback closeCallback):
 		true, 
 		SettingsManager::HUBFRAME_ORDER, 
 		SettingsManager::HUBFRAME_WIDTHS);
-	nickView.insertColumn("Nick", 0, G_TYPE_STRING, TreeView::PIXBUF_STRING, 100, 7);
-	nickView.insertColumn("Shared", 1, G_TYPE_STRING, TreeView::STRING, 75);
-	nickView.insertColumn("Description", 2, G_TYPE_STRING, TreeView::STRING, 75);
-	nickView.insertColumn("Tag", 3, G_TYPE_STRING, TreeView::STRING, 100);
-	nickView.insertColumn("Connection", 4, G_TYPE_STRING, TreeView::STRING, 75);
-	nickView.insertColumn("eMail", 5, G_TYPE_STRING, TreeView::STRING, 100);
-	nickView.insertHiddenColumn("Shared Bytes", 6, G_TYPE_INT64);
-	nickView.insertHiddenColumn("Icon", 7, GDK_TYPE_PIXBUF);
-	nickView.insertHiddenColumn("Nick Order", 8, G_TYPE_STRING);
+	nickView.insertColumn("Nick", G_TYPE_STRING, TreeView::PIXBUF_STRING, 100, 7);
+	nickView.insertColumn("Shared", G_TYPE_STRING, TreeView::STRING, 75);
+	nickView.insertColumn("Description", G_TYPE_STRING, TreeView::STRING, 75);
+	nickView.insertColumn("Tag", G_TYPE_STRING, TreeView::STRING, 100);
+	nickView.insertColumn("Connection", G_TYPE_STRING, TreeView::STRING, 75);
+	nickView.insertColumn("eMail", G_TYPE_STRING, TreeView::STRING, 100);
+	nickView.insertHiddenColumn("Shared Bytes", G_TYPE_INT64);
+	nickView.insertHiddenColumn("Icon", GDK_TYPE_PIXBUF);
+	nickView.insertHiddenColumn("Nick Order", G_TYPE_STRING);
 	nickView.finalize();
-	nickStore = gtk_list_store_newv(nickView.getSize(), nickView.getGTypes());
+	nickStore = gtk_list_store_newv(nickView.getCount(), nickView.getGTypes());
 	gtk_tree_view_set_model(nickView.get(), GTK_TREE_MODEL(nickStore));
 	nickSelection = gtk_tree_view_get_selection(nickView.get());
 	nickView.setSortColumn_gui("Nick", "Nick Order");

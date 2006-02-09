@@ -18,29 +18,17 @@
 
 #include "treeview.hh"
 
-TreeView::TreeView(): view(NULL)
+TreeView::TreeView()
 {
+	view = NULL;
+	count = 0;
+	hasSettings = false;
 }
 
 TreeView::~TreeView()
 {
-	string columnOrder, columnWidth, title;
-
-	for(int i = 0; i < columns.size(); i++)
-	{
-		title = getColumnTitle(i);
-		if (title.empty())
-			return; // error: a col was moved to the right of the padding col
-		columnOrder += Util::toString(defaultPosition[title]) + ",";
-	}
-	columnOrder.erase(columnOrder.size() - 1, 1);
-
-	for(int i = 0; i < columns.size(); i++)
-		columnWidth += Util::toString(getColumnWidth(i)) + ",";
-	columnWidth.erase(columnWidth.size() - 1, 1);
-
-	SettingsManager::getInstance()->set(orderSetting, columnOrder);
-	SettingsManager::getInstance()->set(widthSetting, columnWidth);
+	if (hasSettings && GTK_IS_TREE_VIEW(view))
+		saveSettings();
 }
 
 void TreeView::setView(GtkTreeView *view)
@@ -55,6 +43,7 @@ void TreeView::setView(GtkTreeView *view, bool padding, SettingsManager::StrSett
 	this->padding = padding;
 	this->orderSetting = orderSetting;
 	this->widthSetting = widthSetting;
+	hasSettings = true;
 	gtk_tree_view_set_headers_clickable(view, TRUE);
 }
 
@@ -63,42 +52,40 @@ GtkTreeView *TreeView::get()
 	return view;
 }
 
-void TreeView::insertColumn(const string &title, const int id, const GType gtype, const columnType type, const int width, const int id_pixbuf)
+void TreeView::insertColumn(const string &title, const GType gtype, const columnType type, const int width, const int linkedID)
 {
-	columns.push_back(Column(title, id, gtype, type, width, id_pixbuf));
-	defaultPosition[title] = currentPosition[title] = id;
+	++count;
+	columns.push_back(Column(title, count - 1, gtype, type, width, linkedID));
+	defaultPosition[title] = currentPosition[title] = count - 1;
 }
 
-void TreeView::insertHiddenColumn(const string &title, const int id, const GType gtype)
+// Note: all insertColumn's have to be called before insertHiddenColumn's
+void TreeView::insertHiddenColumn(const string &title, const GType gtype)
 {
-	hiddenColumns[title] = id;
+	++count;
+	hiddenColumns[title] = count - 1;
 	hiddenGTypes.push_back(gtype);
 }
 
 void TreeView::finalize()
 {
-	restoreSettings();
+	if (count == 0)
+		return;
+
+	if (hasSettings)
+		restoreSettings();
 	columns.sort();
 
 	for (ColIter iter = columns.begin(); iter != columns.end(); iter++)
 		addColumn_gui(*iter);
 
 	if (padding)
-		gtk_tree_view_insert_column(view, gtk_tree_view_column_new(), columns.size() + hiddenColumns.size());
+		gtk_tree_view_insert_column(view, gtk_tree_view_column_new(), count);
 }
 
-int TreeView::getCount() {
-	GtkTreeIter it;
-	GtkTreeModel *m = gtk_tree_view_get_model(view);
-
-	if (!gtk_tree_model_get_iter_first(m, &it)) return 0;
-
-	int count = 0;
-	while (1) {
-		count++;
-		if (!gtk_tree_model_iter_next (m, &it))
-			return count;
-	}
+int TreeView::getCount()
+{
+	return count;
 }
 
 void TreeView::getColumn(string column, std::vector<std::string> *l) {
@@ -113,15 +100,10 @@ void TreeView::getColumn(string column, std::vector<std::string> *l) {
 	}
 }
 
-int TreeView::getSize()
-{
-	return columns.size() + hiddenColumns.size();
-}
-
 GType* TreeView::getGTypes()
 {
 	int i = 0;
-	GType *gtypes = new GType[columns.size() + hiddenColumns.size()];
+	GType *gtypes = new GType[count];
 
 	for (ColIter iter = columns.begin(); iter != columns.end(); iter++)
 		gtypes[i++] = iter->gtype;
@@ -133,79 +115,74 @@ GType* TreeView::getGTypes()
 
 void TreeView::addColumn_gui(Column column)
 {
-	addColumn_gui(column.pos, column.title, column.type, column.width, column.id_pixbuf);
-}
-
-void TreeView::addColumn_gui(int id, std::string title, columnType type, int width, int id_pixbuf)
-{
 	GtkTreeViewColumn *col;
 	GtkCellRenderer *renderer;
 	GtkCellRenderer *renderer_pixbuf;
 
-	switch (type) {
+	switch (column.type) {
 		case STRING:
 			col = gtk_tree_view_column_new_with_attributes(
-				title.c_str(), gtk_cell_renderer_text_new(), "text", id, NULL);
+				column.title.c_str(), gtk_cell_renderer_text_new(), "text", column.pos, NULL);
 			break;
 		case STRINGR:
 			renderer = gtk_cell_renderer_text_new();
 			g_object_set(renderer, "xalign", 1.0, NULL);
-			col = gtk_tree_view_column_new_with_attributes(title.c_str(), renderer, "text", id, NULL);
+			col = gtk_tree_view_column_new_with_attributes(column.title.c_str(), renderer, "text", column.pos, NULL);
 			gtk_tree_view_column_set_alignment(col, 1.0);
 
 			break;
 		case INT:
 			col = gtk_tree_view_column_new_with_attributes(
-				title.c_str(), gtk_cell_renderer_text_new(), "text", id, NULL);
+				column.title.c_str(), gtk_cell_renderer_text_new(), "text", column.pos, NULL);
 			break;
 		case BOOL:
   			renderer = gtk_cell_renderer_toggle_new();
-  			col = gtk_tree_view_column_new_with_attributes(title.c_str (), renderer, "active", id, NULL);
+  			col = gtk_tree_view_column_new_with_attributes(column.title.c_str (), renderer, "active", column.pos, NULL);
 			break;
 		case PIXBUF:
 			col = gtk_tree_view_column_new_with_attributes(
-				title.c_str(), gtk_cell_renderer_pixbuf_new(), "pixbuf", id, NULL);
+				column.title.c_str(), gtk_cell_renderer_pixbuf_new(), "pixbuf", column.pos, NULL);
 			break;
 		case PIXBUF_STRING:
 			renderer = gtk_cell_renderer_text_new();
 			renderer_pixbuf = gtk_cell_renderer_pixbuf_new();
 			col = gtk_tree_view_column_new();
-			gtk_tree_view_column_set_title(col, title.c_str());
+			gtk_tree_view_column_set_title(col, column.title.c_str());
 			gtk_tree_view_column_pack_start(col, renderer_pixbuf, false);
-			gtk_tree_view_column_add_attribute(col, renderer_pixbuf, "pixbuf", id_pixbuf);
+			gtk_tree_view_column_add_attribute(col, renderer_pixbuf, "pixbuf", column.linkedID);
 			gtk_tree_view_column_pack_start(col, renderer, true);
-			gtk_tree_view_column_add_attribute(col, renderer, "text", id);
+			gtk_tree_view_column_add_attribute(col, renderer, "text", column.pos);
 
 			break;
 		case EDIT_STRING:
 			renderer = gtk_cell_renderer_text_new();
  			g_object_set(renderer, "editable", TRUE, NULL);
-			col = gtk_tree_view_column_new_with_attributes(title.c_str(), renderer, "text", id, NULL);
+			col = gtk_tree_view_column_new_with_attributes(column.title.c_str(), renderer, "text", column.pos, NULL);
 			break;
 		/*
 		case PROGRESS:
 			col = gtk_tree_view_column_new_with_attributes(
-				title.c_str(), gtk_cell_renderer_progress_new(), "progress", currentColumn, NULL);
+				column.title.c_str(), gtk_cell_renderer_progress_new(), "progress", currentColumn, NULL);
 			break;
 		*/
 	};
 
-	if (width != -1) {
+	if (column.width != -1) {
 		gtk_tree_view_column_set_sizing(col, GTK_TREE_VIEW_COLUMN_FIXED);
-		gtk_tree_view_column_set_fixed_width(col, width);
+		gtk_tree_view_column_set_fixed_width(col, column.width);
 		gtk_tree_view_column_set_resizable(col, TRUE);
 	}
 
 	//make columns sortable
-	if (type == STRING || type == INT) {
+	if (column.type == STRING || column.type == INT) {
 		gtk_tree_view_column_set_clickable(col, TRUE);
-		gtk_tree_view_column_set_sort_column_id(col, id);
+		gtk_tree_view_column_set_sort_column_id(col, column.pos);
 		gtk_tree_view_column_set_sort_indicator(col, TRUE);
 	}
 
 	gtk_tree_view_column_set_reorderable(col, true);
 
-	gtk_tree_view_insert_column(view, col, id);
+	gtk_tree_view_insert_column(view, col, column.pos);
 }
 
 void TreeView::setSortColumn_gui(string column, string sortColumn) {
@@ -251,4 +228,25 @@ void TreeView::restoreSettings()
 			}
 		}
 	}
+}
+
+void TreeView::saveSettings()
+{
+	string columnOrder, columnWidth, title;
+
+	for(int i = 0; i < columns.size(); i++)
+	{
+		title = getColumnTitle(i);
+		if (title.empty())
+			return; // error: a col was moved to the right of the padding col
+		columnOrder += Util::toString(defaultPosition[title]) + ",";
+	}
+	columnOrder.erase(columnOrder.size() - 1, 1);
+
+	for(int i = 0; i < columns.size(); i++)
+		columnWidth += Util::toString(getColumnWidth(i)) + ",";
+	columnWidth.erase(columnWidth.size() - 1, 1);
+
+	SettingsManager::getInstance()->set(orderSetting, columnOrder);
+	SettingsManager::getInstance()->set(widthSetting, columnWidth);
 }

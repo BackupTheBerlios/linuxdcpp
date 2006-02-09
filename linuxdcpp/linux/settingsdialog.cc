@@ -263,7 +263,7 @@ void Settings::saveSettings_client ()
 	{
 		while (1)
 		{
-			o.push_back (WulforUtil::getValue<gboolean>(m, &iter, APPEARANCE_USE));
+			o.push_back (appearanceView.getValue<gboolean>(&iter, "Use"));
 			if (!gtk_tree_model_iter_next (m, &iter))
 				break;
 		}
@@ -299,7 +299,7 @@ void Settings::saveSettings_client ()
 	{
 		while (1)
 		{
-			o.push_back (WulforUtil::getValue<gboolean>(m, &iter, ADVANCED_USE));
+			o.push_back (appearanceView.getValue<gboolean>(&iter, "Use"));
 			if (!gtk_tree_model_iter_next (m, &iter))
 				break;
 		}
@@ -441,33 +441,31 @@ void Settings::initDownloads_gui ()
 	gtk_spin_button_set_value (GTK_SPIN_BUTTON (downloadItems["New"]), (double)SETTING (MAX_DOWNLOAD_SPEED));
 	gtk_entry_set_text (GTK_ENTRY (downloadItems["Proxy"]), SETTING (HTTP_PROXY).c_str ());
 
-	GtkTreeView *view = GTK_TREE_VIEW (downloadItems["View"]);
-   	 g_signal_connect(G_OBJECT (view), "button_release_event", G_CALLBACK(onFavoriteButtonReleased_gui), (gpointer)this);
+	downloadToView.setView(GTK_TREE_VIEW(downloadItems["View"]));
+	downloadToView.insertColumn("Favorite Name", G_TYPE_STRING, TreeView::STRING, 100);
+	downloadToView.insertColumn("Directory", G_TYPE_STRING, TreeView::STRING, 200);
+	downloadToView.finalize();
+	downloadToStore = gtk_list_store_newv(downloadToView.getCount(), downloadToView.getGTypes());
+	gtk_tree_view_set_model(downloadToView.get(), GTK_TREE_MODEL(downloadToStore));
 
-	downloadToStore = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_STRING);
-	gtk_tree_view_set_model (view, GTK_TREE_MODEL (downloadToStore));
-	downloadTo.setView(view);
-
-	downloadTo.addColumn_gui (DOWNLOADTO_NAME, "Favorite name", TreeView::STRING, 100);
-	downloadTo.addColumn_gui (DOWNLOADTO_DIR, "Directory", TreeView::STRING, 200);
 	gtk_widget_set_sensitive (downloadItems["Remove"], FALSE);
+	g_signal_connect(G_OBJECT(downloadToView.get()), "button_release_event", G_CALLBACK(onFavoriteButtonReleased_gui), (gpointer)this);
 	StringPairList directories = HubManager::getInstance()->getFavoriteDirs();
 	for(StringPairIter j = directories.begin(); j != directories.end(); j++)
 	{
 		GtkTreeIter iter;
-		gtk_list_store_append (downloadToStore, &iter);
-		gtk_list_store_set (	downloadToStore, &iter,
-										DOWNLOADTO_NAME, j->second.c_str (),
-										DOWNLOADTO_DIR, j->first.c_str (),
-										-1);
+		gtk_list_store_append(downloadToStore, &iter);
+		gtk_list_store_set(downloadToStore, &iter,
+			downloadToView.col("Favorite Name"), j->second.c_str(),
+			downloadToView.col("Directory"), j->first.c_str(),
+			-1);
 	}
 
-	GtkTreeView *view2 = GTK_TREE_VIEW (downloadItems["Public view"]);
-	publicListStore = gtk_list_store_new (1, G_TYPE_STRING);
-	gtk_tree_view_set_model (view2, GTK_TREE_MODEL (publicListStore));
-
-	publicList.setView(view2);
-	publicList.addColumn_gui (0, "List", TreeView::STRING, 200);
+	publicListView.setView(GTK_TREE_VIEW(downloadItems["Public view"]));
+	publicListView.insertColumn("List", G_TYPE_STRING, TreeView::STRING, 200);
+	publicListView.finalize();
+	publicListStore = gtk_list_store_newv(publicListView.getCount(), publicListView.getGTypes());
+	gtk_tree_view_set_model(publicListView.get(), GTK_TREE_MODEL(publicListStore));
 }
 void Settings::onBrowseF_gui (GtkWidget *widget, gpointer user_data)
 {
@@ -527,7 +525,7 @@ void Settings::onPublicHubs_gui (GtkWidget *widget, gpointer user_data)
 	{
 		string tmp;
 		vector<string> items;
-		s->publicList.getColumn (0, &items);
+		s->publicListView.getColumn (0, &items);
 		for(int i = 0; i < items.size (); i++)
 			tmp += items[i] + ';';
 		if(items.size () > 0)
@@ -546,7 +544,7 @@ void Settings::onPublicAdd_gui (GtkWidget *widget, gpointer user_data)
 
 	GtkTreeIter iter;
 	gtk_list_store_append (s->publicListStore, &iter);
-	gtk_list_store_set (s->publicListStore, &iter, 0, list.c_str (), -1);
+	gtk_list_store_set (s->publicListStore, &iter, s->publicListView.col("List"), list.c_str (), -1);
 	gtk_entry_set_text (GTK_ENTRY (s->downloadItems["Public list"]), "");
 }
 void Settings::onPublicMU_gui (GtkWidget *widget, gpointer user_data)
@@ -554,21 +552,21 @@ void Settings::onPublicMU_gui (GtkWidget *widget, gpointer user_data)
 	Settings *s = (Settings*)user_data;
 	GtkTreeIter iter;
 	GtkTreeModel *m = GTK_TREE_MODEL (s->publicListStore);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->publicList.get ());
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->publicListView.get());
 
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 		
 	string tmp = WulforUtil::getValue<gchar*,string>(m, &iter, 0);
 	vector<string> items;
-	s->publicList.getColumn (0, &items);
-	for(int i = 1; i < s->publicList.getCount(); i++)
+	s->publicListView.getColumn (0, &items);
+	for(int i = 1; i < s->publicListView.getCount(); i++)
 	{
 		if (items[i] == tmp)
 		{
 			gtk_list_store_remove (s->publicListStore, &iter);
 			gtk_list_store_insert (s->publicListStore, &iter, i-1);
-			gtk_list_store_set (s->publicListStore, &iter, 0, tmp.c_str (), -1);
+			gtk_list_store_set (s->publicListStore, &iter, s->publicListView.col("List"), tmp.c_str (), -1);
 			gtk_tree_selection_select_iter (selection, &iter);
 		}
 	}
@@ -578,21 +576,21 @@ void Settings::onPublicMD_gui (GtkWidget *widget, gpointer user_data)
 	Settings *s = (Settings*)user_data;
 	GtkTreeIter iter;
 	GtkTreeModel *m = GTK_TREE_MODEL (s->publicListStore);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->publicList.get ());
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->publicListView.get());
 
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 		
 	string tmp = WulforUtil::getValue<gchar*,string>(m, &iter, 0);
 	vector<string> items;
-	s->publicList.getColumn (0, &items);
-	for(int i = s->publicList.getCount()-2; i >=0; i--)
+	s->publicListView.getColumn(0, &items);
+	for (int i = s->publicListView.getCount() - 2; i >= 0; i--)
 	{
 		if (items[i] == tmp)
 		{
 			gtk_list_store_remove (s->publicListStore, &iter);
 			gtk_list_store_insert (s->publicListStore, &iter, i+1);
-			gtk_list_store_set (s->publicListStore, &iter, 0, tmp.c_str (), -1);
+			gtk_list_store_set(s->publicListStore, &iter, s->publicListView.col("List"), tmp.c_str(), -1);
 			gtk_tree_selection_select_iter (selection, &iter);
 		}
 	}
@@ -602,7 +600,7 @@ void Settings::onPublicEdit_gui (GtkWidget *widget, gpointer user_data)
 	Settings *s = (Settings*)user_data;
 	GtkTreeIter iter;
 	GtkTreeModel *m = GTK_TREE_MODEL (s->publicListStore);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->publicList.get ());
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->publicListView.get());
 
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
@@ -619,7 +617,7 @@ void Settings::onPublicRemove_gui (GtkWidget *widget, gpointer user_data)
 	Settings *s = (Settings*)user_data;
 	GtkTreeIter iter;
 	GtkTreeModel *m = GTK_TREE_MODEL (s->publicListStore);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->publicList.get ());
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->publicListView.get());
 
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
@@ -634,7 +632,7 @@ void Settings::publicInit_gui ()
 	{
 		GtkTreeIter iter;
 		gtk_list_store_append (publicListStore, &iter);
-		gtk_list_store_set (publicListStore, &iter, 0, (*idx).c_str (), -1);
+		gtk_list_store_set (publicListStore, &iter, publicListView.col("List"), (*idx).c_str (), -1);
 	}
 }
 bool Settings::addFavoriteDir_client (string path, string name)
@@ -673,11 +671,11 @@ void Settings::onAddFavorite_gui (GtkWidget *widget, gpointer user_data)
 			if (s->addFavoriteDir_client (path, name))
 			{
 				GtkTreeIter iter;
-				gtk_list_store_append (s->downloadToStore, &iter);
-				gtk_list_store_set (	s->downloadToStore, &iter,
-												DOWNLOADTO_NAME, name.c_str (),
-												DOWNLOADTO_DIR, path.c_str (),
-												-1);
+				gtk_list_store_append(s->downloadToStore, &iter);
+				gtk_list_store_set(s->downloadToStore, &iter,
+					s->downloadToView.col("Favorite Name"), name.c_str(),
+					s->downloadToView.col("Directory"), path.c_str(),
+					-1);
 			}
 			else
 			{
@@ -712,12 +710,12 @@ void Settings::onRemoveFavorite_gui (GtkWidget *widget, gpointer user_data)
 	Settings *s = (Settings*)user_data;
 	GtkTreeIter iter;
 	GtkTreeModel *m = GTK_TREE_MODEL (s->downloadToStore);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->downloadTo.get ());
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->downloadToView.get());
 
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 
-	if (s->removeFavoriteDir_client (WulforUtil::getValue<gchar*,string>(m, &iter, DOWNLOADTO_DIR)))
+	if (s->removeFavoriteDir_client (s->downloadToView.getValue<gchar*,string>(&iter, "Directory")))
 	{
 		gtk_list_store_remove (s->downloadToStore, &iter);
 		gtk_widget_set_sensitive (s->downloadItems["Remove"], FALSE);
@@ -728,7 +726,7 @@ gboolean Settings::onFavoriteButtonReleased_gui (GtkWidget *widget, GdkEventButt
 	Settings *s = (Settings*)user_data;
 	GtkTreeIter iter;
 	GtkTreeModel *m = GTK_TREE_MODEL (s->downloadToStore);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->downloadTo.get ());
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->downloadToView.get());
 
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 	{
@@ -740,29 +738,29 @@ gboolean Settings::onFavoriteButtonReleased_gui (GtkWidget *widget, GdkEventButt
 }
 void Settings::initSharing_gui ()
 {
-	GtkTreeView *view = GTK_TREE_VIEW (shareItems["Shares"]);
-	shareStore = gtk_list_store_new (4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT64);
-	gtk_tree_view_set_model (view, GTK_TREE_MODEL (shareStore));
-	g_signal_connect(G_OBJECT (view), "button_release_event", G_CALLBACK(onShareButtonReleased_gui), (gpointer)this);
-	shares.setView(view);
-
-	shares.addColumn_gui (SHARE_NAME, "Virtual name", TreeView::STRING, 100);
-	shares.addColumn_gui (SHARE_DIR, "Directory", TreeView::STRING, 200);
-	shares.addColumn_gui (SHARE_SIZE, "Size", TreeView::STRING, 100);
-	shares.insertHiddenColumn ("Real Size", SHARE_REALSIZE, TreeView::INT);
-	shares.setSortColumn_gui ("Size", "Real Size");
-	gtk_widget_set_sensitive (shareItems["Remove"], FALSE);
+	shareView.setView(GTK_TREE_VIEW(shareItems["Shares"]));
+	shareView.insertColumn("Virtual Name", G_TYPE_STRING, TreeView::STRING, 100);
+	shareView.insertColumn("Directory", G_TYPE_STRING, TreeView::STRING, 200);
+	shareView.insertColumn("Size", G_TYPE_STRING, TreeView::STRING, 100);
+	shareView.insertHiddenColumn("Real Size", G_TYPE_INT64);
+	shareView.finalize();
+	shareStore = gtk_list_store_newv(shareView.getCount(), shareView.getGTypes());
+	gtk_tree_view_set_model(shareView.get(), GTK_TREE_MODEL(shareStore));
+	shareView.setSortColumn_gui("Size", "Real Size");
+	g_signal_connect(G_OBJECT(shareView.get()), "button_release_event", G_CALLBACK(onShareButtonReleased_gui), (gpointer)this);
+	gtk_widget_set_sensitive(shareItems["Remove"], FALSE);
 
 	StringPairList directories = ShareManager::getInstance()->getDirectories();
 	for(StringPairList::iterator it = directories.begin(); it != directories.end(); it++)
 	{
 		GtkTreeIter iter;
-		gtk_list_store_append (shareStore, &iter);
-		gtk_list_store_set (shareStore, &iter, 	SHARE_NAME, it->first.c_str (),
-										SHARE_DIR, it->second.c_str (),
-										SHARE_SIZE, Util::formatBytes(ShareManager::getInstance()->getShareSize(it->second)).c_str (),
-										SHARE_REALSIZE, ShareManager::getInstance()->getShareSize(it->second),
-										-1);
+		gtk_list_store_append(shareStore, &iter);
+		gtk_list_store_set(shareStore, &iter,
+			shareView.col("Virtual Name"), it->first.c_str(),
+			shareView.col("Directory"), it->second.c_str(),
+			shareView.col("Size"), Util::formatBytes(ShareManager::getInstance()->getShareSize(it->second)).c_str(),
+			shareView.col("Real Size"), ShareManager::getInstance()->getShareSize(it->second),
+			-1);
 	}
 	gtk_label_set_text (GTK_LABEL (shareItems["Size"]), string ("Total size: " +Util::formatBytes(ShareManager::getInstance()->getShareSize())).c_str ());
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (shareItems["Hidden"]), BOOLSETTING(SHARE_HIDDEN));
@@ -809,12 +807,13 @@ void Settings::onAddShare_gui (GtkWidget *widget, gpointer user_data)
 			
 				s->modifyShare_client(true, path, name);
 				GtkTreeIter iter;
-				gtk_list_store_append (s->shareStore, &iter);
-				gtk_list_store_set (s->shareStore, &iter, 	SHARE_NAME, name.c_str (),
-													SHARE_DIR, path.c_str (),
-													SHARE_SIZE, Util::formatBytes(ShareManager::getInstance()->getShareSize(path)).c_str (),
-													SHARE_REALSIZE, ShareManager::getInstance()->getShareSize(path),
-													-1);
+				gtk_list_store_append(s->shareStore, &iter);
+				gtk_list_store_set(s->shareStore, &iter,
+					s->shareView.col("Virtual Name"), name.c_str(),
+					s->shareView.col("Directory"), path.c_str(),
+					s->shareView.col("Size"), Util::formatBytes(ShareManager::getInstance()->getShareSize(path)).c_str(),
+					s->shareView.col("Real Size"), ShareManager::getInstance()->getShareSize(path),
+					-1);
 			}
 			catch (const ShareException& e)
 			{
@@ -841,12 +840,12 @@ void Settings::onRemoveShare_gui (GtkWidget *widget, gpointer user_data)
 	Settings *s = (Settings*)user_data;
 	GtkTreeIter iter;
 	GtkTreeModel *m = GTK_TREE_MODEL (s->shareStore);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->shares.get ());
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->shareView.get());
 
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 
-	s->modifyShare_client( false, WulforUtil::getValue<gchar*,string>(m, &iter, SHARE_DIR), "");
+	s->modifyShare_client(false, s->shareView.getValue<gchar*,string>(&iter, "Directory"), "");
 	gtk_list_store_remove (s->shareStore, &iter);
 	gtk_widget_set_sensitive (s->shareItems["Remove"], FALSE);
 }
@@ -854,7 +853,7 @@ gboolean Settings::onShareButtonReleased_gui (GtkWidget *widget, GdkEventButton 
 {
 	Settings *s = (Settings*)user_data;
 	GtkTreeSelection *selection;
-	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
+	selection = gtk_tree_view_get_selection(s->shareView.get());
 	if (gtk_tree_selection_count_selected_rows(selection)  == 0)
 	{
 		gtk_widget_set_sensitive (s->shareItems["Remove"], FALSE);
@@ -885,12 +884,13 @@ gboolean Settings::onShareHiddenPressed_gui (GtkToggleButton *togglebutton, gpoi
 	for(StringPairList::iterator it = directories.begin(); it != directories.end(); it++)
 	{
 		GtkTreeIter iter;
-		gtk_list_store_append (s->shareStore, &iter);
-		gtk_list_store_set (s->shareStore, &iter, 	SHARE_NAME, it->first.c_str (),
-										SHARE_DIR, it->second.c_str (),
-										SHARE_SIZE, Util::formatBytes(ShareManager::getInstance()->getShareSize(it->second)).c_str (),
-										SHARE_REALSIZE, ShareManager::getInstance()->getShareSize(it->second),
-										-1);
+		gtk_list_store_append(s->shareStore, &iter);
+		gtk_list_store_set(s->shareStore, &iter,
+			s->shareView.col("Virtual Name"), it->first.c_str(),
+			s->shareView.col("Directory"), it->second.c_str(),
+			s->shareView.col("Size"), Util::formatBytes(ShareManager::getInstance()->getShareSize(it->second)).c_str(),
+			s->shareView.col("Real Size"), ShareManager::getInstance()->getShareSize(it->second),
+			-1);
 	}
 	gtk_label_set_text (GTK_LABEL (s->shareItems["Size"]), string ("Total size: " +Util::formatBytes(ShareManager::getInstance()->getShareSize())).c_str ());
 }
@@ -898,14 +898,14 @@ gboolean Settings::onShareHiddenPressed_gui (GtkToggleButton *togglebutton, gpoi
 // Appearance
 void Settings::initAppearance_gui ()
 {
-	appearanceStore = gtk_list_store_new (2, G_TYPE_BOOLEAN, G_TYPE_STRING);
-	gtk_tree_view_set_model(GTK_TREE_VIEW (appearanceItems["Options"]), GTK_TREE_MODEL (appearanceStore));
-	appearance.setView(GTK_TREE_VIEW (appearanceItems["Options"]));
+	appearanceView.setView(GTK_TREE_VIEW(appearanceItems["Options"]));
+	appearanceView.insertColumn("Use", G_TYPE_BOOLEAN, TreeView::BOOL, -1);
+	appearanceView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, -1);
+	appearanceView.finalize();
+	appearanceStore = gtk_list_store_newv(appearanceView.getCount(), appearanceView.getGTypes());
+	gtk_tree_view_set_model(appearanceView.get(), GTK_TREE_MODEL(appearanceStore));
 	
-	appearance.addColumn_gui (APPEARANCE_USE, "", TreeView::BOOL, -1);
-	appearance.addColumn_gui (APPEARANCE_NAME, "", TreeView::STRING, -1);
-	
-	GList *list = gtk_tree_view_column_get_cell_renderers (gtk_tree_view_get_column(GTK_TREE_VIEW (appearanceItems["Options"]), APPEARANCE_USE));
+	GList *list = gtk_tree_view_column_get_cell_renderers (gtk_tree_view_get_column(appearanceView.get(), appearanceView.col("Use")));
 	GtkCellRenderer *renderer = (GtkCellRenderer*)list->data;
 	g_signal_connect (renderer, "toggled", G_CALLBACK (onAppearanceToggledClicked_gui), (gpointer)this);	
 	
@@ -927,19 +927,20 @@ void Settings::initAppearance_gui ()
 void Settings::addOption (string name, bool use)
 {
 	GtkTreeIter iter;
-	gtk_list_store_append (appearanceStore, &iter);
-	gtk_list_store_set (appearanceStore, &iter, APPEARANCE_USE, use, APPEARANCE_NAME, name.c_str (), -1);
+	gtk_list_store_append(appearanceStore, &iter);
+	gtk_list_store_set(appearanceStore, &iter, appearanceView.col("Use"), use, appearanceView.col("Name"), name.c_str (), -1);
 }
 
 void Settings::onAppearanceToggledClicked_gui (GtkCellRendererToggle *cell, gchar *path_str, gpointer data)
 {
+	Settings *s = (Settings *)data;
   	GtkTreeIter iter;
   	gboolean fixed;
-	GtkTreeModel *m = gtk_tree_view_get_model (((Settings*)data)->appearance.get ());
+	GtkTreeModel *m = gtk_tree_view_get_model(s->appearanceView.get());
   	gtk_tree_model_get_iter (m, &iter, gtk_tree_path_new_from_string (path_str));
-  	gtk_tree_model_get (m, &iter, Settings::APPEARANCE_USE, &fixed, -1);
+  	gtk_tree_model_get(m, &iter, s->appearanceView.col("Use"), &fixed, -1);
   	fixed = !fixed;
-  	gtk_list_store_set (GTK_LIST_STORE (m), &iter, Settings::APPEARANCE_USE, fixed, -1);
+  	gtk_list_store_set(GTK_LIST_STORE (m), &iter, s->appearanceView.col("Use"), fixed, -1);
 }
 
 void Settings::checkClicked ()
@@ -1033,14 +1034,14 @@ void Settings::onLogUploadClicked_gui (GtkToggleButton *togglebutton, gpointer u
 
 void Settings::initAdvanced_gui ()
 {
-	advancedStore = gtk_list_store_new (2, G_TYPE_BOOLEAN, G_TYPE_STRING);
-	gtk_tree_view_set_model(GTK_TREE_VIEW (advancedItems["Advanced"]), GTK_TREE_MODEL (advancedStore));
-	advanced.setView(GTK_TREE_VIEW (advancedItems["Advanced"]));
-	
-	advanced.addColumn_gui (ADVANCED_USE, "", TreeView::BOOL, -1);
-	advanced.addColumn_gui (ADVANCED_NAME, "", TreeView::STRING, -1);
-	
-	GList *list = gtk_tree_view_column_get_cell_renderers (gtk_tree_view_get_column(GTK_TREE_VIEW (advancedItems["Advanced"]), ADVANCED_USE));
+	advancedView.setView(GTK_TREE_VIEW(advancedItems["Advanced"]));
+	advancedView.insertColumn("Use", G_TYPE_BOOLEAN, TreeView::BOOL, -1);
+	advancedView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, -1);
+	advancedView.finalize();
+	advancedStore = gtk_list_store_newv(advancedView.getCount(), advancedView.getGTypes());
+	gtk_tree_view_set_model(advancedView.get(), GTK_TREE_MODEL(advancedStore));
+
+	GList *list = gtk_tree_view_column_get_cell_renderers (gtk_tree_view_get_column(advancedView.get(), advancedView.col("Use")));
 	GtkCellRenderer *renderer = (GtkCellRenderer*)list->data;
 	g_signal_connect (renderer, "toggled", G_CALLBACK (onAdvancedToggledClicked_gui), (gpointer)this);	
 	
@@ -1088,17 +1089,18 @@ void Settings::initAdvanced_gui ()
 void Settings::addAdvanced (string name, bool use)
 {
 	GtkTreeIter iter;
-	gtk_list_store_append (advancedStore, &iter);
-	gtk_list_store_set (advancedStore, &iter, ADVANCED_USE, use, ADVANCED_NAME, name.c_str (), -1);
+	gtk_list_store_append(advancedStore, &iter);
+	gtk_list_store_set(advancedStore, &iter, advancedView.col("Use"), use, advancedView.col("Name"), name.c_str(), -1);
 }
 
 void Settings::onAdvancedToggledClicked_gui (GtkCellRendererToggle *cell, gchar *path_str, gpointer data)
 {
+	Settings *s = (Settings *)data;
   	GtkTreeIter iter;
   	gboolean fixed;
-	GtkTreeModel *m = gtk_tree_view_get_model (((Settings*)data)->advanced.get ());
-  	gtk_tree_model_get_iter (m, &iter, gtk_tree_path_new_from_string (path_str));
-  	gtk_tree_model_get (m, &iter, Settings::ADVANCED_USE, &fixed, -1);
+	GtkTreeModel *m = gtk_tree_view_get_model(s->advancedView.get());
+  	gtk_tree_model_get_iter(m, &iter, gtk_tree_path_new_from_string(path_str));
+  	gtk_tree_model_get(m, &iter, s->advancedView.col("Use"), &fixed, -1);
   	fixed = !fixed;
-  	gtk_list_store_set (GTK_LIST_STORE (m), &iter, Settings::ADVANCED_USE, fixed, -1);
+  	gtk_list_store_set(GTK_LIST_STORE(m), &iter, s->advancedView.col("Use"), fixed, -1);
 }

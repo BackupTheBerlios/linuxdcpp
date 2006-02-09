@@ -76,14 +76,8 @@ private:
 	static void onAddFavorite_gui (GtkWidget *widget, gpointer user_data);
 	static void onRemoveFavorite_gui (GtkWidget *widget, gpointer user_data);	
 	static gboolean onFavoriteButtonReleased_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
-	enum {
-		DOWNLOADTO_FIRST,
-		DOWNLOADTO_NAME = DOWNLOADTO_FIRST,
-		DOWNLOADTO_DIR,
-		DOWNLOADTO_LAST
-	};
-	TreeView downloadTo;
-	TreeView publicList;
+	TreeView downloadToView;
+	TreeView publicListView;
 	GtkListStore *downloadToStore;
 	GtkListStore *publicListStore;
 	// Sharing
@@ -93,27 +87,13 @@ private:
 	static gboolean onShareHiddenPressed_gui (GtkToggleButton *togglebutton, gpointer user_data);
 	void shareHidden_client (bool show);
 	void modifyShare_client (bool add, string path, string name);
-	enum {
-		SHARE_FIRST,
-		SHARE_NAME = SHARE_FIRST,
-		SHARE_DIR,
-		SHARE_SIZE,
-		SHARE_REALSIZE,
-		SHARE_LAST
-	};
-	TreeView shares;
+	TreeView shareView;
 	GtkListStore *shareStore;
 	GdkEventType sharePrevious;
 	// Appearance
 	static void onAppearanceToggledClicked_gui (GtkCellRendererToggle *cell, gchar *path_str, gpointer data);
 	void addOption (string name, bool use);
-	enum {
-		APPEARANCE_FIRST,
-		APPEARANCE_USE = APPEARANCE_FIRST,
-		APPEARANCE_NAME,
-		APPEARANCE_LAST
-	};
-	TreeView appearance;
+	TreeView appearanceView;
 	GtkListStore *appearanceStore;
 	static SettingsManager::IntSetting optionSettings[];
 	
@@ -128,13 +108,7 @@ private:
 	// Advanced
 	static void onAdvancedToggledClicked_gui (GtkCellRendererToggle *cell, gchar *path_str, gpointer data);
 	void addAdvanced (string name, bool use);
-	enum {
-		ADVANCED_FIRST,
-		ADVANCED_USE = ADVANCED_FIRST,
-		ADVANCED_NAME,
-		ADVANCED_LAST
-	};
-	TreeView advanced;
+	TreeView advancedView;
 	GtkListStore *advancedStore;
 	static SettingsManager::IntSetting advancedSettings[];
 

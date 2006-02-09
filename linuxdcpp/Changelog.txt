@@ -1,5 +1,6 @@
 2006-02-08 - paskharen
-* Made treeview columns reorderable (thanks Steven)
+* Made treeview columns reorderable (thanks Steven Sheehy)
+* Made treeview columns save their widths (thanks Steven Sheehy)
 * Made treeview a general treeview wrapper class. This is not complete and 
   the settingsdialog isn't fully updated to use this.
 * Made it possible to have more than one search tab open.
@@ -9,7 +10,7 @@
   chopped off because of lack of space on the button.
 
 2006-01-18 - paskharen
-* Disabled asm code for ia64 (thanks Romain Beauxis 	
+* Disabled asm code for ia64 (thanks Romain Beauxis)
 * Added install targets to SConstruct file (thanks Naga)
 * Tweaked the window position save/load code to work for more people
 * Changed constants for window state to be the same as for main DC++
@@ -25,9 +26,9 @@ the sharebrowser.
 * Made main window remember size, position and state (Bug #3348)(thanks Tom Lofts)
 
 2006-01-01 - paskharen
-* Improvements to Open own list and Open File List. (thanks Steven)
-* Improvements to favourite hubs. (thanks Steven)
-* Various cleanups. (thanks Steven)
+* Improvements to Open own list and Open File List. (thanks Steven Sheehy)
+* Improvements to favourite hubs. (thanks Steven Sheehy)
+* Various cleanups. (thanks Steven Sheehy)
 
 2005-12-24 - phase
 * Fixed a bug with the Open File List. (Thanks Steven Sheehy)

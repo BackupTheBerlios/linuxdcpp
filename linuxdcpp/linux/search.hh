@@ -117,15 +117,6 @@ private:
   	static gboolean onPopupMenu_gui (GtkWidget *widget, gpointer user_data);
 	void popup_menu_gui (GdkEventButton *event, gpointer user_data);
 
-	// Hub columns
-	enum {
-		HUB_FIRST,
-		HUB_SEARCH = HUB_FIRST,
-		HUB_NAME,
-		HUB_INFO,
-		HUB_LAST
-	};
-		
 	// To keep record of the connected hubs
 	class HubInfo
 	{

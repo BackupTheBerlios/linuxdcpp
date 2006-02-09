@@ -181,18 +181,19 @@ void MainWindow::createWindow_gui() {
 		true, 
 		SettingsManager::MAINFRAME_ORDER, 
 		SettingsManager::MAINFRAME_WIDTHS);
-	transferView.insertColumn(" ", 0, GDK_TYPE_PIXBUF, TreeView::PIXBUF, 20); // column for transfer type icon; didn't need title displayed so a space was used
-	transferView.insertColumn("User", 1, G_TYPE_STRING, TreeView::STRING, 150);
-	transferView.insertColumn("Status", 2, G_TYPE_STRING, TreeView::STRING, 250);
-	transferView.insertColumn("Time Left", 3, G_TYPE_STRING, TreeView::STRING, 75);
-	transferView.insertColumn("Speed", 4, G_TYPE_STRING, TreeView::STRING, 175);
-	transferView.insertColumn("Filename", 5, G_TYPE_STRING, TreeView::STRING, 200);
-	transferView.insertColumn("Size", 6, G_TYPE_STRING, TreeView::STRING, 175);
-	transferView.insertColumn("Path", 7, G_TYPE_STRING, TreeView::STRING, 200);
-	transferView.insertHiddenColumn("ID", 8, G_TYPE_STRING);
-	transferView.insertHiddenColumn("User Ptr", 9, G_TYPE_POINTER);
+	// column for transfer type icon; didn't need a title displayed so a space was used
+	transferView.insertColumn(" ", GDK_TYPE_PIXBUF, TreeView::PIXBUF, 20);
+	transferView.insertColumn("User", G_TYPE_STRING, TreeView::STRING, 150);
+	transferView.insertColumn("Status", G_TYPE_STRING, TreeView::STRING, 250);
+	transferView.insertColumn("Time Left", G_TYPE_STRING, TreeView::STRING, 75);
+	transferView.insertColumn("Speed", G_TYPE_STRING, TreeView::STRING, 175);
+	transferView.insertColumn("Filename", G_TYPE_STRING, TreeView::STRING, 200);
+	transferView.insertColumn("Size", G_TYPE_STRING, TreeView::STRING, 175);
+	transferView.insertColumn("Path", G_TYPE_STRING, TreeView::STRING, 200);
+	transferView.insertHiddenColumn("ID", G_TYPE_STRING);
+	transferView.insertHiddenColumn("User Ptr", G_TYPE_POINTER);
 	transferView.finalize();
-	transferStore = gtk_list_store_newv(transferView.getSize(), transferView.getGTypes());
+	transferStore = gtk_list_store_newv(transferView.getCount(), transferView.getGTypes());
 	gtk_tree_view_set_model(transferView.get(), GTK_TREE_MODEL(transferStore));
 	transferSel = gtk_tree_view_get_selection(transferView.get());
 	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(transferView.get()), GTK_SELECTION_MULTIPLE);
@@ -620,6 +621,7 @@ gboolean MainWindow::deleteWindow_gui(
 
 	if (!BOOLSETTING(CONFIRM_EXIT))
 	{
+		transferView.saveSettings();
 		WulforManager::get()->deleteAllBookEntries();
 		gtk_main_quit();
 		return TRUE;
@@ -631,6 +633,7 @@ gboolean MainWindow::deleteWindow_gui(
 
 	if (response == GTK_RESPONSE_OK)
 	{
+		transferView.saveSettings();
 		WulforManager::get()->deleteAllBookEntries();
 		gtk_main_quit();
 		return TRUE;

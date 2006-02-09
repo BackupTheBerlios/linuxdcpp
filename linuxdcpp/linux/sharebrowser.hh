@@ -113,12 +113,6 @@ class ShareBrowser:
 		std::vector<GtkWidget*> fileDownloadItems, dirDownloadItems;
 		typedef pair<ShareBrowser*, string> userData;
 		std::vector<userData*> menuUserData;
-
-		enum {
-			COLUMN_DIR,
-			COLUMN_DL_DIR,
-			COLUMN_ICON_DIR
-		};
 };
 
 #else

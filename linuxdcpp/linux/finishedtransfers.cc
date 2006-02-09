@@ -44,17 +44,17 @@ FinishedTransfers::FinishedTransfers(int type, std::string title, GCallback clos
 		true,
 		SettingsManager::FINISHED_ORDER,
 		SettingsManager::FINISHED_WIDTHS);
-	transferView.insertColumn("Time", 0, G_TYPE_STRING, TreeView::STRING, 150);
-	transferView.insertColumn("Filename", 1, G_TYPE_STRING, TreeView::STRING, 100);
-	transferView.insertColumn("Path", 2, G_TYPE_STRING, TreeView::STRING, 200);
-	transferView.insertColumn("Nick", 3, G_TYPE_STRING, TreeView::STRING, 100);
-	transferView.insertColumn("Hub", 4, G_TYPE_STRING, TreeView::STRING, 200);
-	transferView.insertColumn("Size", 5, G_TYPE_STRING, TreeView::STRING, 100);
-	transferView.insertColumn("Speed", 6, G_TYPE_STRING, TreeView::STRING, 100);
-	transferView.insertColumn("CRC Checked", 7, G_TYPE_STRING, TreeView::STRING, 100);
-	transferView.insertHiddenColumn("Target", 8, G_TYPE_STRING);
+	transferView.insertColumn("Time", G_TYPE_STRING, TreeView::STRING, 150);
+	transferView.insertColumn("Filename", G_TYPE_STRING, TreeView::STRING, 100);
+	transferView.insertColumn("Path", G_TYPE_STRING, TreeView::STRING, 200);
+	transferView.insertColumn("Nick", G_TYPE_STRING, TreeView::STRING, 100);
+	transferView.insertColumn("Hub", G_TYPE_STRING, TreeView::STRING, 200);
+	transferView.insertColumn("Size", G_TYPE_STRING, TreeView::STRING, 100);
+	transferView.insertColumn("Speed", G_TYPE_STRING, TreeView::STRING, 100);
+	transferView.insertColumn("CRC Checked", G_TYPE_STRING, TreeView::STRING, 100);
+	transferView.insertHiddenColumn("Target", G_TYPE_STRING);
 	transferView.finalize();
-	transferStore = gtk_list_store_newv(transferView.getSize(), transferView.getGTypes());
+	transferStore = gtk_list_store_newv(transferView.getCount(), transferView.getGTypes());
 	gtk_tree_view_set_model(transferView.get(), GTK_TREE_MODEL(transferStore));
 	transferSelection = gtk_tree_view_get_selection(transferView.get());
 
