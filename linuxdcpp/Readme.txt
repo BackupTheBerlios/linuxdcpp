@@ -10,6 +10,7 @@ Dependencies:
 -------------
 Gtk+ 2.4
 libglade 2.4
+libgnome (Required by libglade on some systems it seems)
 pthread
 zlib
 libbz2
