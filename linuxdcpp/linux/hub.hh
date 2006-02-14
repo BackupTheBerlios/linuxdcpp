@@ -32,6 +32,7 @@
 
 #include "bookentry.hh"
 #include "callback.hh"
+#include "settingsmanager.hh"
 #include "treeview.hh"
 #include "wulformanager.hh"
 
@@ -135,6 +136,7 @@ class Hub:
 		std::map<std::string, GdkPixbuf *> userIcons;
 
 		GtkWidget *mainBox;
+		GtkPaned *nickPane;
 		GtkDialog *passwordDialog;
 		GtkEntry *passwordEntry;
 		GtkEntry *chatEntry;

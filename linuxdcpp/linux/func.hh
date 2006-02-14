@@ -348,6 +348,53 @@ class Func9: public FuncBase {
 		p9 _param9;
 };
 
+template<class c, typename p1, typename p2, typename p3, typename p4, 
+	typename p5, typename p6, typename p7, typename p8, typename p9, typename p10>
+class Func10: public FuncBase {
+	public:
+		Func10(c *obj, void (c::*func)(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10), 
+			p1 param1, p2 param2, p3 param3, p4 param4, p5 param5, p6 param6,
+			p7 param7, p8 param8, p9 param9, p10 param10):
+			_param1(param1),
+			_param2(param2),
+			_param3(param3),
+			_param4(param4),
+			_param5(param5),
+			_param6(param6),
+			_param7(param7),
+			_param8(param8),
+			_param9(param9),
+			_param10(param10)
+			
+		{
+			this->obj = obj;
+			this->func = func;
+		}
+
+		void call() {
+			(*obj.*func)(_param1, _param2, _param3, _param4, _param5, _param6,
+				_param7, _param8, _param9, _param10);
+		}
+
+		bool comparePointer(void *ptr) {
+			return ptr == (void *)obj;
+		}
+
+	private:
+		c *obj;
+		void (c::*func)(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);
+		p1 _param1;
+		p2 _param2;
+		p3 _param3;
+		p4 _param4;
+		p5 _param5;
+		p6 _param6;
+		p7 _param7;
+		p8 _param8;
+		p9 _param9;
+		p10 _param10;
+};
+
 #else
 template<class c>
 class Func0;
@@ -367,4 +414,7 @@ class Func8;
 template<class c, class p1, class p2, class p3, class p4, class p5, class p6,
 	class p7, class p8, class p9>
 class Func9;
+template<class c, class p1, class p2, class p3, class p4, class p5, class p6,
+	class p7, class p8, class p9, class p10>
+class Func10;
 #endif

@@ -38,8 +38,8 @@ class TreeView {
 			BOOL,
 			PIXBUF,
 			PIXBUF_STRING,
-			EDIT_STRING
-			//PROGRESS
+			EDIT_STRING,
+			PROGRESS
 		} columnType;
 
 		TreeView();
@@ -50,12 +50,11 @@ class TreeView {
 		void insertColumn(const std::string &title, const GType gtype, const columnType type, const int width, const int linkedID = -1);
 		void insertHiddenColumn(const std::string &title, const GType gtype);
 		void finalize();
-		int getCount();
+		int getColCount();
+		int getRowCount();
 		GType* getGTypes();
 		void setSortColumn_gui(std::string column, std::string sortColumn);
 		int col(const std::string &title);
-		void getColumn(std::string column, std::vector<std::string> *l);
-
 		void saveSettings();
 		
 		template<class T, class C>

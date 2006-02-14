@@ -23,6 +23,7 @@ TreeView::TreeView()
 	view = NULL;
 	count = 0;
 	hasSettings = false;
+	padding = false;
 }
 
 TreeView::~TreeView()
@@ -59,7 +60,7 @@ void TreeView::insertColumn(const string &title, const GType gtype, const column
 	defaultPosition[title] = currentPosition[title] = count - 1;
 }
 
-// Note: all insertColumn's have to be called before insertHiddenColumn's
+// Note: all insertColumn's have to be called before any insertHiddenColumn's
 void TreeView::insertHiddenColumn(const string &title, const GType gtype)
 {
 	++count;
@@ -83,20 +84,25 @@ void TreeView::finalize()
 		gtk_tree_view_insert_column(view, gtk_tree_view_column_new(), count);
 }
 
-int TreeView::getCount()
+int TreeView::getColCount()
 {
 	return count;
 }
 
-void TreeView::getColumn(string column, std::vector<std::string> *l) {
-	GtkTreeModel *m = gtk_tree_view_get_model(view);
+int TreeView::getRowCount()
+{
 	GtkTreeIter it;
+	GtkTreeModel *m = gtk_tree_view_get_model(view);
 
-	if (!gtk_tree_model_get_iter_first(m, &it)) return;
-		
-	while (1) {
-		l->push_back(getValue<gchar*,std::string>(&it, column));
-		if (!gtk_tree_model_iter_next (m, &it))	break;
+	if (!gtk_tree_model_get_iter_first(m, &it))
+		return 0;
+
+	int numRows = 0;
+	while (true)
+	{
+		numRows++;
+		if (!gtk_tree_model_iter_next(m, &it))
+			return numRows;
 	}
 }
 
@@ -159,12 +165,10 @@ void TreeView::addColumn_gui(Column column)
  			g_object_set(renderer, "editable", TRUE, NULL);
 			col = gtk_tree_view_column_new_with_attributes(column.title.c_str(), renderer, "text", column.pos, NULL);
 			break;
-		/*
 		case PROGRESS:
 			col = gtk_tree_view_column_new_with_attributes(
-				column.title.c_str(), gtk_cell_renderer_progress_new(), "progress", currentColumn, NULL);
+				column.title.c_str(), gtk_cell_renderer_progress_new(), "text", column.id, "value", column.linkedID, NULL);
 			break;
-		*/
 	};
 
 	if (column.width != -1) {
@@ -174,7 +178,8 @@ void TreeView::addColumn_gui(Column column)
 	}
 
 	//make columns sortable
-	if (column.type == STRING || column.type == INT) {
+	if (column.type == STRING || column.type == INT || column.type == PROGRESS)
+	{
 		gtk_tree_view_column_set_clickable(col, TRUE);
 		gtk_tree_view_column_set_sort_column_id(col, column.pos);
 		gtk_tree_view_column_set_sort_indicator(col, TRUE);

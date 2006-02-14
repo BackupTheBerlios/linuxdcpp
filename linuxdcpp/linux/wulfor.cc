@@ -63,7 +63,8 @@ int main(int argc, char *argv[]) {
 
 	cout << "Shutting down..." << endl;
 	shutdown();
-	
+
+	delete WulforSettingsManager::get();
 	delete WulforManager::get();
 	
 	return 0;

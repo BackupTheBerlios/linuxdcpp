@@ -30,8 +30,8 @@ class WulforSettingsManager {
 	public:
 		static WulforSettingsManager *get();
 
-		int getInt(string key);
-		string getString(string key);
+		int getInt(std::string key);
+		std::string getString(std::string key);
 		void set(std::string key, int value);
 		void set(std::string key, std::string value);
 

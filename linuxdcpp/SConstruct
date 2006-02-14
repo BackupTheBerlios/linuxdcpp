@@ -1,6 +1,6 @@
 ###########################################################################
 # 
-#	This is the dcpp construction file. To use it type scons
+#	This is the ldcpp construction file. To use it type scons
 #	Specify arguments with scons arg=value. Argumens:
 #
 #      debug=1:                Compile the program with debug information
@@ -88,8 +88,8 @@ if not conf.CheckPKGConfig():
      print 'pkg-config not found.' 
      Exit(1) 
  
-if not conf.CheckPKG('gtk+-2.0 >= 2.4'): 
-     print 'gtk+ >= 2.4 not found.' 
+if not conf.CheckPKG('gtk+-2.0 >= 2.6'): 
+     print 'gtk+ >= 2.6 not found.' 
      Exit(1) 
 
 if not conf.CheckPKG('gthread-2.0 >= 2.4'): 

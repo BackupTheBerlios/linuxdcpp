@@ -69,7 +69,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	fileView.insertHiddenColumn("Size Order", G_TYPE_DOUBLE);
 	fileView.insertHiddenColumn("File Order", G_TYPE_STRING);
 	fileView.finalize();
-	fileStore = gtk_list_store_newv(fileView.getCount(), fileView.getGTypes());
+	fileStore = gtk_list_store_newv(fileView.getColCount(), fileView.getGTypes());
 	gtk_tree_view_set_model(fileView.get(), GTK_TREE_MODEL(fileStore));
 	fileSelection = gtk_tree_view_get_selection(fileView.get());
 	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(fileView.get()), GTK_SELECTION_MULTIPLE);
@@ -86,7 +86,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	dirView.insertHiddenColumn("DL Dir", G_TYPE_POINTER);
 	dirView.insertHiddenColumn("Icon", GDK_TYPE_PIXBUF);
 	dirView.finalize();
-	dirStore = gtk_tree_store_newv(dirView.getCount(), dirView.getGTypes());
+	dirStore = gtk_tree_store_newv(dirView.getColCount(), dirView.getGTypes());
 	gtk_tree_view_set_model(dirView.get(), GTK_TREE_MODEL(dirStore));
 	dirSelection = gtk_tree_view_get_selection(dirView.get());
 	g_signal_connect(G_OBJECT(dirView.get()), "button_press_event", G_CALLBACK(dirButtonPressed_gui), (gpointer)this);

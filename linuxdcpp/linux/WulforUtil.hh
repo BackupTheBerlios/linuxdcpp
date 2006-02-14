@@ -33,21 +33,6 @@ class WulforUtil
 		static std::vector<int> splitString(const std::string &str, const std::string &delimiter);
 		static std::string linuxSeparator(const std::string &ps);
 		static std::string windowsSeparator(const std::string &ps);
-
-		template<class T, class C>
-		static C getValue (GtkTreeModel *m, GtkTreeIter *i, gint c)
-		{
-			T value;
-			gtk_tree_model_get (m, i, c, &value, -1);
-			return C (value);
-		}
-		template<class T>
-		static T getValue (GtkTreeModel *m, GtkTreeIter *i, gint c)
-		{
-			T value;
-			gtk_tree_model_get (m, i, c, &value, -1);
-			return value;
-		}
 };
 
 #endif

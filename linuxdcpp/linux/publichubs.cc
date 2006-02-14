@@ -69,7 +69,7 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	hubView.insertColumn("Users", G_TYPE_INT, TreeView::INT, 50);
 	hubView.insertColumn("Address", G_TYPE_STRING, TreeView::STRING, 100);
 	hubView.finalize();
-	hubStore = gtk_list_store_newv(hubView.getCount(), hubView.getGTypes());
+	hubStore = gtk_list_store_newv(hubView.getColCount(), hubView.getGTypes());
 	gtk_tree_view_set_model(hubView.get(), GTK_TREE_MODEL(hubStore));
 
 	menu = GTK_MENU(gtk_menu_new()); 
@@ -99,7 +99,7 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	listsView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "listsView")));
 	listsView.insertColumn("List", G_TYPE_STRING, TreeView::EDIT_STRING, -1);
 	listsView.finalize();
-	listsStore = gtk_list_store_newv(listsView.getCount(), listsView.getGTypes());
+	listsStore = gtk_list_store_newv(listsView.getColCount(), listsView.getGTypes());
 	gtk_tree_view_set_model(listsView.get(), GTK_TREE_MODEL(listsStore));
 	gtk_tree_view_set_headers_visible(listsView.get(), FALSE);
 

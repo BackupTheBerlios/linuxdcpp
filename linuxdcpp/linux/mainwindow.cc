@@ -36,9 +36,6 @@
 
 using namespace std;
 
-const int MainWindow::STATE_NORMAL = 1;
-const int MainWindow::STATE_MAXIMIZED = 3;
-
 MainWindow::MainWindow():
 	connectCallback(this, &MainWindow::connectClicked_gui),
 	pubHubsCallback(this, &MainWindow::pubHubsClicked_gui),
@@ -78,18 +75,19 @@ MainWindow::~MainWindow() {
 	ConnectionManager::getInstance()->removeListener(this);
 
 	//Save window state and position
-	int posX, posY, sizeX, sizeY, state;
+	int posX, posY, sizeX, sizeY, state, transferPanePosition;
 	GdkWindowState gdkState;
 	WulforSettingsManager *sm = WulforSettingsManager::get();
 
 	gtk_window_get_position(window, &posX, &posY);
 	gtk_window_get_size(window, &sizeX, &sizeY);
 	gdkState = gdk_window_get_state(GTK_WIDGET(window)->window);
+	transferPanePosition = gtk_paned_get_position(transferPane);
 
 	if (gdkState & GDK_WINDOW_STATE_MAXIMIZED) {
-		state = STATE_MAXIMIZED;
+		state = 1;
 	} else {
-		state = STATE_NORMAL;
+		state = 0;
 		//The get pos/size functions return junk when window is maximized
 		sm->set("main-window-pos-x", posX);
 		sm->set("main-window-pos-y", posY);
@@ -97,8 +95,8 @@ MainWindow::~MainWindow() {
 		sm->set("main-window-size-y", sizeY);
 	}
 	
-	sm->set("main-window-state", state);
-	//sm->set (SettingsManager::MAIN_WINDOW_STATE, state);
+	sm->set("main-window-maximized", state);
+	sm->set("transfer-pane-position", transferPanePosition);
 
 	//Make sure all windows are deallocated (probably not necessary)
 	gtk_widget_destroy(GTK_WIDGET(connectDialog));
@@ -141,6 +139,7 @@ void MainWindow::createWindow_gui() {
 	aboutDialog = GTK_DIALOG(glade_xml_get_widget(xml, "aboutDialog"));
 
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "mainWindow"));
+	transferPane = GTK_PANED(glade_xml_get_widget(xml, "pane"));
 	book = GTK_NOTEBOOK(glade_xml_get_widget(xml, "book"));
 	connectEntry = GTK_ENTRY(glade_xml_get_widget(xml, "connectEntry"));
 
@@ -184,7 +183,10 @@ void MainWindow::createWindow_gui() {
 	// column for transfer type icon; didn't need a title displayed so a space was used
 	transferView.insertColumn(" ", GDK_TYPE_PIXBUF, TreeView::PIXBUF, 20);
 	transferView.insertColumn("User", G_TYPE_STRING, TreeView::STRING, 150);
-	transferView.insertColumn("Status", G_TYPE_STRING, TreeView::STRING, 250);
+    if (SETTING(SHOW_PROGRESS_BARS))
+		transferView.insertColumn("Status", G_TYPE_STRING, TreeView::PROGRESS, 250, 10);
+	else
+		transferView.insertColumn("Status", G_TYPE_STRING, TreeView::STRING, 250);
 	transferView.insertColumn("Time Left", G_TYPE_STRING, TreeView::STRING, 75);
 	transferView.insertColumn("Speed", G_TYPE_STRING, TreeView::STRING, 175);
 	transferView.insertColumn("Filename", G_TYPE_STRING, TreeView::STRING, 200);
@@ -192,8 +194,10 @@ void MainWindow::createWindow_gui() {
 	transferView.insertColumn("Path", G_TYPE_STRING, TreeView::STRING, 200);
 	transferView.insertHiddenColumn("ID", G_TYPE_STRING);
 	transferView.insertHiddenColumn("User Ptr", G_TYPE_POINTER);
+	if (SETTING(SHOW_PROGRESS_BARS))
+		transferView.insertHiddenColumn("Progress", G_TYPE_INT);
 	transferView.finalize();
-	transferStore = gtk_list_store_newv(transferView.getCount(), transferView.getGTypes());
+	transferStore = gtk_list_store_newv(transferView.getColCount(), transferView.getGTypes());
 	gtk_tree_view_set_model(transferView.get(), GTK_TREE_MODEL(transferStore));
 	transferSel = gtk_tree_view_get_selection(transferView.get());
 	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(transferView.get()), GTK_SELECTION_MULTIPLE);
@@ -299,14 +303,16 @@ void MainWindow::createWindow_gui() {
 	//Load window state and position from settings manager
 	WulforSettingsManager *sm = WulforSettingsManager::get();
 	int posX =  sm->getInt("main-window-pos-x");
-	int posY = sm->getInt("main-window-pos-x");
+	int posY = sm->getInt("main-window-pos-y");
 	int sizeX = sm->getInt("main-window-size-x");
 	int sizeY = sm->getInt("main-window-size-y");
+	int transferPanePosition = sm->getInt("transfer-pane-position");
  	
 	gtk_window_move(window, posX, posY);
 	gtk_window_resize(window, sizeX, sizeY);
-	if (sm->getInt("main-window-state") == STATE_MAXIMIZED)
+	if (sm->getInt("main-window-maximized"))
 		gtk_window_maximize(window);
+	gtk_paned_set_position(transferPane, transferPanePosition);
 
 	//Create text in about window
 	GtkLabel *al = GTK_LABEL(glade_xml_get_widget(xml, "aboutLabel"));
@@ -327,7 +333,7 @@ void MainWindow::createWindow_gui() {
 					string("obi\n") +
 					string("John Armstrong\n") +
 					string("Naga");
-	gtk_label_set_markup(al, Text::acpToUtf8(text).c_str());
+	//gtk_label_set_markup(al, Text::acpToUtf8(text).c_str());
 	
 	GtkWidget *dummy;
 	GtkRequisition req;
@@ -861,7 +867,7 @@ void MainWindow::setStats_gui(std::string hub, std::string slot,
 }
 
 void MainWindow::updateTransfer_gui(string id, connection_t type, ConnectionQueueItem *item, 
-	string status, string time, string speed, string file, string size, string path)
+	string status, string time, string speed, string file, string size, string path, int progress)
 {
 	GtkTreeIter iter;
 	findId_gui(id, &iter);
@@ -883,7 +889,10 @@ void MainWindow::updateTransfer_gui(string id, connection_t type, ConnectionQueu
 			transferView.col("User Ptr"), (gpointer)item,
 			-1);
 	}
-	if (status != "") {
+	if (SETTING(SHOW_PROGRESS_BARS) && status != "") {
+		gtk_list_store_set(transferStore, &iter, transferView.col("Status"), status.c_str(), transferView.col("Progress"), progress, -1);
+	}
+	else if (status != ""){
 		gtk_list_store_set(transferStore, &iter, transferView.col("Status"), status.c_str(), -1);
 	}
 	if (time != "") {
@@ -981,7 +990,7 @@ void MainWindow::transferComplete_client(Transfer *t) {
 
 	UFunc *func;
 	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, NULL, status,
-		"Done", " ", "", "", "");
+		"Done", " ", "", "", "", 100);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
@@ -1029,12 +1038,11 @@ void MainWindow::openFList_gui(GtkWidget *widget, gpointer data)
 
 void MainWindow::refreshFList_gui(GtkWidget *widget, gpointer data)
 {
-	//fingers crossed this works, I have no ideas if this works
-	typedef Func3<ShareManager, bool, bool, bool> F0;
-	F0 *func = new F0(ShareManager::getInstance(), &ShareManager::refresh, true, true, false);
-	WulforManager::get()->dispatchGuiFunc(func);
+	ShareManager::getInstance()->setDirty();
+	// Function would simply not work when put into GUI queue.
+	ShareManager::getInstance()->refresh(true, true, false);
+	ShareManager::getInstance()->getOwnListFile();
 }
-
 
 //From Connection manager
 void MainWindow::on(ConnectionManagerListener::Added, ConnectionQueueItem *item) throw() {
@@ -1043,7 +1051,7 @@ void MainWindow::on(ConnectionManagerListener::Added, ConnectionQueueItem *item)
 
 	UFunc *func;
 	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, 
-		item, status, "", "", "", "", "");
+		item, status, "", "", "", "", "", 0);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
@@ -1061,7 +1069,7 @@ void MainWindow::on(ConnectionManagerListener::Failed, ConnectionQueueItem *item
 
 	UFunc *func;
 	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, NULL, status,
-		"", "", "", "", "");
+		"", "", "", "", "", 0);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
@@ -1077,7 +1085,7 @@ void MainWindow::on(ConnectionManagerListener::StatusChanged, ConnectionQueueIte
 
 	UFunc *func;
 	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, NULL, status,
-		"", "", "", "", "");
+		"", "", "", "", "", 0);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
@@ -1103,7 +1111,7 @@ void MainWindow::on(DownloadManagerListener::Starting, Download *dl) throw() {
 
 	UFunc *func;
 	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_DL, NULL, status,
-		"", "", file, size, path);
+		"", "", file, size, path, 0);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
@@ -1134,7 +1142,7 @@ void MainWindow::on(DownloadManagerListener::Tick, const Download::List &list) t
 
 		UFunc *func;
 		func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, NULL, 
-			status,	timeLeft, speed, "", "", "");
+			status,	timeLeft, speed, "", "", "", (int)percent);
 		WulforManager::get()->dispatchGuiFunc(func);
 	}
 }
@@ -1164,7 +1172,7 @@ void MainWindow::on(DownloadManagerListener::Failed, Download *dl, const string 
 
 	UFunc *func;
 	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, NULL, 
-		status,	"", "", file, size, path);
+		status,	"", "", file, size, path, 0);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
@@ -1190,7 +1198,7 @@ void MainWindow::on(UploadManagerListener::Starting, Upload *ul) throw() {
 
 	UFunc *func;
 	func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_UL, NULL, status,
-		"", "", file, size, path);
+		"", "", file, size, path, 0);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
@@ -1221,7 +1229,7 @@ void MainWindow::on(UploadManagerListener::Tick, const Upload::List &list) throw
 
 		UFunc *func;
 		func = new UFunc(this, &MainWindow::updateTransfer_gui, id, CONNECTION_NA, NULL, 
-			status,	timeLeft, speed, "", "", "");
+			status,	timeLeft, speed, "", "", "", (int)percent);
 		WulforManager::get()->dispatchGuiFunc(func);
 	}
 }

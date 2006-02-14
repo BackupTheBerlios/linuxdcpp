@@ -90,7 +90,7 @@ class MainWindow:
 		static const int STATE_NORMAL, STATE_MAXIMIZED;
 
 		void updateTransfer_gui(std::string id, connection_t type, ConnectionQueueItem *item, std::string status, 
-			std::string time, std::string speed, std::string file, std::string size, std::string path);
+			std::string time, std::string speed, std::string file, std::string size, std::string path, int progress);
 		void removeTransfer_gui(std::string id);
 		void popup (GdkEventButton *event, gpointer user_data);
 		void findId_gui(std::string id, GtkTreeIter *iter);
@@ -177,6 +177,7 @@ class MainWindow:
 		TreeView transferView;
 
 		GtkWindow *window;
+		GtkPaned *transferPane;
 		GtkDialog *exitDialog, *connectDialog, *flistDialog, *aboutDialog;
 		GtkEntry *connectEntry;
 		GtkStatusbar *mainStatus, *hubStatus, *slotStatus, 
@@ -195,8 +196,8 @@ class MainWindow:
 				*favUsersItem, *searchItem, *ADLSearchItem, *searchSpyItem, *networkStatsItem, *hashItem, *aboutItem;
 		
 		//convenience thing for the updateTransfer_gui function
-		typedef Func9 <MainWindow, std::string, connection_t, ConnectionQueueItem*, std::string, 
-			std::string, std::string, std::string, std::string, std::string> UFunc;
+		typedef Func10 <MainWindow, std::string, connection_t, ConnectionQueueItem*, std::string, 
+			std::string, std::string, std::string, std::string, std::string, int> UFunc;
 };
 
 #else

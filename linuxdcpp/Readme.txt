@@ -8,7 +8,7 @@ or something like that is just too boring)
 
 Dependencies:
 -------------
-Gtk+ 2.4
+Gtk+ 2.6
 libglade 2.4
 libgnome (Required by libglade on some systems it seems)
 pthread

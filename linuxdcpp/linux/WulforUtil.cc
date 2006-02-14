@@ -28,7 +28,7 @@ vector<int> WulforUtil::splitString(const string &str, const string &delimiter)
 		{
 			len = loc - pos;
 			array.push_back(Util::toInt(str.substr(pos, len)));
-			pos = loc + 1;
+			pos = loc + delimiter.size();
 		}
 		len = str.size() - pos;
 		array.push_back(Util::toInt(str.substr(pos, len)));

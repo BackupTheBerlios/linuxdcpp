@@ -54,7 +54,7 @@ FinishedTransfers::FinishedTransfers(int type, std::string title, GCallback clos
 	transferView.insertColumn("CRC Checked", G_TYPE_STRING, TreeView::STRING, 100);
 	transferView.insertHiddenColumn("Target", G_TYPE_STRING);
 	transferView.finalize();
-	transferStore = gtk_list_store_newv(transferView.getCount(), transferView.getGTypes());
+	transferStore = gtk_list_store_newv(transferView.getColCount(), transferView.getGTypes());
 	gtk_tree_view_set_model(transferView.get(), GTK_TREE_MODEL(transferStore));
 	transferSelection = gtk_tree_view_get_selection(transferView.get());
 

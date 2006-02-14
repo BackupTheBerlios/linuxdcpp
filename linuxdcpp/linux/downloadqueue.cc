@@ -43,7 +43,7 @@ DownloadQueue::DownloadQueue(GCallback closeCallback):
 	dirView.insertColumn("Dir", G_TYPE_STRING, TreeView::STRING, -1);
 	dirView.insertHiddenColumn("Path", G_TYPE_STRING);
 	dirView.finalize();
-	dirStore = gtk_tree_store_newv(dirView.getCount(), dirView.getGTypes());
+	dirStore = gtk_tree_store_newv(dirView.getColCount(), dirView.getGTypes());
 	gtk_tree_view_set_model(dirView.get(), GTK_TREE_MODEL (dirStore));
 	gtk_widget_set_events(GTK_WIDGET(dirView.get()), GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
  	g_signal_connect(G_OBJECT(dirView.get()), "button_press_event", G_CALLBACK(dir_onButtonPressed_gui), (gpointer)this);
@@ -71,7 +71,7 @@ DownloadQueue::DownloadQueue(GCallback closeCallback):
 	fileView.insertHiddenColumn("Real Size", G_TYPE_INT64);
 	fileView.insertHiddenColumn("Download Size", G_TYPE_INT64);
 	fileView.finalize();
-	fileStore = gtk_list_store_newv(fileView.getCount(), fileView.getGTypes());
+	fileStore = gtk_list_store_newv(fileView.getColCount(), fileView.getGTypes());
 	gtk_tree_view_set_model(fileView.get(), GTK_TREE_MODEL(fileStore));
 	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(fileView.get()), GTK_SELECTION_MULTIPLE);
 	fileView.setSortColumn_gui("Size", "Real Size");

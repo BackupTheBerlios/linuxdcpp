@@ -1,3 +1,14 @@
+2006-02-14 - Steven Sheehy
+* Fixed setting dialog and favorite hub regressions caused by previous updates.
+* Fixed the move up and move down buttons for the public hubs inside settings dialog.
+* Fixed bug with favorite hubs overwriting passwords with astericks in xml file.
+* Fixed crash when hashing a file with read errors. (thanks OpsVentus)
+* Fixed a bug allowing the transfer pane separator to be raised too high causing GUI corruption.
+* Fixed bugs with the new settings manager not saving settings properly.
+* Added ability to save transfer and nick list pane widths.
+* Added progress bars for transfers (requires gtk >= 2.6).
+* Made refresh file list work.
+
 2006-02-08 - paskharen
 * Made treeview columns reorderable (thanks Steven Sheehy)
 * Made treeview columns save their widths (thanks Steven Sheehy)

@@ -82,7 +82,7 @@ FavoriteHubs::FavoriteHubs (GCallback closeCallback):
 	favoriteView.insertColumn("User Description", G_TYPE_STRING, TreeView::STRING, 125);
 	favoriteView.insertHiddenColumn("Entry", G_TYPE_POINTER);
 	favoriteView.finalize();
-	favoriteStore = gtk_list_store_newv(favoriteView.getCount(), favoriteView.getGTypes());
+	favoriteStore = gtk_list_store_newv(favoriteView.getColCount(), favoriteView.getGTypes());
 	gtk_tree_view_set_model(favoriteView.get(), GTK_TREE_MODEL(favoriteStore));
 
 	GList *list = gtk_tree_view_column_get_cell_renderers(gtk_tree_view_get_column(favoriteView.get(), favoriteView.col("Auto Connect")));
@@ -278,7 +278,9 @@ void FavoriteHubs::edit_client (FavoriteHubEntry *e)
 	e->setServer (gtk_entry_get_text (GTK_ENTRY (dialog["Address"])));
 	e->setDescription (gtk_entry_get_text (GTK_ENTRY (dialog["Description"])));
 	e->setNick (gtk_entry_get_text (GTK_ENTRY (dialog["Nick"])));
-	e->setPassword (gtk_entry_get_text (GTK_ENTRY (dialog["Password"])));
+	string pass = gtk_entry_get_text(GTK_ENTRY(dialog["Password"]));
+	if (pass != string(pass.size(), '*'))
+		e->setPassword(pass);
 	e->setUserDescription (gtk_entry_get_text (GTK_ENTRY (dialog["User description"])));
 	HubManager::getInstance ()->save ();
 }
@@ -354,7 +356,7 @@ void FavoriteHubs::addDialog_gui (bool edit, string uname, string uaddress, stri
 			if (!gtk_tree_selection_get_selected(selection, &m, &iter))
 				return;
 			FavoriteHubEntry::List &fh = HubManager::getInstance()->getFavoriteHubs();
-			for (int i = 0; i < favoriteView.getCount(); i++)
+			for (int i = 0; i < favoriteView.getRowCount(); i++)
 			{
 				if (fh[i] == favoriteView.getValue<gpointer,FavoriteHubEntry*>(&iter, "Entry"))
 				{

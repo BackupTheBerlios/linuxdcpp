@@ -38,12 +38,6 @@ public:
 
 	GtkWidget *getDialog () { return dialog; }
 	void saveSettings_client ();
-	void initGeneral_gui ();
-	void initDownloads_gui ();
-	void initSharing_gui ();
-	void initAppearance_gui ();
-	void initLog_gui ();
-	void initAdvanced_gui ();
 	
 private:
 	GtkWidget *dialog;
@@ -54,6 +48,7 @@ private:
 	GtkWidget *virtualName;
 
 	// General
+	void initGeneral_gui();
 	static void onActive_gui (GtkToggleButton *button, gpointer user_data);
 	static void onPassive_gui (GtkToggleButton *button, gpointer user_data);
 	static void onSocks5_gui (GtkToggleButton *button, gpointer user_data);
@@ -61,9 +56,9 @@ private:
 	void passiveClicked_gui ();
 	void socks5Clicked_gui ();
 	// Downloads
+	void initDownloads_gui();
 	static void onBrowseF_gui (GtkWidget *widget, gpointer user_data);
 	static void onBrowseUF_gui (GtkWidget *widget, gpointer user_data);
-	void setPublicHubs_client (string list);
 	static void onPublicHubs_gui (GtkWidget *widget, gpointer user_data);
 	static void onPublicAdd_gui (GtkWidget *widget, gpointer user_data);
 	static void onPublicMU_gui (GtkWidget *widget, gpointer user_data);
@@ -81,6 +76,7 @@ private:
 	GtkListStore *downloadToStore;
 	GtkListStore *publicListStore;
 	// Sharing
+	void initSharing_gui();
 	static void onAddShare_gui (GtkWidget *widget, gpointer user_data);
 	static void onRemoveShare_gui (GtkWidget *widget, gpointer user_data);
 	static gboolean onShareButtonReleased_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
@@ -91,6 +87,7 @@ private:
 	GtkListStore *shareStore;
 	GdkEventType sharePrevious;
 	// Appearance
+	void initAppearance_gui();
 	static void onAppearanceToggledClicked_gui (GtkCellRendererToggle *cell, gchar *path_str, gpointer data);
 	void addOption (string name, bool use);
 	TreeView appearanceView;
@@ -98,6 +95,7 @@ private:
 	static SettingsManager::IntSetting optionSettings[];
 	
 	// Logs and sound
+	void initLog_gui();
 	static void onLogBrowseClicked_gui (GtkWidget *widget, gpointer user_data);
 	static void onLogMainClicked_gui (GtkToggleButton *togglebutton, gpointer user_data);
 	static void onLogPrivateClicked_gui (GtkToggleButton *togglebutton, gpointer user_data);
@@ -106,6 +104,7 @@ private:
 	void checkClicked ();
 	
 	// Advanced
+	void initAdvanced_gui();
 	static void onAdvancedToggledClicked_gui (GtkCellRendererToggle *cell, gchar *path_str, gpointer data);
 	void addAdvanced (string name, bool use);
 	TreeView advancedView;

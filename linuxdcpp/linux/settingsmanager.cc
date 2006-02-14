@@ -30,13 +30,13 @@ using namespace std;
 WulforSettingsManager *WulforSettingsManager::ptr = NULL;
 
 WulforSettingsManager::WulforSettingsManager() {
-	defaultInt["main-window-state"] = MainWindow::STATE_NORMAL;
-	defaultInt["main-window-size-x"] = 800;
+	defaultInt["main-window-maximized"] = 0;
 	defaultInt["main-window-size-x"] = 800;
 	defaultInt["main-window-size-y"] = 600;
 	defaultInt["main-window-pos-x"] = 100;
 	defaultInt["main-window-pos-y"] = 100;
-	defaultInt["balle"] = 100;
+	defaultInt["transfer-pane-position"] = 300;
+	defaultInt["nick-pane-position"] = 500;
 }
 
 WulforSettingsManager *WulforSettingsManager::get() {
@@ -44,25 +44,25 @@ WulforSettingsManager *WulforSettingsManager::get() {
 	return ptr;
 }
 
-int WulforSettingsManager::getInt(string key) {
+int WulforSettingsManager::getInt(std::string key) {
 	if (intMap.find(key) == intMap.end())
 		return defaultInt[key];
 	else
 		return intMap[key];
 }
 
-string WulforSettingsManager::getString(string key) {
+string WulforSettingsManager::getString(std::string key) {
 	if (stringMap.find(key) == stringMap.end())
 		return defaultString[key];
 	else
 		return stringMap[key];
 }
 
-void WulforSettingsManager::set(string key, int value) {
+void WulforSettingsManager::set(std::string key, int value) {
 	intMap[key] = value;
 }
 
-void WulforSettingsManager::set(string key, string value) {
+void WulforSettingsManager::set(std::string key, string value) {
 	stringMap[key] = value;
 }
 
@@ -74,7 +74,7 @@ void WulforSettingsManager::save() {
 	save(Util::getAppPath() + "LinuxDC++.xml");
 }
 
-void WulforSettingsManager::load(string fileName) {
+void WulforSettingsManager::load(std::string fileName) {
 	try {
 		SimpleXML xml;
 		
@@ -108,7 +108,7 @@ void WulforSettingsManager::load(string fileName) {
 	}
 }
 
-void WulforSettingsManager::save(string fileName) {
+void WulforSettingsManager::save(std::string fileName) {
 
 	SimpleXML xml;
 	xml.addTag("LinuxDC++");
@@ -116,18 +116,22 @@ void WulforSettingsManager::save(string fileName) {
 	xml.addTag("Settings");
 	xml.stepIn();
 
-	map<string, int>::iterator iit;
+	map<std::string, int>::iterator iit;
 	for (iit = intMap.begin(); iit != intMap.end(); iit++) {
 		if (iit->second != defaultInt[iit->first])
+		{
 			xml.addTag(iit->first, iit->second);
 			xml.addChildAttrib(string("type"), string("int"));
+		}
 	}
 
-	map<string, string>::iterator sit;
+	map<std::string, std::string>::iterator sit;
 	for (sit = stringMap.begin(); sit != stringMap.end(); sit++) {
 		if (sit->second != defaultString[sit->first])
+		{
 			xml.addTag(sit->first, sit->second);
 			xml.addChildAttrib(string("type"), string("string"));
+		}
 	}
 
 	xml.stepOut();

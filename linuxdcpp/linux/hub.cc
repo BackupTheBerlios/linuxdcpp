@@ -38,6 +38,7 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	gtk_container_remove(GTK_CONTAINER(window), mainBox);
 	gtk_widget_destroy(window);
 
+	nickPane = GTK_PANED(glade_xml_get_widget(xml, "pane"));
 	passwordDialog = GTK_DIALOG (glade_xml_get_widget(xml, "passwordDialog"));
 	passwordEntry = GTK_ENTRY (glade_xml_get_widget(xml, "entryPassword"));
 	chatEntry = GTK_ENTRY(glade_xml_get_widget(xml, "chatEntry"));
@@ -63,7 +64,7 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	nickView.insertHiddenColumn("Icon", GDK_TYPE_PIXBUF);
 	nickView.insertHiddenColumn("Nick Order", G_TYPE_STRING);
 	nickView.finalize();
-	nickStore = gtk_list_store_newv(nickView.getCount(), nickView.getGTypes());
+	nickStore = gtk_list_store_newv(nickView.getColCount(), nickView.getGTypes());
 	gtk_tree_view_set_model(nickView.get(), GTK_TREE_MODEL(nickStore));
 	nickSelection = gtk_tree_view_get_selection(nickView.get());
 	nickView.setSortColumn_gui("Nick", "Nick Order");
@@ -112,6 +113,9 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	grantCallback.connect(G_OBJECT(grantItem), "activate", NULL);
 	completionCallback.connect_after(G_OBJECT(chatEntry), "key-press-event", NULL);
 	setFocusCallback.connect_after(G_OBJECT(chatEntry), "key-press-event", NULL);
+
+	int nickPanePosition = WulforSettingsManager::get()->getInt("nick-pane-position");
+	gtk_paned_set_position(nickPane, nickPanePosition);
 }
 
 Hub::~Hub()
@@ -126,6 +130,9 @@ Hub::~Hub()
 	map<string, GdkPixbuf*>::iterator it;
 	for (it = userIcons.begin(); it != userIcons.end(); it++)
 		g_object_unref(G_OBJECT(it->second));
+
+	int nickPanePosition = gtk_paned_get_position(nickPane);
+	WulforSettingsManager::get()->set("nick-pane-position", nickPanePosition);
 }
 
 GtkWidget *Hub::getWidget()

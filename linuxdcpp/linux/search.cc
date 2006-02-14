@@ -59,7 +59,7 @@ Search::Search (GCallback closeCallback):
 	hubView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, -1);
 	hubView.insertHiddenColumn("Info", G_TYPE_POINTER);
 	hubView.finalize();
-	hubStore = gtk_list_store_newv(hubView.getCount(), hubView.getGTypes());
+	hubStore = gtk_list_store_newv(hubView.getColCount(), hubView.getGTypes());
 	gtk_tree_view_set_model(hubView.get(), GTK_TREE_MODEL(hubStore));
 	GList *list = gtk_tree_view_column_get_cell_renderers(gtk_tree_view_get_column(hubView.get(), hubView.col("Search")));
 	GtkCellRenderer *renderer = (GtkCellRenderer*)list->data;
@@ -85,7 +85,7 @@ Search::Search (GCallback closeCallback):
 	resultView.insertHiddenColumn("Info", G_TYPE_POINTER);
 	resultView.insertHiddenColumn("Real Size", G_TYPE_INT64);
 	resultView.finalize();
-	resultStore = gtk_list_store_newv(resultView.getCount(), resultView.getGTypes());
+	resultStore = gtk_list_store_newv(resultView.getColCount(), resultView.getGTypes());
 	gtk_tree_view_set_model(resultView.get(), GTK_TREE_MODEL(resultStore));
 	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(resultView.get()), GTK_SELECTION_MULTIPLE);
 	resultView.setSortColumn_gui("Size", "Real Size");
