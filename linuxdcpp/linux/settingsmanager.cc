@@ -37,6 +37,30 @@ WulforSettingsManager::WulforSettingsManager() {
 	defaultInt["main-window-pos-y"] = 100;
 	defaultInt["transfer-pane-position"] = 300;
 	defaultInt["nick-pane-position"] = 500;
+	defaultString["downloadqueue-order"] = "";
+	defaultString["downloadqueue-width"] = "";
+	defaultString["downloadqueue-visibility"] = "";
+	defaultString["favoritehubs-order"] = "";
+	defaultString["favoritehubs-width"] = "";
+	defaultString["favoritehubs-visibility"] = "";
+	defaultString["finished-order"] = "";
+	defaultString["finished-width"] = "";
+	defaultString["finished-visibility"] = "";
+	defaultString["hub-order"] = "";
+	defaultString["hub-width"] = "";
+	defaultString["hub-visibility"] = "";
+	defaultString["main-order"] = "";
+	defaultString["main-width"] = "";
+	defaultString["main-visibility"] = "";
+	defaultString["publichubs-order"] = "";
+	defaultString["publichubs-width"] = "";
+	defaultString["publichubs-visibility"] = "";
+	defaultString["search-order"] = "";
+	defaultString["search-width"] = "";
+	defaultString["search-visibility"] = "";
+	defaultString["sharebrowser-order"] = "";
+	defaultString["sharebrowser-width"] = "";
+	defaultString["sharebrowser-visibility"] = "";
 }
 
 WulforSettingsManager *WulforSettingsManager::get() {

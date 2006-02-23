@@ -69,10 +69,7 @@ FavoriteHubs::FavoriteHubs (GCallback closeCallback):
 	gtk_widget_show_all (GTK_WIDGET (menu));
 
 	// Initialize favorite hub list treeview
-	favoriteView.setView(
-		GTK_TREE_VIEW(glade_xml_get_widget(xml, "favoriteView")), 
-		true, SettingsManager::FAVORITESFRAME_ORDER,
-		SettingsManager::FAVORITESFRAME_WIDTHS);
+	favoriteView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "favoriteView")), true, "favoritehubs");
 	favoriteView.insertColumn("Auto Connect", G_TYPE_BOOLEAN, TreeView::BOOL, 95);
 	favoriteView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, 150);
 	favoriteView.insertColumn("Description", G_TYPE_STRING, TreeView::STRING, 250);
@@ -88,7 +85,6 @@ FavoriteHubs::FavoriteHubs (GCallback closeCallback):
 	GList *list = gtk_tree_view_column_get_cell_renderers(gtk_tree_view_get_column(favoriteView.get(), favoriteView.col("Auto Connect")));
 	GtkCellRenderer *renderer = (GtkCellRenderer*)list->data;
 	g_signal_connect(renderer, "toggled", G_CALLBACK(onToggledClicked_gui), (gpointer)this);
-	//gtk_widget_set_events(GTK_WIDGET (favoriteView.get()), GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
 	g_signal_connect(G_OBJECT(favoriteView.get()), "button_press_event", G_CALLBACK(onButtonPressed_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(favoriteView.get()), "button_release_event", G_CALLBACK(onButtonReleased_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(favoriteView.get()), "popup_menu", G_CALLBACK(onPopupMenu_gui), (gpointer)this);
@@ -279,7 +275,7 @@ void FavoriteHubs::edit_client (FavoriteHubEntry *e)
 	e->setDescription (gtk_entry_get_text (GTK_ENTRY (dialog["Description"])));
 	e->setNick (gtk_entry_get_text (GTK_ENTRY (dialog["Nick"])));
 	string pass = gtk_entry_get_text(GTK_ENTRY(dialog["Password"]));
-	if (pass != string(pass.size(), '*'))
+	if (pass != string(pass.size(), '*') || pass.empty())
 		e->setPassword(pass);
 	e->setUserDescription (gtk_entry_get_text (GTK_ENTRY (dialog["User description"])));
 	HubManager::getInstance ()->save ();

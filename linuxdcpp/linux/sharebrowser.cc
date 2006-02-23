@@ -54,12 +54,8 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 		"gnome-fs-directory", 16, (GtkIconLookupFlags) 0, NULL);
 
 	//initiate the file treeview
-	fileView.setView(
-		GTK_TREE_VIEW(glade_xml_get_widget(xml, "fileView")), 
-		true, 
-		SettingsManager::DIRECTORLISTINGFRAME_ORDER, 
-		SettingsManager::DIRECTORLISTINGFRAME_WIDTHS);
-	fileView.insertColumn("Filename", G_TYPE_STRING, TreeView::PIXBUF_STRING, 400, 6); // link to "Icon"
+	fileView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "fileView")), true, "sharebrowser");
+	fileView.insertColumn("Filename", G_TYPE_STRING, TreeView::PIXBUF_STRING, 400, "Icon");
 	fileView.insertColumn("Size", G_TYPE_STRING, TreeView::STRINGR, 80);
 	fileView.insertColumn("Type", G_TYPE_STRING, TreeView::STRING, 50);
 	fileView.insertColumn("TTH", G_TYPE_STRING, TreeView::STRING, 150);
@@ -82,7 +78,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 
 	// Initialize the directory treeview
 	dirView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "dirView")));
-	dirView.insertColumn("Dir", G_TYPE_STRING, TreeView::PIXBUF_STRING, -1, 2);
+	dirView.insertColumn("Dir", G_TYPE_STRING, TreeView::PIXBUF_STRING, -1, "Icon");
 	dirView.insertHiddenColumn("DL Dir", G_TYPE_POINTER);
 	dirView.insertHiddenColumn("Icon", GDK_TYPE_PIXBUF);
 	dirView.finalize();

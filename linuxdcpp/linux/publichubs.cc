@@ -59,11 +59,7 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	statusUsers = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusUsers"));
 
 	// Initialize public hub list treeview
-	hubView.setView(
-		GTK_TREE_VIEW(glade_xml_get_widget(xml, "hubView")), 
-		true, 
-		SettingsManager::PUBLICHUBSFRAME_ORDER, 
-		SettingsManager::PUBLICHUBSFRAME_WIDTHS);
+	hubView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "hubView")), true, "publichubs");
 	hubView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, 200);
 	hubView.insertColumn("Description", G_TYPE_STRING, TreeView::STRING, 350);
 	hubView.insertColumn("Users", G_TYPE_INT, TreeView::INT, 50);

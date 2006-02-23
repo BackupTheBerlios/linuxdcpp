@@ -49,12 +49,8 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	sharedStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusShared"));
 
 	// Initialize nick treeview
-	nickView.setView(
-		GTK_TREE_VIEW(glade_xml_get_widget(xml, "nickView")), 
-		true, 
-		SettingsManager::HUBFRAME_ORDER, 
-		SettingsManager::HUBFRAME_WIDTHS);
-	nickView.insertColumn("Nick", G_TYPE_STRING, TreeView::PIXBUF_STRING, 100, 7);
+	nickView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "nickView")), true, "hub");
+	nickView.insertColumn("Nick", G_TYPE_STRING, TreeView::PIXBUF_STRING, 100, "Icon");
 	nickView.insertColumn("Shared", G_TYPE_STRING, TreeView::STRING, 75);
 	nickView.insertColumn("Description", G_TYPE_STRING, TreeView::STRING, 75);
 	nickView.insertColumn("Tag", G_TYPE_STRING, TreeView::STRING, 100);

@@ -442,8 +442,8 @@ void Settings::initDownloads_gui ()
 	gtk_entry_set_text (GTK_ENTRY (downloadItems["Proxy"]), SETTING (HTTP_PROXY).c_str ());
 
 	downloadToView.setView(GTK_TREE_VIEW(downloadItems["View"]));
-	downloadToView.insertColumn("Favorite Name", G_TYPE_STRING, TreeView::STRING, 100);
-	downloadToView.insertColumn("Directory", G_TYPE_STRING, TreeView::STRING, 200);
+	downloadToView.insertColumn("Favorite Name", G_TYPE_STRING, TreeView::STRING, -1);
+	downloadToView.insertColumn("Directory", G_TYPE_STRING, TreeView::STRING, -1);
 	downloadToView.finalize();
 	downloadToStore = gtk_list_store_newv(downloadToView.getColCount(), downloadToView.getGTypes());
 	gtk_tree_view_set_model(downloadToView.get(), GTK_TREE_MODEL(downloadToStore));
@@ -462,7 +462,7 @@ void Settings::initDownloads_gui ()
 	}
 
 	publicListView.setView(GTK_TREE_VIEW(downloadItems["Public view"]));
-	publicListView.insertColumn("List", G_TYPE_STRING, TreeView::STRING, 200);
+	publicListView.insertColumn("List", G_TYPE_STRING, TreeView::STRING, -1);
 	publicListView.finalize();
 	publicListStore = gtk_list_store_newv(publicListView.getColCount(), publicListView.getGTypes());
 	gtk_tree_view_set_model(publicListView.get(), GTK_TREE_MODEL(publicListStore));
@@ -731,9 +731,9 @@ gboolean Settings::onFavoriteButtonReleased_gui (GtkWidget *widget, GdkEventButt
 void Settings::initSharing_gui ()
 {
 	shareView.setView(GTK_TREE_VIEW(shareItems["Shares"]));
-	shareView.insertColumn("Virtual Name", G_TYPE_STRING, TreeView::STRING, 100);
-	shareView.insertColumn("Directory", G_TYPE_STRING, TreeView::STRING, 200);
-	shareView.insertColumn("Size", G_TYPE_STRING, TreeView::STRING, 100);
+	shareView.insertColumn("Virtual Name", G_TYPE_STRING, TreeView::STRING, -1);
+	shareView.insertColumn("Directory", G_TYPE_STRING, TreeView::STRING, -1);
+	shareView.insertColumn("Size", G_TYPE_STRING, TreeView::STRING, -1);
 	shareView.insertHiddenColumn("Real Size", G_TYPE_INT64);
 	shareView.finalize();
 	shareStore = gtk_list_store_newv(shareView.getColCount(), shareView.getGTypes());

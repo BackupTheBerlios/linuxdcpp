@@ -66,11 +66,7 @@ Search::Search (GCallback closeCallback):
 	g_signal_connect (renderer, "toggled", G_CALLBACK (onToggledClicked_gui), (gpointer)this);	
 
 	// Initialize search result treeview
-	resultView.setView(
-		GTK_TREE_VIEW(glade_xml_get_widget(xml, "treeviewResult")),
-		true,
-		SettingsManager::SEARCHFRAME_ORDER,
-		SettingsManager::SEARCHFRAME_WIDTHS);
+	resultView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "treeviewResult")), true, "search");
 	resultView.insertColumn("Filename", G_TYPE_STRING, TreeView::STRING, 200);
 	resultView.insertColumn("Nick", G_TYPE_STRING, TreeView::STRING, 100);
 	resultView.insertColumn("Type", G_TYPE_STRING, TreeView::STRING, 50);

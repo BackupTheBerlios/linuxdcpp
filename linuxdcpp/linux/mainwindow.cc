@@ -175,16 +175,12 @@ void MainWindow::createWindow_gui() {
 	gtk_widget_set_sensitive(GTK_WIDGET(networkStatsItem), false);
 
 	// Initialize transfer treeview
-	transferView.setView(
-		GTK_TREE_VIEW(glade_xml_get_widget(xml, "transfers")), 
-		true, 
-		SettingsManager::MAINFRAME_ORDER, 
-		SettingsManager::MAINFRAME_WIDTHS);
+	transferView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "transfers")), true, "main");
 	// column for transfer type icon; didn't need a title displayed so a space was used
 	transferView.insertColumn(" ", GDK_TYPE_PIXBUF, TreeView::PIXBUF, 20);
 	transferView.insertColumn("User", G_TYPE_STRING, TreeView::STRING, 150);
     if (SETTING(SHOW_PROGRESS_BARS))
-		transferView.insertColumn("Status", G_TYPE_STRING, TreeView::PROGRESS, 250, 10);
+		transferView.insertColumn("Status", G_TYPE_STRING, TreeView::PROGRESS, 250, "Progress");
 	else
 		transferView.insertColumn("Status", G_TYPE_STRING, TreeView::STRING, 250);
 	transferView.insertColumn("Time Left", G_TYPE_STRING, TreeView::STRING, 75);
@@ -342,7 +338,7 @@ void MainWindow::createWindow_gui() {
 	gtk_widget_destroy(dummy);
 	emptyStatusWidth = req.width;
 	
-	gtk_statusbar_push(mainStatus, 0, "Welcome to Wulfor - Reloaded");
+	gtk_statusbar_push(mainStatus, 0, "Welcome to Linux DC++");
 }
 
 GtkWindow *MainWindow::getWindow() {

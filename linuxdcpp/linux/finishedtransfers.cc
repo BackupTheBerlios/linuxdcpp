@@ -39,11 +39,7 @@ FinishedTransfers::FinishedTransfers(int type, std::string title, GCallback clos
 	averageSpeed = GTK_STATUSBAR(glade_xml_get_widget(xml, "averageSpeed"));
 
 	// Initialize transfer treeview
-	transferView.setView(
-		GTK_TREE_VIEW(glade_xml_get_widget(xml, "view")),
-		true,
-		SettingsManager::FINISHED_ORDER,
-		SettingsManager::FINISHED_WIDTHS);
+	transferView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "view")), true, "finished");
 	transferView.insertColumn("Time", G_TYPE_STRING, TreeView::STRING, 150);
 	transferView.insertColumn("Filename", G_TYPE_STRING, TreeView::STRING, 100);
 	transferView.insertColumn("Path", G_TYPE_STRING, TreeView::STRING, 200);

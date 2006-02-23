@@ -1,3 +1,8 @@
+2006-02-23 - Steven Sheehy
+* Added ability to add or remove columns in treeviews.
+* Major clean up of treeview.cc/hh.
+* Fixed minor grammar and spelling errors in readme.txt.
+
 2006-02-14 - Steven Sheehy
 * Fixed setting dialog and favorite hub regressions caused by previous updates.
 * Fixed the move up and move down buttons for the public hubs inside settings dialog.

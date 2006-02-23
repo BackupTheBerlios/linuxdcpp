@@ -51,11 +51,7 @@ DownloadQueue::DownloadQueue(GCallback closeCallback):
 	g_signal_connect(G_OBJECT(dirView.get()), "popup_menu", G_CALLBACK(dir_onPopupMenu_gui), (gpointer)this);
 
 	// Initialize file treeview
-	fileView.setView(
-		GTK_TREE_VIEW(glade_xml_get_widget(xml, "fileView")), 
-		true, 
-		SettingsManager::QUEUEFRAME_ORDER, 
-		SettingsManager::QUEUEFRAME_WIDTHS);
+	fileView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "fileView")), true, "downloadqueue");
 	fileView.insertColumn("Filename", G_TYPE_STRING, TreeView::STRING, 200);
 	fileView.insertColumn("Status", G_TYPE_STRING, TreeView::STRING, 100);
 	fileView.insertColumn("Size", G_TYPE_STRING, TreeView::STRING, 100);

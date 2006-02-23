@@ -22,11 +22,8 @@
 #include <gtk/gtk.h>
 #include <string>
 #include <vector>
-#include <list>
 #include <map>
-#include <client/stdinc.h>
-#include <client/DCPlusPlus.h>
-#include <client/SettingsManager.h>
+#include "settingsmanager.hh"
 #include "WulforUtil.hh"
 
 class TreeView {
@@ -45,10 +42,10 @@ class TreeView {
 		TreeView();
 		~TreeView();
 		void setView(GtkTreeView *view);
-		void setView(GtkTreeView *view, bool padding, SettingsManager::StrSetting orderSetting, SettingsManager::StrSetting widthSetting);
+		void setView(GtkTreeView *view, bool padding, const string &name = "");
 		GtkTreeView *get();
-		void insertColumn(const std::string &title, const GType gtype, const columnType type, const int width, const int linkedID = -1);
-		void insertHiddenColumn(const std::string &title, const GType gtype);
+		void insertColumn(const std::string &title, const GType &gtype, const columnType type, const int width, const string &linkedCol = "");
+		void insertHiddenColumn(const std::string &title, const GType &gtype);
 		void finalize();
 		int getColCount();
 		int getRowCount();
@@ -78,15 +75,19 @@ class TreeView {
 		class Column
 		{
 			public:
-				Column(std::string title, int id, GType gtype, TreeView::columnType type, int width, int linkedID = -1) :
-					title(title), id(id), gtype(gtype), type(type), width(width), pos(id), linkedID(linkedID) {};
+				Column() {};
+				Column(std::string title, int id, GType gtype, TreeView::columnType type, int width, std::string linkedCol = "") :
+					title(title), id(id), gtype(gtype), type(type), width(width), pos(id), linkedCol(linkedCol), visible(true) {};
+				Column(std::string title, int id, GType gtype) :
+					title(title), id(id), gtype(gtype) {};
 				std::string title;
 				int id;
 				GType gtype;
 				TreeView::columnType type;
 				int width;
 				int pos;
-				int linkedID;
+				std::string linkedCol;
+				bool visible;
 				bool operator<(const Column &right) const
 				{
 					return pos < right.pos;
@@ -95,24 +96,25 @@ class TreeView {
 
 		void addColumn_gui(Column column);
 		void restoreSettings();
-		int getColumnWidth(int position);
-		std::string getColumnTitle(int position);
+		static gboolean popupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static void toggleColumnVisibility(GtkMenuItem *item, gpointer data);
 
 		GtkTreeView *view;
-		int count;
-
-		std::list<Column> columns;
-		typedef list<Column>::iterator ColIter;
-		std::map<std::string, int> currentPosition;
-		std::map<std::string, int> defaultPosition;
-
-		std::map<std::string, int> hiddenColumns;
-		std::list<GType> hiddenGTypes;
-
-		bool hasSettings;
-		SettingsManager::StrSetting orderSetting;
-		SettingsManager::StrSetting widthSetting;
+		std::string name; // Used to save settings
 		bool padding;
+		int count;
+		int visibleColumns;
+		GtkMenu *menu;
+		std::map<std::string, GtkWidget*> colMenuItems;
+
+		typedef std::map<std::string, Column> ColMap;
+		typedef std::map<int, std::string> SortedColMap;
+		typedef ColMap::iterator ColIter;
+		typedef SortedColMap::iterator SortedColIter;
+		ColMap columns;
+		SortedColMap sortedColumns;
+		ColMap hiddenColumns;
+		SortedColMap sortedHiddenColumns;
 };
 
 #else
