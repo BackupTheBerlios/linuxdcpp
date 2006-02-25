@@ -1,3 +1,6 @@
+2006-02-25 - paskharen
+* Fixed compile problems where 'assert' function could not be found
+
 2006-02-23 - Steven Sheehy
 * Added ability to add or remove columns in treeviews.
 * Major clean up of treeview.cc/hh.

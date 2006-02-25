@@ -17,6 +17,7 @@
 */
 
 #include "sharebrowser.hh"
+#include <assert.h>
 
 ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCallback):
 	BookEntry(WulforManager::SHARE_BROWSER, 

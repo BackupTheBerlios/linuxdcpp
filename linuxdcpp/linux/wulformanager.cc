@@ -22,6 +22,7 @@
 #include "downloadqueue.hh"
 #include "hub.hh"
 #include <iostream>
+#include <assert.h>
 
 using namespace std;
 
