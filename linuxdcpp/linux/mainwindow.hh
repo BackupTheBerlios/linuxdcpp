@@ -82,18 +82,19 @@ class MainWindow:
 		void openHub_gui(string server, string nick, string desc, string password);
 		
 		typedef enum {
-			CONNECTION_UL,
-			CONNECTION_DL,
-			CONNECTION_NA
+			CONNECTION_ADDED,	// Added to queue but hasn't started transferring data.
+			CONNECTION_UL,		// Connection has started uploading.
+			CONNECTION_DL,		// Connection has started downloading.
+			CONNECTION_WAITING,	// Files not downloading or uploading.
+			CONNECTION_NA		// Sort order doesn't need to be updated.
 		} connection_t;
 
 		static const int STATE_NORMAL, STATE_MAXIMIZED;
 
-		void updateTransfer_gui(std::string id, connection_t type, ConnectionQueueItem *item, std::string status, 
-			std::string time, std::string speed, std::string file, std::string size, std::string path, int progress);
-		void removeTransfer_gui(std::string id);
+		void updateTransfer_gui(connection_t type, ConnectionQueueItem *item, std::string status, 
+			std::string time, int64_t speed, std::string file, int64_t size, std::string path, int progress);
+		void removeTransfer_gui(ConnectionQueueItem *item);
 		void popup (GdkEventButton *event, gpointer user_data);
-		void findId_gui(std::string id, GtkTreeIter *iter);
 		
 		// Transferview related functions
 		User::Ptr getSelectedTransfer_gui ();
@@ -129,8 +130,6 @@ class MainWindow:
 		//client functions
 		void autoConnect_client();
 		void startSocket_client();
-		std::string getId_client(ConnectionQueueItem *item);
-		std::string getId_client(Transfer *t);
 		void transferComplete_client(Transfer *t);
 
 		//From Timer manager
@@ -175,6 +174,7 @@ class MainWindow:
 		int64_t lastUpdate, lastUp, lastDown;
 		int emptyStatusWidth;
 		TreeView transferView;
+		std::map<ConnectionQueueItem *, GtkTreeRowReference *> transferMap;
 
 		GtkWindow *window;
 		GtkPaned *transferPane;
@@ -194,10 +194,10 @@ class MainWindow:
 		GtkMenuItem *openFList, *openOwnFList, *refreshFList, *openDLdir, *quickConnect, *followRedirect, *reconnectItem,
 				*settingsItem, *quitItem, *pubHubsItem, *queueItem, *finishedDL_item, *finishedUL_item, *favHubsItem,
 				*favUsersItem, *searchItem, *ADLSearchItem, *searchSpyItem, *networkStatsItem, *hashItem, *aboutItem;
-		
-		//convenience thing for the updateTransfer_gui function
-		typedef Func10 <MainWindow, std::string, connection_t, ConnectionQueueItem*, std::string, 
-			std::string, std::string, std::string, std::string, std::string, int> UFunc;
+
+		// Convenience thing for the updateTransfer_gui function.
+		typedef Func9 <MainWindow, connection_t, ConnectionQueueItem*, std::string, 
+			std::string, int64_t, std::string, int64_t, std::string, int> UFunc;
 };
 
 #else

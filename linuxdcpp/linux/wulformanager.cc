@@ -22,7 +22,6 @@
 #include "downloadqueue.hh"
 #include "hub.hh"
 #include <iostream>
-#include <assert.h>
 
 using namespace std;
 
@@ -155,12 +154,12 @@ void WulforManager::dispatchClientFunc(FuncBase *func) {
 }
 
 void WulforManager::start() {
-	assert(!manager);
+	dcassert(!manager);
 	manager = new WulforManager();
 }
 
 void WulforManager::stop() {
-	assert(manager);
+	dcassert(manager);
 	pthread_detach(manager->guiThread);
 	pthread_detach(manager->clientThread);
 

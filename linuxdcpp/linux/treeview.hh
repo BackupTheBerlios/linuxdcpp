@@ -53,21 +53,24 @@ class TreeView {
 		void setSortColumn_gui(std::string column, std::string sortColumn);
 		int col(const std::string &title);
 		void saveSettings();
-		
+		string getString(GtkTreeIter *i, std::string column);
+
 		template<class T, class C>
 		C getValue(GtkTreeIter *i, std::string column)
 		{
 			T value;
 			GtkTreeModel *m = gtk_tree_view_get_model(view);
-			gtk_tree_model_get (m, i, col(column), &value, -1);
-			return C (value);
+			dcassert(gtk_tree_model_get_column_type(m, col(column)) != G_TYPE_STRING);
+			gtk_tree_model_get(m, i, col(column), &value, -1);
+			return C(value);
 		}
 		template<class T>
 		T getValue(GtkTreeIter *i, std::string column)
 		{
 			T value;
 			GtkTreeModel *m = gtk_tree_view_get_model(view);
-			gtk_tree_model_get (m, i, col(column), &value, -1);
+			dcassert(gtk_tree_model_get_column_type(m, col(column)) != G_TYPE_STRING);
+			gtk_tree_model_get(m, i, col(column), &value, -1);
 			return value;
 		}
 

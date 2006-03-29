@@ -61,6 +61,7 @@ Search::Search (GCallback closeCallback):
 	hubView.finalize();
 	hubStore = gtk_list_store_newv(hubView.getColCount(), hubView.getGTypes());
 	gtk_tree_view_set_model(hubView.get(), GTK_TREE_MODEL(hubStore));
+	g_object_unref(hubStore);
 	GList *list = gtk_tree_view_column_get_cell_renderers(gtk_tree_view_get_column(hubView.get(), hubView.col("Search")));
 	GtkCellRenderer *renderer = (GtkCellRenderer*)list->data;
 	g_signal_connect (renderer, "toggled", G_CALLBACK (onToggledClicked_gui), (gpointer)this);	
@@ -72,8 +73,8 @@ Search::Search (GCallback closeCallback):
 	resultView.insertColumn("Type", G_TYPE_STRING, TreeView::STRING, 50);
 	resultView.insertColumn("Size", G_TYPE_STRING, TreeView::STRING, 80);
 	resultView.insertColumn("Path", G_TYPE_STRING, TreeView::STRING, 100);
-	resultView.insertColumn("Slots", G_TYPE_STRING, TreeView::STRING, 40);
-	resultView.insertColumn("Connection", G_TYPE_STRING, TreeView::STRING, 70);
+	resultView.insertColumn("Slots", G_TYPE_STRING, TreeView::STRING, 50);
+	resultView.insertColumn("Connection", G_TYPE_STRING, TreeView::STRING, 90);
 	resultView.insertColumn("Hub", G_TYPE_STRING, TreeView::STRING, 150);
 	resultView.insertColumn("Exact Size", G_TYPE_STRING, TreeView::STRING, 80);
 	resultView.insertColumn("IP", G_TYPE_STRING, TreeView::STRING, 100);
@@ -83,9 +84,11 @@ Search::Search (GCallback closeCallback):
 	resultView.finalize();
 	resultStore = gtk_list_store_newv(resultView.getColCount(), resultView.getGTypes());
 	gtk_tree_view_set_model(resultView.get(), GTK_TREE_MODEL(resultStore));
+	g_object_unref(resultStore);
 	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(resultView.get()), GTK_SELECTION_MULTIPLE);
 	resultView.setSortColumn_gui("Size", "Real Size");
 	resultView.setSortColumn_gui("Exact Size", "Real Size");
+	gtk_tree_view_set_fixed_height_mode(resultView.get(), TRUE);
 
 	g_signal_connect(G_OBJECT(resultView.get()), "button_press_event", G_CALLBACK(onButtonPressed_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(resultView.get()), "popup_menu", G_CALLBACK(onPopupMenu_gui), (gpointer)this);
@@ -1137,24 +1140,19 @@ void Search::addResult_gui (SearchInfo *info)
 
 	//Check that it's not a duplicate
 	GtkTreeIter i;
-	gtk_tree_model_get_iter_first(GTK_TREE_MODEL(resultStore), &i);
-	while (gtk_list_store_iter_is_valid(resultStore, &i)) {
-		char *fileChar, *ipChar;
-		string fileString, ipString;
-		gtk_tree_model_get(GTK_TREE_MODEL(resultStore), &i,
-			resultView.col("Filename"), &fileChar,
-			resultView.col("IP"), &ipChar,
-			-1);
-		fileString = fileChar;
-		ipString = ipChar;
-		g_free(fileChar);
-		g_free(ipChar);
+	GtkTreeModel *m = GTK_TREE_MODEL(resultStore);
+	gboolean valid = gtk_tree_model_get_iter_first(m, &i);
+	string fileString, ipString;
+	while (valid)
+	{
+		fileString = resultView.getString(&i, "Filename");
+		ipString = resultView.getString(&i, "IP");
 		if (ipString == ip && fileString == fileName) {
 			pthread_mutex_unlock (&searchLock);
 			return;
 		}
 
-		gtk_tree_model_iter_next(GTK_TREE_MODEL(resultStore), &i);
+		valid = gtk_tree_model_iter_next(m, &i);
 	}
 	
 	gtk_list_store_append (resultStore, &iter);

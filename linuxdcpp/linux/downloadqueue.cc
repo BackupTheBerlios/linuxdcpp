@@ -45,6 +45,7 @@ DownloadQueue::DownloadQueue(GCallback closeCallback):
 	dirView.finalize();
 	dirStore = gtk_tree_store_newv(dirView.getColCount(), dirView.getGTypes());
 	gtk_tree_view_set_model(dirView.get(), GTK_TREE_MODEL (dirStore));
+	g_object_unref(dirStore);
 	gtk_widget_set_events(GTK_WIDGET(dirView.get()), GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
  	g_signal_connect(G_OBJECT(dirView.get()), "button_press_event", G_CALLBACK(dir_onButtonPressed_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(dirView.get()), "button_release_event", G_CALLBACK(dir_onButtonReleased_gui), (gpointer)this);
@@ -69,6 +70,7 @@ DownloadQueue::DownloadQueue(GCallback closeCallback):
 	fileView.finalize();
 	fileStore = gtk_list_store_newv(fileView.getColCount(), fileView.getGTypes());
 	gtk_tree_view_set_model(fileView.get(), GTK_TREE_MODEL(fileStore));
+	g_object_unref(fileStore);
 	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(fileView.get()), GTK_SELECTION_MULTIPLE);
 	fileView.setSortColumn_gui("Size", "Real Size");
 	fileView.setSortColumn_gui("Exact Size", "Real Size");
@@ -371,17 +373,17 @@ void DownloadQueue::setDirPriorityClicked_gui (GtkMenuItem *item, gpointer user_
 		return;
 
 	if (item == GTK_MENU_ITEM (q->dirItems["Paused"]))
-		q->setDirPriority_gui (q->dirView.getValue<gchar*,string>(&iter, "Path"), QueueItem::PAUSED);
+		q->setDirPriority_gui(q->dirView.getString(&iter, "Path"), QueueItem::PAUSED);
 	else if (item == GTK_MENU_ITEM (q->dirItems["Lowest"]))
-		q->setDirPriority_gui (q->dirView.getValue<gchar*,string>(&iter, "Path"), QueueItem::LOWEST);
+		q->setDirPriority_gui(q->dirView.getString(&iter, "Path"), QueueItem::LOWEST);
 	else if (item == GTK_MENU_ITEM (q->dirItems["Low"]))
-		q->setDirPriority_gui (q->dirView.getValue<gchar*,string>(&iter, "Path"), QueueItem::LOW);
+		q->setDirPriority_gui(q->dirView.getString(&iter, "Path"), QueueItem::LOW);
 	else if (item == GTK_MENU_ITEM (q->dirItems["Normal"]))
-		q->setDirPriority_gui (q->dirView.getValue<gchar*,string>(&iter, "Path"), QueueItem::NORMAL);
+		q->setDirPriority_gui(q->dirView.getString(&iter, "Path"), QueueItem::NORMAL);
 	else if (item == GTK_MENU_ITEM (q->dirItems["High"]))
-		q->setDirPriority_gui (q->dirView.getValue<gchar*,string>(&iter, "Path"), QueueItem::HIGH);
+		q->setDirPriority_gui(q->dirView.getString(&iter, "Path"), QueueItem::HIGH);
 	else if (item == GTK_MENU_ITEM (q->dirItems["Highest"]))
-		q->setDirPriority_gui (q->dirView.getValue<gchar*,string>(&iter, "Path"), QueueItem::HIGHEST);
+		q->setDirPriority_gui(q->dirView.getString(&iter, "Path"), QueueItem::HIGHEST);
 	
 }
 void DownloadQueue::setFilePriorityClicked_gui (GtkMenuItem *item, gpointer user_data)
@@ -444,7 +446,7 @@ void DownloadQueue::removeDirClicked_gui (GtkMenuItem *menuitem, gpointer user_d
 		return;	
 
 	vector<string> iters;
-	((DownloadQueue*)user_data)->getChildren (view.getValue<gchar*,string>(&iter, "Path"), &iters);
+	((DownloadQueue*)user_data)->getChildren(view.getString(&iter, "Path"), &iters);
 	for (int i=iters.size ()-1; i>=0; i--)
 		((DownloadQueue*)user_data)->remove_client (iters[i]);
 }
@@ -494,7 +496,7 @@ void DownloadQueue::onSearchAlternatesClicked_gui (GtkMenuItem *item, gpointer u
 		iter.push_back (tmpiter);
 	
 	QueueItemInfo *ii = q->fileView.getValue<gpointer,QueueItemInfo*>(&iter[0], "Info");
-	string target = q->fileView.getValue<gchar*,string>(&iter[0], "Filename");
+	string target = q->fileView.getString(&iter[0], "Filename");
 	string searchString = SearchManager::clean(target);
 		
 	if(!searchString.empty()) 
@@ -775,7 +777,7 @@ void DownloadQueue::addDir_gui (string path, GtkTreeIter *row, string &current)
 	GtkTreeIter newRow;
 	string tmp = getNextSubDir (path);
 	GtkTreeModel *m = GTK_TREE_MODEL (dirStore);
-	string rowdata = dirView.getValue<gchar*,string> (row, "Path");
+	string rowdata = dirView.getString(row, "Path");
 	string realpath = rowdata + tmp + "/";
 	if (tmp == "")
 	{
@@ -838,7 +840,7 @@ void DownloadQueue::getChildren (string path, vector<GtkTreeIter> *iter)
 	while (1)
 	{
 		iter->push_back (it);
-		getChildren (dirView.getValue<gchar*,string> (&it, "Path"), iter);
+		getChildren(dirView.getString(&it, "Path"), iter);
 		if (!gtk_tree_model_iter_next (m, &it))
 			break;
 	}
@@ -860,7 +862,7 @@ void DownloadQueue::getChildren (string path, vector<string> *target)
 		return;
 	while (1)
 	{
-		string lp = dirView.getValue<gchar*,string> (&it, "Path");
+		string lp = dirView.getString(&it, "Path");
 		for (vector<QueueItemInfo*>::iterator it2=dirFileMap[lp].begin (); it2 != dirFileMap[lp].end (); it2++)
 			target->push_back ((*it2)->getTarget ());
 		getChildren (lp, target);
@@ -1166,7 +1168,7 @@ void DownloadQueue::updateStatus_gui ()
 		setStatus_gui ("Size: " + Util::formatBytes (queueSize), STATUS_TOTAL_SIZE);
 		return;
 	}
-	string path = dirView.getValue<gchar*,string>(&iter, "Path");
+	string path = dirView.getString(&iter, "Path");
 	if (dirFileMap[path].empty ())
 	{
 		setStatus_gui ("Items: 0", STATUS_ITEMS);
@@ -1205,7 +1207,7 @@ void DownloadQueue::update_gui ()
 		return;
 
 
-	showingDir = dirView.getValue<gchar*,string>(&iter, "Path");
+	showingDir = dirView.getString(&iter, "Path");
 	gtk_list_store_clear (fileStore);
 	if (dirFileMap.find (showingDir) == dirFileMap.end ())
 		return;
@@ -1237,7 +1239,7 @@ int DownloadQueue::countFiles_gui (string path)
 	getChildren (path, &iter);
 	for (int i=0; i<iter.size ();i++)
 	{
-		string rp = dirView.getValue<gchar*,string>(&iter[i], "Path");
+		string rp = dirView.getString(&iter[i], "Path");
 		if (dirFileMap.find (rp) == dirFileMap.end ())
 		{
 			if (!dirFileMap[rp].empty ())
@@ -1331,7 +1333,7 @@ void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 	
-	if (showingDir == dirView.getValue<gchar*,string>(&iter, "Path"))
+	if (showingDir == dirView.getString(&iter, "Path"))
 		WulforManager::get ()->dispatchGuiFunc (new Func2<DownloadQueue, QueueItemInfo*, bool> (this, &DownloadQueue::updateItem_gui, i, true));
 }
 

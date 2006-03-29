@@ -62,6 +62,7 @@ Hub::Hub(std::string address, GCallback closeCallback):
 	nickView.finalize();
 	nickStore = gtk_list_store_newv(nickView.getColCount(), nickView.getGTypes());
 	gtk_tree_view_set_model(nickView.get(), GTK_TREE_MODEL(nickStore));
+	g_object_unref(nickStore);
 	nickSelection = gtk_tree_view_get_selection(nickView.get());
 	nickView.setSortColumn_gui("Nick", "Nick Order");
 	nickView.setSortColumn_gui("Shared", "Shared Bytes");
@@ -181,17 +182,14 @@ void Hub::findUser_gui(string nick, GtkTreeIter *iter) {
 		return;
 	}
 
-	gtk_tree_model_get_iter_first(GTK_TREE_MODEL(nickStore), iter);
-	
-	while (gtk_list_store_iter_is_valid(nickStore, iter)) {
-		char *t;
-		string text;
-		gtk_tree_model_get(GTK_TREE_MODEL(nickStore), iter, nickView.col("Nick"), &t, -1);
-		text = t;
-		g_free(t);
-		
-		if (nick == text) return;
-		gtk_tree_model_iter_next(GTK_TREE_MODEL(nickStore), iter);
+	GtkTreeModel *m = GTK_TREE_MODEL(nickStore);
+	gboolean valid = gtk_tree_model_get_iter_first(m, iter);
+
+	while (valid)
+	{
+		if (nick == nickView.getString(iter, "Nick"))
+			return;
+		valid = gtk_tree_model_iter_next(m, iter);
 	}
 }
 
@@ -201,7 +199,7 @@ void Hub::updateUser_gui(string nick, int64_t shared, string iconFile,
 	GtkTreeIter iter;
 	GdkPixbuf *icon;
 	string file, nick_order = (opstatus ? "o" : "u") + nick;
-	ostringstream userStream;
+	string users;
 
 	findUser_gui(nick, &iter);
 
@@ -232,12 +230,9 @@ void Hub::updateUser_gui(string nick, int64_t shared, string iconFile,
 
 		pthread_mutex_lock(&clientLock);
 		{
-			userStream << client->getUserCount() << " User(s)";
-			setStatus_gui(usersStatus, userStream.str());
+			users = Util::toString(client->getUserCount()) + " User(s)";
+			setStatus_gui(usersStatus, users);
 			setStatus_gui(sharedStatus, Util::formatBytes(client->getAvailable()));
-
-//        	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(nickStore), nickView->col("Nick Order"), GTK_SORT_ASCENDING);
-//	        gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(nickView->get(), nickView->col("Nick")), TRUE);
 		}
 		pthread_mutex_unlock(&clientLock);
 	}
@@ -341,52 +336,40 @@ void Hub::popupNickMenu_gui(GtkWidget *, GdkEventButton *button, gpointer) {
 	gtk_widget_show_all(GTK_WIDGET(nickMenu));
 }
 
-void Hub::browseItemClicked_gui(GtkMenuItem *, gpointer) {
+void Hub::browseItemClicked_gui(GtkMenuItem *, gpointer data) {
 	GtkTreeIter iter;
-	char *text;
+	string nick;
 	gtk_tree_selection_get_selected(nickSelection, NULL, &iter);
-	gtk_tree_model_get(GTK_TREE_MODEL(nickStore), &iter,
-		nickView.col("Nick"), &text,
-		-1);
-		
+	nick = nickView.getString(&iter, "Nick");
+
 	typedef Func1<Hub, string> F1;
-	F1 *func = new F1(this, &Hub::getFileList_client, string(text));
+	F1 *func = new F1(this, &Hub::getFileList_client, nick);
 	WulforManager::get()->dispatchClientFunc(func);
-	
-	g_free(text);
 }
 
-void Hub::msgItemClicked_gui(GtkMenuItem *, gpointer) {
+void Hub::msgItemClicked_gui(GtkMenuItem *, gpointer data) {
 	GtkTreeIter iter;
-	char *text;
+	string nick;
 	gtk_tree_selection_get_selected(nickSelection, NULL, &iter);
-	gtk_tree_model_get(GTK_TREE_MODEL(nickStore), &iter,
-		nickView.col("Nick"), &text,
-		-1);
+	nick = nickView.getString(&iter, "Nick");
 
 	pthread_mutex_lock(&clientLock);
 	if (client) {
-		User::Ptr user = ClientManager::getInstance()->getUser(text, client);
+		User::Ptr user = ClientManager::getInstance()->getUser(nick, client);
 		WulforManager::get()->addPrivMsg_gui(user);
 	}
 	pthread_mutex_unlock(&clientLock);
-	
-	g_free(text);
 }
 
-void Hub::grantItemClicked_gui(GtkMenuItem *, gpointer) {
+void Hub::grantItemClicked_gui(GtkMenuItem *, gpointer data) {
 	GtkTreeIter iter;
-	char *text;
+	string nick;
 	gtk_tree_selection_get_selected(nickSelection, NULL, &iter);
-	gtk_tree_model_get(GTK_TREE_MODEL(nickStore), &iter,
-		nickView.col("Nick"), &text,
-		-1);
+	nick = nickView.getString(&iter, "Nick");
 
 	typedef Func1<Hub, string> F1;
-	F1 *func = new F1(this, &Hub::grantSlot_client, string(text));
+	F1 *func = new F1(this, &Hub::grantSlot_client, nick);
 	WulforManager::get()->dispatchClientFunc(func);
-	
-	g_free(text);
 }
 
 void Hub::grantSlot_client(string userName) {
@@ -412,7 +395,7 @@ void Hub::getFileList_client(string nick) {
 	try	{
 		QueueManager::getInstance()->addList(user, QueueItem::FLAG_CLIENT_VIEW);
 	} catch (...) {
-		string text = "Could get filelist from: " + nick;
+		string text = "Couldn't get filelist from: " + nick;
 		typedef Func2<Hub, GtkStatusbar *, string> F2;
 		F2 *func = new F2(this, &Hub::setStatus_gui, mainStatus, text);
 		WulforManager::get()->dispatchGuiFunc(func);
@@ -522,7 +505,7 @@ void Hub::on(ClientListener::Redirect,
 		Util::decodeUrl(Text::fromT(address), s, p, f);
 		if (ClientManager::getInstance()->isConnected(s, p)) {
 			Func2<Hub, GtkStatusbar*, string> *func = new Func2<Hub, GtkStatusbar*, string> (
-				this, &Hub::setStatus_gui, mainStatus, "Redirecting to alredy connected hub");
+				this, &Hub::setStatus_gui, mainStatus, "Redirecting to already connected hub");
 			WulforManager::get()->dispatchGuiFunc(func);
 			return;
 		}
@@ -609,7 +592,7 @@ void Hub::on(ClientListener::NickTaken, Client *cl) throw() {
 	pthread_mutex_unlock(&clientLock);
 
 	typedef Func2<Hub, GtkStatusbar*, string> F2;
-	F2 *func = new F2(this, &Hub::setStatus_gui, mainStatus, "Nick alredy taken");
+	F2 *func = new F2(this, &Hub::setStatus_gui, mainStatus, "Nick already taken");
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
@@ -658,13 +641,10 @@ void Hub::completion_gui(GtkWidget *, GdkEventKey *key, gpointer) {
 		countMatches = 0; //reset match counter
 	}
 	while (gtk_list_store_iter_is_valid(nickStore, &completion_iter)) {
-		const char *t;
+		string t = nickView.getString(&completion_iter, "Nick");
 
-		gtk_tree_model_get(GTK_TREE_MODEL(nickStore), &completion_iter, 
-			nickView.col("Nick"), &t, -1);
-
-		int length = strlen(t); //length is needed for few things
-		string name = g_utf8_strdown(t, length);
+		int length = t.size(); //length is needed for few things
+		string name = g_utf8_strdown(t.c_str(), length);
 
 		//check for [ or ( prefix and remove [] or () with text inside them
 		while (g_str_has_prefix(name.c_str(), "[") || g_str_has_prefix(name.c_str(), "(")) {
@@ -684,7 +664,7 @@ void Hub::completion_gui(GtkWidget *, GdkEventKey *key, gpointer) {
 
 		//if we found a match let's show it
 		if (g_str_has_prefix(name.c_str(), nick_completion.c_str())) {
-			gtk_entry_set_text(chatEntry, t);
+			gtk_entry_set_text(chatEntry, t.c_str());
 			gtk_entry_set_position(chatEntry, -1);
 			//if we used some commands or words before tab-completion let's prepend them
 			gtk_entry_prepend_text(chatEntry, command.c_str());

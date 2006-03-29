@@ -26,8 +26,6 @@
 #include <map>
 #include <pthread.h>
 #include <semaphore.h>
-#include <set>
-#include <sstream>
 #include <string>
 
 #include "bookentry.hh"

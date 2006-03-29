@@ -62,11 +62,15 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	hubView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "hubView")), true, "publichubs");
 	hubView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, 200);
 	hubView.insertColumn("Description", G_TYPE_STRING, TreeView::STRING, 350);
-	hubView.insertColumn("Users", G_TYPE_INT, TreeView::INT, 50);
+	hubView.insertColumn("Users", G_TYPE_INT, TreeView::INT, 75);
 	hubView.insertColumn("Address", G_TYPE_STRING, TreeView::STRING, 100);
 	hubView.finalize();
 	hubStore = gtk_list_store_newv(hubView.getColCount(), hubView.getGTypes());
 	gtk_tree_view_set_model(hubView.get(), GTK_TREE_MODEL(hubStore));
+	g_object_unref(hubStore);
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(hubStore), hubView.col("Users"), GTK_SORT_DESCENDING);
+	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(hubView.get(), hubView.col("Users")), TRUE);
+	gtk_tree_view_set_fixed_height_mode(hubView.get(), TRUE);
 
 	menu = GTK_MENU(gtk_menu_new()); 
 	conItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Connect"));
@@ -77,6 +81,7 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	//Fill the combo box with hub lists
 	comboStore = gtk_list_store_new(1, G_TYPE_STRING);
 	gtk_combo_box_set_model(combo, GTK_TREE_MODEL(comboStore));
+	g_object_unref(comboStore);
 	GtkCellRenderer *cell = gtk_cell_renderer_text_new();
 	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), cell, FALSE);
 	gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(combo), cell, "text", 0);
@@ -97,6 +102,7 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	listsView.finalize();
 	listsStore = gtk_list_store_newv(listsView.getColCount(), listsView.getGTypes());
 	gtk_tree_view_set_model(listsView.get(), GTK_TREE_MODEL(listsStore));
+	g_object_unref(listsStore);
 	gtk_tree_view_set_headers_visible(listsView.get(), FALSE);
 
 	GtkTreeViewColumn *c = gtk_tree_view_get_column(listsView.get(), 0);
@@ -159,8 +165,13 @@ void PublicHubs::updateList_gui() {
 	GtkTreeIter iter;
 	ostringstream hubStream, userStream;
 	int numHubs = 0, numUsers = 0;
+	gint sortColumn;
+	GtkSortType sortType;
 
 	gtk_list_store_clear(hubStore);
+
+	gtk_tree_sortable_get_sort_column_id(GTK_TREE_SORTABLE(hubStore), &sortColumn, &sortType);
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(hubStore), GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID, sortType);
 
 	pthread_mutex_lock(&hubLock);
 	for (i = hubs.begin(); i != hubs.end(); i++) {
@@ -182,7 +193,9 @@ void PublicHubs::updateList_gui() {
 		}
 	}
 	pthread_mutex_unlock(&hubLock);
-	
+
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(hubStore), sortColumn, sortType);
+
 	hubStream << "Hubs: " << numHubs;
 	userStream << "Users: " << numUsers;
 	setStatus_gui(statusHubs, hubStream.str());
@@ -226,17 +239,16 @@ gboolean PublicHubs::buttonEvent_gui(
 
 void PublicHubs::addFav_gui(GtkMenuItem *i, gpointer d) {
 	FavoriteHubEntry entry;
-	char *name, *address, *description;
+	string name, address, description;
 	GtkTreeSelection *selection;
 	GtkTreeIter iter;
 
 	selection = gtk_tree_view_get_selection(hubView.get());
 	if (!gtk_tree_selection_get_selected(selection, NULL, &iter)) return;
-	gtk_tree_model_get(GTK_TREE_MODEL(hubStore), &iter, 
-		hubView.col("Name"), &name,
-		hubView.col("Description"), &description,
-		hubView.col("Address"), &address,
-		-1);
+
+	name = hubView.getString(&iter, "Name");
+	description = hubView.getString(&iter, "Description");
+	address = hubView.getString(&iter, "Address");
 
 	entry.setName(name);
 	entry.setServer(address);
@@ -244,10 +256,6 @@ void PublicHubs::addFav_gui(GtkMenuItem *i, gpointer d) {
 	entry.setNick(SETTING(NICK));
 	entry.setPassword("");
 	entry.setUserDescription(SETTING(DESCRIPTION));
-
-	g_free(name);
-	g_free(address);
-	g_free(description);
 
 	typedef Func1<PublicHubs, FavoriteHubEntry> F1;
 	F1 *func = new F1(this, &PublicHubs::addFav_client, entry);
@@ -267,12 +275,10 @@ void PublicHubs::connect_gui(GtkWidget *w, gpointer d) {
 	string address;
 	GtkTreeIter iter;
 	GtkTreeSelection *selection;
-	char *text;
 	
 	selection = gtk_tree_view_get_selection(hubView.get());
 	if (gtk_tree_selection_get_selected(selection, NULL, &iter)) {
-		gtk_tree_model_get(GTK_TREE_MODEL(hubStore), &iter, hubView.col("Address"), &text, -1);
-		address = text;
+		address = hubView.getString(&iter, "Address");
 		WulforManager::get()->addHub_gui(address);
 	}
 }
@@ -287,15 +293,19 @@ void PublicHubs::refresh_gui(GtkWidget *widget, gpointer data) {
 void PublicHubs::configure_gui(GtkWidget *widget, gpointer data) {
 	int ret;
 	GtkTreeIter it1, it2;
-	char *tmp;
+	gchar *tmp;
+	string tmp2;
+	GtkTreeModel *m = GTK_TREE_MODEL(comboStore);
 
 	gtk_list_store_clear(listsStore);
-	gtk_tree_model_get_iter_first(GTK_TREE_MODEL(comboStore), &it1);
-	while (gtk_list_store_iter_is_valid(comboStore, &it1)) {
-		gtk_tree_model_get(GTK_TREE_MODEL(comboStore), &it1, 0, &tmp, -1);
-		gtk_tree_model_iter_next(GTK_TREE_MODEL(comboStore), &it1);
+	gboolean valid = gtk_tree_model_get_iter_first(m, &it1);
+	while (valid)
+	{
+		gtk_tree_model_get(m, &it1, 0, &tmp, -1);
+		valid = gtk_tree_model_iter_next(m, &it1);
 		gtk_list_store_append(listsStore, &it2);
 		gtk_list_store_set(listsStore, &it2, listsView.col("List"), tmp, -1);
+		g_free(tmp);
 	}
 	
 	gtk_widget_show_all(GTK_WIDGET(configureDialog));
@@ -307,20 +317,20 @@ void PublicHubs::configure_gui(GtkWidget *widget, gpointer data) {
 		int pos = HubManager::getInstance()->getSelectedHubList();
 
 		gtk_list_store_clear(comboStore);
-		gtk_tree_model_get_iter_first(GTK_TREE_MODEL(listsStore), &it1);
-		while (gtk_list_store_iter_is_valid(listsStore, &it1)) {
-			gtk_tree_model_get(GTK_TREE_MODEL(listsStore), &it1, 0, &tmp, -1);
-			gtk_tree_model_iter_next(GTK_TREE_MODEL(listsStore), &it1);
+		m = GTK_TREE_MODEL(listsStore);
+		valid = gtk_tree_model_get_iter_first(m, &it1);
+		while (valid)
+		{
+			tmp2 = listsView.getString(&it1, "List");
+			valid = gtk_tree_model_iter_next(m, &it1);
 			gtk_list_store_append(comboStore, &it2);
-			gtk_list_store_set(comboStore, &it2, 0, tmp, -1);
+			gtk_list_store_set(comboStore, &it2, 0, tmp2.c_str(), -1);
 
-			lists += string(tmp) + ";";
-			g_free(tmp);
+			lists += tmp2 + ";";
 		}
 
 		if (!lists.empty()) lists.erase(lists.size() - 1);
-		SettingsManager::getInstance()->set(
-			SettingsManager::HUBLIST_SERVERS, lists);
+		SettingsManager::getInstance()->set(SettingsManager::HUBLIST_SERVERS, lists);
 		gtk_combo_box_set_active(combo, pos);
 	}
 }

@@ -17,7 +17,6 @@
 */
 
 #include "sharebrowser.hh"
-#include <assert.h>
 
 ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCallback):
 	BookEntry(WulforManager::SHARE_BROWSER, 
@@ -68,6 +67,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	fileView.finalize();
 	fileStore = gtk_list_store_newv(fileView.getColCount(), fileView.getGTypes());
 	gtk_tree_view_set_model(fileView.get(), GTK_TREE_MODEL(fileStore));
+	g_object_unref(fileStore);
 	fileSelection = gtk_tree_view_get_selection(fileView.get());
 	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(fileView.get()), GTK_SELECTION_MULTIPLE);
 	fileView.setSortColumn_gui("Filename", "File Order");
@@ -85,6 +85,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCall
 	dirView.finalize();
 	dirStore = gtk_tree_store_newv(dirView.getColCount(), dirView.getGTypes());
 	gtk_tree_view_set_model(dirView.get(), GTK_TREE_MODEL(dirStore));
+	g_object_unref(dirStore);
 	dirSelection = gtk_tree_view_get_selection(dirView.get());
 	g_signal_connect(G_OBJECT(dirView.get()), "button_press_event", G_CALLBACK(dirButtonPressed_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(dirView.get()), "button_release_event", G_CALLBACK(dirButtonReleased_gui), (gpointer)this);
@@ -390,7 +391,7 @@ gboolean ShareBrowser::fileButtonPressed_gui(GtkWidget *widget, GdkEventButton *
 		if(event->button == 1) {
 			gpointer ptr, ptr2;
 			DirectoryListing::Directory *dir;
-			gchar *file_order;
+			string file_order;
 			GtkTreeIter iter, parent_iter;
 			GtkTreePath *path;
 			GtkTreeModel *m = GTK_TREE_MODEL(sb->fileStore);
@@ -408,9 +409,9 @@ gboolean ShareBrowser::fileButtonPressed_gui(GtkWidget *widget, GdkEventButton *
 				return FALSE;
 				
 			ptr = sb->fileView.getValue<gpointer>(&iter, "DL File");
-			file_order = sb->fileView.getValue<gchar*>(&iter, "File Order");
+			file_order = sb->fileView.getString(&iter, "File Order");
 			
-			if((file_order != NULL) && (file_order[0] == 'd')) {
+			if((!file_order.empty()) && (file_order[0] == 'd')) {
 				dir = (DirectoryListing::Directory *)ptr;
 
 				gtk_tree_selection_get_selected(sb->dirSelection, NULL, &parent_iter);
@@ -433,9 +434,6 @@ gboolean ShareBrowser::fileButtonPressed_gui(GtkWidget *widget, GdkEventButton *
 			else {
 				sb->downloadSelectedFiles_gui(Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY)));
 			}
-			
-			if(file_order)
-				g_free(file_order);
 		}
 	}
 	
@@ -625,7 +623,7 @@ void ShareBrowser::downloadSelectedFiles_gui(string target) {
 	gpointer ptr;
 	DirectoryListing::File *file;
 	DirectoryListing::Directory *dir;
-	gchar *file_order;
+	string file_order;
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(fileView.get());
 	GtkTreeModel *m = GTK_TREE_MODEL(fileStore);
 	GList *list = gtk_tree_selection_get_selected_rows(selection, &m);
@@ -648,8 +646,8 @@ void ShareBrowser::downloadSelectedFiles_gui(string target) {
 	g_list_free(list);
 	for (int i=0;i<iters.size ();i++) {
 		ptr = fileView.getValue<gpointer>(&iters[i], "DL File");
-		file_order = fileView.getValue<gchar*>(&iters[i], "File Order");
-		if ((file_order != NULL) && (file_order[0] == 'd')) {
+		file_order = fileView.getString(&iters[i], "File Order");
+		if ((!file_order.empty()) && (file_order[0] == 'd')) {
 			dir = (DirectoryListing::Directory *)ptr;
 	
 			typedef Func2<ShareBrowser, DirectoryListing::Directory *, string> F2;
@@ -668,9 +666,6 @@ void ShareBrowser::downloadSelectedFiles_gui(string target) {
 			WulforManager::get()->dispatchClientFunc(func);
 		}
 	}
-
-	if(file_order) 
-		g_free(file_order);
 }
 
 void ShareBrowser::downloadFile_client(DirectoryListing::File *file, string target) {
@@ -697,7 +692,7 @@ void ShareBrowser::searchAlternatesClicked_gui(GtkMenuItem *item, gpointer user_
 	ShareBrowser *sb = (ShareBrowser*)user_data;
 	gpointer ptr;
 	DirectoryListing::File *file;
-	gchar *file_order;
+	string file_order;
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(sb->fileView.get());
 	GtkTreeModel *m = GTK_TREE_MODEL(sb->fileStore);
 	GList *list = gtk_tree_selection_get_selected_rows(selection, &m);
@@ -720,10 +715,10 @@ void ShareBrowser::searchAlternatesClicked_gui(GtkMenuItem *item, gpointer user_
 	g_list_free(list);
 	for (int i=0;i<iters.size ();i++) {
 		ptr = sb->fileView.getValue<gpointer>(&iters[i], "DL File");
-		file_order = sb->fileView.getValue<gchar*>(&iters[i], "File Order");
+		file_order = sb->fileView.getString(&iters[i], "File Order");
 		string target;
 
-		if ((file_order != NULL) && (file_order[0] == 'd')) {
+		if ((!file_order.empty()) && (file_order[0] == 'd')) {
 			continue;
 		} else {
 			file = (DirectoryListing::File *)ptr;
@@ -831,9 +826,9 @@ void ShareBrowser::findNext_gui(bool firstFile) {
 			}
 			
 			//Select the file in the file view
-			gtk_tree_model_get_iter_first(GTK_TREE_MODEL(fileStore), &iter);
-			while (true) {
-				assert(gtk_list_store_iter_is_valid(fileStore, &iter));
+			gboolean valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(fileStore), &iter);
+			while (valid)
+			{
 
 				gtk_tree_model_get(GTK_TREE_MODEL(fileStore), &iter,
 					fileView.col("DL File"), &ptr, -1);
@@ -846,7 +841,7 @@ void ShareBrowser::findNext_gui(bool firstFile) {
 					return;
 				}
 				
-				gtk_tree_model_iter_next(GTK_TREE_MODEL(fileStore), &iter);
+				valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(fileStore), &iter);
 			}
 		}
 

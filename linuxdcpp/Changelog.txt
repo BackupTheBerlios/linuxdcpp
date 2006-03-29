@@ -1,3 +1,20 @@
+2006-03-29 - Steven Sheehy
+* Added proper sorting to transfer view (downloads -> uploads -> other).
+* Added a Hub Name column to transfer view.
+* Moved icon col into user col for simplicity.
+* Fixed improper sorting of speed and size column in transfer view.
+* Removed hidden ID col in transfer view and replaced with a map to
+speed it up (hopefully).
+* Made transfers, publichubs & finished transfers sorted upon startup.
+* Set most treeviews to fix-height-mode to speed up rendering.
+* Made enabling progress bars not require a restart.
+* Fixed a bug saving & restoring invalid column sizes.
+* Fixed a crash on shutdown that some people experienced caused by
+GTK_IS_TREE_VIEW.
+* Fixed a lot of small memory leaks when retrieving strings from GtkTreeViews.
+* Fixed a _huge_ memory leak: GtkListStores weren't unreferenced to
+zero so they were never destroyed.
+
 2006-02-25 - paskharen
 * Fixed compile problems where 'assert' function could not be found
 

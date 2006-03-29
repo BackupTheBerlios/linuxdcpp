@@ -447,6 +447,7 @@ void Settings::initDownloads_gui ()
 	downloadToView.finalize();
 	downloadToStore = gtk_list_store_newv(downloadToView.getColCount(), downloadToView.getGTypes());
 	gtk_tree_view_set_model(downloadToView.get(), GTK_TREE_MODEL(downloadToStore));
+	g_object_unref(downloadToStore);
 
 	gtk_widget_set_sensitive (downloadItems["Remove"], FALSE);
 	g_signal_connect(G_OBJECT(downloadToView.get()), "button_release_event", G_CALLBACK(onFavoriteButtonReleased_gui), (gpointer)this);
@@ -466,6 +467,7 @@ void Settings::initDownloads_gui ()
 	publicListView.finalize();
 	publicListStore = gtk_list_store_newv(publicListView.getColCount(), publicListView.getGTypes());
 	gtk_tree_view_set_model(publicListView.get(), GTK_TREE_MODEL(publicListStore));
+	g_object_unref(publicListStore);
 }
 void Settings::onBrowseF_gui (GtkWidget *widget, gpointer user_data)
 {
@@ -524,7 +526,7 @@ void Settings::onPublicHubs_gui(GtkWidget *widget, gpointer data)
 		gtk_tree_model_get_iter_first(m, &iter);
 		while (gtk_list_store_iter_is_valid(s->publicListStore, &iter))
 		{
-			lists += s->publicListView.getValue<gchar*, string>(&iter, "List") + ';';
+			lists += s->publicListView.getString(&iter, "List") + ';';
 			gtk_tree_model_iter_next(m, &iter);
 		}
 		if (!lists.empty())
@@ -597,7 +599,7 @@ void Settings::onPublicEdit_gui (GtkWidget *widget, gpointer user_data)
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 
-	gtk_entry_set_text(GTK_ENTRY(s->downloadItems["Edit public"]), s->publicListView.getValue<gchar*>(&iter, "List"));
+	gtk_entry_set_text(GTK_ENTRY(s->downloadItems["Edit public"]), s->publicListView.getString(&iter, "List").c_str());
 	gint response = gtk_dialog_run (GTK_DIALOG (s->editPublic));
 	if (response == GTK_RESPONSE_OK)
 		gtk_list_store_set (s->publicListStore, &iter, 0, gtk_entry_get_text (GTK_ENTRY (s->downloadItems["Edit public"])), -1);
@@ -707,7 +709,7 @@ void Settings::onRemoveFavorite_gui (GtkWidget *widget, gpointer user_data)
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 
-	if (s->removeFavoriteDir_client (s->downloadToView.getValue<gchar*,string>(&iter, "Directory")))
+	if (s->removeFavoriteDir_client (s->downloadToView.getString(&iter, "Directory")))
 	{
 		gtk_list_store_remove (s->downloadToStore, &iter);
 		gtk_widget_set_sensitive (s->downloadItems["Remove"], FALSE);
@@ -738,6 +740,7 @@ void Settings::initSharing_gui ()
 	shareView.finalize();
 	shareStore = gtk_list_store_newv(shareView.getColCount(), shareView.getGTypes());
 	gtk_tree_view_set_model(shareView.get(), GTK_TREE_MODEL(shareStore));
+	g_object_unref(shareStore);
 	shareView.setSortColumn_gui("Size", "Real Size");
 	g_signal_connect(G_OBJECT(shareView.get()), "button_release_event", G_CALLBACK(onShareButtonReleased_gui), (gpointer)this);
 	gtk_widget_set_sensitive(shareItems["Remove"], FALSE);
@@ -837,7 +840,7 @@ void Settings::onRemoveShare_gui (GtkWidget *widget, gpointer user_data)
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 
-	s->modifyShare_client(false, s->shareView.getValue<gchar*,string>(&iter, "Directory"), "");
+	s->modifyShare_client(false, s->shareView.getString(&iter, "Directory"), "");
 	gtk_list_store_remove (s->shareStore, &iter);
 	gtk_widget_set_sensitive (s->shareItems["Remove"], FALSE);
 }
@@ -896,6 +899,7 @@ void Settings::initAppearance_gui ()
 	appearanceView.finalize();
 	appearanceStore = gtk_list_store_newv(appearanceView.getColCount(), appearanceView.getGTypes());
 	gtk_tree_view_set_model(appearanceView.get(), GTK_TREE_MODEL(appearanceStore));
+	g_object_unref(appearanceStore);
 	
 	GList *list = gtk_tree_view_column_get_cell_renderers (gtk_tree_view_get_column(appearanceView.get(), appearanceView.col("Use")));
 	GtkCellRenderer *renderer = (GtkCellRenderer*)list->data;
@@ -1032,6 +1036,7 @@ void Settings::initAdvanced_gui ()
 	advancedView.finalize();
 	advancedStore = gtk_list_store_newv(advancedView.getColCount(), advancedView.getGTypes());
 	gtk_tree_view_set_model(advancedView.get(), GTK_TREE_MODEL(advancedStore));
+	g_object_unref(advancedStore);
 
 	GList *list = gtk_tree_view_column_get_cell_renderers (gtk_tree_view_get_column(advancedView.get(), advancedView.col("Use")));
 	GtkCellRenderer *renderer = (GtkCellRenderer*)list->data;
@@ -1054,7 +1059,7 @@ void Settings::initAdvanced_gui ()
 	addAdvanced ("Use small send buffer (enable if uploads slow downloads a lot)", SETTING (SMALL_SEND_BUFFER));
 	addAdvanced ("Don't delete file lists when exiting", SETTING (KEEP_LISTS));
 	addAdvanced ("Automatically disconnect users who leave the hub (does not disconnect when hub goes down / you leave it)", SETTING (AUTO_KICK));
-	addAdvanced ("Show progress bars for transfers (needs restart)", SETTING (SHOW_PROGRESS_BARS));
+	addAdvanced ("Show progress bars for transfers", SETTING (SHOW_PROGRESS_BARS));
 	addAdvanced ("Enable automatic SFV checking", SETTING (SFV_CHECK));
 	addAdvanced ("Automatically refresh share list every hour", SETTING (AUTO_UPDATE_LIST));
 	addAdvanced ("Use antifragmentation method for downloads", SETTING (ANTI_FRAG));

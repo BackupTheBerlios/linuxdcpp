@@ -52,7 +52,9 @@ FinishedTransfers::FinishedTransfers(int type, std::string title, GCallback clos
 	transferView.finalize();
 	transferStore = gtk_list_store_newv(transferView.getColCount(), transferView.getGTypes());
 	gtk_tree_view_set_model(transferView.get(), GTK_TREE_MODEL(transferStore));
+	g_object_unref(transferStore);
 	transferSelection = gtk_tree_view_get_selection(transferView.get());
+	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(transferView.get(), transferView.col("Time")), TRUE);
 
 	finishedTransfersMenu = GTK_MENU(gtk_menu_new());
 	openWith = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Open with"));
@@ -98,15 +100,15 @@ void FinishedTransfers::popupMenu_gui(GtkWidget *, GdkEventButton *button, gpoin
 	gtk_widget_show_all(GTK_WIDGET(finishedTransfersMenu));
 }
 
-void FinishedTransfers::removeItems_gui(GtkMenuItem *, gpointer)
+void FinishedTransfers::removeItems_gui(GtkMenuItem *, gpointer data)
 {
 	GtkTreeIter it;
-	const char *time;
+	string time;
 	FinishedItem *entry;
 	std::map<string, FinishedItem*>::iterator iter;
 	
 	gtk_tree_selection_get_selected(transferSelection, NULL, &it);
-	gtk_tree_model_get(GTK_TREE_MODEL(transferStore), &it, transferView.col("Time"), &time, -1);
+	time = transferView.getString(&it, "Time");
 	
 	iter = finishedList.find(time);
 	entry = iter->second;
@@ -183,7 +185,7 @@ void FinishedTransfers::openWith_gui(GtkMenuItem *, gpointer)
 	GtkWidget *entry, *box, *label;
 	GtkTreeIter iter;
 	string command;
-	const char *target;
+	string target;
 	int ret;
 
 	GtkWidget *dialog = gtk_dialog_new_with_buttons ("Open with: ",
@@ -207,8 +209,8 @@ void FinishedTransfers::openWith_gui(GtkMenuItem *, gpointer)
 	if (ret != GTK_RESPONSE_ACCEPT) return;
 		
 	gtk_tree_selection_get_selected(transferSelection, NULL, &iter);
-	gtk_tree_model_get(GTK_TREE_MODEL(transferStore), &iter, transferView.col("Target"), &target, -1);
-	pid_t pid= fork();
+	target = transferView.getString(&iter, "Target");
+	pid_t pid = fork();
 	if(pid == 0){
 		system(Text::toT(command + " \"" + target + "\"").c_str());
 		exit(EXIT_SUCCESS);

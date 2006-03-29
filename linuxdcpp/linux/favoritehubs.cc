@@ -35,7 +35,7 @@ FavoriteHubs::FavoriteHubs (GCallback closeCallback):
 	deleteDialog = GTK_DIALOG (glade_xml_get_widget (xml, "deleteFavoriteDialog"));
 	errorDialog = GTK_DIALOG(glade_xml_get_widget(xml, "errorDialog"));
 	errorLabel = GTK_LABEL(glade_xml_get_widget(xml, "errorLabel"));
-	
+
 	button["New"] = glade_xml_get_widget (xml, "buttonNew");
 	g_signal_connect(G_OBJECT (button["New"]), "clicked", G_CALLBACK(preNew_gui), (gpointer)this);
 	button["Properties"] = glade_xml_get_widget (xml, "buttonProperties");
@@ -81,14 +81,17 @@ FavoriteHubs::FavoriteHubs (GCallback closeCallback):
 	favoriteView.finalize();
 	favoriteStore = gtk_list_store_newv(favoriteView.getColCount(), favoriteView.getGTypes());
 	gtk_tree_view_set_model(favoriteView.get(), GTK_TREE_MODEL(favoriteStore));
+	g_object_unref(favoriteStore);
+	gtk_tree_view_set_fixed_height_mode(favoriteView.get(), TRUE);
 
 	GList *list = gtk_tree_view_column_get_cell_renderers(gtk_tree_view_get_column(favoriteView.get(), favoriteView.col("Auto Connect")));
-	GtkCellRenderer *renderer = (GtkCellRenderer*)list->data;
+	GtkCellRenderer *renderer = (GtkCellRenderer*)g_list_nth_data(list, 0);
 	g_signal_connect(renderer, "toggled", G_CALLBACK(onToggledClicked_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(favoriteView.get()), "button_press_event", G_CALLBACK(onButtonPressed_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(favoriteView.get()), "button_release_event", G_CALLBACK(onButtonReleased_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(favoriteView.get()), "popup_menu", G_CALLBACK(onPopupMenu_gui), (gpointer)this);
 	gtk_tree_view_set_column_drag_function(favoriteView.get(), NULL, NULL, NULL);
+	g_list_free(list);
 
 	entrys = 0;
 	updateList_gui ();
@@ -177,10 +180,10 @@ gboolean FavoriteHubs::onButtonReleased_gui (GtkWidget *widget, GdkEventButton *
 	{
 		if (event->button == 1)
 			WulforManager::get()->addHub_gui(
-				f->favoriteView.getValue<gchar*,string>(&iter, "Server"),
-				f->favoriteView.getValue<gchar*,string>(&iter, "Nick"),
-				f->favoriteView.getValue<gchar*,string>(&iter, "User Description"),
-				f->favoriteView.getValue<gchar*,string>(&iter, "Password"));					
+				f->favoriteView.getString(&iter, "Server"),
+				f->favoriteView.getString(&iter, "Nick"),
+				f->favoriteView.getString(&iter, "User Description"),
+				f->favoriteView.getString(&iter, "Password"));					
 	}
 
 	return FALSE;
@@ -244,12 +247,12 @@ void FavoriteHubs::preEdit_gui (GtkWidget *widget, gpointer data)
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 	f->addDialog_gui(true,
-		f->favoriteView.getValue<gchar*,string>(&iter, "Name"),
-		f->favoriteView.getValue<gchar*,string>(&iter, "Server"),
-		f->favoriteView.getValue<gchar*,string>(&iter, "Description"),
-		f->favoriteView.getValue<gchar*,string>(&iter, "Nick"),
-		f->favoriteView.getValue<gchar*,string>(&iter, "Password"),
-		f->favoriteView.getValue<gchar*,string>(&iter, "User Description"));
+		f->favoriteView.getString(&iter, "Name"),
+		f->favoriteView.getString(&iter, "Server"),
+		f->favoriteView.getString(&iter, "Description"),
+		f->favoriteView.getString(&iter, "Nick"),
+		f->favoriteView.getString(&iter, "Password"),
+		f->favoriteView.getString(&iter, "User Description"));
 }
 void FavoriteHubs::connect_gui (GtkWidget *widget, gpointer data)
 {
@@ -263,10 +266,10 @@ void FavoriteHubs::connect_gui (GtkWidget *widget, gpointer data)
 		return;
 
 	WulforManager::get()->addHub_gui(
-		f->favoriteView.getValue<gchar*,string>(&iter, "Server"),
-		f->favoriteView.getValue<gchar*,string>(&iter, "Nick"),
-		f->favoriteView.getValue<gchar*,string>(&iter, "User Description"),
-		f->favoriteView.getValue<gchar*,string>(&iter, "Password"));
+		f->favoriteView.getString(&iter, "Server"),
+		f->favoriteView.getString(&iter, "Nick"),
+		f->favoriteView.getString(&iter, "User Description"),
+		f->favoriteView.getString(&iter, "Password"));
 }
 void FavoriteHubs::edit_client (FavoriteHubEntry *e)
 {

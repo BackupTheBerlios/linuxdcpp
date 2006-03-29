@@ -27,7 +27,7 @@ TreeView::TreeView()
 
 TreeView::~TreeView()
 {
-	if (!name.empty() && GTK_IS_TREE_VIEW(view))
+	if (!name.empty() && name != "main")
 		saveSettings();
 }
 
@@ -50,13 +50,28 @@ GtkTreeView *TreeView::get()
 	return view;
 }
 
+/*
+ * We can't use getValue() for strings since it would cause a memory leak.
+ */
+string TreeView::getString(GtkTreeIter *i, string column)
+{
+	string value;
+	gchar* temp;
+	GtkTreeModel *m = gtk_tree_view_get_model(view);
+	dcassert(gtk_tree_model_get_column_type(m, col(column)) == G_TYPE_STRING);
+	gtk_tree_model_get(m, i, col(column), &temp, -1);
+	value = string(temp);
+	g_free(temp);
+	return value;
+}
+
 void TreeView::insertColumn(const string &title, const GType &gtype, const columnType type, const int width, const string &linkedCol)
 {
 	// All insertColumn's have to be called before any insertHiddenColumn's.
-	g_assert(hiddenColumns.size() == 0);
+	dcassert(hiddenColumns.size() == 0);
 
 	// Title must be unique.
-	g_assert(!title.empty() && columns.find(title) == columns.end());
+	dcassert(!title.empty() && columns.find(title) == columns.end());
 
 	columns[title] = Column(title, count, gtype, type, width, linkedCol);
 	sortedColumns[count] = title;
@@ -66,7 +81,7 @@ void TreeView::insertColumn(const string &title, const GType &gtype, const colum
 void TreeView::insertHiddenColumn(const string &title, const GType &gtype)
 {
 	// Title must be unique.
-	g_assert(!title.empty() && hiddenColumns.find(title) == hiddenColumns.end()	&& columns.find(title) == columns.end());
+	dcassert(!title.empty() && hiddenColumns.find(title) == hiddenColumns.end()	&& columns.find(title) == columns.end());
 
 	hiddenColumns[title] = Column(title, count, gtype);
 	sortedHiddenColumns[count] = title;
@@ -75,7 +90,7 @@ void TreeView::insertHiddenColumn(const string &title, const GType &gtype)
 
 void TreeView::finalize()
 {
-	g_assert(count > 0);
+	dcassert(count > 0);
 
 	Column col;
 	menu = GTK_MENU(gtk_menu_new());
@@ -88,43 +103,48 @@ void TreeView::finalize()
 	{
 		col = columns[iter->second];
 		addColumn_gui(col);
-		
-		//Add entry to popup menu for hiding and showing the column. Don't add empty titles
-		if (col.title != "" && col.title != " ")
-		{
-			colMenuItems[col.title] = gtk_check_menu_item_new_with_label(col.title.c_str());
-			gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(colMenuItems[col.title]), col.visible);
-			g_signal_connect(G_OBJECT(colMenuItems[col.title]), "activate", G_CALLBACK(toggleColumnVisibility), (gpointer)this);
-			gtk_menu_shell_append(GTK_MENU_SHELL(menu), colMenuItems[col.title]);
-		}
+
+		colMenuItems[col.title] = gtk_check_menu_item_new_with_label(col.title.c_str());
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(colMenuItems[col.title]), col.visible);
+		g_signal_connect(G_OBJECT(colMenuItems[col.title]), "activate", G_CALLBACK(toggleColumnVisibility), (gpointer)this);
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), colMenuItems[col.title]);
 
 		if (!col.visible)
 			visibleColumns--;
 	}
 
 	if (padding)
-		gtk_tree_view_insert_column(view, gtk_tree_view_column_new(), count);
+	{
+		GtkTreeViewColumn *col = gtk_tree_view_column_new();
+		// Set to fixed so that gtk_tree_view_set_fixed_height() doesn't complain.
+		gtk_tree_view_column_set_sizing(col, GTK_TREE_VIEW_COLUMN_FIXED);
+		gtk_tree_view_insert_column(view, col, count);
+	}
 }
 
-// This is the total number of columns, including hidden columns.
+/*
+ * This is the total number of columns, including hidden columns.
+ */
 int TreeView::getColCount()
 {
 	return count;
 }
 
+/*
+ * Slow method. Shouldn't be used unless necessary.
+ */
 int TreeView::getRowCount()
 {
-	GtkTreeIter it;
+	GtkTreeIter iter;
 	GtkTreeModel *m = gtk_tree_view_get_model(view);
 	int numRows = 0;
+	gboolean valid = gtk_tree_model_get_iter_first(m, &iter);
 
-	if (!gtk_tree_model_get_iter_first(m, &it))
-		return numRows;
-
-	do
+	while (valid)
 	{
-		numRows++;
-	} while (gtk_tree_model_iter_next(m, &it));
+		++numRows;
+		valid = gtk_tree_model_iter_next(m, &iter);
+	}
 
 	return numRows;
 }
@@ -146,7 +166,6 @@ void TreeView::addColumn_gui(Column column)
 {
 	GtkTreeViewColumn *col;
 	GtkCellRenderer *renderer;
-	GtkCellRenderer *renderer_pixbuf;
 
 	switch (column.type)
 	{
@@ -173,13 +192,12 @@ void TreeView::addColumn_gui(Column column)
 				column.title.c_str(), gtk_cell_renderer_pixbuf_new(), "pixbuf", column.pos, NULL);
 			break;
 		case PIXBUF_STRING:
-			g_assert(!column.linkedCol.empty());
-			renderer = gtk_cell_renderer_text_new();
-			renderer_pixbuf = gtk_cell_renderer_pixbuf_new();
+			renderer = gtk_cell_renderer_pixbuf_new();
 			col = gtk_tree_view_column_new();
 			gtk_tree_view_column_set_title(col, column.title.c_str());
-			gtk_tree_view_column_pack_start(col, renderer_pixbuf, false);
-			gtk_tree_view_column_add_attribute(col, renderer_pixbuf, "pixbuf", TreeView::col(column.linkedCol));
+			gtk_tree_view_column_pack_start(col, renderer, false);
+			gtk_tree_view_column_add_attribute(col, renderer, "pixbuf", TreeView::col(column.linkedCol));
+			renderer = gtk_cell_renderer_text_new();
 			gtk_tree_view_column_pack_start(col, renderer, true);
 			gtk_tree_view_column_add_attribute(col, renderer, "text", column.pos);
 			break;
@@ -189,19 +207,21 @@ void TreeView::addColumn_gui(Column column)
 			col = gtk_tree_view_column_new_with_attributes(column.title.c_str(), renderer, "text", column.pos, NULL);
 			break;
 		case PROGRESS:
-			g_assert(!column.linkedCol.empty());
+			renderer = gtk_cell_renderer_progress_new();
+			g_object_set(renderer, "xalign", 0.0, NULL); // Doesn't work yet. See: http://bugzilla.gnome.org/show_bug.cgi?id=334576
 			col = gtk_tree_view_column_new_with_attributes(
-				column.title.c_str(), gtk_cell_renderer_progress_new(), "text", column.id, "value", TreeView::col(column.linkedCol), NULL);
+				column.title.c_str(), renderer, "text", column.id, "value", TreeView::col(column.linkedCol), NULL);
 			break;
 	};
 
 	// If columns are too small, they can't be manipulated
 	if (column.width >= 20)
 	{
-		gtk_tree_view_column_set_sizing(col, GTK_TREE_VIEW_COLUMN_FIXED);
 		gtk_tree_view_column_set_fixed_width(col, column.width);
 		gtk_tree_view_column_set_resizable(col, TRUE);
 	}
+	if (column.width != -1)
+		gtk_tree_view_column_set_sizing(col, GTK_TREE_VIEW_COLUMN_FIXED);
 
 	//make columns sortable
 	if (column.type == STRING || column.type == INT || column.type == PROGRESS)
@@ -216,8 +236,10 @@ void TreeView::addColumn_gui(Column column)
 
 	gtk_tree_view_insert_column(view, col, column.pos);
 
-	// Breaks GTK+ API, but is the only way to attach a signal to a gtktreeview column header. See GTK bug #141937.
-	// Replace when GTK adds a way to add a signal to the entire header (remove visibleColumns var, too).
+	/*
+	 * Breaks GTK+ API, but is the only way to attach a signal to a gtktreeview column header. See GTK bug #141937.
+	 * @todo: Replace when GTK adds a way to add a signal to the entire header (remove visibleColumns var, too).
+	 */
 	g_signal_connect(G_OBJECT(col->button), "button-release-event", G_CALLBACK(popupMenu_gui), (gpointer)this);
 }
 
@@ -230,7 +252,17 @@ void TreeView::setSortColumn_gui(string column, string sortColumn)
 
 int TreeView::col(const string &title)
 {
-	return (columns.find(title) != columns.end()) ? columns[title].pos : hiddenColumns[title].id;
+	dcassert(!title.empty());
+
+	if (columns.find(title) != columns.end())
+		return columns[title].pos;
+	else if (hiddenColumns.find(title) != hiddenColumns.end())
+		return hiddenColumns[title].id;
+	else
+	{
+		perror("Invalid column accessed.");
+		exit(1);
+	}
 }
 
 gboolean TreeView::popupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
@@ -304,8 +336,10 @@ void TreeView::restoreSettings()
 				{
 					iter->second.pos = i;
 					sortedColumns[i] = iter->second.title;
-					iter->second.width = columnWidth.at(i);
-					iter->second.visible = columnVisibility.at(i);
+					if (columnWidth.at(i) >= 20)
+						iter->second.width = columnWidth.at(i);
+					if (columnVisibility.at(i) == 0 || columnVisibility.at(i) == 1)
+						iter->second.visible = columnVisibility.at(i);
 					break;
 				}
 			}
@@ -317,20 +351,25 @@ void TreeView::saveSettings()
 {
 	string columnOrder, columnWidth, columnVisibility, title;
 	GtkTreeViewColumn *col;
+	gint width;
 
-	g_assert(columns.size() > 0);
+	dcassert(columns.size() > 0);
 
 	for (int i = 0; i < columns.size(); i++)
 	{
 		col = gtk_tree_view_get_column(view, i);
 		title = string(gtk_tree_view_column_get_title(col));
+		width = gtk_tree_view_column_get_width(col);
 
 		// A col was moved to the right of the padding col
 		if (title.empty())
 			return;
 
 		columnOrder += Util::toString(columns[title].id) + ",";
-		columnWidth += Util::toString(gtk_tree_view_column_get_width(col)) + ",";
+		if (width >= 20)
+			columnWidth += Util::toString(width) + ",";
+		else
+			columnWidth += Util::toString(columns[title].width) + ",";
 		columnVisibility += Util::toString(gtk_tree_view_column_get_visible(col)) + ",";
 	}
 
