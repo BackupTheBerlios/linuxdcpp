@@ -1,3 +1,6 @@
+2006-04-05 - paskharen
+* Added workaround for empty nicks due to unicode problems (thanks Steven Sheehy)
+
 2006-03-29 - Steven Sheehy
 * Added proper sorting to transfer view (downloads -> uploads -> other).
 * Added a Hub Name column to transfer view.

@@ -408,7 +408,9 @@ void ConnectionManager::on(UserConnectionListener::MyNick, UserConnection* aSour
 		return;
 	}
 
-	dcassert(aNick.size() > 0);
+	/// @todo: Re-add dcassert and remove if statement below it when unicode issue is fixed.
+	//dcassert(aNick.size() > 0);
+	if (aNick.empty()) return;
 	dcdebug("ConnectionManager::onMyNick %p, %s\n", aSource, aNick.c_str());
 	dcassert(!aSource->getUser());
 
@@ -691,5 +693,5 @@ void ConnectionManager::on(UserConnectionListener::Supports, UserConnection* con
 
 /**
  * @file
- * $Id: ConnectionManager.cpp,v 1.4 2005/06/25 19:24:01 paskharen Exp $
+ * $Id: ConnectionManager.cpp,v 1.5 2006/04/05 10:29:33 paskharen Exp $
  */

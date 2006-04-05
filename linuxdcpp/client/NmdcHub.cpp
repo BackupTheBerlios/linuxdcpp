@@ -245,7 +245,9 @@ void NmdcHub::onLine(const string& aLine) throw() {
 		string nick = fromNmdc(param.substr(i, j-i));
 		i = j + 1;
 		User::Ptr u;
-		dcassert(nick.size() > 0);
+		/// @todo: Re-add dcassert and remove if statement below it when unicode issue is fixed.
+		//dcassert(nick.size() > 0);
+		if (nick.empty()) return;
 
 		{
 			Lock l(cs);
@@ -717,6 +719,6 @@ void NmdcHub::on(BufferedSocketListener::Failed, const string& aLine) throw() {
 
 /**
  * @file
- * $Id: NmdcHub.cpp,v 1.4 2005/06/25 19:24:02 paskharen Exp $
+ * $Id: NmdcHub.cpp,v 1.5 2006/04/05 10:29:33 paskharen Exp $
  */
 

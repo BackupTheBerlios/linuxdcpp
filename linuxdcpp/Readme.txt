@@ -43,11 +43,12 @@ location.
 
 Known problems/rants =):
 ------------------------
-Utf8 locales are currently very buggy/not supported. A workaround is to specify
-a non-utf8 locale when running the program, assuming you have a non-utf8 
-locale on your system. For example, I'm from Sweden so my utf8 locale would be
-sv_SE.UTF8. Starting the program like this: prompt# LANG=sv_SE.ISO-8859-1 ./ldcpp
-would run ldcpp with a non-utf8 locale.
+Utf8 locales are currently very buggy/not supported. If for example a lot of name 
+and description fields in the public hub list are empty you are suffering from this.
+A workaround is to specify a non-utf8 locale when running the program, assuming 
+you have a non-utf8 locale on your system. For example, I'm from Sweden so my 
+utf8 locale would be sv_SE.UTF8. Starting the program like this: 
+prompt# LANG=sv_SE.ISO-8859-1 ./ldcpp would run ldcpp with a non-utf8 locale.
 
 Most settings in the "Advanced" and "Appearance" tabs are not working. You can 
 change the settings however you like but it won't ever change anything in the 
