@@ -47,7 +47,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Open file list ...</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_open_file_list_1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 		      <accelerator key="L" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
@@ -69,7 +68,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Open own list</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_open_own_list1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 		    </widget>
 		  </child>
 
@@ -78,7 +76,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Refresh file list</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_refresh_file_list1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 		      <accelerator key="E" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 		    </widget>
 		  </child>
@@ -88,7 +85,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Open downloads directory</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_open_downloads_directory1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 		    </widget>
 		  </child>
 
@@ -103,7 +99,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Quick connect</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_quick_connect1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 		      <accelerator key="Q" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
@@ -125,7 +120,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Follow last redirect</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_follow_last_redirect1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 		      <accelerator key="T" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 		    </widget>
 		  </child>
@@ -135,7 +129,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Reconnect</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_reconnect1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 		      <accelerator key="R" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 		    </widget>
 		  </child>
@@ -151,7 +144,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Settings</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_settings1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 
 		      <child internal-child="image">
 			<widget class="GtkImage" id="image68">
@@ -178,7 +170,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Exit</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_exit1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 
 		      <child internal-child="image">
 			<widget class="GtkImage" id="image69">
@@ -212,7 +203,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Public Hubs</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_public_hubs1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 		      <accelerator key="P" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
@@ -234,7 +224,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Download Queue</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_download_queue1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 		      <accelerator key="D" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 		    </widget>
 		  </child>
@@ -244,7 +233,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Finished Downloads</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_finished_downloads1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 		    </widget>
 		  </child>
 
@@ -253,7 +241,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Finished Uploads</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_finished_uploads1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 		    </widget>
 		  </child>
 
@@ -262,7 +249,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Favorite Hubs</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_favorite_hubs1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 		      <accelerator key="F" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
@@ -284,7 +270,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Favorite Users</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_favorite_users1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 		      <accelerator key="U" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 		    </widget>
 		  </child>
@@ -294,7 +279,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Search</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_search1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 		      <accelerator key="S" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
@@ -316,7 +300,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">ADL Search</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_adl_search1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 		    </widget>
 		  </child>
 
@@ -325,7 +308,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Search Spy</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_search_spy1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 		    </widget>
 		  </child>
 
@@ -334,7 +316,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Network Statistics</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_network_statistics1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 		    </widget>
 		  </child>
 
@@ -343,7 +324,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Indexing Progress</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_indexing_progress1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 
 		      <child internal-child="image">
 			<widget class="GtkImage" id="image73">
@@ -368,7 +348,12 @@
 	      <property name="visible">True</property>
 	      <property name="label" translatable="yes">_Window</property>
 	      <property name="use_underline">True</property>
-	      <signal name="activate" handler="on_window1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
+
+	      <child>
+		<widget class="GtkMenu" id="windowMenu">
+		</widget>
+	      </child>
+
 	    </widget>
 	  </child>
 
@@ -377,7 +362,6 @@
 	      <property name="visible">True</property>
 	      <property name="label" translatable="yes">_Help</property>
 	      <property name="use_underline">True</property>
-	      <signal name="activate" handler="on_help1_activate" last_modification_time="Sun, 07 Aug 2005 08:47:05 GMT"/>
 
 	      <child>
 		<widget class="GtkMenu" id="help1_menu">
@@ -387,7 +371,6 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">About</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_about_activate" last_modification_time="Fri, 09 Dec 2005 15:00:45 GMT"/>
 
 		      <child internal-child="image">
 			<widget class="GtkImage" id="image74">
@@ -454,7 +437,6 @@
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
-		  <signal name="clicked" handler="on_publicHubs_clicked" last_modification_time="Mon, 27 Dec 2004 22:20:33 GMT"/>
 		</widget>
 		<packing>
 		  <property name="expand">False</property>
@@ -471,7 +453,6 @@
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
-		  <signal name="clicked" handler="on_search_clicked" last_modification_time="Mon, 27 Dec 2004 22:20:45 GMT"/>
 		</widget>
 		<packing>
 		  <property name="expand">False</property>
@@ -488,7 +469,6 @@
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
-		  <signal name="clicked" handler="on_settings_clicked" last_modification_time="Mon, 27 Dec 2004 22:20:57 GMT"/>
 		</widget>
 		<packing>
 		  <property name="expand">False</property>
@@ -505,7 +485,6 @@
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
-		  <signal name="clicked" handler="on_hash_clicked" last_modification_time="Mon, 27 Dec 2004 22:21:21 GMT"/>
 		</widget>
 		<packing>
 		  <property name="expand">False</property>
@@ -522,7 +501,6 @@
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
-		  <signal name="clicked" handler="on_queue_clicked" last_modification_time="Mon, 27 Dec 2004 22:21:35 GMT"/>
 		</widget>
 		<packing>
 		  <property name="expand">False</property>
@@ -539,7 +517,6 @@
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
-		  <signal name="clicked" handler="on_finished_dl_clicked" last_modification_time="Mon, 27 Dec 2004 22:21:35 GMT"/>
 		</widget>
 		<packing>
 		  <property name="expand">False</property>
@@ -556,7 +533,6 @@
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
-		  <signal name="clicked" handler="on_finished_ul_clicked" last_modification_time="Mon, 27 Dec 2004 22:21:35 GMT"/>
 		</widget>
 		<packing>
 		  <property name="expand">False</property>
@@ -573,7 +549,6 @@
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
-		  <signal name="clicked" handler="on_favHubs_clicked" last_modification_time="Mon, 27 Dec 2004 22:21:45 GMT"/>
 		</widget>
 		<packing>
 		  <property name="expand">False</property>
@@ -590,7 +565,6 @@
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
-		  <signal name="clicked" handler="on_quit_clicked" last_modification_time="Mon, 27 Dec 2004 22:21:54 GMT"/>
 		</widget>
 		<packing>
 		  <property name="expand">False</property>

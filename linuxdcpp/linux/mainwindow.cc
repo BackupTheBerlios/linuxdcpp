@@ -105,15 +105,16 @@ MainWindow::~MainWindow() {
 	gtk_widget_destroy(GTK_WIDGET(aboutDialog));
 	gtk_widget_destroy(GTK_WIDGET(window));
 
-	//this makes sure the pixmaps are freed (using gtk:s ref counting)
+	// This makes sure the pixmaps are freed (using gtk's ref counting).
 	g_object_unref(G_OBJECT(uploadPic));
 	g_object_unref(G_OBJECT(downloadPic));
 
-	map<ConnectionQueueItem *, GtkTreeRowReference *>::iterator it;
+	// Free the transferMap
+	map<UserID, TransferItem *>::iterator it;
 	for (it = transferMap.begin(); it != transferMap.end(); it++)
 	{
-		gtk_tree_row_reference_free(it->second);
-		transferMap.erase(it->first);
+		gtk_tree_row_reference_free(it->second->rowRef);
+		delete it->second;
 	}
 }
 
@@ -144,6 +145,9 @@ void MainWindow::createWindow_gui() {
 	connectDialog = GTK_DIALOG(glade_xml_get_widget(xml, "connectDialog"));
 	flistDialog = GTK_DIALOG(glade_xml_get_widget(xml, "flistDialog"));
 	aboutDialog = GTK_DIALOG(glade_xml_get_widget(xml, "aboutDialog"));
+	gtk_dialog_set_alternative_button_order(exitDialog, GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	gtk_dialog_set_alternative_button_order(connectDialog, GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	gtk_dialog_set_alternative_button_order(flistDialog, GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "mainWindow"));
 	transferPane = GTK_PANED(glade_xml_get_widget(xml, "pane"));
@@ -172,6 +176,7 @@ void MainWindow::createWindow_gui() {
 	networkStatsItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "network_statistics1"));
 	hashItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "indexing_progress1"));
 	aboutItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "about"));
+	windowMenu = glade_xml_get_widget(xml, "windowMenu");
 
 	gtk_widget_set_sensitive(GTK_WIDGET(openDLdir), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(followRedirect), false);
@@ -195,7 +200,7 @@ void MainWindow::createWindow_gui() {
 	transferView.insertColumn("Size", G_TYPE_STRING, TreeView::STRING, 175);
 	transferView.insertColumn("Path", G_TYPE_STRING, TreeView::STRING, 200);
 	transferView.insertHiddenColumn("Icon", GDK_TYPE_PIXBUF);
-	transferView.insertHiddenColumn("User Ptr", G_TYPE_POINTER);
+	transferView.insertHiddenColumn("TransferItem", G_TYPE_POINTER);
 	transferView.insertHiddenColumn("Progress", G_TYPE_INT);
 	transferView.insertHiddenColumn("Sort Order", G_TYPE_STRING);
 	transferView.insertHiddenColumn("Speed Order", G_TYPE_INT64);
@@ -260,6 +265,7 @@ void MainWindow::createWindow_gui() {
 	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), privateMessage);
 	g_signal_connect (G_OBJECT (privateMessage), "activate", G_CALLBACK (onPrivateMessageClicked_gui), (gpointer)this);
 	addToFavorites = gtk_menu_item_new_with_label ("Add to favorites");
+	gtk_widget_set_sensitive(addToFavorites, FALSE); // Fav user not implemented yet.
 	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), addToFavorites);
 	g_signal_connect (G_OBJECT (addToFavorites), "activate", G_CALLBACK (onAddFavoriteUserClicked_gui), (gpointer)this);
 	grantExtraSlot = gtk_menu_item_new_with_label ("Grant extra slot");
@@ -360,6 +366,38 @@ GtkWindow *MainWindow::getWindow() {
 	return window;
 }
 
+void MainWindow::appendWindowItem(GtkWidget *page, string title)
+{
+	GtkWidget *menuItem = gtk_menu_item_new_with_label(title.c_str());
+	g_object_set_data(G_OBJECT(menuItem), "tabWidget", page);
+	g_signal_connect(G_OBJECT(menuItem), "activate", G_CALLBACK(raisePage), (gpointer)this);
+	gtk_menu_shell_append(GTK_MENU_SHELL(windowMenu), menuItem);
+	gtk_widget_show_all(windowMenu);
+	windowMenuItems[page] = menuItem;
+}
+
+void MainWindow::removeWindowItem(GtkWidget *page)
+{
+	gtk_container_remove(GTK_CONTAINER(windowMenu), windowMenuItems[page]);
+	windowMenuItems.erase(page);
+}
+
+void MainWindow::modifyWindowItem(GtkWidget *page, string title)
+{
+	GtkWidget *child = gtk_bin_get_child(GTK_BIN(windowMenuItems[page]));
+	if (child && GTK_IS_LABEL(child))
+		gtk_label_set_text(GTK_LABEL(child), title.c_str());
+}
+
+void MainWindow::raisePage(GtkMenuItem *item, gpointer data)
+{
+	MainWindow *mw = (MainWindow *)data;
+	GtkWidget *page = (GtkWidget *)g_object_get_data(G_OBJECT(item), "tabWidget");
+	typedef Func1<MainWindow, GtkWidget *> F1;
+	F1 *func = new F1(mw, &MainWindow::raisePage_gui, page);
+	WulforManager::get()->dispatchGuiFunc(func);
+}
+
 gboolean MainWindow::transferClicked_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
 {
 	if (event->type == GDK_BUTTON_PRESS)
@@ -407,18 +445,20 @@ void MainWindow::popup (GdkEventButton *event, gpointer user_data)
 User::Ptr MainWindow::getSelectedTransfer_gui()
 {
 	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (transferStore);
-	selection = transferSel;
-
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
+	GtkTreeModel *m = GTK_TREE_MODEL(transferStore);
+	GList *list = gtk_tree_selection_get_selected_rows(transferSel, &m);
+	GtkTreePath *path = (GtkTreePath*)g_list_nth_data(list, 0);
 	GtkTreeIter iter;
-	
-	if (!tmp)
+	TransferItem *item;
+
+	if (!gtk_tree_model_get_iter(m, &iter, path))
 		return NULL;
-	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
-		return NULL;	
-	return transferView.getValue<gpointer,ConnectionQueueItem*>(&iter, "User Ptr")->getUser();
+
+	gtk_tree_path_free(path);
+	g_list_free(list);
+
+	item = transferView.getValue<gpointer, TransferItem*>(&iter, "TransferItem");
+	return item->user;
 }
 
 void MainWindow::onGetFileListClicked_gui (GtkMenuItem *item, gpointer user_data)
@@ -475,77 +515,51 @@ void MainWindow::onRemoveUserFromQueueClicked_gui (GtkMenuItem *item, gpointer u
 	QueueManager::getInstance()->removeSources(user, QueueItem::Source::FLAG_REMOVED);
 }
 
-void MainWindow::onForceAttemptClicked_gui (GtkMenuItem *item, gpointer user_data)
+void MainWindow::onForceAttemptClicked_gui(GtkMenuItem *menuItem, gpointer data)
 {
+	MainWindow *mw = (MainWindow *)data;
+	GtkTreeModel *m = GTK_TREE_MODEL(mw->transferStore);
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	TransferItem *item;
+	GList *list = gtk_tree_selection_get_selected_rows(mw->transferSel, NULL);
+	gint count = gtk_tree_selection_count_selected_rows(mw->transferSel);
 
-	MainWindow *mw = (MainWindow*)user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (mw->transferStore);
-	selection = mw->transferSel;
-
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
-	vector<User::Ptr> user;
-	GtkTreeIter tmpiter;
-	
-	if (!tmp)
-		return;
-	
-	while (1)
+	for (int i = 0; i < count; i++)
 	{
-		if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
+		path = (GtkTreePath *)g_list_nth_data(list, i);
+		if (gtk_tree_model_get_iter(m, &iter, path))
 		{
-			user.push_back(mw->transferView.getValue<gpointer,ConnectionQueueItem*>(&tmpiter, "User Ptr")->getUser ());
-			gtk_list_store_set(mw->transferStore, &tmpiter, mw->transferView.col("Status"), "Connecting (forced)...", -1);
+			item = mw->transferView.getValue<gpointer, TransferItem*>(&iter, "TransferItem");
+			item->user->connect();
+			gtk_list_store_set(mw->transferStore, &iter, mw->transferView.col("Status"), "Connecting (forced)...", -1);
 		}
-		
-		tmp = g_list_next (tmp);
-		if (!tmp)
-			break;
-	}	
-	
-	for (int i=0;i<user.size ();i++)
-		user[i]->connect ();
+		gtk_tree_path_free(path);
+	}
+	g_list_free(list);
 }
 
-void MainWindow::onCloseConnectionClicked_gui (GtkMenuItem *item, gpointer user_data)
+void MainWindow::onCloseConnectionClicked_gui(GtkMenuItem *menuItem, gpointer data)
 {
-	MainWindow *mw = (MainWindow*)user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (mw->transferStore);
-	selection = mw->transferSel;
+	MainWindow *mw = (MainWindow *)data;
+	GtkTreeModel *m = GTK_TREE_MODEL(mw->transferStore);
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	TransferItem *item;
+	GList *list = gtk_tree_selection_get_selected_rows(mw->transferSel, NULL);
+	gint count = gtk_tree_selection_count_selected_rows(mw->transferSel);
 
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
-	vector<User::Ptr> user;
-	vector<bool> isDownload;
-	GtkTreeIter tmpiter;
-	
-	if (!tmp)
-		return;
-	
-	while (1)
+	for (int i = 0; i < count; i++)
 	{
-		if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
+		path = (GtkTreePath *)g_list_nth_data(list, i);
+		if (gtk_tree_model_get_iter(m, &iter, path))
 		{
-			ConnectionQueueItem *qi = mw->transferView.getValue<gpointer,ConnectionQueueItem*>(&tmpiter, "User Ptr");
-			if (qi->getConnection())
-			{
-				if (qi->getConnection()->isSet(UserConnection::FLAG_UPLOAD))
-					isDownload.push_back(false);
-				else
-					isDownload.push_back(true);
-				user.push_back (qi->getUser ());
-			}
+			item = mw->transferView.getValue<gpointer, TransferItem*>(&iter, "TransferItem");
+			ConnectionManager::getInstance()->removeConnection(item->user, item->isDownload);
 		}
-		
-		tmp = g_list_next (tmp);
-		if (!tmp)
-			break;
-	}	
-
-	for (int i=0;i<user.size ();i++)
-		ConnectionManager::getInstance()->removeConnection(user[i], isDownload[i]);
+		gtk_tree_path_free(path);
+	}
+	g_list_free(list);
 }
 
 void MainWindow::connectClicked_gui(GtkWidget *widget, gpointer data) {
@@ -898,121 +912,116 @@ void MainWindow::setStats_gui(std::string hub, std::string slot,
 	setStatus_gui(dlStatus, dl);
 }
 
-void MainWindow::updateTransfer_gui(connection_t type, ConnectionQueueItem *item, 
-	string status, string time, int64_t speed, string file, int64_t size, string path, int progress)
+void MainWindow::updateTransfer_gui(TransferItem *item)
 {
+	dcassert(item);
+
 	GtkTreeIter iter;
 	GtkTreePath *treePath;
-	GtkTreeModel *m = GTK_TREE_MODEL(transferStore);
-	string sortOrder;
 
-	if (!item)
+	treePath = gtk_tree_row_reference_get_path(item->rowRef);
+	if (!gtk_tree_model_get_iter(GTK_TREE_MODEL(transferStore), &iter, treePath))
 		return;
 
-	if (transferMap.find(item) == transferMap.end())
-	{
-		gtk_list_store_append(transferStore, &iter);
-		transferMap[item] = gtk_tree_row_reference_new(m, gtk_tree_model_get_path(m, &iter));
-	}
-	else
-	{
-		treePath = gtk_tree_row_reference_get_path(transferMap[item]);
-		if (!gtk_tree_model_get_iter(m, &iter, treePath))
-			return;
-	}
+	if (item->update["file"] && !item->file.empty())
+		gtk_list_store_set(transferStore, &iter, transferView.col("Filename"), item->file.c_str(), -1);
 
-	if (type == CONNECTION_ADDED)
-	{
-		if (item->getDownload())
-			gtk_list_store_set(transferStore, &iter, transferView.col("Icon"), downloadPic, -1);
-		else
-			gtk_list_store_set(transferStore, &iter, transferView.col("Icon"), uploadPic, -1);
-	}
+	if (item->update["path"] && !item->path.empty())
+		gtk_list_store_set(transferStore, &iter, transferView.col("Path"), item->path.c_str(), -1);
 
-	if (type != CONNECTION_NA)
+	if (item->update["status"] && !item->status.empty())
+		gtk_list_store_set(transferStore, &iter, transferView.col("Status"), item->status.c_str(), -1);
+
+	if (item->update["time"] && !item->time.empty())
+		gtk_list_store_set(transferStore, &iter, transferView.col("Time Left"), item->time.c_str(), -1);
+
+	if (item->update["sortOrder"] && !item->sortOrder.empty())
+		gtk_list_store_set(transferStore, &iter, transferView.col("Sort Order"), item->sortOrder.c_str(), -1);
+
+	if (item->update["size"] && item->size >= 0)
 	{
 		gtk_list_store_set(transferStore, &iter,
-			transferView.col("User"), item->getUser()->getNick().c_str(),
-			transferView.col("User Ptr"), (gpointer)item,
-			transferView.col("Hub Name"), item->getUser()->getLastHubName().c_str(),
-			-1);
-
-		sortOrder = item->getUser()->getNick() + item->getUser()->getLastHubName();
-
-		switch (type)
-		{
-			case CONNECTION_DL:
-				sortOrder = "d" + sortOrder;
-				break;
-			case CONNECTION_UL:
-				sortOrder = "u" + sortOrder;
-				break;
-			default:
-				sortOrder = "w" + sortOrder;
-		}
-		gtk_list_store_set(transferStore, &iter, transferView.col("Sort Order"), sortOrder.c_str(), -1);
-	}
-
-	if (!status.empty())
-		gtk_list_store_set(transferStore, &iter, transferView.col("Status"), status.c_str(), -1);
-
-	if (!time.empty())
-		gtk_list_store_set(transferStore, &iter, transferView.col("Time Left"), time.c_str(), -1);
-
-	if (speed >= 0)
-	{
-		gtk_list_store_set(transferStore, &iter,
-			transferView.col("Speed"),  Util::formatBytes(speed).append("/s").c_str(),
-			transferView.col("Speed Order"), speed,
+			transferView.col("Size"), Util::formatBytes(item->size).c_str(),
+			transferView.col("Size Order"), item->size,
 			-1);
 	}
 
-	if (!file.empty())
-		gtk_list_store_set(transferStore, &iter, transferView.col("Filename"), file.c_str(), -1);
-
-	if (size >= 0)
+	if (item->update["speed"] && item->speed >= 0)
 	{
 		gtk_list_store_set(transferStore, &iter,
-			transferView.col("Size"), Util::formatBytes(size).c_str(),
-			transferView.col("Size Order"), size,
+			transferView.col("Speed"),  Util::formatBytes(item->speed).append("/s").c_str(),
+			transferView.col("Speed Order"), item->speed,
 			-1);
 	}
 
-	if (!path.empty())
-		gtk_list_store_set(transferStore, &iter, transferView.col("Path"), path.c_str(), -1);
-
-	if (progress >= 0 && progress <= 100)
-		gtk_list_store_set(transferStore, &iter, transferView.col("Progress"), progress, -1);
+	if (item->update["progress"] && item->progress >= 0 && item->progress <= 100)
+		gtk_list_store_set(transferStore, &iter, transferView.col("Progress"), item->progress, -1);
 }
 
-void MainWindow::removeTransfer_gui(ConnectionQueueItem *item)
+void MainWindow::removeTransfer_gui(UserID id)
 {
 	GtkTreeIter iter;
 	GtkTreePath *path;
+	TransferItem *item;
 
-	if (transferMap.find(item) != transferMap.end())
+	if (transferMap.find(id) != transferMap.end())
 	{
-		path = gtk_tree_row_reference_get_path(transferMap[item]);
+		item = transferMap[id];
+		path = gtk_tree_row_reference_get_path(item->rowRef);
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(transferStore), &iter, path))
-			gtk_list_store_remove(transferStore, &iter);
+		gtk_list_store_remove(transferStore, &iter);
 
-		gtk_tree_row_reference_free(transferMap[item]);
-		transferMap.erase(item);
+		gtk_tree_row_reference_free(item->rowRef);
+		delete item;
+		transferMap.erase(id);
 	}
+}
+
+MainWindow::TransferItem* MainWindow::getTransferItem(UserID id)
+{
+	TransferItem *item;
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	GtkTreeModel *m = GTK_TREE_MODEL(transferStore);
+
+	if (transferMap.find(id) == transferMap.end())
+	{
+		transferMap[id] = item = new TransferItem(id.first, id.second);
+		gtk_list_store_append(transferStore, &iter);
+		path = gtk_tree_model_get_path(m, &iter);
+		item->rowRef = gtk_tree_row_reference_new(m, path);
+		if (item->isDownload)
+			gtk_list_store_set(transferStore, &iter, transferView.col("Icon"), downloadPic, -1);
+		else
+			gtk_list_store_set(transferStore, &iter, transferView.col("Icon"), uploadPic, -1);
+		gtk_list_store_set(transferStore, &iter,
+			transferView.col("User"), item->nicks.c_str(),
+			transferView.col("TransferItem"), (gpointer)item,
+			transferView.col("Hub Name"), item->hubs.c_str(),
+			-1);
+	}
+	else
+		item = transferMap[id];
+
+	item->update.clear();
+	return item;
 }
 
 void MainWindow::transferComplete_client(Transfer *t)
 {
-	string status;
+	bool isDownload = t->getUserConnection()->isSet(UserConnection::FLAG_DOWNLOAD);
+	UserID id(t->getUserConnection()->getUser(), isDownload);
+	TransferItem *item = getTransferItem(id);
 
-	if (t->getUserConnection()->isSet(UserConnection::FLAG_UPLOAD))
-		status = "Upload finished, idle...";
+	if (isDownload)
+		item->setStatus("Download finished, idle...");
 	else
-		status = "Download finished, idle...";
+		item->setStatus("Upload finished, idle...");
+	item->setTime("Done");
+	item->setProgress(100);
+	item->setSortOrder("w" + item->nicks + item->hubs);
 
-	UFunc *func;
-	func = new UFunc(this, &MainWindow::updateTransfer_gui, CONNECTION_WAITING,
-		t->getUserConnection()->getCQI(), status, "Done", -1, "", -1, "", 100);
+	UFunc *func = new UFunc(this, &MainWindow::updateTransfer_gui, item);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
@@ -1066,91 +1075,97 @@ void MainWindow::refreshFList_gui(GtkWidget *widget, gpointer data)
 }
 
 //From Connection manager
-void MainWindow::on(ConnectionManagerListener::Added, ConnectionQueueItem *item) throw()
+void MainWindow::on(ConnectionManagerListener::Added, ConnectionQueueItem *cqi) throw()
 {
-	string status = "Connecting...";
+	UserID id(cqi->getUser(), cqi->getDownload());
+	TransferItem *item = getTransferItem(id);
+	item->setStatus("Connecting...");
+	item->setProgress(0);
+	item->setSortOrder("w" + item->nicks + item->hubs);
 
-	UFunc *func;
-	func = new UFunc(this, &MainWindow::updateTransfer_gui, CONNECTION_ADDED, 
-		item, status, "", -1, "", -1, "", 0);
+	UFunc *func = new UFunc(this, &MainWindow::updateTransfer_gui, item);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
-void MainWindow::on(ConnectionManagerListener::Removed, ConnectionQueueItem *item) throw()
+void MainWindow::on(ConnectionManagerListener::Removed, ConnectionQueueItem *cqi) throw()
 {
-	typedef Func1 <MainWindow, ConnectionQueueItem *> F1;
-	F1 *func = new F1(this, &MainWindow::removeTransfer_gui, item);
+	UserID id(cqi->getUser(), cqi->getDownload());
+
+	typedef Func1 <MainWindow, UserID> F1;
+	F1 *func = new F1(this, &MainWindow::removeTransfer_gui, id);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
-void MainWindow::on(ConnectionManagerListener::Failed, ConnectionQueueItem *item, const string &reason) throw()
+void MainWindow::on(ConnectionManagerListener::Failed, ConnectionQueueItem *cqi, const string &reason) throw()
 {
-	UFunc *func;
-	func = new UFunc(this, &MainWindow::updateTransfer_gui, CONNECTION_NA, item,
-		reason, "", -1, "", -1, "", 0);
+	UserID id(cqi->getUser(), cqi->getDownload());
+	TransferItem *item = getTransferItem(id);
+	item->setStatus(reason, true);
+	item->setSortOrder("w" + item->nicks + item->hubs);
+
+	UFunc *func = new UFunc(this, &MainWindow::updateTransfer_gui, item);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
-void MainWindow::on(ConnectionManagerListener::StatusChanged, ConnectionQueueItem *item) throw()
+void MainWindow::on(ConnectionManagerListener::StatusChanged, ConnectionQueueItem *cqi) throw()
 {
-	string status;
+	UserID id(cqi->getUser(), cqi->getDownload());
+	TransferItem *item = getTransferItem(id);
 
-	if (item->getState() == ConnectionQueueItem::CONNECTING)
-		status = "Connecting...";
+	if (cqi->getState() == ConnectionQueueItem::CONNECTING)
+		item->setStatus("Connecting...");
 	else
-		status = "Waiting to retry...";
+		item->setStatus("Waiting to retry...");
 
-	UFunc *func;
-	func = new UFunc(this, &MainWindow::updateTransfer_gui, CONNECTION_NA, item, status,
-		"", -1, "", -1, "", 0);
+	UFunc *func = new UFunc(this, &MainWindow::updateTransfer_gui, item);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
 //From Download manager
 void MainWindow::on(DownloadManagerListener::Starting, Download *dl) throw()
 {
-	string status, target, file, path;
-
-	status = "Download starting...";
-	target = Text::acpToUtf8(dl->getTarget());
+	UserID id(dl->getUserConnection()->getUser(), TRUE);
+	TransferItem *item = getTransferItem(id);
+	string target = Text::acpToUtf8(dl->getTarget());
 
 	if (dl->isSet(Download::FLAG_USER_LIST))
-	{
-		file = "Filelist";
-		path = "";
-	}
+		item->setFile("Filelist");
+	else if (dl->isSet(Download::FLAG_TREE_DOWNLOAD))
+		item->setFile("TTH: " + Util::getFileName(target));
 	else
-	{
-		file = Util::getFileName(target);
-		path = Util::getFilePath(target);
-		if (dl->isSet(Download::FLAG_TREE_DOWNLOAD))
-			file = "TTH: " + file;
-	}
+		item->setFile(Util::getFileName(target));
 
-	UFunc *func;
-	func = new UFunc(this, &MainWindow::updateTransfer_gui, CONNECTION_DL,
-		dl->getUserConnection()->getCQI(), status, "", -1, file, dl->getSize(), path, 0);
+	item->setPath(Util::getFilePath(target));
+	item->setStatus("Download starting...");
+	item->setSize(dl->getSize());
+	item->setSortOrder("d" + item->nicks + item->hubs);
+
+	UFunc *func = new UFunc(this, &MainWindow::updateTransfer_gui, item);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
 void MainWindow::on(DownloadManagerListener::Tick, const Download::List &list) throw()
 {
-	string status, timeLeft, speed;
+	string status, time, bytes;
+	double percent;
+	Download* dl;
 	Download::List::const_iterator it;
-	
-	for (it = list.begin(); it != list.end(); it++) {
-		Download* dl = *it;
-		ostringstream stream;
+	TransferItem *item;
 
-		string bytes = Util::formatBytes(dl->getPos());
-		double percent = (double)(dl->getPos() * 100.0) / dl->getSize();
-		string time = Util::formatSeconds((GET_TICK() - dl->getStart()) / 1000);
+	for (it = list.begin(); it != list.end(); it++)
+	{
+		dl = *it;
+		ostringstream stream;
+		UserID id(dl->getUserConnection()->getUser(), TRUE);
+		item = getTransferItem(id);
+
+		bytes = Util::formatBytes(dl->getPos());
+		percent = (double)(dl->getPos() * 100.0) / dl->getSize();
+		time = Util::formatSeconds((GET_TICK() - dl->getStart()) / 1000);
 		stream << setiosflags(ios::fixed) << setprecision(1);
 		stream << "Downloaded " << bytes << " (" << percent << "%) in " << time;
 
-		timeLeft = Util::formatSeconds(dl->getSecondsLeft());
-
-		status = "";
+		status.clear();
 /*		Future flags in DC++ > 0.674
 		if (dl->getUserConnection()->isSecure())
 			status += "[S]";
@@ -1162,12 +1177,14 @@ void MainWindow::on(DownloadManagerListener::Tick, const Download::List &list) t
 			status += "[R]";
 		if (!status.empty())
 			status += " ";
-
 		status += stream.str();
 
-		UFunc *func;
-		func = new UFunc(this, &MainWindow::updateTransfer_gui, CONNECTION_NA, dl->getUserConnection()->getCQI(), 
-			status,	timeLeft, dl->getRunningAverage(), "", -1, "", (int)percent);
+		item->setStatus(status);
+		item->setTime(Util::formatSeconds(dl->getSecondsLeft()));
+		item->setSpeed(dl->getRunningAverage());
+		item->setProgress((int)percent);
+
+		UFunc *func = new UFunc(this, &MainWindow::updateTransfer_gui, item);
 		WulforManager::get()->dispatchGuiFunc(func);
 	}
 }
@@ -1179,74 +1196,71 @@ void MainWindow::on(DownloadManagerListener::Complete, Download *dl) throw()
 
 void MainWindow::on(DownloadManagerListener::Failed, Download *dl, const string &reason) throw()
 {
-	string status, target, file, path;
-
-	target = Text::acpToUtf8(dl->getTarget());
+	UserID id(dl->getUserConnection()->getUser(), TRUE);
+	TransferItem *item = getTransferItem(id);
+	string target = Text::acpToUtf8(dl->getTarget());
 
 	if (dl->isSet(Download::FLAG_USER_LIST))
-	{
-		file = "Filelist";
-		path = "";
-	}
+		item->setFile("Filelist");
+	else if (dl->isSet(Download::FLAG_TREE_DOWNLOAD))
+		item->setFile("TTH: " + Util::getFileName(target));
 	else
-	{
-		file = Util::getFileName(target);
-		path = Util::getFilePath(target);
-		if (dl->isSet(Download::FLAG_TREE_DOWNLOAD))
-			file = "TTH: " + file;
-	}
+		item->setFile(Util::getFileName(target));
 
-	UFunc *func;
-	func = new UFunc(this, &MainWindow::updateTransfer_gui, CONNECTION_WAITING,
-		dl->getUserConnection()->getCQI(), reason, "", 0, file, dl->getSize(), path, 0);
+	item->setPath(Util::getFilePath(target));
+	item->setStatus(reason, true);
+	item->setSize(dl->getSize());
+	item->setSortOrder("w" + item->nicks + item->hubs);
+
+	UFunc *func = new UFunc(this, &MainWindow::updateTransfer_gui, item);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
 //From Upload manager
 void MainWindow::on(UploadManagerListener::Starting, Upload *ul) throw()
 {
-	string status, target, file, path;
+	UserID id(ul->getUserConnection()->getUser(), FALSE);
+	TransferItem *item = getTransferItem(id);
+	string target = Text::acpToUtf8(ul->getFileName());
 
-	status = "Upload starting...";
-	target = Text::acpToUtf8(ul->getFileName());
-
-	if (ul->isSet(Upload::FLAG_USER_LIST))
-	{
-		file = "Filelist";
-		path = "";
-	}
+	if (ul->isSet(Download::FLAG_USER_LIST))
+		item->setFile("Filelist");
+	else if (ul->isSet(Download::FLAG_TREE_DOWNLOAD))
+		item->setFile("TTH: " + Util::getFileName(target));
 	else
-	{
-		file = Util::getFileName(target);
-		path = Util::getFilePath(target);
-		if (ul->isSet(Download::FLAG_TREE_DOWNLOAD))
-			file = "TTH: " + file;
-	}
+		item->setFile(Util::getFileName(target));
 
-	UFunc *func;
-	func = new UFunc(this, &MainWindow::updateTransfer_gui, CONNECTION_UL,
-		ul->getUserConnection()->getCQI(), status, "", -1, file, ul->getSize(), path, 0);
+	item->setPath(Util::getFilePath(target));
+	item->setStatus("Upload starting...");
+	item->setSize(ul->getSize());
+	item->setSortOrder("u" + item->nicks + item->hubs);
+
+	UFunc *func = new UFunc(this, &MainWindow::updateTransfer_gui, item);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
 void MainWindow::on(UploadManagerListener::Tick, const Upload::List &list) throw()
 {
-	string status, timeLeft, speed;
+	string status, time, bytes;
+	double percent;
+	Upload* ul;
 	Upload::List::const_iterator it;
-	
-	for (it = list.begin(); it != list.end(); it++) {
-		Upload* ul = *it;
-		ostringstream stream;
+	TransferItem *item;
 
-		string bytes = Util::formatBytes(ul->getPos());
-		double percent = (double)(ul->getPos() * 100.0) / ul->getSize();
-		string time = Util::formatSeconds((GET_TICK() - ul->getStart()) / 1000);
+	for (it = list.begin(); it != list.end(); it++)
+	{
+		ul = *it;
+		ostringstream stream;
+		UserID id(ul->getUserConnection()->getUser(), FALSE);
+		item = getTransferItem(id);
+
+		bytes = Util::formatBytes(ul->getPos());
+		percent = (double)(ul->getPos() * 100.0) / ul->getSize();
+		time = Util::formatSeconds((GET_TICK() - ul->getStart()) / 1000);
 		stream << setiosflags(ios::fixed) << setprecision(1);
 		stream << "Uploaded " << bytes << " (" << percent << "%) in " << time;
 
-		timeLeft = Util::formatSeconds(ul->getSecondsLeft());
-
-		status = "";
+		status.clear();
 /*		Future flags in DC++ > 0.674
 		if (ul->getUserConnection()->isSecure())
 			status += "[S]";
@@ -1254,12 +1268,14 @@ void MainWindow::on(UploadManagerListener::Tick, const Upload::List &list) throw
 			status += "[Z]";
 		if (!status.empty())
 			status += " ";
-
 		status += stream.str();
 
-		UFunc *func;
-		func = new UFunc(this, &MainWindow::updateTransfer_gui, CONNECTION_NA, ul->getUserConnection()->getCQI(),
-			 status, timeLeft, ul->getRunningAverage(), "", -1, "", (int)percent);
+		item->setStatus(status);
+		item->setTime(Util::formatSeconds(ul->getSecondsLeft()));
+		item->setSpeed(ul->getRunningAverage());
+		item->setProgress((int)percent);
+
+		UFunc *func = new UFunc(this, &MainWindow::updateTransfer_gui, item);
 		WulforManager::get()->dispatchGuiFunc(func);
 	}
 }

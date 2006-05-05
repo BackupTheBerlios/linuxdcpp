@@ -75,6 +75,11 @@ SettingsManager::IntSetting Settings::advancedSettings[] = { SettingsManager::AU
 Settings::~Settings ()
 {
 	pthread_mutex_destroy(&settingsLock);
+	gtk_widget_destroy(favoriteName);
+	gtk_widget_destroy(publicHubs);
+	gtk_widget_destroy(editPublic);
+	gtk_widget_destroy(virtualName);
+	gtk_widget_destroy(dirChooser);
 }
 Settings::Settings ()
 {
@@ -82,10 +87,18 @@ Settings::Settings ()
 	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
 
 	dialog = glade_xml_get_widget(xml, "settingsDialog");
-	favoriteName = glade_xml_get_widget (xml, "favoriteName");
-	publicHubs = glade_xml_get_widget (xml, "publicDialog");
-	editPublic = glade_xml_get_widget (xml, "editPublic");
-	virtualName = glade_xml_get_widget (xml, "virtualName");
+	favoriteName = glade_xml_get_widget(xml, "favoriteName");
+	publicHubs = glade_xml_get_widget(xml, "publicDialog");
+	editPublic = glade_xml_get_widget(xml, "editPublic");
+	virtualName = glade_xml_get_widget(xml, "virtualName");
+	dirChooser = glade_xml_get_widget(xml, "dirChooserDialog");
+
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(favoriteName), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(publicHubs), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(editPublic), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(virtualName), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dirChooser), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	{ // General
 		// Personal
@@ -472,44 +485,34 @@ void Settings::initDownloads_gui ()
 void Settings::onBrowseF_gui (GtkWidget *widget, gpointer user_data)
 {
 	Settings *s = (Settings*)user_data;
-	s->dirChooser = gtk_file_chooser_dialog_new (	"Choose directory",
-											WulforManager::get ()->getMainWindow ()->getWindow (),
-											GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-											GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-											GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-											NULL);
+
 	if (s->lastdir != "")
 		gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (s->dirChooser), s->lastdir.c_str ());
  	gint response = gtk_dialog_run (GTK_DIALOG (s->dirChooser));
+	gtk_widget_hide(s->dirChooser);
+
 	if (response == GTK_RESPONSE_OK)
 	{
 		string path = gtk_file_chooser_get_current_folder (GTK_FILE_CHOOSER (s->dirChooser));
 		s->lastdir = path;
 		gtk_entry_set_text (GTK_ENTRY (s->downloadItems["Finished"]), path.c_str ());
 	}
-	gtk_widget_hide (s->dirChooser);	
-	s->dirChooser = NULL;
 }
 void Settings::onBrowseUF_gui (GtkWidget *widget, gpointer user_data)
 {
 	Settings *s = (Settings*)user_data;
-	s->dirChooser = gtk_file_chooser_dialog_new (	"Choose directory",
-											WulforManager::get ()->getMainWindow ()->getWindow (),
-											GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-											GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-											GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-											NULL);
+
 	if (s->lastdir != "")
 		gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (s->dirChooser), s->lastdir.c_str ());
  	gint response = gtk_dialog_run (GTK_DIALOG (s->dirChooser));
+	gtk_widget_hide(s->dirChooser);
+
 	if (response == GTK_RESPONSE_OK)
 	{
 		string path = gtk_file_chooser_get_current_folder (GTK_FILE_CHOOSER (s->dirChooser));
 		s->lastdir = path;
 		gtk_entry_set_text (GTK_ENTRY (s->downloadItems["Unfinished"]), path.c_str ());
 	}
-	gtk_widget_hide (s->dirChooser);	
-	s->dirChooser = NULL;
 }
 
 void Settings::onPublicHubs_gui(GtkWidget *widget, gpointer data)
@@ -521,6 +524,8 @@ void Settings::onPublicHubs_gui(GtkWidget *widget, gpointer data)
 
 	s->publicInit_gui ();
 	gint response = gtk_dialog_run (GTK_DIALOG (s->publicHubs));
+	gtk_widget_hide(s->publicHubs);
+
 	if (response == GTK_RESPONSE_OK)
 	{
 		gtk_tree_model_get_iter_first(m, &iter);
@@ -535,7 +540,6 @@ void Settings::onPublicHubs_gui(GtkWidget *widget, gpointer data)
 		SettingsManager::getInstance()->set(SettingsManager::HUBLIST_SERVERS, lists);
 		pthread_mutex_unlock(&s->settingsLock);
 	}
-	gtk_widget_hide (s->publicHubs);
 }
 
 void Settings::onPublicAdd_gui(GtkWidget *widget, gpointer data)
@@ -601,10 +605,10 @@ void Settings::onPublicEdit_gui (GtkWidget *widget, gpointer user_data)
 
 	gtk_entry_set_text(GTK_ENTRY(s->downloadItems["Edit public"]), s->publicListView.getString(&iter, "List").c_str());
 	gint response = gtk_dialog_run (GTK_DIALOG (s->editPublic));
+	gtk_widget_hide(s->editPublic);
+
 	if (response == GTK_RESPONSE_OK)
 		gtk_list_store_set (s->publicListStore, &iter, 0, gtk_entry_get_text (GTK_ENTRY (s->downloadItems["Edit public"])), -1);
-
-	gtk_widget_hide (s->editPublic);
 }
 void Settings::onPublicRemove_gui (GtkWidget *widget, gpointer user_data)
 {
@@ -639,24 +643,20 @@ bool Settings::addFavoriteDir_client (string path, string name)
 void Settings::onAddFavorite_gui (GtkWidget *widget, gpointer user_data)
 {
 	Settings *s = (Settings*)user_data;
-	s->dirChooser = gtk_file_chooser_dialog_new (	"Choose directory",
-											WulforManager::get ()->getMainWindow ()->getWindow (),
-											GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-											GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-											GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-											NULL);
+
 	if (s->lastdir != "")
 		gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (s->dirChooser), s->lastdir.c_str ());
  	gint response = gtk_dialog_run (GTK_DIALOG (s->dirChooser));
+	gtk_widget_hide(s->dirChooser);
+
 	if (response == GTK_RESPONSE_OK)
 	{
 		string path = gtk_file_chooser_get_current_folder (GTK_FILE_CHOOSER (s->dirChooser));
 		s->lastdir = path;
-		gtk_widget_hide (s->dirChooser);
-		s->dirChooser = NULL;
 
 		gtk_entry_set_text (GTK_ENTRY (s->downloadItems["Name"]), "");
 		response = gtk_dialog_run (GTK_DIALOG (s->favoriteName));
+		gtk_widget_hide(s->favoriteName);
 		if (response == GTK_RESPONSE_OK)
 		{
 			string name = gtk_entry_get_text (GTK_ENTRY (s->downloadItems["Name"]));
@@ -683,14 +683,7 @@ void Settings::onAddFavorite_gui (GtkWidget *widget, gpointer user_data)
 				gtk_widget_hide (d);
 			}
 		}
-		gtk_widget_hide (s->favoriteName);
-	}
-	else
-	{
-		gtk_widget_hide (s->dirChooser);	
-		s->dirChooser = NULL;
-	}
-		
+	}		
 }
 bool Settings::removeFavoriteDir_client (string path)
 {
@@ -774,24 +767,20 @@ void Settings::modifyShare_client (bool add, string path, string name)
 void Settings::onAddShare_gui (GtkWidget *widget, gpointer user_data)
 {
 	Settings *s = (Settings*)user_data;
-	s->dirChooser = gtk_file_chooser_dialog_new (	"Choose directory",
-											WulforManager::get ()->getMainWindow ()->getWindow (),
-											GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-											GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-											GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-											NULL);
+
 	if (s->lastdir != "")
 		gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (s->dirChooser), s->lastdir.c_str ());
  	gint response = gtk_dialog_run (GTK_DIALOG (s->dirChooser));
+	gtk_widget_hide(s->dirChooser);
+
 	if (response == GTK_RESPONSE_OK)
 	{
 		string path = gtk_file_chooser_get_current_folder (GTK_FILE_CHOOSER (s->dirChooser));
 		s->lastdir = path;
-		gtk_widget_hide (s->dirChooser);
-		s->dirChooser = NULL;
 
 		gtk_entry_set_text (GTK_ENTRY (s->shareItems["Virtual"]), "");
 		response = gtk_dialog_run (GTK_DIALOG (s->virtualName));
+		gtk_widget_hide(s->virtualName);
 		if (response == GTK_RESPONSE_OK)
 		{
 			try
@@ -822,12 +811,6 @@ void Settings::onAddShare_gui (GtkWidget *widget, gpointer user_data)
 				gtk_widget_hide (d);
 			}
 		}
-		gtk_widget_hide (s->virtualName);
-	}
-	else
-	{
-		gtk_widget_hide (s->dirChooser);	
-		s->dirChooser = NULL;
 	}
 }
 void Settings::onRemoveShare_gui (GtkWidget *widget, gpointer user_data)
@@ -985,17 +968,14 @@ void Settings::initLog_gui ()
 void Settings::onLogBrowseClicked_gui (GtkWidget *widget, gpointer user_data)
 {
 	Settings *s = (Settings*)user_data;
-	s->dirChooser = gtk_file_chooser_dialog_new (	"Choose directory",
-											WulforManager::get ()->getMainWindow ()->getWindow (),
-											GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-											GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-											GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-											NULL);
+
 	if (s->lastdir != "")
 		gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (s->dirChooser), s->lastdir.c_str ());
 	else
 		gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (s->dirChooser), gtk_entry_get_text (GTK_ENTRY (s->logItems["Directory"])));
  	gint response = gtk_dialog_run (GTK_DIALOG (s->dirChooser));
+	gtk_widget_hide(s->dirChooser);
+
 	if (response == GTK_RESPONSE_OK)
 	{
 		string path = gtk_file_chooser_get_current_folder (GTK_FILE_CHOOSER (s->dirChooser));
@@ -1003,9 +983,7 @@ void Settings::onLogBrowseClicked_gui (GtkWidget *widget, gpointer user_data)
 		if (path[path.length ()-1] != PATH_SEPARATOR)
 			path += PATH_SEPARATOR;
 		gtk_entry_set_text (GTK_ENTRY (s->logItems["Directory"]), path.c_str ());
-	}	
-	gtk_widget_hide (s->dirChooser);
-	s->dirChooser = NULL;
+	}
 }
 void Settings::onLogMainClicked_gui (GtkToggleButton *togglebutton, gpointer user_data)
 {

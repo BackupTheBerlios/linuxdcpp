@@ -257,14 +257,14 @@ BookEntry *WulforManager::getBookEntry_gui(int type, string id, bool raise) {
 
 BookEntry *WulforManager::getBookEntry_gui(int nr) {
 	BookEntry *ret = NULL;
-	
+
 	if (nr < 0 || nr >= bookEntrys.size ())
 		return ret;
-	
+
 	pthread_mutex_lock(&bookEntryLock);
 	ret = bookEntrys[nr];
 	pthread_mutex_unlock(&bookEntryLock);
-	
+
 	return ret;
 }
 
@@ -296,29 +296,38 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry) {
 	//so no need to call it here
 	pthread_mutex_lock(&clientCallLock);
 
-	//erase any pending calls to this bookentry
+	// Erase any pending calls to this bookentry.
 	fIt = clientFuncs.begin();
 	while (fIt != clientFuncs.end())
-		for (fIt = clientFuncs.begin(); fIt != clientFuncs.end(); fIt++)
-			if ((*fIt)->comparePointer((void *)entry)) {
-				delete *fIt;
-				clientFuncs.erase(fIt);
-				break;
-			}
+	{
+		if ((*fIt)->comparePointer((void *)entry))
+		{
+			delete *fIt;
+			clientFuncs.erase(fIt);
+		}
+		else
+			fIt++;
+	}
 
 	fIt = guiFuncs.begin();
 	while (fIt != guiFuncs.end())
-		for (fIt = guiFuncs.begin(); fIt != guiFuncs.end(); fIt++)
-			if ((*fIt)->comparePointer((void *)entry)) {
-				delete *fIt;
-				guiFuncs.erase(fIt);
-				break;
-			}
+	{
+		if ((*fIt)->comparePointer((void *)entry))
+		{
+			delete *fIt;
+			guiFuncs.erase(fIt);
+		}
+		else
+			fIt++;
+	}
+
 
 	//remove the bookentry from the list
 	pthread_mutex_lock(&bookEntryLock);
 	for (bIt = bookEntrys.begin(); bIt != bookEntrys.end(); bIt++)
 		if ((*bIt)->isEqual(entry)) {
+			if ((*bIt)->getType() == HUB || (*bIt)->getType() == PRIVATE_MSG)
+				mainWin->removeWindowItem(notebookPage);
 			delete entry;
 			bookEntrys.erase(bIt);
 			break;
@@ -333,35 +342,41 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry) {
 
 void WulforManager::deleteAllBookEntries()
 {
-	for (int i = 0; i < bookEntrys.size(); i++)
-		deleteBookEntry_gui(bookEntrys[i]);
+	while (bookEntrys.size() > 0)
+		deleteBookEntry_gui(bookEntrys.front());
 }
 
 void WulforManager::deleteDialogEntry_gui()
 {
 	vector<FuncBase *>::iterator it;
 	
-	//this is a callback, so gtk_thread_enter/leave is called automaticly
+	// This is a callback, so gtk_thread_enter/leave is called automatically.
 	pthread_mutex_lock(&clientCallLock);
 
-	//erase any pending calls to this bookentry
+	// Erase any pending calls to this dialog.
 	it = clientFuncs.begin();
 	while (it != clientFuncs.end())
-		for (it = clientFuncs.begin(); it != clientFuncs.end(); it++)
-			if ((*it)->comparePointer((void *)dialogEntry)) {
-				delete *it;
-				clientFuncs.erase(it);
-				break;
-			}
+	{
+		if ((*it)->comparePointer((void *)dialogEntry))
+		{
+			delete *it;
+			clientFuncs.erase(it);
+		}
+		else
+			it++;
+	}
 
 	it = guiFuncs.begin();
 	while (it != guiFuncs.end())
-		for (it = guiFuncs.begin(); it != guiFuncs.end(); it++)
-			if ((*it)->comparePointer((void *)dialogEntry)) {
-				delete *it;
-				guiFuncs.erase(it);
-				break;
-			}
+	{
+		if ((*it)->comparePointer((void *)dialogEntry))
+		{
+			delete *it;
+			guiFuncs.erase(it);
+		}
+		else
+			it++;
+	}
 
 	// Hide the dialog
 	if (dialogEntry->getDialog())
@@ -424,6 +439,7 @@ Hub *WulforManager::addHub_gui(string address, string nick, string desc, string 
 
 	Hub *hub = new Hub(address, G_CALLBACK(closeEntry_callback));
 	mainWin->addPage_gui(hub->getWidget(), hub->getTitle(), true);
+	mainWin->appendWindowItem(hub->getWidget(), address);
 	gtk_widget_unref(hub->getWidget());
 	bookEntrys.push_back(hub);
 
@@ -440,6 +456,7 @@ PrivateMessage *WulforManager::addPrivMsg_gui(User::Ptr user) {
 
 	PrivateMessage *privMsg = new PrivateMessage(user, G_CALLBACK(closeEntry_callback));
 	mainWin->addPage_gui(privMsg->getWidget(), privMsg->getTitle(), true);
+	mainWin->appendWindowItem(privMsg->getWidget(), user->getNick());
 	gtk_widget_unref(privMsg->getWidget());
 	bookEntrys.push_back(privMsg);
 	

@@ -265,6 +265,7 @@ void Hub::getPassword_gui() {
 		GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
 		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 		NULL);
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	entry = gtk_entry_new();
 	gtk_entry_set_visibility(GTK_ENTRY(entry), FALSE);
@@ -544,16 +545,20 @@ void Hub::on(ClientListener::GetPassword, Client *client) throw() {
 }
 
 void Hub::on(ClientListener::HubUpdated, Client *client) throw() {
-	Func1<BookEntry, string> *func;
-	
-	//name is never set ???
-	if (client->getName().empty()) {
-		string hubName = client->getAddress() + ":" + client->getAddressPort();
-		func = new Func1<BookEntry, string>(this, &BookEntry::setLabel_gui, hubName);
-	} else {
-		func = new Func1<BookEntry, string>(this, &BookEntry::setLabel_gui, client->getName());	
-	}
-	WulforManager::get()->dispatchGuiFunc(func);
+	typedef Func1<Hub, string> F1;
+	typedef Func2<MainWindow, GtkWidget *, string> F2;
+	string hubName;
+
+	if (client->getName().empty())
+		hubName = client->getAddress() + ":" + client->getAddressPort();
+	else
+		hubName = client->getName();
+
+	F1 *func1 = new F1(this, &BookEntry::setLabel_gui, hubName);
+	WulforManager::get()->dispatchGuiFunc(func1);
+
+	F2 *func2 = new F2(WulforManager::get()->getMainWindow(), &MainWindow::modifyWindowItem, getWidget(), hubName);
+	WulforManager::get()->dispatchGuiFunc(func2);
 }
 
 void Hub::on(ClientListener::Message, 

@@ -38,6 +38,10 @@ FinishedTransfers::FinishedTransfers(int type, std::string title, GCallback clos
 	totalSize = GTK_STATUSBAR(glade_xml_get_widget(xml, "totalSize"));
 	averageSpeed = GTK_STATUSBAR(glade_xml_get_widget(xml, "averageSpeed"));
 
+	openWithDialog = GTK_DIALOG(glade_xml_get_widget(xml, "openWithDialog"));
+	openWithEntry = GTK_ENTRY(glade_xml_get_widget(xml, "openWithEntry"));
+	gtk_dialog_set_alternative_button_order(openWithDialog, GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+
 	// Initialize transfer treeview
 	transferView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "view")), true, "finished");
 	transferView.insertColumn("Time", G_TYPE_STRING, TreeView::STRING, 150);
@@ -67,9 +71,10 @@ FinishedTransfers::FinishedTransfers(int type, std::string title, GCallback clos
 	items = 0;
 	totalBytes = 0;
 	totalTime = 0;
-	if(type == WulforManager::get()->FINISHED_DOWNLOADS)
-			getType = false;
-	else getType = true;
+	if (type == WulforManager::get()->FINISHED_DOWNLOADS)
+		getType = false;
+	else
+		getType = true;
 	
 	FinishedManager::getInstance()->addListener(this);
 	this->updateList(FinishedManager::getInstance()->lockList(getType));
@@ -84,6 +89,7 @@ FinishedTransfers::FinishedTransfers(int type, std::string title, GCallback clos
 FinishedTransfers::~FinishedTransfers()
 {
 	FinishedManager::getInstance()->removeListener(this);
+	gtk_widget_destroy(GTK_WIDGET(openWithDialog));
 }
 
 GtkWidget *FinishedTransfers::getWidget()
@@ -179,40 +185,32 @@ void FinishedTransfers::on(AddedUl, FinishedItem* entry) throw(){
 	addEntry(entry);
 }
 
-void FinishedTransfers::openWith_gui(GtkMenuItem *, gpointer)
+void FinishedTransfers::openWith_gui(GtkMenuItem *item, gpointer data)
 {
-	MainWindow *mainWin = WulforManager::get()->getMainWindow();
-	GtkWidget *entry, *box, *label;
 	GtkTreeIter iter;
 	string command;
 	string target;
 	int ret;
 
-	GtkWidget *dialog = gtk_dialog_new_with_buttons ("Open with: ",
-		mainWin->getWindow(),
-		(GtkDialogFlags)(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
-		GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
-		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-		NULL);
+	ret = gtk_dialog_run(openWithDialog);
+	gtk_widget_hide(GTK_WIDGET(openWithDialog));
 
-	entry = gtk_entry_new();
-	box = gtk_hbox_new(false, 5);
-	label = gtk_label_new("Open with");
-	gtk_box_pack_start(GTK_BOX(box), label, TRUE, TRUE, 5);
-	gtk_box_pack_start(GTK_BOX(box), entry, TRUE, TRUE, 5);
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), box, TRUE, TRUE, 5);
-	gtk_widget_show_all(dialog);
+	if (ret == GTK_RESPONSE_OK)
+	{
+		command = gtk_entry_get_text(openWithEntry);
+		gtk_tree_selection_get_selected(transferSelection, NULL, &iter);
+		target = transferView.getString(&iter, "Target");
 
-	ret = gtk_dialog_run(GTK_DIALOG(dialog));
-	command = gtk_entry_get_text(GTK_ENTRY(entry));
-	gtk_widget_destroy(dialog);
-	if (ret != GTK_RESPONSE_ACCEPT) return;
-		
-	gtk_tree_selection_get_selected(transferSelection, NULL, &iter);
-	target = transferView.getString(&iter, "Target");
-	pid_t pid = fork();
-	if(pid == 0){
-		system(Text::toT(command + " \"" + target + "\"").c_str());
-		exit(EXIT_SUCCESS);
+		if (!command.empty() && !target.empty())
+		{
+			command += Text::utf8ToAcp(" \"" + target + "\"");
+			pthread_create(&openWithThread, NULL, &FinishedTransfers::runCommand, (void *)command.c_str());
+		}
 	}
+}
+
+void* FinishedTransfers::runCommand(void *command)
+{
+	system((char *)command);
+	pthread_exit(NULL);
 }

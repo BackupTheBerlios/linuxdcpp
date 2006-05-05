@@ -1,3 +1,15 @@
+2006-05-05 - Steven Sheehy
+* Rewrote transfer view yet again to fix a re-occuring crash.
+* Fixed some shutdown issues.
+* Fixed a Gtk warning in public hubs.
+* Fixed private messages not scrolling to the bottom on a new message.
+* Fixed Bug #4982: gtkrc button order ignored.
+* Fixed "Open with" in Finished Transfers from causing 100% cpu at times.
+* Fixed more memory leaks.
+* Increased upper limit of "No new downloads if speed exceeds" setting.
+* Moved some widget creation into glade.
+* Made "Window" menu list open hubs and private messages.
+
 2006-04-05 - paskharen
 * Added workaround for empty nicks due to unicode problems (thanks Steven Sheehy)
 

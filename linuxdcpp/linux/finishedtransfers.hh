@@ -57,6 +57,10 @@ class FinishedTransfers:
 		GtkTreeSelection *transferSelection;
 		GtkTreeIter treeIter;
 		GtkStatusbar *totalItems, *totalSize, *averageSpeed;
+		GtkDialog *openWithDialog;
+		GtkEntry *openWithEntry;
+		pthread_t openWithThread;
+		static void *runCommand(void *command);
 
 		int items;
 		bool getType;

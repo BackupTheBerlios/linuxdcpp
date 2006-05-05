@@ -38,8 +38,6 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	GObject *o;
 
 	hman->addListener(this);
-	if (hman->isDownloading())
-		setStatus_gui(statusMain, "Downloading hub list");
 	
 	string file = WulforManager::get()->getPath() + "/glade/publichubs.glade";
 	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
@@ -53,10 +51,14 @@ PublicHubs::PublicHubs(GCallback closeCallback):
 	filterEntry = GTK_ENTRY(glade_xml_get_widget(xml, "filterEntry"));
 	combo = GTK_COMBO_BOX(glade_xml_get_widget(xml, "hubListBox"));
 	configureDialog = GTK_DIALOG(glade_xml_get_widget(xml, "configureDialog"));
+	gtk_dialog_set_alternative_button_order(configureDialog, GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	statusMain = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusMain"));
 	statusHubs = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusHubs"));
 	statusUsers = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusUsers"));
+
+	if (hman->isDownloading())
+		setStatus_gui(statusMain, "Downloading hub list");
 
 	// Initialize public hub list treeview
 	hubView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "hubView")), true, "publichubs");

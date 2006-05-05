@@ -53,6 +53,9 @@ FavoriteHubs::FavoriteHubs (GCallback closeCallback):
 	dialog["Password"] = glade_xml_get_widget (xml, "entryPassword");
 	dialog["User description"] = glade_xml_get_widget (xml, "entryUDescription");
 
+	gtk_dialog_set_alternative_button_order(deleteDialog, GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog["Window"]), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+
 	menu = GTK_MENU (gtk_menu_new ());
 	menuItems["Connect"] = gtk_menu_item_new_with_label ("Connect");
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), menuItems["Connect"]);

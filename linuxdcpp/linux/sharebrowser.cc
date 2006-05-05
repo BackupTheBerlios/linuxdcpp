@@ -510,6 +510,7 @@ void ShareBrowser::findButtonClicked_gui(GtkWidget *widget, gpointer user_data) 
 		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 		GTK_STOCK_OK, GTK_RESPONSE_OK,
 		NULL));
+	gtk_dialog_set_alternative_button_order(dialog, GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	GtkWidget *frame = gtk_frame_new("Enter text to search for");
 	GtkWidget *entry = gtk_entry_new();
