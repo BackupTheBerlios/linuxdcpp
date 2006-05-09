@@ -5,6 +5,8 @@
 #
 #      debug=1:                Compile the program with debug information
 #      release=1:              Compile the program with optimizations
+#      profile=1:              Compile the program with profiling information
+#                              (Don't use unless you know what it does).
 #      PREFIX="path":          Compile the program with PREFIX as the root
 #                              for installation.
 #                              eg. PREFIX=/usr/local -> ldcpp goes into
@@ -55,9 +57,12 @@ def CheckCXXVersion(context, name, major, minor):
 	ret = commands.getoutput('%s -dumpversion' % name)
 
 	retval = 0
-	if ((string.atoi(ret[0]) == major and string.atoi(ret[2]) >= minor) 
-	or (string.atoi(ret[0]) > major)):
-		retval = 1
+	try:
+		if ((string.atoi(ret[0]) == major and string.atoi(ret[2]) >= minor) 
+		or (string.atoi(ret[0]) > major)):
+			retval = 1
+	except ValueError:
+		print "Oops! No C++ compiler found!"
                 
 	context.Result(retval)
 	return retval
@@ -82,6 +87,13 @@ if not conf.CheckCXXVersion(cxx, 3, 4):
 	     print 'Compiler version check failed. g++ 3.4 or later is needed'
 	     Exit(1)
 
+# Add support for compiler caches to speed-up compilation.
+if os.popen('distcc 2> /dev/null').read():
+	cxx = 'distcc ' + cxx
+	print 'Enabling distcc...'
+if os.popen('ccache 2> /dev/null').read():
+	cxx = 'ccache ' + cxx
+	print 'Enabling ccache...'
 conf.env.Replace(CXX = cxx)
 
 if not conf.CheckPKGConfig(): 
@@ -191,6 +203,11 @@ if int(debug):
 release = ARGUMENTS.get('release', 0)
 if int(release):
 	env.Append(CXXFLAGS = '-O3')
+
+profile = ARGUMENTS.get('profile', 0)
+if int(profile):
+	env.Append(CXXFLAGS = '-pg')
+	env.Append(LDFLAGS= '-pg')
 
 prefix = ARGUMENTS.get('PREFIX','')
 root = ARGUMENTS.get('FAKE_ROOT','')

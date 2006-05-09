@@ -1,3 +1,6 @@
+2006-05-09 - paskharen
+* Made scons file more error proof and added support for ccache and distcc (thanks Naga ans Steven Sheehy)
+
 2006-05-05 - Steven Sheehy
 * Rewrote transfer view yet again to fix a re-occuring crash.
 * Fixed some shutdown issues.
@@ -30,6 +33,7 @@ GTK_IS_TREE_VIEW.
 * Fixed a _huge_ memory leak: GtkListStores weren't unreferenced to
 zero so they were never destroyed.
 
+>>>>>>> 1.50
 2006-02-25 - paskharen
 * Fixed compile problems where 'assert' function could not be found
 
