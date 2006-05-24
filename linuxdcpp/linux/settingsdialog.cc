@@ -282,8 +282,9 @@ void Settings::saveSettings_client ()
 		}
 	}
 	
-	for (int i=0;i<o.size (); i++)
-		sm->set (optionSettings[i], o[i]);
+	for (int i = 0; i < o.size() - 1; i++)
+		sm->set(optionSettings[i], o[i]);
+	WSET("show-tray-icon", o[o.size() - 1]);
 		
 	sm->set (SettingsManager::DEFAULT_AWAY_MESSAGE, string (gtk_entry_get_text (GTK_ENTRY (appearanceItems["Away"]))));
 	sm->set (SettingsManager::TIME_STAMPS_FORMAT, string (gtk_entry_get_text (GTK_ENTRY (appearanceItems["Timestamp"]))));
@@ -898,6 +899,7 @@ void Settings::initAppearance_gui ()
 	addOption ("Set Download Queue tab bold when contents change", SETTING (QUEUE_DIRTY));
 	addOption ("Set hub/PM tab bold when contents change", SETTING (TAB_DIRTY));
 	addOption ("Confirm favorite hub removal", SETTING (CONFIRM_HUB_REMOVAL));
+	addOption("Show tray icon", WGETI("show-tray-icon"));
 	
 	gtk_entry_set_text (GTK_ENTRY (appearanceItems["Away"]), SETTING (DEFAULT_AWAY_MESSAGE).c_str ());
 	gtk_entry_set_text (GTK_ENTRY (appearanceItems["Timestamp"]), SETTING (TIME_STAMPS_FORMAT).c_str ());

@@ -37,6 +37,7 @@ WulforSettingsManager::WulforSettingsManager() {
 	defaultInt["main-window-pos-y"] = 100;
 	defaultInt["transfer-pane-position"] = 300;
 	defaultInt["nick-pane-position"] = 500;
+	defaultInt["show-tray-icon"] = 1;
 	defaultString["downloadqueue-order"] = "";
 	defaultString["downloadqueue-width"] = "";
 	defaultString["downloadqueue-visibility"] = "";
@@ -69,6 +70,8 @@ WulforSettingsManager *WulforSettingsManager::get() {
 }
 
 int WulforSettingsManager::getInt(std::string key) {
+	dcassert(intMap.find(key) != intMap.end() || defaultInt.find(key) != defaultInt.end());
+
 	if (intMap.find(key) == intMap.end())
 		return defaultInt[key];
 	else
@@ -76,6 +79,8 @@ int WulforSettingsManager::getInt(std::string key) {
 }
 
 string WulforSettingsManager::getString(std::string key) {
+	dcassert(stringMap.find(key) != stringMap.end() || defaultString.find(key) != defaultString.end());
+
 	if (stringMap.find(key) == stringMap.end())
 		return defaultString[key];
 	else

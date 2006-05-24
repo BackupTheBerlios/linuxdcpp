@@ -25,8 +25,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
- 
-#include "callback.hh"
+
 #include "func.hh"
 #include "selecter.hh"
 #include "settingsdialog.hh"
@@ -65,14 +64,7 @@ class MainWindow:
 
 		GtkWindow *getWindow();
 
-		//gui functions
-		void createWindow_gui();
-		void setStatus_gui(GtkStatusbar *status, std::string text);
-		void setStats_gui(std::string hub, std::string slot, 
-			std::string dTot, std::string uTot, std::string dl, std::string ul);
-		void addShareBrowser_gui(User::Ptr user, 
-			std::string searchString, std::string listName);
-			
+		// GUI functions
 		void addPage_gui(GtkWidget *page, GtkWidget *label, bool raise);
 		void removePage_gui(GtkWidget *page);
 		void raisePage_gui(GtkWidget *page);
@@ -80,65 +72,84 @@ class MainWindow:
 		void appendWindowItem(GtkWidget *page, std::string title);
 		void removeWindowItem(GtkWidget *page);
 		void modifyWindowItem(GtkWidget *page, std::string title);
-
 		void autoOpen_gui();
-		void openHub_gui(string server, string nick, string desc, string password);
-		void popup (GdkEventButton *event, gpointer user_data);
 
-		// Transferview related functions
-		User::Ptr getSelectedTransfer_gui ();
-
-		void connectClicked_gui(GtkWidget *widget, gpointer data);
-		void pubHubsClicked_gui(GtkWidget *widget, gpointer data);
-		void dlQueueClicked_gui(GtkWidget *widget, gpointer data);
-		void settingsClicked_gui(GtkWidget *widget, gpointer data);
-		void favHubsClicked_gui(GtkWidget *widget, gpointer data);
-		void searchClicked_gui(GtkWidget *widget, gpointer data);
-		void hashClicked_gui(GtkWidget *widget, gpointer data);
-		void aboutClicked_gui(GtkWidget *widget, gpointer data);
-		void quitClicked_gui(GtkWidget *widget, gpointer data);
-		void finishedDLclicked_gui(GtkWidget *widget, gpointer data);
-		void finishedULclicked_gui(GtkWidget *widget, gpointer data);
-		void openFList_gui(GtkWidget *widget, gpointer data);
-		void refreshFList_gui(GtkWidget *widget, gpointer data);
-
-		gboolean deleteWindow_gui(
-			GtkWidget *widget, GdkEvent *event, gpointer data);
-		void switchPage_gui (GtkNotebook *notebook, 
-			GtkNotebookPage *page, guint page_num, gpointer user_data);
-
-		//client functions
+		// Client functions
 		void autoConnect_client();
+
+	private:
+		// GUI functions
+		void createWindow_gui();
+		void createTrayIcon_gui();
+		void updateTrayToolTip_gui(std::string);
+		void setStatus_gui(GtkStatusbar *status, std::string text);
+		void setStats_gui(std::string hub, std::string slot, 
+			std::string dTot, std::string uTot, std::string dl, std::string ul);
+		void addShareBrowser_gui(User::Ptr user, std::string searchString, std::string listName);
+		void openHub_gui(string server, string nick, string desc, string password);
+		User::Ptr getSelectedTransfer_gui();
+		void popup_gui(GtkWidget *menu, GdkEventButton *event);
+
+		// Client functions
 		void startSocket_client();
 		void transferComplete_client(Transfer *t);
 
-		//From Timer manager
+		// GUI Callbacks
+		static gboolean transferClicked_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static void onGetFileListClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onMatchQueueClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onPrivateMessageClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onAddFavoriteUserClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onGrantExtraSlotClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onRemoveUserFromQueueClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onForceAttemptClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onCloseConnectionClicked_gui(GtkMenuItem *item, gpointer data);
+		static void raisePage(GtkMenuItem *item, gpointer data);
+		static void connectClicked_gui(GtkWidget *widget, gpointer data);
+		static void pubHubsClicked_gui(GtkWidget *widget, gpointer data);
+		static void dlQueueClicked_gui(GtkWidget *widget, gpointer data);
+		static void settingsClicked_gui(GtkWidget *widget, gpointer data);
+		static void favHubsClicked_gui(GtkWidget *widget, gpointer data);
+		static void searchClicked_gui(GtkWidget *widget, gpointer data);
+		static void hashClicked_gui(GtkWidget *widget, gpointer data);
+		static void quitClicked_gui(GtkWidget *widget, gpointer data);
+		static void aboutClicked_gui(GtkWidget *widget, gpointer data);
+		static void finishedDLclicked_gui(GtkWidget *widget, gpointer data);
+		static void finishedULclicked_gui(GtkWidget *widget, gpointer data);
+		static void openFileList_gui(GtkWidget *widget, gpointer data);
+		static void openOwnList_gui(GtkWidget *widget, gpointer data);
+		static void refreshFList_gui(GtkWidget *widget, gpointer data);
+		static gboolean deleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data);
+		static void switchPage_gui(GtkNotebook *notebook, GtkNotebookPage *page, guint pageNum, gpointer data);
+		static void onTrayIconClicked_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static void onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data);
+
+		// From Timer manager
 		virtual void on(TimerManagerListener::Second, u_int32_t ticks) throw();
 
-		//From Queue Manager
+		// From Queue Manager
 		virtual void on(QueueManagerListener::Finished, QueueItem *item) throw();
 
-		//From Connection manager
+		// From Connection manager
 		virtual void on(ConnectionManagerListener::Added, ConnectionQueueItem *item) throw();
 		virtual void on(ConnectionManagerListener::Removed, ConnectionQueueItem *item) throw();
 		virtual void on(ConnectionManagerListener::Failed, ConnectionQueueItem *item, const string &reason) throw();
 		virtual void on(ConnectionManagerListener::StatusChanged, ConnectionQueueItem *item) throw();
 
-		//From Download manager
+		// From Download manager
 		virtual void on(DownloadManagerListener::Starting, Download *dl) throw();
 		virtual void on(DownloadManagerListener::Tick, const Download::List &list) throw();
 		virtual void on(DownloadManagerListener::Complete, Download *dl) throw();
 		virtual void on(DownloadManagerListener::Failed, Download *dl, const string &reason) throw();
 
-		//From Upload manager
+		// From Upload manager
 		virtual void on(UploadManagerListener::Starting, Upload *ul) throw();
 		virtual void on(UploadManagerListener::Tick, const Upload::List &list) throw();
 		virtual void on(UploadManagerListener::Complete, Upload *ul) throw();
 
-		//From Log manager
+		// From Log manager
 		virtual void on(LogManagerListener::Message, const string& str) throw();
 
-	private:
 		class TransferItem
 		{
 			public:
@@ -189,27 +200,6 @@ class MainWindow:
 		void removeTransfer_gui(UserID id);
 		TransferItem* getTransferItem(UserID id);
 
-		Callback2<MainWindow, void, GtkWidget *>
-			connectCallback, pubHubsCallback, dlQueueCallback,
-			settingsCallback, favHubsCallback, searchCallback,
-			hashCallback, quitCallback, finishedDL_Callback,
-			finishedUL_Callback, openFListCallback, refreshFListCallback,
-			aboutCallback;
-		Callback3<MainWindow, gboolean, GtkWidget *, GdkEvent *>
-			deleteCallback;
-		Callback4<MainWindow, void, GtkNotebook *, GtkNotebookPage *, guint>
-			switchPageCallback;
-		static gboolean transferClicked_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
-		static void onGetFileListClicked_gui (GtkMenuItem *item, gpointer user_data);
-		static void onMatchQueueClicked_gui (GtkMenuItem *item, gpointer user_data);
-		static void onPrivateMessageClicked_gui (GtkMenuItem *item, gpointer user_data);
-		static void onAddFavoriteUserClicked_gui (GtkMenuItem *item, gpointer user_data);
-		static void onGrantExtraSlotClicked_gui (GtkMenuItem *item, gpointer user_data);
-		static void onRemoveUserFromQueueClicked_gui (GtkMenuItem *item, gpointer user_data);
-		static void onForceAttemptClicked_gui (GtkMenuItem *item, gpointer user_data);
-		static void onCloseConnectionClicked_gui (GtkMenuItem *item, gpointer user_data);
-		static void raisePage(GtkMenuItem *item, gpointer data);
-
 		int64_t lastUpdate, lastUp, lastDown;
 		int emptyStatusWidth;
 		TreeView transferView;
@@ -220,20 +210,18 @@ class MainWindow:
 		GtkEntry *connectEntry;
 		GtkStatusbar *mainStatus, *hubStatus, *slotStatus, 
 			*dTotStatus, *uTotStatus, *dlStatus, *ulStatus;
-		GtkToolButton *connectButton, *pubHubsButton, *searchButton, *settingsButton, 
-			*hashButton, *queueButton, *favHubsButton, *quitButton, *finishedDL_button,
-			*finishedUL_button;
 		GtkNotebook *book;
 		GtkWidget *popupMenu;
-		GtkWidget *filelist, *matchQueue, *privateMessage, *addToFavorites, *grantExtraSlot, *removeUser, *forceAttempt, *closeConnection;
+		GtkWidget *filelist, *matchQueue, *privateMessage, *addToFavorites,
+			*grantExtraSlot, *removeUser, *forceAttempt, *closeConnection;
 		GtkListStore *transferStore;
 		GtkTreeSelection *transferSel;
 		GdkPixbuf *uploadPic, *downloadPic;
-		GtkMenuItem *openFList, *openOwnFList, *refreshFList, *openDLdir, *quickConnect, *followRedirect, *reconnectItem,
-				*settingsItem, *quitItem, *pubHubsItem, *queueItem, *finishedDL_item, *finishedUL_item, *favHubsItem,
-				*favUsersItem, *searchItem, *ADLSearchItem, *searchSpyItem, *networkStatsItem, *hashItem, *aboutItem;
 		map<GtkWidget *, GtkWidget *> windowMenuItems;
 		GtkWidget *windowMenu;
+		GtkWidget *trayMenu;
+		GtkTooltips *trayToolTip;
+		GtkWidget *trayIcon;
 
 		// Convenience thing for the updateTransfer_gui function.
 		typedef Func1 <MainWindow, TransferItem *> UFunc;

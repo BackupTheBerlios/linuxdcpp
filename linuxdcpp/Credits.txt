@@ -16,6 +16,7 @@ Vikram Aggarwal
 Romain Beauxis
 Steven Sheehy
 Tom Lofts
+Matthew Ziegelbaum
 
 DC++:
 -----

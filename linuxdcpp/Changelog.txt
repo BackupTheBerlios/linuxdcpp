@@ -1,5 +1,11 @@
+2006-05-24 - Steven Sheehy
+* Added a tray icon (thanks Matthew Ziegelbaum).
+	Note: Icon is just a copy of DC++'s. It'd be nice if someone could make a new icon for us. =)
+* Cleaned up MainWindow.h by moving functions to private visibility where applicable.
+* Removed MainWindow dependency on callback.hh.
+
 2006-05-09 - paskharen
-* Made scons file more error proof and added support for ccache and distcc (thanks Naga ans Steven Sheehy)
+* Made scons file more error proof and added support for ccache and distcc (thanks Naga and Steven Sheehy)
 
 2006-05-05 - Steven Sheehy
 * Rewrote transfer view yet again to fix a re-occuring crash.
@@ -33,7 +39,6 @@ GTK_IS_TREE_VIEW.
 * Fixed a _huge_ memory leak: GtkListStores weren't unreferenced to
 zero so they were never destroyed.
 
->>>>>>> 1.50
 2006-02-25 - paskharen
 * Fixed compile problems where 'assert' function could not be found
 
