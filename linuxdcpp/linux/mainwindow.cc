@@ -312,27 +312,6 @@ void MainWindow::createWindow_gui() {
 	if (sm->getInt("main-window-maximized"))
 		gtk_window_maximize(window);
 	gtk_paned_set_position(transferPane, transferPanePosition);
-
-	//Create text in about window
-	GtkLabel *al = GTK_LABEL(glade_xml_get_widget(xml, "aboutLabel"));
-	string text =	string("<big>Linux DC++</big>\n") +
-					string("Bringing DC++ to Linux!\n") +
-					string("<b>Version:</b> 0.1-rc1\n") +
-					string("<b>Core version:</b> ") + string(VERSIONSTRING) + string("\n") +
-					string("<b>Developers:</b>\n ") +
-					string("Jens Oknelid (paskharen)\n") +
-					string("Alexander Nordfelth (phase)\n") +
-					string("Dyluck\n") +
-					string("s4kk3\n") +
-					string("Trent Lloyd\n") +
-					string("Kristian Berg/Ixan\n") +
-					string("luusl\n") +
-					string("Rikard Bj\303\266rklind\n") +
-					string("clairvoyant\n") +
-					string("obi\n") +
-					string("John Armstrong\n") +
-					string("Naga");
-	//gtk_label_set_markup(al, Text::acpToUtf8(text).c_str());
 	
 	GtkWidget *dummy;
 	GtkRequisition req;

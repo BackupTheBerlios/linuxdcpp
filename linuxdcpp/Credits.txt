@@ -2,6 +2,9 @@ Linuxdcpp:
 ----------
 Jens Oknelid (paskharen)
 Alexander Nordfelth (phase)
+Steven Sheehy
+
+Contributors:
 Dyluck
 s4kk3
 Trent Lloyd
@@ -14,7 +17,6 @@ John Armstrong
 Naga
 Vikram Aggarwal
 Romain Beauxis
-Steven Sheehy
 Tom Lofts
 Matthew Ziegelbaum
 
