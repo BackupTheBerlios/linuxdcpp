@@ -1,3 +1,7 @@
+2006-05-25 - Steven Sheehy
+* Forgot to add new icon to list of items for scons to install.
+* Huge cleanup of favorite hubs.
+
 2006-05-24 - Steven Sheehy
 * Added a tray icon (thanks Matthew Ziegelbaum).
 	Note: Icon is just a copy of DC++'s. It'd be nice if someone could make a new icon for us. =)
