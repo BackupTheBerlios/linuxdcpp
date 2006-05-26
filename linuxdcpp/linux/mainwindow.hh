@@ -196,9 +196,12 @@ class MainWindow:
 
 		typedef pair<User::Ptr, bool> UserID;
 		std::map<UserID, TransferItem *> transferMap;
+		TransferItem* getTransferItem(UserID id);
+
+		// More GUI funcs (can't be declared above because of TransferItem class declaration.
+		void insertTransferItem_gui(TransferItem *item);
 		void updateTransfer_gui(TransferItem *item);
 		void removeTransfer_gui(UserID id);
-		TransferItem* getTransferItem(UserID id);
 
 		int64_t lastUpdate, lastUp, lastDown;
 		int emptyStatusWidth;

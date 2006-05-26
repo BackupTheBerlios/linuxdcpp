@@ -1,3 +1,6 @@
+2006-05-26 - Steven Sheehy
+* Possible fix for the GUI freezing/deadlock that many people have been experiencing lately.
+
 2006-05-25 - Steven Sheehy
 * Forgot to add new icon to list of items for scons to install.
 * Huge cleanup of favorite hubs.
@@ -6,7 +9,7 @@
 * Added a tray icon (thanks Matthew Ziegelbaum).
 	Note: Icon is just a copy of DC++'s. It'd be nice if someone could make a new icon for us. =)
 * Cleaned up MainWindow.h by moving functions to private visibility where applicable.
-* Migrated MainWindow from callback.hh callbacks to static callbacks.
+* Migrated MainWindow from callback.hh to static callbacks.
 * Fixed the about dialog.
 
 2006-05-09 - paskharen

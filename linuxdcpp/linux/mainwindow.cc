@@ -1036,31 +1036,43 @@ void MainWindow::removeTransfer_gui(UserID id)
 MainWindow::TransferItem* MainWindow::getTransferItem(UserID id)
 {
 	TransferItem *item;
-	GtkTreeIter iter;
-	GtkTreePath *path;
-	GtkTreeModel *m = GTK_TREE_MODEL(transferStore);
 
 	if (transferMap.find(id) == transferMap.end())
 	{
 		transferMap[id] = item = new TransferItem(id.first, id.second);
-		gtk_list_store_append(transferStore, &iter);
-		path = gtk_tree_model_get_path(m, &iter);
-		item->rowRef = gtk_tree_row_reference_new(m, path);
-		if (item->isDownload)
-			gtk_list_store_set(transferStore, &iter, transferView.col("Icon"), downloadPic, -1);
-		else
-			gtk_list_store_set(transferStore, &iter, transferView.col("Icon"), uploadPic, -1);
-		gtk_list_store_set(transferStore, &iter,
-			transferView.col("User"), item->nicks.c_str(),
-			transferView.col("TransferItem"), (gpointer)item,
-			transferView.col("Hub Name"), item->hubs.c_str(),
-			-1);
+		typedef Func1<MainWindow, TransferItem *> F1;
+		F1 *f1 = new F1(this, &MainWindow::insertTransferItem_gui, item);
+		WulforManager::get()->dispatchGuiFunc(f1);
 	}
 	else
 		item = transferMap[id];
 
 	item->update.clear();
 	return item;
+}
+
+void MainWindow::insertTransferItem_gui(TransferItem *item)
+{
+	dcassert(item);
+
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	GtkTreeModel *m = GTK_TREE_MODEL(transferStore);
+
+	gtk_list_store_append(transferStore, &iter);
+	path = gtk_tree_model_get_path(m, &iter);
+	item->rowRef = gtk_tree_row_reference_new(m, path);
+
+	if (item->isDownload)
+		gtk_list_store_set(transferStore, &iter, transferView.col("Icon"), downloadPic, -1);
+	else
+		gtk_list_store_set(transferStore, &iter, transferView.col("Icon"), uploadPic, -1);
+
+	gtk_list_store_set(transferStore, &iter,
+		transferView.col("User"), item->nicks.c_str(),
+		transferView.col("Hub Name"), item->hubs.c_str(),
+		transferView.col("TransferItem"), (gpointer)item,
+		-1);
 }
 
 void MainWindow::transferComplete_client(Transfer *t)
