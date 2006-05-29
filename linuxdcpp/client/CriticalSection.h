@@ -51,19 +51,20 @@ private:
 #else
 public:
 	CriticalSection() throw() {
-#if HAVE_DECL_PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP
-		static pthread_mutex_t recmtx = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
-		mtx = recmtx;
-#else
-#error Can not find mutex type attribute.
-#endif
+		pthread_mutexattr_init(&ma);
+		pthread_mutexattr_settype(&ma, PTHREAD_MUTEX_RECURSIVE);
+		pthread_mutex_init(&mtx, &ma);
 	};
-	~CriticalSection() throw() { pthread_mutex_destroy(&mtx); };
+	~CriticalSection() throw() {
+		pthread_mutex_destroy(&mtx);
+		pthread_mutexattr_destroy(&ma);
+	};
 	void enter() throw() { pthread_mutex_lock(&mtx); };
 	void leave() throw() { pthread_mutex_unlock(&mtx); };
 	pthread_mutex_t& getMutex() { return mtx; };
 private:
 	pthread_mutex_t mtx;
+	pthread_mutexattr_t ma;
 #endif
 	CriticalSection(const CriticalSection&);
 	CriticalSection& operator=(const CriticalSection&);
@@ -176,5 +177,5 @@ private:
 
 /**
  * @file
- * $Id: CriticalSection.h,v 1.4 2005/06/25 19:24:01 paskharen Exp $
+ * $Id: CriticalSection.h,v 1.5 2006/05/29 22:23:55 stevensheehy Exp $
  */

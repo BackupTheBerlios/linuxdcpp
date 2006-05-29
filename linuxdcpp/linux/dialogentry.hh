@@ -24,16 +24,18 @@
 
 class DialogEntry {
 	public:
-		DialogEntry();
-		~DialogEntry();
+		DialogEntry(std::string id);
+		virtual ~DialogEntry();
 		
 		GtkWidget *getDialog () { return dialog; }
 		void setDialog (GtkWidget *d) { dialog = d; }
+		std::string getID() { return id; }
 		
 		virtual void applyCallback (GCallback closeCallback);
 
 	private:
 		GtkWidget *dialog;
+		std::string id;
 };
 
 #else

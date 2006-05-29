@@ -17,13 +17,20 @@
 */
 
 #include "bookentry.hh"
+#include <client/stdinc.h>
+#include <client/DCPlusPlus.h>
+#include <client/Util.h>
 
 using namespace std;
 
-BookEntry::BookEntry(int type, string id, string title, GCallback closeCallback) {
-	this->type = type;
-	this->id = id;
-	
+BookEntry::BookEntry(string title, GCallback closeCallback)
+{
+	// Allow search tab to have many tabs with the same title.
+	if (title == "Search")
+		this->id = title + Util::toString((long)this);
+	else
+		this->id = title;
+
 	box = gtk_hbox_new(FALSE, 5);
 
 	eventBox = gtk_event_box_new();
@@ -47,8 +54,7 @@ BookEntry::BookEntry(int type, string id, string title, GCallback closeCallback)
 
 	gtk_widget_show_all(box);
 	
-	g_signal_connect(G_OBJECT(button), "clicked", 
-		closeCallback, (gpointer)this);
+	g_signal_connect(G_OBJECT(button), "clicked", closeCallback, (gpointer)this);
 }
 
 BookEntry::~BookEntry() {
@@ -72,18 +78,4 @@ void BookEntry::setLabelBold_gui(std::string text) {
 		
 	const char *markup = g_markup_printf_escaped ("<b>%s</b>", text.c_str ());
 	gtk_label_set_markup (label, markup);
-}
-
-bool BookEntry::isEqual(int type, string id) {
-	if (this->type == type) 
-		return this->id == id;
-	else 
-		return false;
-}
-
-bool BookEntry::isEqual(BookEntry *entry) {
-	if (this->type == entry->type) 
-		return this->id == entry->id;
-	else 
-		return false;
 }

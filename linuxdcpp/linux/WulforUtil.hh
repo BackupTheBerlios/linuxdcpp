@@ -33,6 +33,13 @@ class WulforUtil
 		static std::vector<int> splitString(const std::string &str, const std::string &delimiter);
 		static std::string linuxSeparator(const std::string &ps);
 		static std::string windowsSeparator(const std::string &ps);
+		struct HashString
+		{
+			size_t operator() (const std::string& x) const
+			{
+				return __gnu_cxx::hash<const char *> () (x.c_str());
+			}
+		};
 };
 
 #endif

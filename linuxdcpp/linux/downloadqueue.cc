@@ -19,7 +19,7 @@
 #include "downloadqueue.hh"
 
 DownloadQueue::DownloadQueue(GCallback closeCallback):
-	BookEntry(WulforManager::DOWNLOAD_QUEUE, "", "Download Queue", closeCallback)
+	BookEntry("Download Queue", closeCallback)
 {
 	QueueManager::getInstance()->addListener(this);
 	
@@ -114,13 +114,6 @@ string DownloadQueue::getTextFromMenu (GtkMenuItem *item)
 		}
 	}
 	return "";
-}
-
-void DownloadQueue::switchedPage ()
-{
-	Func1<BookEntry, string> *func = new Func1<BookEntry, string> (
-		this, &BookEntry::setLabel_gui, string ("Download Queue"));
-	WulforManager::get()->dispatchGuiFunc(func);	
 }
 
 void DownloadQueue::contentUpdated ()

@@ -812,7 +812,7 @@ string Util::getOsVersion() {
 	return os;
 
 #else // _WIN32
-	utsname n;
+	struct utsname n;
 
 	if(uname(&n) != 0) {
 		return "unix (unknown version)";
@@ -877,6 +877,6 @@ string Util::toDOS(const string& tmp) {
 
 /**
  * @file
- * $Id: Util.cpp,v 1.4 2005/06/25 19:24:03 paskharen Exp $
+ * $Id: Util.cpp,v 1.5 2006/05/29 22:23:55 stevensheehy Exp $
  */
 

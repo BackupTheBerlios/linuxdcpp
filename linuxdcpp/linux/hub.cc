@@ -19,7 +19,7 @@
 #include "hub.hh"
 
 Hub::Hub(std::string address, GCallback closeCallback):
-	BookEntry(WulforManager::HUB, address, address, closeCallback),
+	BookEntry("Hub: " + address, closeCallback),
 	enterCallback(this, &Hub::sendMessage_gui),
 	nickListCallback(this, &Hub::popupNickMenu_gui),
 	browseCallback(this, &Hub::browseItemClicked_gui),
@@ -521,9 +521,6 @@ void Hub::on(ClientListener::Redirect,
 		client->addListener(this);
 		client->connect();
 		pthread_mutex_unlock(&clientLock);
-
-		//for bookentry, when WulforManager searches for pages
-		id = address;
 	}
 }
 
@@ -547,12 +544,12 @@ void Hub::on(ClientListener::GetPassword, Client *client) throw() {
 void Hub::on(ClientListener::HubUpdated, Client *client) throw() {
 	typedef Func1<Hub, string> F1;
 	typedef Func2<MainWindow, GtkWidget *, string> F2;
-	string hubName;
+	string hubName = "Hub: ";
 
 	if (client->getName().empty())
-		hubName = client->getAddress() + ":" + client->getAddressPort();
+		hubName += client->getAddress() + ":" + client->getAddressPort();
 	else
-		hubName = client->getName();
+		hubName += client->getName();
 
 	F1 *func1 = new F1(this, &BookEntry::setLabel_gui, hubName);
 	WulforManager::get()->dispatchGuiFunc(func1);

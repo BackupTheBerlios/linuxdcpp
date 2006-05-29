@@ -18,8 +18,8 @@
 
 #include "finishedtransfers.hh"
 
-FinishedTransfers::FinishedTransfers(int type, std::string title, GCallback closeCallback):
-			BookEntry(type, title, title, closeCallback),
+FinishedTransfers::FinishedTransfers(std::string title, GCallback closeCallback):
+			BookEntry(title, closeCallback),
 			menuCallback(this, &FinishedTransfers::popupMenu_gui),
 			removeCallback(this, &FinishedTransfers::removeItems_gui),
 			removeAllCallback(this, &FinishedTransfers::removeAll_gui),
@@ -71,7 +71,7 @@ FinishedTransfers::FinishedTransfers(int type, std::string title, GCallback clos
 	items = 0;
 	totalBytes = 0;
 	totalTime = 0;
-	if (type == WulforManager::get()->FINISHED_DOWNLOADS)
+	if (getID() == "Finished Downloads")
 		getType = false;
 	else
 		getType = true;

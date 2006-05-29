@@ -24,24 +24,18 @@
 
 class BookEntry {
 	public:
-		BookEntry(int type, std::string id, std::string title, GCallback closeCallback);
+		BookEntry(std::string title, GCallback closeCallback);
 		virtual ~BookEntry();
-		bool isEqual(int type, std::string id);
-		bool isEqual(BookEntry *entry);
 
 		//only to be called by gui thread
 		void setLabel_gui(std::string text);
 		void setLabelBold_gui (std::string text);
 		GtkWidget *getTitle();
 		virtual GtkWidget *getWidget() = 0;
-		virtual void switchedPage () {};
-		int getType () { return type; };
-
-	protected:
-		std::string id;
+		std::string getID() { return id; };
 
 	private:
-		int type;
+		std::string id;
 		GtkWidget *box, *eventBox;
 		GtkButton *button;
 		GtkLabel *label;

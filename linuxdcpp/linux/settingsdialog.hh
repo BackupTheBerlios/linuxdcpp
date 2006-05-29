@@ -22,7 +22,6 @@
 #include <gtk/gtk.h>
 #include <glade/glade.h>
 #include "treeview.hh"
-//#include "favoritedirectory.hh"
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
@@ -37,6 +36,7 @@ public:
 	~Settings ();
 
 	GtkWidget *getDialog () { return dialog; }
+	std::string getID() { return "Settings"; }
 	void saveSettings_client ();
 	
 private:

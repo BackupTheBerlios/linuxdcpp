@@ -19,7 +19,7 @@
 #include "hashdialog.hh"
 #include "wulformanager.hh"
 
-Hash::Hash () : DialogEntry ()
+Hash::Hash() : DialogEntry("Hash")
 {
 	TimerManager::getInstance ()->addListener (this);
 	string file = WulforManager::get()->getPath() + "/glade/hash.glade";

@@ -47,7 +47,6 @@ public:
 
 	// From BookEntry
 	GtkWidget *getWidget();
-	void switchedPage();
 
 	void buildList_gui ();
 	void updateStatus_gui ();

@@ -21,8 +21,8 @@
 TStringList Search::lastSearches;
 string Search::lastDir;
 
-Search::Search (GCallback closeCallback): 
-	BookEntry (WulforManager::SEARCH, Util::toString((long)this), "Search", closeCallback)
+Search::Search(GCallback closeCallback): 
+	BookEntry("Search", closeCallback)
 {
 	ClientManager::getInstance()->addListener(this);
 	SearchManager::getInstance()->addListener(this);
@@ -853,7 +853,7 @@ void Search::search_gui ()
 	string text, size, s;
 	
 	text = gtk_entry_get_text (GTK_ENTRY (GTK_BIN (searchItems["Search"])->child));
-	setLabel_gui("Search - " + text);
+	setLabel_gui("Search: " + text);
 	
 	if(!(text.length () > 0 && lastSearch + 3*1000 < TimerManager::getInstance()->getTick()))
 		return;

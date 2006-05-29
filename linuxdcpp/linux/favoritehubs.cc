@@ -19,7 +19,7 @@
 #include "favoritehubs.hh"
 
 FavoriteHubs::FavoriteHubs (GCallback closeCallback):
-	BookEntry(WulforManager::FAVORITE_HUBS, "", "Favorite Hubs", closeCallback)
+	BookEntry("Favorite Hubs", closeCallback)
 {
 	HubManager::getInstance()->addListener(this);
 

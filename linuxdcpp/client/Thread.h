@@ -29,8 +29,6 @@
 #include <sys/resource.h>
 #endif
 
-#include <linux/atomic.h>
-
 #include "Exception.h"
 STANDARD_EXCEPTION(ThreadException);
 
@@ -95,25 +93,17 @@ public:
 	void setThreadPriority(Priority p) { setpriority(PRIO_PROCESS, 0, p); };
 	static void sleep(u_int32_t millis) { ::usleep(millis*1000); };
 	static void yield() { ::sched_yield(); };
-	static long safeInc(volatile long& v) { 
-#ifdef HAVE_ASM_ATOMIC_H
-		atomic_t t = ATOMIC_INIT(v);
-		atomic_inc(&t);
-		return (v=t.counter);
-#else
-#warning FIXME
-		return ++v;
-#endif
+	static long safeInc(volatile long& v) {
+		pthread_mutex_lock(&mtx);
+		long ret = ++v;
+		pthread_mutex_unlock(&mtx);
+		return ret;
 	};
-	static long safeDec(volatile long& v) { 
-#ifdef HAVE_ASM_ATOMIC_H
-		atomic_t t = ATOMIC_INIT(v);
-		atomic_dec(&t);
-		return (v=t.counter);
-#else
-#warning FIXME
-		return --v;
-#endif
+	static long safeDec(volatile long& v) {
+		pthread_mutex_lock(&mtx);
+		long ret = --v;
+		pthread_mutex_unlock(&mtx);
+		return ret;
 	};
 #endif
 
@@ -133,6 +123,7 @@ private:
 		return 0;
 	}
 #else
+	static pthread_mutex_t mtx;
 	pthread_t threadHandle;
 	static void* starter(void* p) {
 		Thread* t = (Thread*)p;
@@ -146,6 +137,6 @@ private:
 
 /**
  * @file
- * $Id: Thread.h,v 1.7 2005/12/09 13:44:43 paskharen Exp $
+ * $Id: Thread.h,v 1.8 2006/05/29 22:23:55 stevensheehy Exp $
  */
 

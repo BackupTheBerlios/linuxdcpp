@@ -149,46 +149,7 @@ if not conf.CheckLibWithHeader('bz2', 'bzlib.h', 'c'):
 	print 'Note: You might have the lib but not the headers'
 	Exit(1)
 
-detected = 1
-cpu = os.uname()[4]
-if cpu=='i386' or cpu=='i486' or cpu=='i586' or cpu=='i686':
-	conf.env.Append(CXXFLAGS='-DTARGET_X86')
-elif cpu=='x86_64':
-	conf.env.Append(CXXFLAGS='-DTARGET_X86_64')
-elif cpu=='alpha':
-	conf.env.Append(CXXFLAGS='-DTARGET_ALPHA')
-elif cpu=='ppc':
-	conf.env.Append(CXXFLAGS='-DTARGET_POWERPC')
-elif cpu=='sparc':
-#	conf.env.Append(CXXFLAGS='-DTARGET_SPARC')
-	print 'Warning: Atomic operations for sparc not avaliable. Disabling.'
-	detected = 0
-elif cpu=='arm':
-	conf.env.Append(CXXFLAGS='-DTARGET_ARM')
-elif cpu=='mips':
-	conf.env.Append(CXXFLAGS='-DTARGET_MIPS')
-elif cpu=='ia64':
-#	conf.env.Append(CXXFLAGS='-DTARGET_IA64')
-	print 'Warning: Atomic operations for ia64 not avaliable. Disabling.'
-	detected = 0
-else:
-	print 'Warning: Unknown cpu architecture. Disabling atomic operations.'
-	print 'Cpu string reported was \"' + cpu + '\".'
-	detected = 0
-
-if detected:
-	conf.env.Append(CXXFLAGS = '-DHAVE_ASM_ATOMIC_H')
-
 conf.env.Append(CXXFLAGS = '-D_GNU_SOURCE')
-if not conf.CheckDefine('PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP', 'pthread.h', 'pthread'):
-	print 'PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP is not defined in pthread.h'
-	print 'This is required, exiting'
-	print 'Note: This is a GNU specific thing as far as we know. So if'
-	print 'your pthread implementation is not written by them this might'
-	print 'explain why we can\'t find it.'
-	Exit(1)
-else:
-	conf.env.Append(CXXFLAGS = '-DHAVE_DECL_PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP')
 
 env = conf.Finish()
 env.ParseConfig('pkg-config --cflags --libs libglade-2.0') 
@@ -239,7 +200,8 @@ pixmap_files=['pixmaps/dc++-fw.png','pixmaps/dc++.png',
 	'pixmaps/download.png','pixmaps/FinishedDL.png',
 	'pixmaps/normal-fw-op.png','pixmaps/normal-op.png',
 	'pixmaps/publichubs.png','pixmaps/search.png',
-	'pixmaps/upload.png','pixmaps/dcplusplus.png']
+	'pixmaps/upload.png','pixmaps/linuxdcpp-icon.png',
+	'pixmaps/linuxdcpp.png','pixmaps/linuxdcpp.svg']
 
 text_files=['Changelog.txt','Credits.txt','License.txt','Readme.txt']
 

@@ -7,7 +7,7 @@
   <property name="width_request">800</property>
   <property name="height_request">600</property>
   <property name="visible">True</property>
-  <property name="title" translatable="yes">Wulfor reloaded</property>
+  <property name="title" translatable="yes">LinuxDC++</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
   <property name="modal">False</property>
@@ -1127,8 +1127,9 @@ Contributors:
   Romain Beauxis
   Tom Lofts
   Matthew Ziegelbaum
+  Tobias Nygren
 </property>
-  <property name="translator_credits" translatable="yes" comments="TRANSLATORS: Replace this string with your names, one name per line.">translator-credits</property>
+  <property name="artists">Johannes Sjölund</property>
 </widget>
 
 <widget class="GtkFileChooserDialog" id="flistDialog">

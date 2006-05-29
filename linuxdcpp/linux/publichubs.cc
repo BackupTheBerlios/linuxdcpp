@@ -19,7 +19,7 @@
 #include "publichubs.hh"
 
 PublicHubs::PublicHubs(GCallback closeCallback):
-	BookEntry(WulforManager::PUBLIC_HUBS, "", "Public Hubs", closeCallback),
+	BookEntry("Public Hubs", closeCallback),
 	filterCallback(this, &PublicHubs::filterHubs_gui),
 	connectCallback(this, &PublicHubs::connect_gui),
 	refreshCallback(this, &PublicHubs::refresh_gui),

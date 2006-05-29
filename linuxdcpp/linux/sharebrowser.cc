@@ -19,8 +19,7 @@
 #include "sharebrowser.hh"
 
 ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCallback):
-	BookEntry(WulforManager::SHARE_BROWSER, 
-		user->getFullNick(), user->getNick(), closeCallback),
+	BookEntry("List: " + user->getNick(), closeCallback),
 	listing(user),
 	lastDir(""),
 	posDir(NULL)

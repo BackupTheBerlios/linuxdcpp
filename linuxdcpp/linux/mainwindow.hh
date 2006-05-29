@@ -63,9 +63,10 @@ class MainWindow:
 		~MainWindow();
 
 		GtkWindow *getWindow();
+		std::string getID() { return "Main Window"; }
 
 		// GUI functions
-		void addPage_gui(GtkWidget *page, GtkWidget *label, bool raise);
+		void addPage_gui(GtkWidget *page, GtkWidget *label, bool raise = TRUE);
 		void removePage_gui(GtkWidget *page);
 		void raisePage_gui(GtkWidget *page);
 		GtkWidget *currentPage_gui();
@@ -120,7 +121,6 @@ class MainWindow:
 		static void openOwnList_gui(GtkWidget *widget, gpointer data);
 		static void refreshFList_gui(GtkWidget *widget, gpointer data);
 		static gboolean deleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data);
-		static void switchPage_gui(GtkNotebook *notebook, GtkNotebookPage *page, guint pageNum, gpointer data);
 		static void onTrayIconClicked_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static void onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data);
 
@@ -162,22 +162,35 @@ class MainWindow:
 				failed = FALSE;
 			}
 
-			void setFile(std::string file) { this->file = file; update["file"] = TRUE; }
-			void setPath(std::string path) { this->path = path; update["path"] = TRUE; }
+			typedef enum
+			{
+				MASK_FILE = 1 << 0,
+				MASK_PATH = 1 << 1,
+				MASK_STATUS = 1 << 2,
+				MASK_TIME = 1 << 3,
+				MASK_SORT_ORDER = 1 << 4,
+				MASK_SIZE = 1 << 5,
+				MASK_SPEED = 1 << 6,
+				MASK_PROGRESS = 1 << 7,
+			} Mask;
+
+			bool isSet(Mask m) { return updateMask & m; }
+			void setFile(std::string file) { this->file = file; updateMask |= MASK_FILE; }
+			void setPath(std::string path) { this->path = path; updateMask |= MASK_PATH; }
 			void setStatus(std::string status, bool failed = FALSE)
 			{
 				if (!this->failed)
 					this->status = status;
-				update["status"] = TRUE;
 				this->failed = failed;
+				updateMask |= MASK_STATUS;
 			}
-			void setTime(std::string time) { this->time = time; update["time"] = TRUE; }
-			void setSortOrder(std::string sortOrder) { this->sortOrder = sortOrder; update["sortOrder"] = TRUE; }
-			void setSize(int64_t size) { this->size = size; update["size"] = TRUE; }
-			void setSpeed(int64_t speed) { this->speed = speed; update["speed"] = TRUE; }
-			void setProgress(int progress) { this->progress = progress; update["progress"] = TRUE; }
+			void setTime(std::string time) { this->time = time; updateMask |= MASK_TIME; }
+			void setSortOrder(std::string sortOrder) { this->sortOrder = sortOrder; updateMask |= MASK_SORT_ORDER; }
+			void setSize(int64_t size) { this->size = size; updateMask |= MASK_SIZE; }
+			void setSpeed(int64_t speed) { this->speed = speed; updateMask |= MASK_SPEED; }
+			void setProgress(int progress) { this->progress = progress; updateMask |= MASK_PROGRESS; }
 
-			map<std::string, bool> update;
+			u_int32_t updateMask;
 			User::Ptr user;
 			bool isDownload;
 			GtkTreeRowReference *rowRef;
@@ -199,9 +212,9 @@ class MainWindow:
 		TransferItem* getTransferItem(UserID id);
 
 		// More GUI funcs (can't be declared above because of TransferItem class declaration.
-		void insertTransferItem_gui(TransferItem *item);
+		void insertTransfer_gui(TransferItem *item);
 		void updateTransfer_gui(TransferItem *item);
-		void removeTransfer_gui(UserID id);
+		void removeTransfer_gui(TransferItem *item);
 
 		int64_t lastUpdate, lastUp, lastDown;
 		int emptyStatusWidth;

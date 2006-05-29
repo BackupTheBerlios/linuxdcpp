@@ -32,7 +32,7 @@ class FinishedTransfers:
 {
 	public:
 	
-		FinishedTransfers(int type, std::string title, GCallback closeCallback);
+		FinishedTransfers(std::string title, GCallback closeCallback);
 		~FinishedTransfers();
 	
 		// From BookEntry

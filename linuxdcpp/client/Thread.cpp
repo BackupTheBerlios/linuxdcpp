@@ -23,6 +23,10 @@
 
 #include "ResourceManager.h"
 
+#ifndef _WIN32
+pthread_mutex_t Thread::mtx = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
 #ifdef _WIN32
 void Thread::start() throw(ThreadException) {
 	join();
@@ -41,6 +45,6 @@ void Thread::start() throw(ThreadException) {
 #endif
 /**
  * @file
- * $Id: Thread.cpp,v 1.4 2005/06/25 19:24:03 paskharen Exp $
+ * $Id: Thread.cpp,v 1.5 2006/05/29 22:23:55 stevensheehy Exp $
  */
 

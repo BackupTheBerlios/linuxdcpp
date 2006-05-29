@@ -20,11 +20,16 @@
 
 using namespace std;
 
-DialogEntry::DialogEntry() {
-}
-DialogEntry::~DialogEntry() {
-}
-void DialogEntry::applyCallback (GCallback closeCallback)
+DialogEntry::DialogEntry(string id)
 {
-	g_signal_connect (G_OBJECT (dialog), "close", closeCallback, (gpointer)this);
+	this->id = id;
+}
+
+DialogEntry::~DialogEntry()
+{
+}
+
+void DialogEntry::applyCallback(GCallback closeCallback)
+{
+	g_signal_connect(G_OBJECT(dialog), "response", closeCallback, (gpointer)this);
 }

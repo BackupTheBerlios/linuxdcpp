@@ -19,6 +19,8 @@ Vikram Aggarwal
 Romain Beauxis
 Tom Lofts
 Matthew Ziegelbaum
+Tobias Nygren
+Johannes Sjölund
 
 DC++:
 -----

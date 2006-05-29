@@ -142,6 +142,16 @@ void MainWindow::createWindow_gui() {
 	connectEntry = GTK_ENTRY(glade_xml_get_widget(xml, "connectEntry"));
 	windowMenu = glade_xml_get_widget(xml, "windowMenu");
 
+	// Set the logo in the about menu.
+	file = WulforManager::get()->getPath() + "/pixmaps/linuxdcpp.png";
+	GtkImage *logo = GTK_IMAGE(gtk_image_new_from_file(file.c_str()));
+	gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(aboutDialog), gtk_image_get_pixbuf(logo));
+
+	// Set all windows to the default icon
+	file = WulforManager::get()->getPath() + "/pixmaps/linuxdcpp-icon.png";
+	gtk_window_set_icon_from_file(window, file.c_str(), NULL);
+	gtk_window_set_default_icon_from_file(file.c_str(), NULL);
+
 	GtkMenuItem *openFList = GTK_MENU_ITEM(glade_xml_get_widget(xml, "open_file_list_1"));
 	GtkMenuItem *openOwnFList = GTK_MENU_ITEM(glade_xml_get_widget(xml, "open_own_list1"));
 	GtkMenuItem *refreshFList = GTK_MENU_ITEM(glade_xml_get_widget(xml, "refresh_file_list1"));
@@ -297,7 +307,6 @@ void MainWindow::createWindow_gui() {
 	g_signal_connect(G_OBJECT(openOwnFList), "activate", G_CALLBACK(openOwnList_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(refreshFList), "activate", G_CALLBACK(refreshFList_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(deleteWindow_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(book), "switch-page", G_CALLBACK(switchPage_gui), (gpointer)this);
 
 	//Load window state and position from settings manager
 	WulforSettingsManager *sm = WulforSettingsManager::get();
@@ -331,15 +340,22 @@ void MainWindow::createTrayIcon_gui()
 {
 	GtkWidget *trayBox, *trayImage, *toggleWindowItem, *quitItem;
 	string iconPath;
+	gint alpha;
+	GdkPixmap *pixmap;
 
 	trayIcon = GTK_WIDGET(egg_tray_icon_new("Linux DC++"));
 	trayBox = gtk_event_box_new();
-	iconPath = WulforManager::get()->getPath() + "/pixmaps/dcplusplus.png";
+	iconPath = WulforManager::get()->getPath() + "/pixmaps/linuxdcpp-icon.png";
 	trayImage = gtk_image_new_from_file(iconPath.c_str());
 	trayToolTip = gtk_tooltips_new();
 	trayMenu = gtk_menu_new();
 	toggleWindowItem = gtk_menu_item_new_with_label("Show/Hide Interface");
 	quitItem = gtk_menu_item_new_with_label("Quit");
+
+	// Have to set icon background as transparent manually since eggtrayicon sucks.
+	gdk_pixbuf_render_pixmap_and_mask(gtk_image_get_pixbuf(GTK_IMAGE(trayImage)), NULL, &pixmap, 64);
+	gtk_widget_shape_combine_mask(trayIcon, pixmap, 0, 0);
+	g_object_unref(pixmap);
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(trayMenu), toggleWindowItem);
 	gtk_menu_shell_append(GTK_MENU_SHELL(trayMenu), quitItem);
@@ -385,9 +401,7 @@ void MainWindow::raisePage(GtkMenuItem *item, gpointer data)
 {
 	MainWindow *mw = (MainWindow *)data;
 	GtkWidget *page = (GtkWidget *)g_object_get_data(G_OBJECT(item), "tabWidget");
-	typedef Func1<MainWindow, GtkWidget *> F1;
-	F1 *func = new F1(mw, &MainWindow::raisePage_gui, page);
-	WulforManager::get()->dispatchGuiFunc(func);
+	mw->raisePage_gui(page);
 }
 
 gboolean MainWindow::transferClicked_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
@@ -582,7 +596,6 @@ void MainWindow::searchClicked_gui(GtkWidget *widget, gpointer data) {
 void MainWindow::hashClicked_gui(GtkWidget *widget, gpointer data) {
 	Hash *h = WulforManager::get()->openHashDialog_gui();
 	gtk_dialog_run(GTK_DIALOG(h->getDialog()));
-	WulforManager::get()->deleteDialogEntry_gui();
 }
 
 void MainWindow::dlQueueClicked_gui(GtkWidget *widget, gpointer data) {
@@ -596,13 +609,13 @@ void MainWindow::favHubsClicked_gui(GtkWidget *widget, gpointer data) {
 void MainWindow::finishedDLclicked_gui(GtkWidget *widget, gpointer data)
 {
 	WulforManager *wm = WulforManager::get();
-	wm->addFinishedTransfers_gui(wm->FINISHED_DOWNLOADS, "Finished Downloads"); 
+	wm->addFinishedTransfers_gui("Finished Downloads"); 
 }
 
 void MainWindow::finishedULclicked_gui(GtkWidget *widget, gpointer data)
 {
 	WulforManager *wm = WulforManager::get();
-	wm->addFinishedTransfers_gui(wm->FINISHED_UPLOADS, "Finished Uploads");
+	wm->addFinishedTransfers_gui("Finished Uploads");
 }
 
 void MainWindow::settingsClicked_gui(GtkWidget *widget, gpointer data)
@@ -678,6 +691,7 @@ gboolean MainWindow::deleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpoint
 	if (!BOOLSETTING(CONFIRM_EXIT))
 	{
 		mw->transferView.saveSettings();
+		WulforManager::get()->deleteAllDialogEntries();
 		WulforManager::get()->deleteAllBookEntries();
 		gtk_main_quit();
 		return TRUE;
@@ -690,6 +704,7 @@ gboolean MainWindow::deleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpoint
 	if (response == GTK_RESPONSE_OK)
 	{
 		mw->transferView.saveSettings();
+		WulforManager::get()->deleteAllDialogEntries();
 		WulforManager::get()->deleteAllBookEntries();
 		gtk_main_quit();
 		return TRUE;
@@ -698,16 +713,7 @@ gboolean MainWindow::deleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpoint
 	return TRUE;
 }
 
-void MainWindow::switchPage_gui(GtkNotebook *notebook, 
-	GtkNotebookPage *page, guint page_num, gpointer user_data)
-{
-	BookEntry *b = WulforManager::get()->getBookEntry_gui(page_num);
-	if (b)
-		b->switchedPage();
-}
-
-void MainWindow::openHub_gui(
-	string server, string nick, string desc, string password)
+void MainWindow::openHub_gui(string server, string nick, string desc, string password)
 {
 	WulforManager::get()->addHub_gui(server, nick, desc, password);
 }
@@ -747,8 +753,7 @@ void MainWindow::autoOpen_gui() {
 	if (SETTING(OPEN_FAVORITE_HUBS))
 		WulforManager::get()->addFavoriteHubs_gui();
 	if (BOOLSETTING(OPEN_FINISHED_DOWNLOADS)) {
-		WulforManager::get()->addFinishedTransfers_gui(
-			WulforManager::FINISHED_DOWNLOADS, "Finished Downloads"); 
+		WulforManager::get()->addFinishedTransfers_gui("Finished Downloads"); 
 	}
 }
 
@@ -952,7 +957,7 @@ void MainWindow::openOwnList_gui(GtkWidget *widget, gpointer data)
 	MainWindow *mw = (MainWindow *)data;
 	User::Ptr user;
 	string path, filename;
-	user = new User("My List");
+	user = new User(SETTING(NICK));
 	path = Util::getDataPath() + "files.xml.bz2";
 	try
 	{
@@ -973,28 +978,32 @@ void MainWindow::updateTransfer_gui(TransferItem *item)
 	dcassert(item);
 
 	GtkTreeIter iter;
-	GtkTreePath *treePath;
+	GtkTreePath *path;
 
-	treePath = gtk_tree_row_reference_get_path(item->rowRef);
-	if (!gtk_tree_model_get_iter(GTK_TREE_MODEL(transferStore), &iter, treePath))
+	path = gtk_tree_row_reference_get_path(item->rowRef);
+	if (!gtk_tree_model_get_iter(GTK_TREE_MODEL(transferStore), &iter, path))
+	{
+		gtk_tree_path_free(path);
 		return;
+	}
+	gtk_tree_path_free(path);
 
-	if (item->update["file"] && !item->file.empty())
+	if (item->isSet(TransferItem::MASK_FILE) && !item->file.empty())
 		gtk_list_store_set(transferStore, &iter, transferView.col("Filename"), item->file.c_str(), -1);
 
-	if (item->update["path"] && !item->path.empty())
+	if (item->isSet(TransferItem::MASK_PATH) && !item->path.empty())
 		gtk_list_store_set(transferStore, &iter, transferView.col("Path"), item->path.c_str(), -1);
 
-	if (item->update["status"] && !item->status.empty())
+	if (item->isSet(TransferItem::MASK_STATUS) && !item->status.empty())
 		gtk_list_store_set(transferStore, &iter, transferView.col("Status"), item->status.c_str(), -1);
 
-	if (item->update["time"] && !item->time.empty())
+	if (item->isSet(TransferItem::MASK_TIME) && !item->time.empty())
 		gtk_list_store_set(transferStore, &iter, transferView.col("Time Left"), item->time.c_str(), -1);
 
-	if (item->update["sortOrder"] && !item->sortOrder.empty())
+	if (item->isSet(TransferItem::MASK_SORT_ORDER) && !item->sortOrder.empty())
 		gtk_list_store_set(transferStore, &iter, transferView.col("Sort Order"), item->sortOrder.c_str(), -1);
 
-	if (item->update["size"] && item->size >= 0)
+	if (item->isSet(TransferItem::MASK_SIZE) && item->size >= 0)
 	{
 		gtk_list_store_set(transferStore, &iter,
 			transferView.col("Size"), Util::formatBytes(item->size).c_str(),
@@ -1002,7 +1011,7 @@ void MainWindow::updateTransfer_gui(TransferItem *item)
 			-1);
 	}
 
-	if (item->update["speed"] && item->speed >= 0)
+	if (item->isSet(TransferItem::MASK_SPEED) && item->speed >= 0)
 	{
 		gtk_list_store_set(transferStore, &iter,
 			transferView.col("Speed"),  Util::formatBytes(item->speed).append("/s").c_str(),
@@ -1010,27 +1019,23 @@ void MainWindow::updateTransfer_gui(TransferItem *item)
 			-1);
 	}
 
-	if (item->update["progress"] && item->progress >= 0 && item->progress <= 100)
+	if (item->isSet(TransferItem::MASK_PROGRESS) && item->progress >= 0 && item->progress <= 100)
 		gtk_list_store_set(transferStore, &iter, transferView.col("Progress"), item->progress, -1);
 }
 
-void MainWindow::removeTransfer_gui(UserID id)
+void MainWindow::removeTransfer_gui(TransferItem *item)
 {
 	GtkTreeIter iter;
 	GtkTreePath *path;
-	TransferItem *item;
 
-	if (transferMap.find(id) != transferMap.end())
-	{
-		item = transferMap[id];
-		path = gtk_tree_row_reference_get_path(item->rowRef);
-		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(transferStore), &iter, path))
+	path = gtk_tree_row_reference_get_path(item->rowRef);
+	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(transferStore), &iter, path))
 		gtk_list_store_remove(transferStore, &iter);
 
-		gtk_tree_row_reference_free(item->rowRef);
-		delete item;
-		transferMap.erase(id);
-	}
+	gtk_tree_path_free(path);
+	gtk_tree_row_reference_free(item->rowRef);
+	delete item;
+	item = NULL;
 }
 
 MainWindow::TransferItem* MainWindow::getTransferItem(UserID id)
@@ -1041,17 +1046,17 @@ MainWindow::TransferItem* MainWindow::getTransferItem(UserID id)
 	{
 		transferMap[id] = item = new TransferItem(id.first, id.second);
 		typedef Func1<MainWindow, TransferItem *> F1;
-		F1 *f1 = new F1(this, &MainWindow::insertTransferItem_gui, item);
+		F1 *f1 = new F1(this, &MainWindow::insertTransfer_gui, item);
 		WulforManager::get()->dispatchGuiFunc(f1);
 	}
 	else
 		item = transferMap[id];
 
-	item->update.clear();
+	item->updateMask = 0;
 	return item;
 }
 
-void MainWindow::insertTransferItem_gui(TransferItem *item)
+void MainWindow::insertTransfer_gui(TransferItem *item)
 {
 	dcassert(item);
 
@@ -1062,6 +1067,7 @@ void MainWindow::insertTransferItem_gui(TransferItem *item)
 	gtk_list_store_append(transferStore, &iter);
 	path = gtk_tree_model_get_path(m, &iter);
 	item->rowRef = gtk_tree_row_reference_new(m, path);
+	gtk_tree_path_free(path);
 
 	if (item->isDownload)
 		gtk_list_store_set(transferStore, &iter, transferView.col("Icon"), downloadPic, -1);
@@ -1118,9 +1124,14 @@ void MainWindow::on(ConnectionManagerListener::Removed, ConnectionQueueItem *cqi
 {
 	UserID id(cqi->getUser(), cqi->getDownload());
 
-	typedef Func1 <MainWindow, UserID> F1;
-	F1 *func = new F1(this, &MainWindow::removeTransfer_gui, id);
-	WulforManager::get()->dispatchGuiFunc(func);
+	if (transferMap.find(id) != transferMap.end())
+	{
+		TransferItem *item = transferMap[id];
+		transferMap.erase(id);
+		typedef Func1 <MainWindow, TransferItem *> F1;
+		F1 *func = new F1(this, &MainWindow::removeTransfer_gui, item);
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
 }
 
 void MainWindow::on(ConnectionManagerListener::Failed, ConnectionQueueItem *cqi, const string &reason) throw()

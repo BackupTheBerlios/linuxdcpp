@@ -146,6 +146,7 @@ wstring& Text::acpToWide(const string& str, wstring& tmp) throw() {
 	if (n < 1) {
 		return tmp;
 	}
+	src = str.c_str(); // Certain mbsrtowcs() implementations destroy the src
 	tmp.resize(n);
 	n = mbsrtowcs(&tmp[0], &src, n, NULL);
 	if (n < 1) {
@@ -184,6 +185,7 @@ string& Text::wideToAcp(const wstring& str, string& tmp) throw() {
 	if (n < 1) {
 		return tmp;
 	}
+	src = str.c_str();
 	tmp.resize(n);
 	n = wcsrtombs(&tmp[0], &src, n, NULL);
 	if(n < 1) {
@@ -256,5 +258,5 @@ string& Text::toLower(const string& str, string& tmp) throw() {
 
 /**
  * @file
- * $Id: Text.cpp,v 1.5 2005/09/14 08:49:58 paskharen Exp $
+ * $Id: Text.cpp,v 1.6 2006/05/29 22:23:55 stevensheehy Exp $
  */

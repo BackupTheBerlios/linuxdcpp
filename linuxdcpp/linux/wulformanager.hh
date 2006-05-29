@@ -24,6 +24,7 @@
 #include <semaphore.h>
 #include <string>
 #include <vector>
+#include <ext/hash_map>
 
 #include "func.hh"
 #include "mainwindow.hh"
@@ -40,81 +41,78 @@
 #include "hashdialog.hh"
 #include "finishedtransfers.hh"
 
-class WulforManager {
+class WulforManager
+{
 	public:
-		static WulforManager *get();
 		static void start();
 		static void stop();
-
-		void dispatchGuiFunc(FuncBase *func);
-		void dispatchClientFunc(FuncBase *func);
+		static WulforManager *get();
 
 		WulforManager();
 		~WulforManager();
-		std::string getPath();
 
+		std::string getPath();
 		MainWindow *createMainWindow();
 		MainWindow *getMainWindow();
+		void dispatchGuiFunc(FuncBase *func);
+		void dispatchClientFunc(FuncBase *func);
+
+		// BookEntry functions
 		PrivateMessage *getPrivMsg_gui(User::Ptr user);
 		PrivateMessage *getPrivMsg_client(User::Ptr user);
-
 		PublicHubs *addPublicHubs_gui();
 		Hub *addHub_gui(std::string address, std::string nick="", std::string desc="", std::string password="");
 		PrivateMessage *addPrivMsg_gui(User::Ptr user);
-		DownloadQueue *addDownloadQueue_gui ();
-		FavoriteHubs *addFavoriteHubs_gui ();
-		Settings *openSettingsDialog_gui ();
-		Hash *openHashDialog_gui ();
+		DownloadQueue *addDownloadQueue_gui();
+		FavoriteHubs *addFavoriteHubs_gui();
+		Settings *openSettingsDialog_gui();
 		Search *addSearch_gui();
 		ShareBrowser *addShareBrowser_gui(User::Ptr user, std::string file);
-		FinishedTransfers *addFinishedTransfers_gui(int type, std::string title);
-
-		BookEntry *getBookEntry_gui(int type, string id, bool raise);
-		BookEntry *getBookEntry_gui(int nr);
-		BookEntry *getBookEntry_client(int type, string id, bool raise);
-		void deleteBookEntry_gui(BookEntry *entry);
+		FinishedTransfers *addFinishedTransfers_gui(std::string title);
 		void deleteAllBookEntries();
-		
-		void deleteDialogEntry_gui();
 
-		enum {
-			PUBLIC_HUBS,
-			HUB,
-			SEARCH,
-			PRIVATE_MSG,
-			SHARE_BROWSER,
-			DOWNLOAD_QUEUE,
-			FAVORITE_HUBS,
-			SETTINGS,
-			HASH,
-			FINISHED_UPLOADS,
-			FINISHED_DOWNLOADS
-		};
+		// DialogEntry functions
+		Hash *openHashDialog_gui();
+		void deleteAllDialogEntries();
 
 	private:
+		// BookEntry functions
+		BookEntry *getBookEntry_gui(std::string id, bool raise = TRUE);
+		BookEntry *getBookEntry_client(std::string id, bool raise = TRUE);
+		void insertBookEntry(BookEntry *entry);
+		void deleteBookEntry_gui(BookEntry *entry);
+
+		// DialogEntry functions
+		DialogEntry *getDialogEntry_gui(std::string id);
+		void insertDialogEntry(DialogEntry *entry);
+		void hideDialogEntry_gui(DialogEntry *entry);
+		void deleteDialogEntry_gui(DialogEntry *entry);
+
+		// Thread-related functions
 		static void *threadFunc_gui(void *data);
 		static void *threadFunc_client(void *data);
-		static gboolean guiCallback(gpointer data);
-		static void closeEntry_callback(GtkWidget *widget, gpointer data);
-		static void dialogCloseEntry_callback(GtkWidget *widget, gpointer data);
-		void callGuiFunc();
 		void processGuiQueue();
 		void processClientQueue();
 
+		// Callbacks
+		static void closeEntry_callback(GtkWidget *widget, gpointer data);
+		static void dialogCloseEntry_callback(GtkDialog *dialog, gint response, gpointer data);
+
 		static WulforManager *manager;
+		MainWindow *mainWin;
 
 		std::vector<FuncBase *> guiFuncs;
 		std::vector<FuncBase *> clientFuncs;
+		hash_map<std::string, BookEntry *, WulforUtil::HashString> bookEntries;
+		hash_map<std::string, DialogEntry *, WulforUtil::HashString> dialogEntries;
 
 		pthread_mutex_t clientCallLock;
 		pthread_mutex_t guiQueueLock, clientQueueLock;
 		pthread_mutex_t bookEntryLock;
+		pthread_mutex_t dialogEntryLock;
+		pthread_mutex_t deleteBookEntryLock;
 		sem_t guiSem, clientSem;
 		pthread_t guiThread, clientThread;
-
-		MainWindow *mainWin;
-		std::vector<BookEntry *> bookEntrys;
-		DialogEntry *dialogEntry;
 };
 
 #else
