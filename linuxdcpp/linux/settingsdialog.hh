@@ -22,6 +22,7 @@
 #include <gtk/gtk.h>
 #include <glade/glade.h>
 #include "treeview.hh"
+#include <ext/hash_map>
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
@@ -111,12 +112,12 @@ private:
 	GtkListStore *advancedStore;
 	static SettingsManager::IntSetting advancedSettings[];
 
-	std::map<string,GtkWidget*> generalItems;
-	std::map<string,GtkWidget*> downloadItems;
-	std::map<string,GtkWidget*> shareItems;
-	std::map<string,GtkWidget*> appearanceItems;
-	std::map<string,GtkWidget*> logItems;
-	std::map<string,GtkWidget*> advancedItems;
+	hash_map<string, GtkWidget *, WulforUtil::HashString> generalItems;
+	hash_map<string, GtkWidget *, WulforUtil::HashString> downloadItems;
+	hash_map<string, GtkWidget *, WulforUtil::HashString> shareItems;
+	hash_map<string, GtkWidget *, WulforUtil::HashString> appearanceItems;
+	hash_map<string, GtkWidget *, WulforUtil::HashString> logItems;
+	hash_map<string, GtkWidget *, WulforUtil::HashString> advancedItems;
 
 	string lastdir;
 	

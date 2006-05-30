@@ -37,7 +37,7 @@ class WulforUtil
 		{
 			size_t operator() (const std::string& x) const
 			{
-				return __gnu_cxx::hash<const char *> () (x.c_str());
+				return hash<const char *> () (x.c_str());
 			}
 		};
 };

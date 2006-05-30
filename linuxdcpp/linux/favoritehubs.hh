@@ -22,6 +22,7 @@
 #include <gtk/gtk.h>
 #include <glade/glade.h>
 #include <iostream>
+#include <ext/hash_map>
 
 #include "bookentry.hh"
 #include "treeview.hh"
@@ -75,9 +76,9 @@ private:
 	GtkDialog *errorDialog;
 	GtkLabel *errorLabel;
 	GtkMenu *menu;
-	std::map<std::string, GtkWidget *> button;
-	std::map<std::string, GtkWidget *> dialog;
-	std::map<std::string, GtkWidget *> menuItems;
+	hash_map<std::string, GtkWidget *, WulforUtil::HashString> button;
+	hash_map<std::string, GtkWidget *, WulforUtil::HashString> dialog;
+	hash_map<std::string, GtkWidget *, WulforUtil::HashString> menuItems;
 	TreeView favoriteView;
 	GtkListStore *favoriteStore;
 	GtkTreeSelection *favoriteSelection;

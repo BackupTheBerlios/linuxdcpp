@@ -111,7 +111,7 @@ void FinishedTransfers::removeItems_gui(GtkMenuItem *, gpointer data)
 	GtkTreeIter it;
 	string time;
 	FinishedItem *entry;
-	std::map<string, FinishedItem*>::iterator iter;
+	hash_map<string, FinishedItem *, WulforUtil::HashString>::iterator iter;
 	
 	gtk_tree_selection_get_selected(transferSelection, NULL, &it);
 	time = transferView.getString(&it, "Time");

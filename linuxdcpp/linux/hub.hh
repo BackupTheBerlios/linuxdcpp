@@ -23,7 +23,7 @@
 #include <glade/glade.h>
 #include <gtk/gtk.h>
 #include <iostream>
-#include <map>
+#include <ext/hash_map>
 #include <pthread.h>
 #include <semaphore.h>
 #include <string>
@@ -131,7 +131,7 @@ class Hub:
 		GtkMenu *nickMenu;
 		GtkMenuItem *browseItem, *msgItem, *grantItem;
 
-		std::map<std::string, GdkPixbuf *> userIcons;
+		hash_map<std::string, GdkPixbuf *, WulforUtil::HashString> userIcons;
 
 		GtkWidget *mainBox;
 		GtkPaned *nickPane;

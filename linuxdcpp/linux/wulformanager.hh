@@ -110,7 +110,6 @@ class WulforManager
 		pthread_mutex_t guiQueueLock, clientQueueLock;
 		pthread_mutex_t bookEntryLock;
 		pthread_mutex_t dialogEntryLock;
-		pthread_mutex_t deleteBookEntryLock;
 		sem_t guiSem, clientSem;
 		pthread_t guiThread, clientThread;
 };

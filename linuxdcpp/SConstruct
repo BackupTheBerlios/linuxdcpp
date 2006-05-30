@@ -10,12 +10,11 @@
 #      PREFIX="path":          Compile the program with PREFIX as the root
 #                              for installation.
 #                              eg. PREFIX=/usr/local -> ldcpp goes into
-#                              PREFIX/bin/ and other files into PREFIX/lib/
-#                              and PREFIX/share/
+#                              PREFIX/bin/ and other files into PREFIX/share/
 #      BINDIR="path":          Place the program (ldcpp executable) in BINDIR
 #                              defaluts to PREFIX/bin/
-#      LIBDIR="path":          Place the glade and pixmap files under LIBDIR
-#                              defaults to PREFIX/lib/
+#      DATADIR="path":          Place the glade and pixmap files under DATADIR
+#                              defaults to PREFIX/share/
 #      DOCDIR="path":          Place the program docs into DOCDIR
 #                              defaults to PREFIX/share/doc/
 #      FAKE_ROOT="path":       Make scons install ldcpp under a fake root
@@ -174,11 +173,11 @@ prefix = ARGUMENTS.get('PREFIX','')
 root = ARGUMENTS.get('FAKE_ROOT','')
 _dir = ''
 bindir = ARGUMENTS.get('BINDIR', prefix + '/bin')
-libdir = ARGUMENTS.get('LIBDIR', prefix + '/lib')
+datadir = ARGUMENTS.get('DATADIR', prefix + '/share')
 docdir = ARGUMENTS.get('DOCDIR', prefix + '/share/doc')
 if str(prefix):
 	env.Append(CXXFLAGS = '-D_PREFIX=\'\"' + prefix + '\"\'')
-	env.Append(CXXFLAGS = '-D_LIBDIR=\'\"' + libdir + '\"\'')
+	env.Append(CXXFLAGS = '-D_DATADIR=\'\"' + datadir + '\"\'')
 _dir = root
 
 objs = []
@@ -205,12 +204,12 @@ pixmap_files=['pixmaps/dc++-fw.png','pixmaps/dc++.png',
 
 text_files=['Changelog.txt','Credits.txt','License.txt','Readme.txt']
 
-env.Install(dir = _dir + libdir + '/ldcpp/glade', source = glade_files)
-env.Install(dir = _dir + libdir + '/ldcpp/pixmaps', source = pixmap_files)
+env.Install(dir = _dir + datadir + '/ldcpp/glade', source = glade_files)
+env.Install(dir = _dir + datadir + '/ldcpp/pixmaps', source = pixmap_files)
 env.Install(dir = _dir + docdir + '/ldcpp', source = text_files)
 env.Install(dir = _dir + bindir, source = 'ldcpp')
 
-env.Alias('install',[_dir + libdir + '/ldcpp/glade',
-	_dir + libdir + '/ldcpp/pixmaps',
+env.Alias('install',[_dir + datadir + '/ldcpp/glade',
+	_dir + datadir + '/ldcpp/pixmaps',
 	_dir + docdir + '/ldcpp',
 	_dir + bindir])

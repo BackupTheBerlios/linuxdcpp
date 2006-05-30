@@ -52,8 +52,6 @@ int main(int argc, char *argv[]) {
 	signal(SIGPIPE, SIG_IGN);
 
 	WulforManager::start();
-	MainWindow *mw = WulforManager::get()->createMainWindow();
-
 	gdk_threads_enter();
 	gtk_main();
 	gdk_threads_leave();

@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <ext/hash_map>
 #include "settingsmanager.hh"
 #include "WulforUtil.hh"
 
@@ -108,7 +109,7 @@ class TreeView {
 		int count;
 		int visibleColumns;
 		GtkMenu *menu;
-		std::map<std::string, GtkWidget*> colMenuItems;
+		hash_map<std::string, GtkWidget*, WulforUtil::HashString> colMenuItems;
 
 		typedef std::map<std::string, Column> ColMap;
 		typedef std::map<int, std::string> SortedColMap;

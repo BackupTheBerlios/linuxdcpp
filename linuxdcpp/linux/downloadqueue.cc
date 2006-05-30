@@ -89,7 +89,7 @@ DownloadQueue::~DownloadQueue()
 {
 	QueueManager::getInstance()->removeListener(this);
 	pthread_mutex_destroy(&queueLock);
-	std::map<string, std::vector<QueueItemInfo*> >::iterator iter;
+	hash_map<string, std::vector<QueueItemInfo*>, WulforUtil::HashString>::iterator iter;
 	std::vector<QueueItemInfo*>::iterator iter2;
 	for (iter = dirFileMap.begin(); iter != dirFileMap.end(); iter++)
 		for (iter2 = iter->second.begin(); iter2 != iter->second.end(); iter2++)

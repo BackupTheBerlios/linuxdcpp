@@ -21,6 +21,7 @@
 
 #include <gtk/gtk.h>
 #include <glade/glade.h>
+#include <ext/hash_map>
 
 #include "bookentry.hh"
 #include "treeview.hh"
@@ -63,7 +64,7 @@ public:
 private:
 	GtkWidget *mainBox;	
 	
-	std::map<string,GtkWidget*> searchItems;
+	hash_map<string, GtkWidget *, WulforUtil::HashString> searchItems;
 
 	TreeView hubView, resultView;
 	GtkListStore *hubStore;
@@ -71,7 +72,7 @@ private:
 	GtkWidget *dirChooser;
 	GtkWidget *fileChooser;
 	GtkMenu *mainMenu, *downloadMenu, *downloadDirMenu;
-	std::map<string,GtkWidget*> menuItems;
+	hash_map<string, GtkWidget *, WulforUtil::HashString> menuItems;
 	vector<GtkWidget*> downloadItems, downloadDirItems;
 	GdkEventType previous;
 	

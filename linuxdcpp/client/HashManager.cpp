@@ -664,7 +664,7 @@ int HashManager::Hasher::run() {
 				VirtualFree(buf, 0, MEM_RELEASE);
 #endif
 			} else {
-				delete buf;
+				delete [] buf;
 			}
 			buf = NULL;
 		}
@@ -674,5 +674,5 @@ int HashManager::Hasher::run() {
 
 /**
  * @file
- * $Id: HashManager.cpp,v 1.4 2005/06/25 19:24:02 paskharen Exp $
+ * $Id: HashManager.cpp,v 1.5 2006/05/30 22:29:34 stevensheehy Exp $
  */

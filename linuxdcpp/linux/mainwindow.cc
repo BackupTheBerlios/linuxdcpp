@@ -42,7 +42,8 @@ MainWindow::MainWindow():
 {
 	createWindow_gui();
 	createTrayIcon_gui();
-	startSocket_client();
+	Func0<MainWindow> *f0 = new Func0<MainWindow>(this, &MainWindow::startSocket_client);
+	WulforManager::get()->dispatchClientFunc(f0);
 
 	QueueManager::getInstance()->addListener(this);
 	TimerManager::getInstance()->addListener(this);
@@ -97,7 +98,7 @@ MainWindow::~MainWindow() {
 	g_object_unref(G_OBJECT(downloadPic));
 
 	// Free the transferMap
-	map<UserID, TransferItem *>::iterator it;
+	hash_map<UserID, TransferItem *, HashPair>::iterator it;
 	for (it = transferMap.begin(); it != transferMap.end(); it++)
 	{
 		gtk_tree_row_reference_free(it->second->rowRef);
@@ -305,7 +306,7 @@ void MainWindow::createWindow_gui() {
 	g_signal_connect(G_OBJECT(aboutItem), "activate", G_CALLBACK(aboutClicked_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(openFList), "activate", G_CALLBACK(openFileList_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(openOwnFList), "activate", G_CALLBACK(openOwnList_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(refreshFList), "activate", G_CALLBACK(refreshFList_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(refreshFList), "activate", G_CALLBACK(refreshFileList_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(deleteWindow_gui), (gpointer)this);
 
 	//Load window state and position from settings manager
@@ -370,7 +371,8 @@ void MainWindow::createTrayIcon_gui()
 		gtk_widget_show_all(trayIcon);
 }
 
-GtkWindow *MainWindow::getWindow() {
+GtkWindow *MainWindow::getWindow()
+{
 	return window;
 }
 
@@ -406,37 +408,31 @@ void MainWindow::raisePage(GtkMenuItem *item, gpointer data)
 
 gboolean MainWindow::transferClicked_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
-	if (event->type == GDK_BUTTON_PRESS)
+	if (event->type == GDK_BUTTON_PRESS && event->button == 3)
 	{
-		if (event->button == 3)
+		MainWindow *mw = (MainWindow *)data;
+		int count = gtk_tree_selection_count_selected_rows(mw->transferSel);
+
+		if (count < 1)
+			return FALSE;
+		else if (count == 1)
 		{
-			MainWindow *mw = (MainWindow*)data;
-			GtkTreeSelection *selection;
-			GtkTreeModel *m = GTK_TREE_MODEL (mw->transferStore);
-			selection = mw->transferSel;
-			int count = gtk_tree_selection_count_selected_rows (selection);
-						
-			if (count < 1)
-				return FALSE;
-			else if (count == 1)
-			{
-				gtk_widget_set_sensitive (mw->filelist, true);
-				gtk_widget_set_sensitive (mw->matchQueue, true);
-				gtk_widget_set_sensitive (mw->privateMessage, true);
-				gtk_widget_set_sensitive (mw->grantExtraSlot, true);
-				gtk_widget_set_sensitive (mw->removeUser, true);
-			}	
-			else if (count > 1)
-			{
-				gtk_widget_set_sensitive (mw->filelist, false);
-				gtk_widget_set_sensitive (mw->matchQueue, false);
-				gtk_widget_set_sensitive (mw->privateMessage, false);
-				gtk_widget_set_sensitive (mw->grantExtraSlot, false);
-				gtk_widget_set_sensitive (mw->removeUser, false);			
-			}
-			mw->popup_gui(mw->popupMenu, event);
-			return TRUE;
+			gtk_widget_set_sensitive(mw->filelist, true);
+			gtk_widget_set_sensitive(mw->matchQueue, true);
+			gtk_widget_set_sensitive(mw->privateMessage, true);
+			gtk_widget_set_sensitive(mw->grantExtraSlot, true);
+			gtk_widget_set_sensitive(mw->removeUser, true);
+		}	
+		else if (count > 1)
+		{
+			gtk_widget_set_sensitive(mw->filelist, false);
+			gtk_widget_set_sensitive(mw->matchQueue, false);
+			gtk_widget_set_sensitive(mw->privateMessage, false);
+			gtk_widget_set_sensitive(mw->grantExtraSlot, false);
+			gtk_widget_set_sensitive(mw->removeUser, false);			
 		}
+		mw->popup_gui(mw->popupMenu, event);
+		return TRUE;
 	}
 	return FALSE;
 }
@@ -579,30 +575,36 @@ void MainWindow::connectClicked_gui(GtkWidget *widget, gpointer data)
 	response = gtk_dialog_run(mw->connectDialog);
 	gtk_widget_hide(GTK_WIDGET(mw->connectDialog));
 	
-	if (response == GTK_RESPONSE_OK) {
+	if (response == GTK_RESPONSE_OK)
+	{
 		address = gtk_entry_get_text(mw->connectEntry);
 		WulforManager::get()->addHub_gui(address);
 	}
 }
 
-void MainWindow::pubHubsClicked_gui(GtkWidget *widget, gpointer data) {
+void MainWindow::pubHubsClicked_gui(GtkWidget *widget, gpointer data)
+{
 	WulforManager::get()->addPublicHubs_gui();
 }
 
-void MainWindow::searchClicked_gui(GtkWidget *widget, gpointer data) {
+void MainWindow::searchClicked_gui(GtkWidget *widget, gpointer data)
+{
 	WulforManager::get()->addSearch_gui();
 }
 
-void MainWindow::hashClicked_gui(GtkWidget *widget, gpointer data) {
+void MainWindow::hashClicked_gui(GtkWidget *widget, gpointer data)
+{
 	Hash *h = WulforManager::get()->openHashDialog_gui();
 	gtk_dialog_run(GTK_DIALOG(h->getDialog()));
 }
 
-void MainWindow::dlQueueClicked_gui(GtkWidget *widget, gpointer data) {
+void MainWindow::dlQueueClicked_gui(GtkWidget *widget, gpointer data)
+{
 	WulforManager::get()->addDownloadQueue_gui();
 }
 
-void MainWindow::favHubsClicked_gui(GtkWidget *widget, gpointer data) {
+void MainWindow::favHubsClicked_gui(GtkWidget *widget, gpointer data)
+{
 	WulforManager::get()->addFavoriteHubs_gui();
 }
 
@@ -623,20 +625,21 @@ void MainWindow::settingsClicked_gui(GtkWidget *widget, gpointer data)
 	MainWindow *mw = (MainWindow *)data;
 	Settings *s = WulforManager::get()->openSettingsDialog_gui();
 	typedef Func0<MainWindow> F0;
-	F0 *func;
 
 	short lastPort = (short)SETTING(IN_PORT);
 	int lastConn = SETTING(CONNECTION_TYPE);
 	bool lastShowProgressSetting = SETTING(SHOW_PROGRESS_BARS);
-	
-	if (gtk_dialog_run(GTK_DIALOG(s->getDialog())) == GTK_RESPONSE_OK) {
+
+	if (gtk_dialog_run(GTK_DIALOG(s->getDialog())) == GTK_RESPONSE_OK)
+	{
 		s->saveSettings_client();
 		SettingsManager::getInstance()->save();
 
-		if (SETTING(CONNECTION_TYPE) != lastConn || SETTING(IN_PORT) != lastPort) {
+		if (SETTING(CONNECTION_TYPE) != lastConn || SETTING(IN_PORT) != lastPort)
+		{
 			Selecter::quit();
 			
-			func = new F0(mw, &MainWindow::startSocket_client);
+			F0 *func = new F0(mw, &MainWindow::startSocket_client);
 			WulforManager::get()->dispatchClientFunc(func);
 		}
 
@@ -696,7 +699,7 @@ gboolean MainWindow::deleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpoint
 		gtk_main_quit();
 		return TRUE;
 	}
-	
+
 	gtk_widget_show_all(GTK_WIDGET(mw->exitDialog));
 	response = gtk_dialog_run(mw->exitDialog);
 	gtk_widget_hide(GTK_WIDGET(mw->exitDialog));
@@ -718,46 +721,46 @@ void MainWindow::openHub_gui(string server, string nick, string desc, string pas
 	WulforManager::get()->addHub_gui(server, nick, desc, password);
 }
 
-void MainWindow::autoConnect_client() {
+void MainWindow::autoConnect_client()
+{
 	FavoriteHubEntry::List &l = HubManager::getInstance()->getFavoriteHubs();
 	FavoriteHubEntry::List::const_iterator it;
+	FavoriteHubEntry *entry;
 	typedef Func4<MainWindow, string, string, string, string> F4;
 	F4 *func;
+	string nick;
 
-	for (it = l.begin(); it != l.end(); it++) {
-		FavoriteHubEntry *entry = *it;
-		if (entry->getConnect())
-			if (!entry->getNick().empty () || !SETTING(NICK).empty()) {
-				string nick;
-			
-				if (entry->getNick().empty())
-					nick =  SETTING(NICK);
-				else
-					nick = entry->getNick();
-			
-				func = new F4(this, &MainWindow::openHub_gui,
-					entry->getServer(),
-					nick,
-					entry->getUserDescription(),
-					entry->getPassword());
-				WulforManager::get()->dispatchGuiFunc(func);
-			}
+	for (it = l.begin(); it != l.end(); it++)
+	{
+		entry = *it;
+		if (entry->getConnect() && (!entry->getNick().empty() || !SETTING(NICK).empty()))
+		{
+			if (entry->getNick().empty())
+				nick = SETTING(NICK);
+			else
+				nick = entry->getNick();
+
+			func = new F4(this, &MainWindow::openHub_gui, entry->getServer(),
+				nick, entry->getUserDescription(), entry->getPassword());
+			WulforManager::get()->dispatchGuiFunc(func);
+		}
 	}
 }
 
-void MainWindow::autoOpen_gui() {
+void MainWindow::autoOpen_gui()
+{
 	if (SETTING(OPEN_PUBLIC))
 		WulforManager::get()->addPublicHubs_gui();
 	if (SETTING(OPEN_QUEUE))
 		WulforManager::get()->addDownloadQueue_gui();
 	if (SETTING(OPEN_FAVORITE_HUBS))
 		WulforManager::get()->addFavoriteHubs_gui();
-	if (BOOLSETTING(OPEN_FINISHED_DOWNLOADS)) {
+	if (BOOLSETTING(OPEN_FINISHED_DOWNLOADS))
 		WulforManager::get()->addFinishedTransfers_gui("Finished Downloads"); 
-	}
 }
 
-void MainWindow::startSocket_client() {
+void MainWindow::startSocket_client()
+{
 	SearchManager::getInstance()->disconnect();
 	ConnectionManager::getInstance()->disconnect();
 
@@ -766,13 +769,16 @@ void MainWindow::startSocket_client() {
 
 	short port = (short)SETTING(IN_PORT);
 
-	while(true) {
-		try {
+	while (true)
+	{
+		try
+		{
 			ConnectionManager::getInstance()->setPort(port);
-			Selecter::WSAASyncSelect(
-				ConnectionManager::getInstance()->getServerSocket());
+			Selecter::WSAASyncSelect(ConnectionManager::getInstance()->getServerSocket());
 			break;
-		} catch(const Exception& e) {
+		}
+		catch(const Exception& e)
+		{
 			cout << "StartSocket (tcp): Caught \"" << e.getError() << "\""<< endl;
 			port++;
 			if (port > 32000)
@@ -785,11 +791,15 @@ void MainWindow::startSocket_client() {
 
 	port = (short)SETTING(UDP_PORT);
 
-	while(true) {
-		try {
+	while (true)
+	{
+		try
+		{
 			SearchManager::getInstance()->setPort(port);
 			break;
-		} catch(const Exception& e) {
+		}
+		catch(const Exception& e)
+		{
 			cout << "StartSocket (udp): Caught \"" << e.getError() << "\""<< endl;
 			port++;
 			if (port > 32000)
@@ -802,9 +812,12 @@ void MainWindow::startSocket_client() {
 }
 
 //TimerManagerListener
-void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw() {
-	int64_t diff = (int64_t)((lastUpdate == 0) ? ticks - 1000 : 
-		ticks - lastUpdate);
+void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw()
+{
+	if (!ticks) // valgrind complained that ticks was sometimes uninitialized
+		return;
+
+	int64_t diff = (int64_t)((lastUpdate == 0) ? ticks - 1000 : ticks - lastUpdate);
 	int64_t updiff = Socket::getTotalUp() - lastUp;
 	int64_t downdiff = Socket::getTotalDown() - lastDown;
 	string status1, status2, status3, status4, status5, status6;
@@ -815,10 +828,13 @@ void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw() {
 		Util::toString(SETTING(SLOTS));
 	status3 = "D: " + Util::formatBytes(Socket::getTotalDown());
 	status4 = "U: " + Util::formatBytes(Socket::getTotalUp());
-	status5 = "D: " + Util::formatBytes((int64_t)(downdiff*1000)/diff) + "/s (" +
-		Util::toString(DownloadManager::getInstance()->getDownloadCount()) + ")";
-	status6 = "U: " + Util::formatBytes((int64_t)(updiff*1000)/diff) + "/s (" +
-		Util::toString(UploadManager::getInstance()->getUploadCount()) + ")";
+	if (diff > 0)
+	{
+		status5 = "D: " + Util::formatBytes((int64_t)(downdiff*1000)/diff) + "/s (" +
+			Util::toString(DownloadManager::getInstance()->getDownloadCount()) + ")";
+		status6 = "U: " + Util::formatBytes((int64_t)(updiff*1000)/diff) + "/s (" +
+			Util::toString(UploadManager::getInstance()->getUploadCount()) + ")";
+	}
 
 	lastUpdate = ticks;
 	lastUp = Socket::getTotalUp();
@@ -838,7 +854,8 @@ void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw() {
 }
 
 //From QueueManagerListener
-void MainWindow::on(QueueManagerListener::Finished, QueueItem *item) throw() {
+void MainWindow::on(QueueManagerListener::Finished, QueueItem *item) throw()
+{
 	if (!item->isSet(QueueItem::FLAG_CLIENT_VIEW | QueueItem::FLAG_USER_LIST)) 
 		return;
 
@@ -856,38 +873,46 @@ void MainWindow::on(QueueManagerListener::Finished, QueueItem *item) throw() {
 	}
 }
 
-void MainWindow::addShareBrowser_gui(User::Ptr user, string searchString, string listName) {
+void MainWindow::addShareBrowser_gui(User::Ptr user, string searchString, string listName)
+{
 	ShareBrowser *browser;
 	browser = WulforManager::get()->addShareBrowser_gui(user, listName);
 	browser->setPosition_gui(searchString);
 }
 
-void MainWindow::addPage_gui(GtkWidget *page, GtkWidget *label, bool raise) {
+void MainWindow::addPage_gui(GtkWidget *page, GtkWidget *label, bool raise)
+{
 	gtk_notebook_append_page(book, page, label);
-	if (raise) gtk_notebook_set_current_page(book, -1);
+	if (raise)
+		gtk_notebook_set_current_page(book, -1);
 }
 
-void MainWindow::removePage_gui(GtkWidget *page) {
-	int i, pageNum = -1;
+void MainWindow::removePage_gui(GtkWidget *page)
+{
+	int pageNum = -1;
 
-	for (i=0; i<gtk_notebook_get_n_pages(book); i++)
-		if (page == gtk_notebook_get_nth_page(book, i)) pageNum = i;
-		
+	for (int i = 0; i < gtk_notebook_get_n_pages(book); i++)
+		if (page == gtk_notebook_get_nth_page(book, i))
+			pageNum = i;
+
 	dcassert(pageNum != -1);
 	gtk_notebook_remove_page(book, pageNum);
 }
 
-void MainWindow::raisePage_gui(GtkWidget *page) {
-	int i, pageNum = -1;
+void MainWindow::raisePage_gui(GtkWidget *page)
+{
+	int pageNum = -1;
 
-	for (i=0; i<gtk_notebook_get_n_pages(book); i++)
-		if (page == gtk_notebook_get_nth_page(book, i)) pageNum = i;
-		
+	for (int i = 0; i < gtk_notebook_get_n_pages(book); i++)
+		if (page == gtk_notebook_get_nth_page(book, i))
+			pageNum = i;
+
 	dcassert(pageNum != -1);
 	gtk_notebook_set_current_page(book, pageNum);
 }
 
-GtkWidget *MainWindow::currentPage_gui() {
+GtkWidget *MainWindow::currentPage_gui()
+{
 	int pageNum = gtk_notebook_get_current_page(book);
 
 	if (pageNum == -1)
@@ -896,11 +921,13 @@ GtkWidget *MainWindow::currentPage_gui() {
 		return gtk_notebook_get_nth_page(book, pageNum);
 }
 
-void MainWindow::setStatus_gui(GtkStatusbar *status, std::string text) {
+void MainWindow::setStatus_gui(GtkStatusbar *status, std::string text)
+{
 	// Apparently if (!status) ... crashes for some people. Strange.
 	if (status == NULL) return; 
 
-	if (status != mainStatus) {
+	if (status != mainStatus)
+	{
 		PangoLayout *pango;
 		int width;
 		GtkRequisition req;
@@ -933,44 +960,71 @@ void MainWindow::openFileList_gui(GtkWidget *widget, gpointer data)
 {
 	MainWindow *mw = (MainWindow *)data;
 	User::Ptr user;
-	string path, filename;
+	string username;
+	string path = Text::toT(Util::getDataPath() + "FileLists" + PATH_SEPARATOR);
 
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(mw->flistDialog), 
-		Text::toT(Util::getDataPath() + "FileLists/").c_str());
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(mw->flistDialog), path.c_str());
+
 	gtk_widget_show_all(GTK_WIDGET(mw->flistDialog));
  	int ret = gtk_dialog_run(mw->flistDialog);
 	gtk_widget_hide(GTK_WIDGET(mw->flistDialog));
 
 	if (ret == GTK_RESPONSE_OK)
 	{
-		path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(mw->flistDialog));
-		filename = g_path_get_basename(path.c_str());
-		if (filename.substr(filename.length()-8, 8) != ".xml.bz2" && Util::getFileExt(filename) != ".DcLst")
-			return;
-		user = new User(filename);
-		WulforManager::get()->addShareBrowser_gui(user, path);
+		gchar *temp = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(mw->flistDialog));
+		path = username = string(temp);
+		g_free(temp);
+
+		if (path.rfind(PATH_SEPARATOR) != string::npos)
+		{
+			username = path.substr(path.rfind(PATH_SEPARATOR) + 1);
+			if (username.rfind('.') != string::npos)
+				username.erase(username.rfind('.'));
+			if (username.substr(username.length() - 4, 4) == ".xml")
+				username.erase(username.length() - 4);
+
+			user = ClientManager::getInstance()->getUser(username);
+			WulforManager::get()->addShareBrowser_gui(user, path);
+		}
 	}
 }
 
 void MainWindow::openOwnList_gui(GtkWidget *widget, gpointer data)
 {
 	MainWindow *mw = (MainWindow *)data;
-	User::Ptr user;
-	string path, filename;
-	user = new User(SETTING(NICK));
-	path = Util::getDataPath() + "files.xml.bz2";
-	try
-	{
-		// Test if file list already exists
-		::File myFileList(path, ::File::READ, ::File::OPEN);
-		myFileList.close();
-	}
-	catch (const FileException&)
-	{
-		// No existing file list; create one instead
-		ShareManager::getInstance()->getOwnListFile();
-	}
-	WulforManager::get()->addShareBrowser_gui(user, path);
+	typedef Func0<MainWindow> F0;
+	F0 *f0 = new F0(mw, &MainWindow::openOwnList_client);
+	WulforManager::get()->dispatchClientFunc(f0);
+
+	mw->setStatus_gui(mw->mainStatus, "Loading file list");
+}
+
+void MainWindow::openOwnList_client()
+{
+	User::Ptr user = ClientManager::getInstance()->getUser(SETTING(NICK));
+	string path = ShareManager::getInstance()->getOwnListFile();
+
+	typedef Func3<MainWindow, User::Ptr, string, string> F3;
+	F3 *f3 = new F3(this, &MainWindow::addShareBrowser_gui, user, "", path);
+	WulforManager::get()->dispatchGuiFunc(f3);
+
+	typedef Func2<MainWindow, GtkStatusbar *, string> F2;
+	F2 *f2 = new F2(this, &MainWindow::setStatus_gui, mainStatus, "File list loaded");
+	WulforManager::get()->dispatchGuiFunc(f2);
+}
+
+void MainWindow::refreshFileList_gui(GtkWidget *widget, gpointer data)
+{
+	typedef Func0<MainWindow> F0;
+	F0 *f0 = new F0((MainWindow *)data, &MainWindow::refreshFileList_client);
+	WulforManager::get()->dispatchClientFunc(f0);
+
+}
+
+void MainWindow::refreshFileList_client()
+{
+	ShareManager::getInstance()->setDirty();
+	ShareManager::getInstance()->refresh(true, true, false);
 }
 
 void MainWindow::updateTransfer_gui(TransferItem *item)
@@ -1097,14 +1151,6 @@ void MainWindow::transferComplete_client(Transfer *t)
 
 	UFunc *func = new UFunc(this, &MainWindow::updateTransfer_gui, item);
 	WulforManager::get()->dispatchGuiFunc(func);
-}
-
-void MainWindow::refreshFList_gui(GtkWidget *widget, gpointer data)
-{
-	ShareManager::getInstance()->setDirty();
-	// Function would simply not work when put into GUI queue.
-	ShareManager::getInstance()->refresh(true, true, false);
-	ShareManager::getInstance()->getOwnListFile();
 }
 
 //From Connection manager
@@ -1324,7 +1370,8 @@ void MainWindow::on(UploadManagerListener::Complete, Upload *ul) throw()
 }
 
 //From logmanager
-void MainWindow::on(LogManagerListener::Message, const string& str) throw() {
+void MainWindow::on(LogManagerListener::Message, const string& str) throw()
+{
 	typedef Func2<MainWindow, GtkStatusbar *, string> F2;
 	F2 *func = new F2(this, &MainWindow::setStatus_gui, mainStatus, str);
 	WulforManager::get()->dispatchGuiFunc(func);

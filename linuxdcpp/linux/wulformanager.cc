@@ -31,6 +31,7 @@ void WulforManager::start()
 {
 	dcassert(!manager);
 	manager = new WulforManager();
+	manager->createMainWindow();
 }
 
 void WulforManager::stop()
@@ -55,7 +56,6 @@ WulforManager::WulforManager()
 	pthread_mutex_init(&clientCallLock, NULL);
 	pthread_mutex_init(&bookEntryLock, NULL);
 	pthread_mutex_init(&dialogEntryLock, NULL);
-	pthread_mutex_init(&deleteBookEntryLock, NULL);
 
 	sem_init(&guiSem, false, 0);
 	sem_init(&clientSem, false, 0);
@@ -71,6 +71,7 @@ WulforManager::~WulforManager()
 	pthread_mutex_destroy(&clientQueueLock);
 	pthread_mutex_destroy(&clientCallLock);
 	pthread_mutex_destroy(&bookEntryLock);
+	pthread_mutex_destroy(&dialogEntryLock);
 	
 	sem_destroy(&guiSem);
 	sem_destroy(&clientSem);
@@ -219,9 +220,7 @@ MainWindow *WulforManager::getMainWindow()
 
 void WulforManager::closeEntry_callback(GtkWidget *widget, gpointer data)
 {
-	pthread_mutex_lock(&get()->deleteBookEntryLock);
 	get()->deleteBookEntry_gui((BookEntry *)data);
-	pthread_mutex_unlock(&get()->deleteBookEntryLock);
 }
 
 void WulforManager::dialogCloseEntry_callback(GtkDialog *dialog, gint response, gpointer data)
@@ -231,11 +230,12 @@ void WulforManager::dialogCloseEntry_callback(GtkDialog *dialog, gint response, 
 
 string WulforManager::getPath()
 {
-#ifdef _LIBDIR
-	string ret = _LIBDIR;
-	ret += "/ldcpp";
+#ifdef _DATADIR
+	string ret = _DATADIR + PATH_SEPARATOR + "ldcpp";
 #else
-	string ret = br_extract_dir(SELFPATH);
+	char *temp = br_extract_dir(SELFPATH);
+	string ret = string(temp);
+	free(temp);
 #endif
 	return ret;
 }
@@ -337,10 +337,8 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry)
 
 void WulforManager::deleteAllBookEntries()
 {
-	pthread_mutex_lock(&deleteBookEntryLock);
 	while (bookEntries.size() > 0)
 		deleteBookEntry_gui(bookEntries.begin()->second);
-	pthread_mutex_unlock(&deleteBookEntryLock);
 }
 
 DialogEntry* WulforManager::getDialogEntry_gui(string id)

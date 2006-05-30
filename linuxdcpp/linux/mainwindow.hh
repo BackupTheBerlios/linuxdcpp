@@ -25,6 +25,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <ext/hash_map>
 
 #include "func.hh"
 #include "selecter.hh"
@@ -94,6 +95,8 @@ class MainWindow:
 		// Client functions
 		void startSocket_client();
 		void transferComplete_client(Transfer *t);
+		void refreshFileList_client();
+		void openOwnList_client();
 
 		// GUI Callbacks
 		static gboolean transferClicked_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
@@ -119,7 +122,7 @@ class MainWindow:
 		static void finishedULclicked_gui(GtkWidget *widget, gpointer data);
 		static void openFileList_gui(GtkWidget *widget, gpointer data);
 		static void openOwnList_gui(GtkWidget *widget, gpointer data);
-		static void refreshFList_gui(GtkWidget *widget, gpointer data);
+		static void refreshFileList_gui(GtkWidget *widget, gpointer data);
 		static gboolean deleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data);
 		static void onTrayIconClicked_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static void onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data);
@@ -208,7 +211,14 @@ class MainWindow:
 		};
 
 		typedef pair<User::Ptr, bool> UserID;
-		std::map<UserID, TransferItem *> transferMap;
+		struct HashPair
+		{
+			size_t operator() (const UserID u) const
+			{
+				return u.first * 23 + u.second;
+			}
+		};
+		hash_map<UserID, TransferItem *, HashPair> transferMap;
 		TransferItem* getTransferItem(UserID id);
 
 		// More GUI funcs (can't be declared above because of TransferItem class declaration.
@@ -219,7 +229,6 @@ class MainWindow:
 		int64_t lastUpdate, lastUp, lastDown;
 		int emptyStatusWidth;
 		TreeView transferView;
-
 		GtkWindow *window;
 		GtkPaned *transferPane;
 		GtkDialog *exitDialog, *connectDialog, *flistDialog, *aboutDialog;

@@ -1,3 +1,10 @@
+2006-05-30 - Steven Sheehy
+* Replaced most std::map's with hash_map to speed things up.
+* Rewrote openOwnList, openFileList, and refreshList to not freeze the gui temporarily while they load.
+* More memory leak fixes.
+* Fixed hashing to support big-endian architectures (thanks Tobias Nygren).
+* Glade and pixmaps now install into PREFIX/share (thanks Pavlov Konstantin).
+
 2006-05-29 - Steven Sheehy
 * Replaced previous tray icon with a kick-ass new icon (big thanks to wulax).
 * Added the aforementioned icon to all the window titlebars & the about dialog.

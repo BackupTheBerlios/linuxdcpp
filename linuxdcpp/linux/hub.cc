@@ -124,7 +124,7 @@ Hub::~Hub()
 	}
 	pthread_mutex_destroy(&clientLock);
 
-	map<string, GdkPixbuf*>::iterator it;
+	hash_map<string, GdkPixbuf *, WulforUtil::HashString>::iterator it;
 	for (it = userIcons.begin(); it != userIcons.end(); it++)
 		g_object_unref(G_OBJECT(it->second));
 

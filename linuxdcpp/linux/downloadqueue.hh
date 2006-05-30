@@ -23,6 +23,7 @@
 #include <glade/glade.h>
 #include <iostream>
 #include <sstream>
+#include <ext/hash_map>
 
 #include "bookentry.hh"
 #include "search.hh"
@@ -93,8 +94,8 @@ private:
 	// Popup-Menus
 	GtkMenu *dirMenu, *fileMenu, *dirPriority, *filePriority;
 	GtkMenu *browseMenu, *pmMenu, *readdMenu, *removeMenu, *removeallMenu;
-	std::map<string, GtkWidget*> dirItems;
-	std::map<string, GtkWidget*> fileItems;
+	hash_map<std::string, GtkWidget *, WulforUtil::HashString> dirItems;
+	hash_map<std::string, GtkWidget *, WulforUtil::HashString> fileItems;
 	std::vector<GtkWidget*> browseItems;
 	std::vector<GtkWidget*> readdItems;
 	std::vector<GtkWidget*> pmItems;
@@ -140,9 +141,9 @@ private:
 	string getRemainingDir (string path);
 	void getChildren (string path, vector<GtkTreeIter> *iter);
 	void getChildren (string path, vector<string> *iter);
-	std::map<string, GtkTreeIter> dirMap;
-	std::map<string, std::vector<QueueItemInfo*> > dirFileMap;
-	std::map<string, QueueItem*> fileMap;
+	hash_map<std::string, GtkTreeIter, WulforUtil::HashString> dirMap;
+	hash_map<std::string, std::vector<QueueItemInfo*>, WulforUtil::HashString> dirFileMap;
+	hash_map<std::string, QueueItem *, WulforUtil::HashString> fileMap;
 
 	int64_t queueSize;
 	int queueItems;
