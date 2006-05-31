@@ -231,7 +231,7 @@ void WulforManager::dialogCloseEntry_callback(GtkDialog *dialog, gint response, 
 string WulforManager::getPath()
 {
 #ifdef _DATADIR
-	string ret = _DATADIR + PATH_SEPARATOR + "ldcpp";
+	string ret = string(_DATADIR) + PATH_SEPARATOR + "ldcpp";
 #else
 	char *temp = br_extract_dir(SELFPATH);
 	string ret = string(temp);

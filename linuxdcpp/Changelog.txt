@@ -1,3 +1,6 @@
+2006-05-31 - Steven Sheehy
+* Fixed a compile error.
+
 2006-05-30 - Steven Sheehy
 * Replaced most std::map's with hash_map to speed things up.
 * Rewrote openOwnList, openFileList, and refreshList to not freeze the gui temporarily while they load.
