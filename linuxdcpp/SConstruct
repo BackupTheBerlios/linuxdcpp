@@ -199,8 +199,7 @@ pixmap_files=['pixmaps/dc++-fw.png','pixmaps/dc++.png',
 	'pixmaps/download.png','pixmaps/FinishedDL.png',
 	'pixmaps/normal-fw-op.png','pixmaps/normal-op.png',
 	'pixmaps/publichubs.png','pixmaps/search.png',
-	'pixmaps/upload.png','pixmaps/linuxdcpp-icon.png',
-	'pixmaps/linuxdcpp.png','pixmaps/linuxdcpp.svg']
+	'pixmaps/upload.png','pixmaps/linuxdcpp.svg']
 
 text_files=['Changelog.txt','Credits.txt','License.txt','Readme.txt']
 

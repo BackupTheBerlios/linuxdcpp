@@ -144,12 +144,11 @@ void MainWindow::createWindow_gui() {
 	windowMenu = glade_xml_get_widget(xml, "windowMenu");
 
 	// Set the logo in the about menu.
-	file = WulforManager::get()->getPath() + "/pixmaps/linuxdcpp.png";
+	file = WulforManager::get()->getPath() + "/pixmaps/linuxdcpp.svg";
 	GtkImage *logo = GTK_IMAGE(gtk_image_new_from_file(file.c_str()));
 	gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(aboutDialog), gtk_image_get_pixbuf(logo));
 
 	// Set all windows to the default icon
-	file = WulforManager::get()->getPath() + "/pixmaps/linuxdcpp-icon.png";
 	gtk_window_set_icon_from_file(window, file.c_str(), NULL);
 	gtk_window_set_default_icon_from_file(file.c_str(), NULL);
 
@@ -344,22 +343,21 @@ void MainWindow::createTrayIcon_gui()
 {
 	GtkWidget *trayBox, *trayImage, *toggleWindowItem, *quitItem;
 	string iconPath;
-	gint alpha;
-	GdkPixmap *pixmap;
+	GdkPixbuf *icon, *iconScaled;
 
 	trayIcon = GTK_WIDGET(egg_tray_icon_new("Linux DC++"));
 	trayBox = gtk_event_box_new();
-	iconPath = WulforManager::get()->getPath() + "/pixmaps/linuxdcpp-icon.png";
-	trayImage = gtk_image_new_from_file(iconPath.c_str());
+	iconPath = WulforManager::get()->getPath() + "/pixmaps/linuxdcpp.svg";
+	icon = gdk_pixbuf_new_from_file(iconPath.c_str(), NULL);
+	iconScaled = gdk_pixbuf_scale_simple(icon, 20, 20, GDK_INTERP_HYPER);
+	trayImage = gtk_image_new_from_pixbuf(iconScaled);
 	trayToolTip = gtk_tooltips_new();
 	trayMenu = gtk_menu_new();
 	toggleWindowItem = gtk_menu_item_new_with_label("Show/Hide Interface");
 	quitItem = gtk_menu_item_new_with_label("Quit");
 
-	// Have to set icon background as transparent manually since eggtrayicon sucks.
-	gdk_pixbuf_render_pixmap_and_mask(gtk_image_get_pixbuf(GTK_IMAGE(trayImage)), NULL, &pixmap, 64);
-	gtk_widget_shape_combine_mask(trayIcon, pixmap, 0, 0);
-	g_object_unref(pixmap);
+	g_object_unref(icon);
+	g_object_unref(iconScaled);
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(trayMenu), toggleWindowItem);
 	gtk_menu_shell_append(GTK_MENU_SHELL(trayMenu), quitItem);

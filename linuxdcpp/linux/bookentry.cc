@@ -31,7 +31,6 @@ BookEntry::BookEntry(string title)
 	else
 		this->id = title;
 
-	this->title = title;
 	bold = FALSE;
 	box = gtk_hbox_new(FALSE, 5);
 
@@ -52,9 +51,10 @@ BookEntry::BookEntry(string title)
 
 	tips = gtk_tooltips_new();
 	gtk_tooltips_enable(tips);
-	gtk_tooltips_set_tip (tips, eventBox, title.c_str(), title.c_str());
 
 	gtk_widget_show_all(box);
+
+	setLabel_gui(title);
 }
 
 GtkWidget *BookEntry::getTitle()
