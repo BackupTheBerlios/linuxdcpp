@@ -1409,6 +1409,8 @@ void MainWindow::onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data)
 		gtk_window_move(win, x, y);
 		if (isMaximized) gtk_window_maximize(win);
 		if (isIconified) gtk_window_iconify(win);
+		//@todo: fix row below. 
+		//It seems like it doesn't get the correct window size if it is maximized
 		gtk_paned_set_position(pane, panePos);
 		gtk_widget_show_all(GTK_WIDGET(win));
 	}
