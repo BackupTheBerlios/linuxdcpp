@@ -22,24 +22,31 @@
 #include <gtk/gtk.h>
 #include <string>
 
-class BookEntry {
+class BookEntry
+{
 	public:
-		BookEntry(std::string title, GCallback closeCallback);
-		virtual ~BookEntry();
+		BookEntry(std::string title);
+		virtual ~BookEntry() {}
 
 		//only to be called by gui thread
+		virtual void applyCallback(GCallback closeCallback);
 		void setLabel_gui(std::string text);
-		void setLabelBold_gui (std::string text);
+		void setBold_gui();
+		void unsetBold_gui();
+
 		GtkWidget *getTitle();
 		virtual GtkWidget *getWidget() = 0;
-		std::string getID() { return id; };
+		std::string getID();
+		bool isBold();
 
 	private:
 		std::string id;
+		std::string title;
 		GtkWidget *box, *eventBox;
 		GtkButton *button;
 		GtkLabel *label;
 		GtkTooltips *tips;
+		bool bold;
 };
 
 #else

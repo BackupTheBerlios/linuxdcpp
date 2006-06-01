@@ -18,8 +18,8 @@
 
 #include "sharebrowser.hh"
 
-ShareBrowser::ShareBrowser(User::Ptr user, std::string file, GCallback closeCallback):
-	BookEntry("List: " + user->getNick(), closeCallback),
+ShareBrowser::ShareBrowser(User::Ptr user, std::string file):
+	BookEntry("List: " + user->getNick()),
 	listing(user),
 	lastDir(""),
 	posDir(NULL)

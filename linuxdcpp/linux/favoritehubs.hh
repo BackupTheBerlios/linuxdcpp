@@ -37,7 +37,7 @@ class FavoriteHubs:
 	public HubManagerListener
 {
 public:
-	FavoriteHubs(GCallback closeCallback);
+	FavoriteHubs();
 	~FavoriteHubs();
 
 	// From BookEntry

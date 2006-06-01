@@ -18,8 +18,8 @@
 
 #include "downloadqueue.hh"
 
-DownloadQueue::DownloadQueue(GCallback closeCallback):
-	BookEntry("Download Queue", closeCallback)
+DownloadQueue::DownloadQueue():
+	BookEntry("Download Queue")
 {
 	QueueManager::getInstance()->addListener(this);
 	
@@ -101,28 +101,25 @@ GtkWidget *DownloadQueue::getWidget()
 	return mainBox;
 }
 
-string DownloadQueue::getTextFromMenu (GtkMenuItem *item)
+string DownloadQueue::getTextFromMenu(GtkMenuItem *item)
 {
-	if (GTK_BIN (item)->child)
-    	{
-      		GtkWidget *child = GTK_BIN (item)->child;
-		gchar *text;
-		if (GTK_IS_LABEL (child))
-    		{
-			gtk_label_get (GTK_LABEL (child), &text);
-			return string (text);
-		}
-	}
-	return "";
+	string text;
+	GtkWidget *child = gtk_bin_get_child(GTK_BIN(item));
+
+	if (child && GTK_IS_LABEL(child))
+		text = gtk_label_get_text(GTK_LABEL(child));
+
+	return text;
 }
 
-void DownloadQueue::contentUpdated ()
+void DownloadQueue::contentUpdated()
 {
-	if (WulforManager::get ()->getMainWindow()->currentPage_gui () == getWidget ())
-		return;
-	Func1<BookEntry, string> *func = new Func1<BookEntry, string> (
-		this, &BookEntry::setLabelBold_gui, string ("Download Queue"));
-	WulforManager::get()->dispatchGuiFunc(func);	
+	if (WulforManager::get()->getMainWindow()->currentPage_gui() != getWidget())
+	{
+		typedef Func0<BookEntry> F0;
+		F0 *f0 = new F0(this, &BookEntry::setBold_gui);
+		WulforManager::get()->dispatchGuiFunc(f0);
+	}
 }
 
 void DownloadQueue::buildStaticMenu_gui ()

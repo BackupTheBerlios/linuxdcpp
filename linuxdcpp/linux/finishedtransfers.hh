@@ -34,7 +34,7 @@ class FinishedTransfers:
 {
 	public:
 	
-		FinishedTransfers(std::string title, GCallback closeCallback);
+		FinishedTransfers(std::string title);
 		~FinishedTransfers();
 	
 		// From BookEntry

@@ -23,8 +23,8 @@
 
 using namespace std;
 
-PrivateMessage::PrivateMessage(User::Ptr user, GCallback closeCallback):
-	BookEntry("PM: " + user->getNick(), closeCallback),
+PrivateMessage::PrivateMessage(User::Ptr user):
+	BookEntry("PM: " + user->getNick()),
 	enterCallback(this, &PrivateMessage::sendMessage_gui)
 {
 	string file = WulforManager::get()->getPath() + "/glade/privatemessage.glade";

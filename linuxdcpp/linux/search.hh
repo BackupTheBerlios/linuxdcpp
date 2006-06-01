@@ -45,7 +45,7 @@ class Search : public BookEntry,
 			public ClientManagerListener
 {
 public:
-	Search (GCallback closeCallback);
+	Search();
 	~Search ();
 
 	void putValue (const string &str, int64_t size, SearchManager::SizeModes mode, SearchManager::TypeModes type);

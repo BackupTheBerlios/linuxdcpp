@@ -31,10 +31,12 @@
 #include "bookentry.hh"
 #include "callback.hh"
 
-class PrivateMessage: public BookEntry {
+class PrivateMessage:
+	public BookEntry
+{
 	public:
 		//constructor is only to be called from gui thread
-		PrivateMessage(User::Ptr userName, GCallback closeCallback);
+		PrivateMessage(User::Ptr user);
 		
 		GtkWidget *getWidget();
 		

@@ -108,7 +108,7 @@ class MainWindow:
 		static void onRemoveUserFromQueueClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onForceAttemptClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onCloseConnectionClicked_gui(GtkMenuItem *item, gpointer data);
-		static void raisePage(GtkMenuItem *item, gpointer data);
+		static void onRaisePage_gui(GtkMenuItem *item, gpointer data);
 		static void connectClicked_gui(GtkWidget *widget, gpointer data);
 		static void pubHubsClicked_gui(GtkWidget *widget, gpointer data);
 		static void dlQueueClicked_gui(GtkWidget *widget, gpointer data);
@@ -124,6 +124,7 @@ class MainWindow:
 		static void openOwnList_gui(GtkWidget *widget, gpointer data);
 		static void refreshFileList_gui(GtkWidget *widget, gpointer data);
 		static gboolean deleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data);
+		static void switchPage_gui(GtkNotebook *notebook, GtkNotebookPage *page, guint num, gpointer data);
 		static void onTrayIconClicked_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static void onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data);
 

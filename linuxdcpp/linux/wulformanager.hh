@@ -58,8 +58,7 @@ class WulforManager
 		void dispatchClientFunc(FuncBase *func);
 
 		// BookEntry functions
-		PrivateMessage *getPrivMsg_gui(User::Ptr user);
-		PrivateMessage *getPrivMsg_client(User::Ptr user);
+		BookEntry *getBookEntry_gui(std::string id, bool raise = TRUE);
 		PublicHubs *addPublicHubs_gui();
 		Hub *addHub_gui(std::string address, std::string nick="", std::string desc="", std::string password="");
 		PrivateMessage *addPrivMsg_gui(User::Ptr user);
@@ -77,14 +76,12 @@ class WulforManager
 
 	private:
 		// BookEntry functions
-		BookEntry *getBookEntry_gui(std::string id, bool raise = TRUE);
-		BookEntry *getBookEntry_client(std::string id, bool raise = TRUE);
-		void insertBookEntry(BookEntry *entry);
+		void insertBookEntry_gui(BookEntry *entry);
 		void deleteBookEntry_gui(BookEntry *entry);
 
 		// DialogEntry functions
 		DialogEntry *getDialogEntry_gui(std::string id);
-		void insertDialogEntry(DialogEntry *entry);
+		void insertDialogEntry_gui(DialogEntry *entry);
 		void hideDialogEntry_gui(DialogEntry *entry);
 		void deleteDialogEntry_gui(DialogEntry *entry);
 
@@ -95,8 +92,8 @@ class WulforManager
 		void processClientQueue();
 
 		// Callbacks
-		static void closeEntry_callback(GtkWidget *widget, gpointer data);
-		static void dialogCloseEntry_callback(GtkDialog *dialog, gint response, gpointer data);
+		static void closeBookEntry_callback(GtkWidget *widget, gpointer data);
+		static void closeDialogEntry_callback(GtkDialog *dialog, gint response, gpointer data);
 
 		static WulforManager *manager;
 		MainWindow *mainWin;

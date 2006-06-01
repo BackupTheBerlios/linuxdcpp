@@ -18,8 +18,8 @@
 
 #include "hub.hh"
 
-Hub::Hub(std::string address, GCallback closeCallback):
-	BookEntry("Hub: " + address, closeCallback),
+Hub::Hub(std::string address):
+	BookEntry("Hub: " + address),
 	enterCallback(this, &Hub::sendMessage_gui),
 	nickListCallback(this, &Hub::popupNickMenu_gui),
 	browseCallback(this, &Hub::browseItemClicked_gui),
@@ -305,13 +305,9 @@ void Hub::addMessage_gui(string msg) {
 	}
 }
 
-void Hub::addPrivateMessage_gui(User::Ptr user, std::string msg) {
-	::PrivateMessage *privMsg = 
-		WulforManager::get()->getPrivMsg_gui(user);
-		
-	if (!privMsg)
-		privMsg = WulforManager::get()->addPrivMsg_gui(user);
-	
+void Hub::addPrivateMessage_gui(User::Ptr user, std::string msg)
+{
+	::PrivateMessage *privMsg = WulforManager::get()->addPrivMsg_gui(user);	
 	privMsg->addMessage_gui(msg);
 }
 
@@ -467,34 +463,31 @@ void Hub::on(ClientListener::UsersUpdated,
 	}
 }
 
-void Hub::on(ClientListener::UserRemoved, 
-	Client *cl, const User::Ptr &user) throw()
+void Hub::on(ClientListener::UserRemoved, Client *cl, const User::Ptr &user) throw()
 {
-	::PrivateMessage *privMsg = 
-		WulforManager::get()->getPrivMsg_client(user);
-	if (privMsg) {
-		typedef Func1< ::PrivateMessage, string> F1;
-		F1 *func;
-		func = new F1(privMsg, &::PrivateMessage::addMessage_gui,
-			user->getNick() + " left the hub.");
-		WulforManager::get()->dispatchGuiFunc(func);
-	}
-
-	typedef Func1<Hub, string> F1;
-	F1 *remove = new F1(this, &Hub::removeUser_gui, user->getNick());
-	WulforManager::get()->dispatchGuiFunc(remove);
-
 	pthread_mutex_lock(&clientLock);
-	ostringstream userStream;
-	typedef Func2<Hub, GtkStatusbar*, string> F2;
-	F2 *status;
-	userStream << client->getUserCount() << " User(s)";
-	
-	status = new F2(this, &Hub::setStatus_gui, usersStatus, userStream.str());
-	WulforManager::get()->dispatchGuiFunc(status);
-	status = new F2(this, &Hub::setStatus_gui, sharedStatus, Util::formatBytes(client->getAvailable()));
-	WulforManager::get()->dispatchGuiFunc(status);
+	size_t userCount = cl->getUserCount();
+	int64_t available = cl->getAvailable();
 	pthread_mutex_unlock(&clientLock);
+
+	typedef Func3<Hub, string, size_t, int64_t> F3;
+	F3 *f3 = new F3(this, &Hub::onUserRemoved_gui, user->getNick(), userCount, available);
+	WulforManager::get()->dispatchGuiFunc(f3);
+}
+
+void Hub::onUserRemoved_gui(string nick, size_t userCount, int64_t available)
+{
+	BookEntry *entry = WulforManager::get()->getBookEntry_gui("PM: " + nick);
+	if (entry)
+		dynamic_cast< ::PrivateMessage *>(entry)->addMessage_gui(nick + " left the hub.");
+
+	removeUser_gui(nick);
+
+	ostringstream userStream;
+	userStream << userCount << " User(s)";
+	
+	setStatus_gui(usersStatus, userStream.str());
+	setStatus_gui(sharedStatus, Util::formatBytes(available));
 }
 
 void Hub::on(ClientListener::Redirect, 

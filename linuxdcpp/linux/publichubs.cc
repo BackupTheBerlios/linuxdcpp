@@ -18,8 +18,8 @@
 
 #include "publichubs.hh"
 
-PublicHubs::PublicHubs(GCallback closeCallback):
-	BookEntry("Public Hubs", closeCallback),
+PublicHubs::PublicHubs():
+	BookEntry("Public Hubs"),
 	filterCallback(this, &PublicHubs::filterHubs_gui),
 	connectCallback(this, &PublicHubs::connect_gui),
 	refreshCallback(this, &PublicHubs::refresh_gui),

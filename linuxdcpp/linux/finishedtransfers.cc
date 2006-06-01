@@ -18,8 +18,8 @@
 
 #include "finishedtransfers.hh"
 
-FinishedTransfers::FinishedTransfers(std::string title, GCallback closeCallback):
-			BookEntry(title, closeCallback),
+FinishedTransfers::FinishedTransfers(std::string title):
+			BookEntry(title),
 			menuCallback(this, &FinishedTransfers::popupMenu_gui),
 			removeCallback(this, &FinishedTransfers::removeItems_gui),
 			removeAllCallback(this, &FinishedTransfers::removeAll_gui),

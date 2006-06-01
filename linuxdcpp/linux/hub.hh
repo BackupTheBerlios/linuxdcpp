@@ -49,7 +49,7 @@ class Hub:
 {
 	public:
 		//constructor should be called by gui thread
-		Hub(std::string address, GCallback closeCallback);
+		Hub(std::string address);
 		~Hub();
 
 		// From BookEntry
@@ -120,6 +120,8 @@ class Hub:
 		Callback3<Hub, void, GtkWidget *, GdkEventButton *> nickListCallback;
 		Callback2<Hub, void, GtkMenuItem *> browseCallback, msgCallback, grantCallback;
 		Callback3<Hub, void, GtkWidget *, GdkEventKey *> completionCallback, setFocusCallback;
+
+		void onUserRemoved_gui(string nick, size_t userCount, int64_t available);
 
 		typedef StringMap NicksMap;
 		typedef NicksMap::iterator NicksMapIter;

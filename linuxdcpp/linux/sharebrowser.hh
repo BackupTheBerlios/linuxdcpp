@@ -41,7 +41,7 @@ class ShareBrowser:
 {
 	public:
 		//the constructor is to be called from the gui thread
-		ShareBrowser(User::Ptr user, std::string file, GCallback closeCallback);
+		ShareBrowser(User::Ptr user, std::string file);
 		~ShareBrowser();
 	
 		// From BookEntry

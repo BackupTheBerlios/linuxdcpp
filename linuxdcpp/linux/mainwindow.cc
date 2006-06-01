@@ -306,6 +306,7 @@ void MainWindow::createWindow_gui() {
 	g_signal_connect(G_OBJECT(openOwnFList), "activate", G_CALLBACK(openOwnList_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(refreshFList), "activate", G_CALLBACK(refreshFileList_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(deleteWindow_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(book), "switch-page", G_CALLBACK(switchPage_gui), (gpointer)this);
 
 	//Load window state and position from settings manager
 	WulforSettingsManager *sm = WulforSettingsManager::get();
@@ -381,8 +382,7 @@ GtkWindow *MainWindow::getWindow()
 void MainWindow::appendWindowItem(GtkWidget *page, string title)
 {
 	GtkWidget *menuItem = gtk_menu_item_new_with_label(title.c_str());
-	g_object_set_data(G_OBJECT(menuItem), "tabWidget", page);
-	g_signal_connect(G_OBJECT(menuItem), "activate", G_CALLBACK(raisePage), (gpointer)this);
+	g_signal_connect(G_OBJECT(menuItem), "activate", G_CALLBACK(onRaisePage_gui), (gpointer)page);
 	gtk_menu_shell_append(GTK_MENU_SHELL(windowMenu), menuItem);
 	gtk_widget_show_all(windowMenu);
 	windowMenuItems[page] = menuItem;
@@ -401,11 +401,9 @@ void MainWindow::modifyWindowItem(GtkWidget *page, string title)
 		gtk_label_set_text(GTK_LABEL(child), title.c_str());
 }
 
-void MainWindow::raisePage(GtkMenuItem *item, gpointer data)
+void MainWindow::onRaisePage_gui(GtkMenuItem *item, gpointer data)
 {
-	MainWindow *mw = (MainWindow *)data;
-	GtkWidget *page = (GtkWidget *)g_object_get_data(G_OBJECT(item), "tabWidget");
-	mw->raisePage_gui(page);
+	WulforManager::get()->getMainWindow()->raisePage_gui((GtkWidget *)data);
 }
 
 gboolean MainWindow::transferClicked_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
@@ -718,6 +716,16 @@ gboolean MainWindow::deleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpoint
 	return TRUE;
 }
 
+void MainWindow::switchPage_gui(GtkNotebook *notebook, GtkNotebookPage *page, guint num, gpointer data)
+{
+	GtkWidget *child = gtk_notebook_get_nth_page(notebook, num);
+	string title = (char *)g_object_get_data(G_OBJECT(child), "id");
+	BookEntry *entry = WulforManager::get()->getBookEntry_gui(title, FALSE);
+
+	if (entry && entry->isBold())
+		entry->unsetBold_gui();
+}
+
 void MainWindow::openHub_gui(string server, string nick, string desc, string password)
 {
 	WulforManager::get()->addHub_gui(server, nick, desc, password);
@@ -879,38 +887,40 @@ void MainWindow::addShareBrowser_gui(User::Ptr user, string searchString, string
 {
 	ShareBrowser *browser;
 	browser = WulforManager::get()->addShareBrowser_gui(user, listName);
-	browser->setPosition_gui(searchString);
+	///@todo: figure out how to set ShareBrowser to open at a specific path
+	//browser->setPosition_gui(searchString);
 }
 
 void MainWindow::addPage_gui(GtkWidget *page, GtkWidget *label, bool raise)
 {
 	gtk_notebook_append_page(book, page, label);
+
 	if (raise)
 		gtk_notebook_set_current_page(book, -1);
 }
 
 void MainWindow::removePage_gui(GtkWidget *page)
 {
-	int pageNum = -1;
-
 	for (int i = 0; i < gtk_notebook_get_n_pages(book); i++)
+	{
 		if (page == gtk_notebook_get_nth_page(book, i))
-			pageNum = i;
-
-	dcassert(pageNum != -1);
-	gtk_notebook_remove_page(book, pageNum);
+		{
+			gtk_notebook_remove_page(book, i);
+			return;
+		}
+	}
 }
 
 void MainWindow::raisePage_gui(GtkWidget *page)
 {
-	int pageNum = -1;
-
 	for (int i = 0; i < gtk_notebook_get_n_pages(book); i++)
+	{
 		if (page == gtk_notebook_get_nth_page(book, i))
-			pageNum = i;
-
-	dcassert(pageNum != -1);
-	gtk_notebook_set_current_page(book, pageNum);
+		{
+			gtk_notebook_set_current_page(book, i);
+			return;
+		}
+	}
 }
 
 GtkWidget *MainWindow::currentPage_gui()
@@ -1405,7 +1415,9 @@ void MainWindow::onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data)
 		isIconified = (state & GDK_WINDOW_STATE_ICONIFIED);
 		panePos = gtk_paned_get_position(pane);
 		gtk_widget_hide_all(GTK_WIDGET(win));
-	} else {
+	}
+	else
+	{
 		gtk_window_move(win, x, y);
 		if (isMaximized) gtk_window_maximize(win);
 		if (isIconified) gtk_window_iconify(win);

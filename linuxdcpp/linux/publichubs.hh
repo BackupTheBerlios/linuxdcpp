@@ -43,7 +43,7 @@ class PublicHubs:
 {
 	public:
 		//constructor must be called from gui thread
-		PublicHubs(GCallback closeCallback);
+		PublicHubs();
 		~PublicHubs();
 
 		// From BookEntry

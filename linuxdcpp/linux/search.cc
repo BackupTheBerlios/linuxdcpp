@@ -21,8 +21,8 @@
 TStringList Search::lastSearches;
 string Search::lastDir;
 
-Search::Search(GCallback closeCallback): 
-	BookEntry("Search", closeCallback)
+Search::Search(): 
+	BookEntry("Search")
 {
 	ClientManager::getInstance()->addListener(this);
 	SearchManager::getInstance()->addListener(this);

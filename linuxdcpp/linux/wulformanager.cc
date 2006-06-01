@@ -205,11 +205,17 @@ void WulforManager::dispatchClientFunc(FuncBase *func)
 MainWindow *WulforManager::createMainWindow()
 {
 	dcassert(!mainWin);
-	mainWin = new MainWindow;
+	mainWin = new MainWindow();
+
 	//Autoconnect and autoopen calls stuff in wulformanager that needs to know
 	//what mainWin is, so these cannot be called by the mainwindow constructor.
-	mainWin->autoConnect_client();
-	mainWin->autoOpen_gui();
+	typedef Func0<MainWindow> F0;
+	F0 *f0 = new F0(mainWin, &MainWindow::autoConnect_client);
+	WulforManager::get()->dispatchClientFunc(f0);
+
+	f0 = new F0(mainWin, &MainWindow::autoOpen_gui);
+	WulforManager::get()->dispatchGuiFunc(f0);
+
 	return mainWin;
 }
 
@@ -218,12 +224,12 @@ MainWindow *WulforManager::getMainWindow()
 	return mainWin;
 }
 
-void WulforManager::closeEntry_callback(GtkWidget *widget, gpointer data)
+void WulforManager::closeBookEntry_callback(GtkWidget *widget, gpointer data)
 {
 	get()->deleteBookEntry_gui((BookEntry *)data);
 }
 
-void WulforManager::dialogCloseEntry_callback(GtkDialog *dialog, gint response, gpointer data)
+void WulforManager::closeDialogEntry_callback(GtkDialog *dialog, gint response, gpointer data)
 {
 	get()->hideDialogEntry_gui((DialogEntry *)data);
 }
@@ -254,26 +260,16 @@ BookEntry *WulforManager::getBookEntry_gui(string id, bool raise)
 	return ret;
 }
 
-BookEntry *WulforManager::getBookEntry_client(string id, bool raise)
+void WulforManager::insertBookEntry_gui(BookEntry *entry)
 {
-	BookEntry *ret = NULL;
-	
-	pthread_mutex_lock(&bookEntryLock);
-	ret = bookEntries[id];
-	pthread_mutex_unlock(&bookEntryLock);
-		
-	if (ret && raise)
-	{
-		Func1<MainWindow, GtkWidget *> *func = new Func1<MainWindow, GtkWidget*>
-			(mainWin, &MainWindow::raisePage_gui, ret->getWidget());
-		dispatchGuiFunc(func);
-	}
+	// Associates id string to the widget for later retrieval in MainWindow::switchPage_gui()
+	g_object_set_data_full(G_OBJECT(entry->getWidget()), "id", g_strdup(entry->getID().c_str()), g_free);
 
-	return ret;
-}
+	entry->applyCallback(G_CALLBACK(closeBookEntry_callback));
+	mainWin->addPage_gui(entry->getWidget(), entry->getTitle());
+	gtk_widget_unref(entry->getWidget());
 
-void WulforManager::insertBookEntry(BookEntry *entry)
-{
+
 	pthread_mutex_lock(&bookEntryLock);
 	bookEntries[entry->getID()] = entry;
 	pthread_mutex_unlock(&bookEntryLock);
@@ -352,8 +348,10 @@ DialogEntry* WulforManager::getDialogEntry_gui(string id)
 	return ret;
 }
 
-void WulforManager::insertDialogEntry(DialogEntry *entry)
+void WulforManager::insertDialogEntry_gui(DialogEntry *entry)
 {
+	entry->applyCallback(G_CALLBACK(closeDialogEntry_callback));
+
 	pthread_mutex_lock(&dialogEntryLock);
 	dialogEntries[entry->getID()] = entry;
 	pthread_mutex_unlock(&dialogEntryLock);
@@ -419,29 +417,13 @@ void WulforManager::deleteAllDialogEntries()
 		deleteDialogEntry_gui(dialogEntries.begin()->second);
 }
 
-PrivateMessage *WulforManager::getPrivMsg_gui(User::Ptr user)
-{
-	BookEntry *entry = getBookEntry_gui("PM: " + user->getNick());
-	if (!entry) return NULL;
-	return dynamic_cast<PrivateMessage *>(entry);
-}
-
-PrivateMessage *WulforManager::getPrivMsg_client(User::Ptr user)
-{
-	BookEntry *entry = getBookEntry_client("PM: " + user->getNick());
-	if (!entry) return NULL;
-	return dynamic_cast<PrivateMessage *>(entry);
-}
-
 PublicHubs *WulforManager::addPublicHubs_gui()
 {
 	BookEntry *entry = getBookEntry_gui("Public Hubs");
 	if (entry) return dynamic_cast<PublicHubs *>(entry);
 
-	PublicHubs *pubHubs = new PublicHubs(G_CALLBACK(closeEntry_callback));
-	mainWin->addPage_gui(pubHubs->getWidget(), pubHubs->getTitle(), true);
-	gtk_widget_unref(pubHubs->getWidget());
-	insertBookEntry(pubHubs);
+	PublicHubs *pubHubs = new PublicHubs();
+	insertBookEntry_gui(pubHubs);
 
 	Func0<PublicHubs> *func = new Func0<PublicHubs>(pubHubs, &PublicHubs::downloadList_client);
 	dispatchClientFunc(func);
@@ -454,10 +436,8 @@ DownloadQueue *WulforManager::addDownloadQueue_gui()
 	BookEntry *entry = getBookEntry_gui("Download Queue");
 	if (entry) return dynamic_cast<DownloadQueue*>(entry);
 
-	DownloadQueue *dlQueue = new DownloadQueue(G_CALLBACK(closeEntry_callback));
-	mainWin->addPage_gui(dlQueue->getWidget(), dlQueue->getTitle());
-	gtk_widget_unref(dlQueue->getWidget());
-	insertBookEntry(dlQueue);
+	DownloadQueue *dlQueue = new DownloadQueue();
+	insertBookEntry_gui(dlQueue);
 
 	return dlQueue;
 }
@@ -467,19 +447,10 @@ FavoriteHubs *WulforManager::addFavoriteHubs_gui()
 	BookEntry *entry = getBookEntry_gui("Favorite Hubs");
 	if (entry) return dynamic_cast<FavoriteHubs*>(entry);
 
-	FavoriteHubs *favHubs = new FavoriteHubs(G_CALLBACK(closeEntry_callback));
-	mainWin->addPage_gui(favHubs->getWidget(), favHubs->getTitle());
-	gtk_widget_unref(favHubs->getWidget());
-	insertBookEntry(favHubs);
+	FavoriteHubs *favHubs = new FavoriteHubs();
+	insertBookEntry_gui(favHubs);
 
 	return favHubs;
-}
-
-Settings *WulforManager::openSettingsDialog_gui()
-{
-	Settings *s = new Settings();
-
-	return s;
 }
 
 Hub *WulforManager::addHub_gui(string address, string nick, string desc, string password)
@@ -487,11 +458,9 @@ Hub *WulforManager::addHub_gui(string address, string nick, string desc, string 
 	BookEntry *entry = getBookEntry_gui("Hub: " + address);
 	if (entry) return dynamic_cast<Hub *>(entry);
 
-	Hub *hub = new Hub(address, G_CALLBACK(closeEntry_callback));
-	mainWin->addPage_gui(hub->getWidget(), hub->getTitle());
-	mainWin->appendWindowItem(hub->getWidget(), "Hub: " + address);
-	gtk_widget_unref(hub->getWidget());
-	insertBookEntry(hub);
+	Hub *hub = new Hub(address);
+	mainWin->appendWindowItem(hub->getWidget(), hub->getID());
+	insertBookEntry_gui(hub);
 
 	typedef Func4<Hub, string, string, string, string> F4;
 	F4 *func = new F4(hub, &Hub::connectClient_client, address, nick, desc, password);
@@ -505,11 +474,9 @@ PrivateMessage *WulforManager::addPrivMsg_gui(User::Ptr user)
 	BookEntry *entry = getBookEntry_gui("PM: " + user->getNick());
 	if (entry) return dynamic_cast<PrivateMessage *>(entry);
 
-	PrivateMessage *privMsg = new PrivateMessage(user, G_CALLBACK(closeEntry_callback));
-	mainWin->addPage_gui(privMsg->getWidget(), privMsg->getTitle());
-	mainWin->appendWindowItem(privMsg->getWidget(), "PM: " + user->getNick());
-	gtk_widget_unref(privMsg->getWidget());
-	insertBookEntry(privMsg);
+	PrivateMessage *privMsg = new PrivateMessage(user);
+	mainWin->appendWindowItem(privMsg->getWidget(), privMsg->getID());
+	insertBookEntry_gui(privMsg);
 
 	return privMsg;
 }
@@ -519,22 +486,29 @@ ShareBrowser *WulforManager::addShareBrowser_gui(User::Ptr user, string file)
 	BookEntry *entry = getBookEntry_gui("List: " + user->getNick());
 	if (entry) return dynamic_cast<ShareBrowser *>(entry);
 
-	ShareBrowser *browser = new ShareBrowser(user, file, G_CALLBACK(closeEntry_callback));
-	mainWin->addPage_gui(browser->getWidget(), browser->getTitle());
-	gtk_widget_unref(browser->getWidget());
-	insertBookEntry(browser);
+	ShareBrowser *browser = new ShareBrowser(user, file);
+	insertBookEntry_gui(browser);
 
 	return browser;
 }
 
 Search *WulforManager::addSearch_gui()
 {
-	Search *s = new Search(G_CALLBACK(closeEntry_callback));
-	mainWin->addPage_gui(s->getWidget(), s->getTitle());
-	gtk_widget_unref(s->getWidget());
-	insertBookEntry(s);
+	Search *s = new Search();
+	insertBookEntry_gui(s);
 
 	return s;
+}
+
+FinishedTransfers *WulforManager::addFinishedTransfers_gui(string title)
+{
+	BookEntry *entry = getBookEntry_gui(title);
+	if (entry) return dynamic_cast<FinishedTransfers*>(entry);
+
+	FinishedTransfers *ft = new FinishedTransfers(title);
+	insertBookEntry_gui(ft);
+
+	return ft;
 }
 
 Hash *WulforManager::openHashDialog_gui()
@@ -543,23 +517,17 @@ Hash *WulforManager::openHashDialog_gui()
 	if (entry) return dynamic_cast<Hash *>(entry);
 
 	Hash *h = new Hash();
-	h->applyCallback(G_CALLBACK(dialogCloseEntry_callback));
-	insertDialogEntry(h);
+	insertDialogEntry_gui(h);
+
 	Func0<Hash> *func = new Func0<Hash>(h, &Hash::updateStats_gui);
 	dispatchGuiFunc(func);	
 
 	return h;
 }
 
-FinishedTransfers *WulforManager::addFinishedTransfers_gui(string title)
+Settings *WulforManager::openSettingsDialog_gui()
 {
-	BookEntry *entry = getBookEntry_gui(title);
-	if (entry) return dynamic_cast<FinishedTransfers*>(entry);
+	Settings *s = new Settings();
 
-	FinishedTransfers *ft = new FinishedTransfers(title, G_CALLBACK(closeEntry_callback));
-	mainWin->addPage_gui(ft->getWidget(), ft->getTitle());
-	gtk_widget_unref(ft->getWidget());
-	insertBookEntry(ft);
-
-	return ft;
+	return s;
 }

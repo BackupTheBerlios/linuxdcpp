@@ -23,7 +23,7 @@
 
 using namespace std;
 
-BookEntry::BookEntry(string title, GCallback closeCallback)
+BookEntry::BookEntry(string title)
 {
 	// Allow search tab to have many tabs with the same title.
 	if (title == "Search")
@@ -31,6 +31,8 @@ BookEntry::BookEntry(string title, GCallback closeCallback)
 	else
 		this->id = title;
 
+	this->title = title;
+	bold = FALSE;
 	box = gtk_hbox_new(FALSE, 5);
 
 	eventBox = gtk_event_box_new();
@@ -53,29 +55,53 @@ BookEntry::BookEntry(string title, GCallback closeCallback)
 	gtk_tooltips_set_tip (tips, eventBox, title.c_str(), title.c_str());
 
 	gtk_widget_show_all(box);
-	
-	g_signal_connect(G_OBJECT(button), "clicked", closeCallback, (gpointer)this);
 }
 
-BookEntry::~BookEntry() {
-}
-
-GtkWidget *BookEntry::getTitle() {
+GtkWidget *BookEntry::getTitle()
+{
 	return box;
 }
 
-void BookEntry::setLabel_gui(std::string text) {
-	gtk_tooltips_set_tip (tips, eventBox, text.c_str(), text.c_str());
-	if (text.size() > 15) 
-		text = text.substr(0, 15) + "...";
-	gtk_label_set_text(label, text.c_str());
+std::string BookEntry::getID()
+{
+	return id;
 }
 
-void BookEntry::setLabelBold_gui(std::string text) {
-	gtk_tooltips_set_tip (tips, eventBox, text.c_str(), text.c_str());
-	if (text.size() > 15)
-		text = text.substr(0, 15) + "...";
-		
-	const char *markup = g_markup_printf_escaped ("<b>%s</b>", text.c_str ());
-	gtk_label_set_markup (label, markup);
+bool BookEntry::isBold()
+{
+	return bold;
+}
+
+void BookEntry::applyCallback(GCallback closeCallback)
+{
+	g_signal_connect(G_OBJECT(button), "clicked", closeCallback, (gpointer)this);
+}
+
+void BookEntry::setLabel_gui(std::string text)
+{
+	gtk_tooltips_set_tip(tips, eventBox, text.c_str(), text.c_str());
+	if (text.size() > 20) 
+		text = text.substr(0, 20) + "...";
+	gtk_label_set_text(label, text.c_str());
+	title = text;
+}
+
+void BookEntry::setBold_gui()
+{
+	if (!bold)
+	{
+		char *markup = g_markup_printf_escaped("<b>%s</b>", title.c_str());
+		gtk_label_set_markup(label, markup);
+		g_free(markup);
+		bold = TRUE;
+	}
+}
+
+void BookEntry::unsetBold_gui()
+{
+	if (bold)
+	{
+		gtk_label_set_text(label, title.c_str());
+		bold = FALSE;
+	}
 }

@@ -18,8 +18,8 @@
 
 #include "favoritehubs.hh"
 
-FavoriteHubs::FavoriteHubs (GCallback closeCallback):
-	BookEntry("Favorite Hubs", closeCallback)
+FavoriteHubs::FavoriteHubs():
+	BookEntry("Favorite Hubs")
 {
 	HubManager::getInstance()->addListener(this);
 

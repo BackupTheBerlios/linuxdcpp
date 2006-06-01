@@ -38,12 +38,13 @@
 
 using namespace std;
 
-class DownloadQueue : 	public BookEntry,
-					public QueueManagerListener
+class DownloadQueue:
+	public BookEntry,
+	public QueueManagerListener
 {
 public:
 	// Must be called from gui-thread
-	DownloadQueue (GCallback closeCallback);
+	DownloadQueue();
 	~DownloadQueue ();
 
 	// From BookEntry

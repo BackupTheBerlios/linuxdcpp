@@ -1,3 +1,7 @@
+2006-06-01 - Steven Sheehy
+* Fixed tab bolding regression.
+* Memory leak fixes.
+
 2006-06-01 - Paskharen
 * Made the main window restore a bit better after being hidden by the tray icon.
 * Also made the window come up a bit nicer when the program is started.
