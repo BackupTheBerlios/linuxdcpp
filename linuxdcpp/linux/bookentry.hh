@@ -37,7 +37,6 @@ class BookEntry
 		GtkWidget *getTitle();
 		virtual GtkWidget *getWidget() = 0;
 		std::string getID();
-		bool isBold();
 
 	private:
 		std::string id;

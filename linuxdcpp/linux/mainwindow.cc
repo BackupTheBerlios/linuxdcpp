@@ -722,7 +722,7 @@ void MainWindow::switchPage_gui(GtkNotebook *notebook, GtkNotebookPage *page, gu
 	string title = (char *)g_object_get_data(G_OBJECT(child), "id");
 	BookEntry *entry = WulforManager::get()->getBookEntry_gui(title, FALSE);
 
-	if (entry && entry->isBold())
+	if (entry)
 		entry->unsetBold_gui();
 }
 

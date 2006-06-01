@@ -67,11 +67,6 @@ std::string BookEntry::getID()
 	return id;
 }
 
-bool BookEntry::isBold()
-{
-	return bold;
-}
-
 void BookEntry::applyCallback(GCallback closeCallback)
 {
 	g_signal_connect(G_OBJECT(button), "clicked", closeCallback, (gpointer)this);
