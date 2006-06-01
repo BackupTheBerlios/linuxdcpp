@@ -1,3 +1,7 @@
+2006-06-01 - Paskharen
+* Made the main window restore a bit better after being hidden by the tray icon.
+* Also made the window come up a bit nicer when the program is started.
+
 2006-05-31 - Steven Sheehy
 * Fixed a compile error.
 

@@ -281,8 +281,6 @@ void MainWindow::createWindow_gui() {
 	g_signal_connect (G_OBJECT (closeConnection), "activate", G_CALLBACK (onCloseConnectionClicked_gui), (gpointer)this);
 	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), closeConnection);
 		
-	gtk_widget_show_all(GTK_WIDGET(window));
-
 	g_signal_connect(G_OBJECT(connectButton), "clicked", G_CALLBACK(connectClicked_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(quickConnect), "activate", G_CALLBACK(connectClicked_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(pubHubsButton), "clicked", G_CALLBACK(pubHubsClicked_gui), (gpointer)this);
@@ -331,6 +329,10 @@ void MainWindow::createWindow_gui() {
 	emptyStatusWidth = req.width;
 	
 	gtk_statusbar_push(mainStatus, 0, "Welcome to Linux DC++");
+
+	//Putting this after all the resizing and moving makes the window appear
+	//in the correct position instantly, looking slightly more cool
+	gtk_widget_show_all(GTK_WIDGET(window));
 }
 
 /*
@@ -1390,11 +1392,26 @@ void MainWindow::onTrayIconClicked_gui(GtkWidget *widget, GdkEventButton *event,
 void MainWindow::onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data)
 {
 	GtkWindow *win = ((MainWindow *)data)->getWindow();
+	GtkPaned *pane = ((MainWindow *)data)->transferPane;
+	static int x, y, panePos;
+	static bool isMaximized, isIconified;
 
 	if (GTK_WIDGET_VISIBLE(win))
+	{
+		GdkWindowState state;
+		gtk_window_get_position(win, &x, &y);
+		state = gdk_window_get_state(GTK_WIDGET(win)->window);
+		isMaximized = (state & GDK_WINDOW_STATE_MAXIMIZED);
+		isIconified = (state & GDK_WINDOW_STATE_ICONIFIED);
+		panePos = gtk_paned_get_position(pane);
 		gtk_widget_hide_all(GTK_WIDGET(win));
-	else
+	} else {
+		gtk_window_move(win, x, y);
+		if (isMaximized) gtk_window_maximize(win);
+		if (isIconified) gtk_window_iconify(win);
+		gtk_paned_set_position(pane, panePos);
 		gtk_widget_show_all(GTK_WIDGET(win));
+	}
 }
 
 void MainWindow::updateTrayToolTip_gui(string toolTip)
