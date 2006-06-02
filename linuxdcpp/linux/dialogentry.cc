@@ -25,8 +25,19 @@ DialogEntry::DialogEntry(string id)
 	this->id = id;
 }
 
-DialogEntry::~DialogEntry()
+GtkWidget* DialogEntry::getDialog()
 {
+	return dialog;
+}
+
+void DialogEntry::setDialog(GtkWidget *d)
+{
+	dialog = d;
+}
+
+string DialogEntry::getID()
+{
+	return id;
 }
 
 void DialogEntry::applyCallback(GCallback closeCallback)

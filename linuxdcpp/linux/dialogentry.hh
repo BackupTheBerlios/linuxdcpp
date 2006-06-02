@@ -22,15 +22,16 @@
 #include <gtk/gtk.h>
 #include <string>
 
-class DialogEntry {
+class DialogEntry
+{
 	public:
 		DialogEntry(std::string id);
-		virtual ~DialogEntry();
-		
-		GtkWidget *getDialog () { return dialog; }
-		void setDialog (GtkWidget *d) { dialog = d; }
-		std::string getID() { return id; }
-		
+		virtual ~DialogEntry() {}
+
+		GtkWidget *getDialog();
+		void setDialog(GtkWidget *d);
+		std::string getID();
+
 		virtual void applyCallback (GCallback closeCallback);
 
 	private:

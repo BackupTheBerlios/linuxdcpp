@@ -22,6 +22,7 @@
 #include <gtk/gtk.h>
 #include <glade/glade.h>
 #include "treeview.hh"
+#include "dialogentry.hh"
 #include <ext/hash_map>
 
 #include <client/stdinc.h>
@@ -30,7 +31,7 @@
 #include <client/HubManager.h>
 #include <client/ShareManager.h>
 
-class Settings
+class Settings : public DialogEntry
 {
 public:
 	Settings ();

@@ -81,7 +81,7 @@ Settings::~Settings ()
 	gtk_widget_destroy(virtualName);
 	gtk_widget_destroy(dirChooser);
 }
-Settings::Settings ()
+Settings::Settings () : DialogEntry("Settings")
 {
 	string file = WulforManager::get()->getPath() + "/glade/settingsdialog.glade";
 	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
@@ -92,6 +92,8 @@ Settings::Settings ()
 	editPublic = glade_xml_get_widget(xml, "editPublic");
 	virtualName = glade_xml_get_widget(xml, "virtualName");
 	dirChooser = glade_xml_get_widget(xml, "dirChooserDialog");
+
+	setDialog(dialog);
 
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(favoriteName), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
