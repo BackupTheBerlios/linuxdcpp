@@ -2,7 +2,6 @@
 * Fixed tab bolding regression.
 * Memory leak fixes.
 * Realized GTK+ can handle svg so I replaced the logo pngs with a svg one.
-* Put settings dialog into dialogEntries queue for faster retrieval.
 
 2006-06-01 - Paskharen
 * Made the main window restore a bit better after being hidden by the tray icon.

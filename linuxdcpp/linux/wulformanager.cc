@@ -527,11 +527,7 @@ Hash *WulforManager::openHashDialog_gui()
 
 Settings *WulforManager::openSettingsDialog_gui()
 {
-	DialogEntry *entry = getDialogEntry_gui("Settings");
-	if (entry) return dynamic_cast<Settings *>(entry);
-
 	Settings *s = new Settings();
-	insertDialogEntry_gui(s);
 
 	return s;
 }

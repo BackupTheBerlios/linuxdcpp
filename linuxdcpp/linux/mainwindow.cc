@@ -664,6 +664,9 @@ void MainWindow::settingsClicked_gui(GtkWidget *widget, gpointer data)
 		else
 			gtk_widget_hide_all(mw->trayIcon);
 	}
+
+	gtk_widget_destroy(s->getDialog()); 	 
+	delete s;
 }
 
 void MainWindow::quitClicked_gui(GtkWidget *widget, gpointer data)
