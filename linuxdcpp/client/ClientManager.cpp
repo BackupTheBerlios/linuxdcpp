@@ -187,11 +187,13 @@ User::Ptr ClientManager::getUser(const string& aNick, const string& aHint /* = U
 
 User::Ptr ClientManager::getUser(const string& aNick, Client* aClient, bool putOnline /* = true */) {
 	Lock l(cs);
-	dcassert(aNick.size() > 0);
+	/// @todo: Re-add dcassert and remove nick declaration statement below it when unicode issue is fixed.
+	//dcassert(aNick.size() > 0);
+	string nick = aNick.empty() ? Util::toString((int)GET_TICK()) : aNick;
 	dcassert(aClient != NULL);
 	dcassert(find(clients.begin(), clients.end(), aClient) != clients.end());
 
-	UserPair p = users.equal_range(aNick);
+	UserPair p = users.equal_range(nick);
 	UserIter i;
 
 	// Check for a user already online
@@ -226,7 +228,7 @@ User::Ptr ClientManager::getUser(const string& aNick, Client* aClient, bool putO
 	}
 	
 	// Create a new user
-	i = users.insert(make_pair(aNick, new User(aNick)));
+	i = users.insert(make_pair(nick, new User(nick)));
 	if(putOnline) {
 		i->second->setClient(aClient);
 		fire(ClientManagerListener::UserUpdated(), i->second);
@@ -356,5 +358,5 @@ void ClientManager::on(UserCommand, Client* client, int aType, int ctx, const st
 
 /**
  * @file
- * $Id: ClientManager.cpp,v 1.4 2005/06/25 19:24:01 paskharen Exp $
+ * $Id: ClientManager.cpp,v 1.5 2006/06/04 01:56:02 stevensheehy Exp $
  */
