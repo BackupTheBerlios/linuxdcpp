@@ -471,7 +471,7 @@ Hub *WulforManager::addHub_gui(string address, string nick, string desc, string 
 
 PrivateMessage *WulforManager::addPrivMsg_gui(User::Ptr user)
 {
-	BookEntry *entry = getBookEntry_gui("PM: " + user->getNick());
+	BookEntry *entry = getBookEntry_gui("PM: " + user->getNick(), FALSE);
 	if (entry) return dynamic_cast<PrivateMessage *>(entry);
 
 	PrivateMessage *privMsg = new PrivateMessage(user);

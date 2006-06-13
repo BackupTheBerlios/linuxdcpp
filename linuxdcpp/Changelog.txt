@@ -1,3 +1,7 @@
+2006-06-13 - Steven Sheehy
+* Don't redefine NULL
+* Fixed PM windows from stealing focus if it's already open.
+
 2006-06-03 - Steven Sheehy
 * Added another stupid hack to keep people from crashing because of other users with
   characters in their nick that ldcpp can't determine the encoding of.
