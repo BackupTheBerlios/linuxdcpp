@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_USERCONNECTION_H__52BFD1A0_9924_4C07_BAFA_FB9682884841__INCLUDED_)
-#define AFX_USERCONNECTION_H__52BFD1A0_9924_4C07_BAFA_FB9682884841__INCLUDED_
+#if !defined(USER_CONNECTION_H)
+#define USER_CONNECTION_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -35,6 +35,7 @@ class UserConnection;
 
 class UserConnectionListener {
 public:
+	virtual ~UserConnectionListener() { }
 	template<int I>	struct X { enum { TYPE = I };  };
 
 	typedef X<0> BytesSent;
@@ -84,7 +85,6 @@ public:
 
 	virtual void on(AdcCommand::SUP, UserConnection*, const AdcCommand&) throw() { }
 	virtual void on(AdcCommand::INF, UserConnection*, const AdcCommand&) throw() { }
-	virtual void on(AdcCommand::NTD, UserConnection*, const AdcCommand&) throw() { }
 	virtual void on(AdcCommand::GET, UserConnection*, const AdcCommand&) throw() { }
 	virtual void on(AdcCommand::SND, UserConnection*, const AdcCommand&) throw() { }
 	virtual void on(AdcCommand::STA, UserConnection*, const AdcCommand&) throw() { }
@@ -97,27 +97,27 @@ class ConnectionQueueItem;
 class Transfer {
 public:
 	Transfer() : userConnection(NULL), start(0), lastTick(GET_TICK()), runningAverage(0), 
-		last(0), actual(0), pos(0), startPos(0), size(-1) { };
-	virtual ~Transfer() { };
+		last(0), actual(0), pos(0), startPos(0), size(-1) { }
+	virtual ~Transfer() { }
 	
-	int64_t getPos() const { return pos; };
-	void setPos(int64_t aPos) { pos = aPos; };
+	int64_t getPos() const { return pos; }
+	void setPos(int64_t aPos) { pos = aPos; }
 
-	void resetPos() { pos = getStartPos(); };
-	void setStartPos(int64_t aPos) { startPos = aPos; pos = aPos; };
+	void resetPos() { pos = getStartPos(); }
+	void setStartPos(int64_t aPos) { startPos = aPos; pos = aPos; }
 	int64_t getStartPos() const { return startPos; }
 
-	void addPos(int64_t aBytes, int64_t aActual) { pos += aBytes; actual+= aActual; };
+	void addPos(int64_t aBytes, int64_t aActual) { pos += aBytes; actual+= aActual; }
 
 	enum { AVG_PERIOD = 30000 };
 	void updateRunningAverage();
 
-	int64_t getTotal() const { return getPos() - getStartPos(); };
-	int64_t getActual() const { return actual; };
+	int64_t getTotal() const { return getPos() - getStartPos(); }
+	int64_t getActual() const { return actual; }
 	
-	int64_t getSize() const { return size; };
-	void setSize(int64_t aSize) { size = aSize; };
-	void setSize(const string& aSize) { setSize(Util::toInt64(aSize)); };
+	int64_t getSize() const { return size; }
+	void setSize(int64_t aSize) { size = aSize; }
+	void setSize(const string& aSize) { setSize(Util::toInt64(aSize)); }
 
 	int64_t getAverageSpeed() const {
 		int64_t diff = (int64_t)(GET_TICK() - getStart());
@@ -176,6 +176,7 @@ public:
 	static const string FEATURE_ZLIB_GET;
 	static const string FEATURE_TTHL;
 	static const string FEATURE_TTHF;
+	static const string FEATURE_ADC_BASE;
 
 	static const string FILE_NOT_AVAILABLE;
 	
@@ -186,10 +187,12 @@ public:
 
 	enum Flags {
 		FLAG_NMDC = 0x01,
-		FLAG_UPLOAD = FLAG_NMDC << 1,
+		FLAG_OP = FLAG_NMDC << 1,
+		FLAG_UPLOAD = FLAG_OP << 1,
 		FLAG_DOWNLOAD = FLAG_UPLOAD << 1,
 		FLAG_INCOMING = FLAG_DOWNLOAD << 1,
-		FLAG_HASSLOT = FLAG_INCOMING << 1,
+		FLAG_ASSOCIATED = FLAG_INCOMING << 1,
+		FLAG_HASSLOT = FLAG_ASSOCIATED << 1,
 		FLAG_HASEXTRASLOT = FLAG_HASSLOT << 1,
 		FLAG_INVALIDKEY = FLAG_HASEXTRASLOT << 1,
 		FLAG_SUPPORTS_GETZBLOCK = FLAG_INVALIDKEY << 1,
@@ -223,23 +226,23 @@ public:
 
 	};
 
-	short getNumber() { return (short)((((size_t)this)>>2) & 0x7fff); };
+	short getNumber() { return (short)((((size_t)this)>>2) & 0x7fff); }
 
 	// NMDC stuff
 	void myNick(const string& aNick) { send("$MyNick " + Text::utf8ToAcp(aNick) + '|'); }
 	void lock(const string& aLock, const string& aPk) { send ("$Lock " + aLock + " Pk=" + aPk + '|'); }
 	void key(const string& aKey) { send("$Key " + aKey + '|'); }
 	void direction(const string& aDirection, int aNumber) { send("$Direction " + aDirection + " " + Util::toString(aNumber) + '|'); }
-	void get(const string& aFile, int64_t aResume) { send("$Get " + aFile + "$" + Util::toString(aResume + 1) + '|'); }; 	// No acp - utf conversion here...
-	void getZBlock(const string& aFile, int64_t aResume, int64_t aBytes, bool utf8) { send((utf8 ? "$UGetZBlock " : "$GetZBlock ") + Util::toString(aResume) + ' ' + Util::toString(aBytes) + ' ' + aFile + '|'); };
+	void get(const string& aFile, int64_t aResume) { send("$Get " + aFile + "$" + Util::toString(aResume + 1) + '|'); } 	// No acp - utf conversion here...
+	void getZBlock(const string& aFile, int64_t aResume, int64_t aBytes, bool utf8) { send((utf8 ? "$UGetZBlock " : "$GetZBlock ") + Util::toString(aResume) + ' ' + Util::toString(aBytes) + ' ' + aFile + '|'); }
 	void uGetBlock(const string& aFile, int64_t aResume, int64_t aBytes) { send("$UGetBlock " + Util::toString(aResume) + ' ' + Util::toString(aBytes) + ' ' + aFile + '|'); }
 	void fileLength(const string& aLength) { send("$FileLength " + aLength + '|'); }
 	void startSend() { send("$Send|"); }
-	void sending(int64_t bytes) { send(bytes == -1 ? string("$Sending|") : "$Sending " + Util::toString(bytes) + "|"); };
-	void error(const string& aError) { send("$Error " + aError + '|'); };
-	void listLen(const string& aLength) { send("$ListLen " + aLength + '|'); };
-	void maxedOut() { isSet(FLAG_NMDC) ? send("$MaxedOut|") : sta(AdcCommand::SEV_RECOVERABLE, AdcCommand::ERROR_SLOTS_FULL, "Slots full"); };
-	void fileNotAvail() { isSet(FLAG_NMDC) ? send("$Error " + FILE_NOT_AVAILABLE + "|") : sta(AdcCommand::SEV_RECOVERABLE, AdcCommand::ERROR_FILE_NOT_AVAILABLE, FILE_NOT_AVAILABLE); }
+	void sending(int64_t bytes) { send(bytes == -1 ? string("$Sending|") : "$Sending " + Util::toString(bytes) + "|"); }
+	void error(const string& aError) { send("$Error " + aError + '|'); }
+	void listLen(const string& aLength) { send("$ListLen " + aLength + '|'); }
+	void maxedOut() { isSet(FLAG_NMDC) ? send("$MaxedOut|") : send(AdcCommand(AdcCommand::SEV_RECOVERABLE, AdcCommand::ERROR_SLOTS_FULL, "Slots full")); }
+	void fileNotAvail(const std::string& msg = FILE_NOT_AVAILABLE) { isSet(FLAG_NMDC) ? send("$Error " + msg + "|") : send(AdcCommand(AdcCommand::SEV_RECOVERABLE, AdcCommand::ERROR_FILE_NOT_AVAILABLE, msg)); }
 
 	// ADC Stuff
 	void sup(const StringList& features) { 
@@ -248,20 +251,11 @@ public:
 			c.addParam(*i);
 		send(c);
 	}
-	void inf(bool withToken) { 
-		AdcCommand c(AdcCommand::CMD_INF);
-		c.addParam("CI", SETTING(CLIENT_ID));
-		if(withToken) {
-			c.addParam("TO", getToken());
-		}
-		send(c);
-	}
+	void inf(bool withToken);
 	void get(const string& aType, const string& aName, const int64_t aStart, const int64_t aBytes) {  send(AdcCommand(AdcCommand::CMD_GET).addParam(aType).addParam(aName).addParam(Util::toString(aStart)).addParam(Util::toString(aBytes))); }
 	void snd(const string& aType, const string& aName, const int64_t aStart, const int64_t aBytes) {  send(AdcCommand(AdcCommand::CMD_SND).addParam(aType).addParam(aName).addParam(Util::toString(aStart)).addParam(Util::toString(aBytes))); }
-	void ntd() { send(AdcCommand(AdcCommand::CMD_NTD)); }
-	void sta(AdcCommand::Severity sev, AdcCommand::Error err, const string& desc) { send(AdcCommand(AdcCommand::CMD_STA).addParam(Util::toString(100 * sev + err)).addParam(desc)); }
 
-	void send(const AdcCommand& c) { send(c.toString(isSet(FLAG_NMDC), isSet(FLAG_SUPPORTS_ADCGET))); }
+	void send(const AdcCommand& c) { send(c.toString(0, isSet(FLAG_NMDC))); }
 
 	void supports(const StringList& feat) { 
 		string x;
@@ -271,74 +265,48 @@ public:
 		send("$Supports " + x + '|');
 	}
 	void setDataMode(int64_t aBytes = -1) { dcassert(socket); socket->setDataMode(aBytes); }
-	void setLineMode() { dcassert(socket); socket->setLineMode(); };
+	void setLineMode(size_t rollback) { dcassert(socket); socket->setLineMode(rollback); }
 
-	void connect(const string& aServer, short aPort) throw(SocketException) { 
-		socket->connect(aServer, aPort);
-	}
+	void connect(const string& aServer, short aPort) throw(SocketException, ThreadException);
+	void accept(const Socket& aServer) throw(SocketException, ThreadException);
 	
-	void accept(const ServerSocket& aServer) throw(SocketException) {
-		socket->accept(aServer);
-	}
-	
-	void disconnect() { if(socket) socket->disconnect(); };
-	void transmitFile(InputStream* f) { 
-		socket->transmitFile(f); 
-	};
+	void disconnect(bool graceless = false) { if(socket) socket->disconnect(graceless); }
+	void transmitFile(InputStream* f) { socket->transmitFile(f); }
 
 	const string& getDirectionString() {
 		dcassert(isSet(FLAG_UPLOAD) ^ isSet(FLAG_DOWNLOAD));
 		return isSet(FLAG_UPLOAD) ? UPLOAD : DOWNLOAD;
 	}
 
-	User::Ptr& getUser() { return user; };
+	User::Ptr& getUser() { return user; }
+	bool isSecure() const { return secure; }
 
 	string getRemoteIp() const { return socket->getIp(); }
-	Download* getDownload() { dcassert(isSet(FLAG_DOWNLOAD)); return download; };
-	void setDownload(Download* d) { dcassert(isSet(FLAG_DOWNLOAD)); download = d; };
-	Upload* getUpload() { dcassert(isSet(FLAG_UPLOAD)); return upload; };
-	void setUpload(Upload* u) { dcassert(isSet(FLAG_UPLOAD)); upload = u; };
+	Download* getDownload() { dcassert(isSet(FLAG_DOWNLOAD)); return download; }
+	void setDownload(Download* d) { dcassert(isSet(FLAG_DOWNLOAD)); download = d; }
+	Upload* getUpload() { dcassert(isSet(FLAG_UPLOAD)); return upload; }
+	void setUpload(Upload* u) { dcassert(isSet(FLAG_UPLOAD)); upload = u; }
 
-	void handle(AdcCommand::SUP t, const AdcCommand& c) {
-		fire(t, this, c);
-	}
-	void handle(AdcCommand::INF t, const AdcCommand& c) {
-		fire(t, this, c);
-	}
-	void handle(AdcCommand::GET t, const AdcCommand& c) {
-		fire(t, this, c);
-	}
-	void handle(AdcCommand::SND t, const AdcCommand& c) {
-		fire(t, this, c);
-	}
-	void handle(AdcCommand::STA t, const AdcCommand& c) {
-		fire(t, this, c);
-	}
-	void handle(AdcCommand::NTD t, const AdcCommand& c) {
-		fire(t, this, c);
-	}
-	void handle(AdcCommand::RES t, const AdcCommand& c) {
-		fire(t, this, c);
-	}
-	void handle(AdcCommand::GFI t, const AdcCommand& c) {
-		fire(t, this, c);
-	}
+	void handle(AdcCommand::SUP t, const AdcCommand& c) { fire(t, this, c); }
+	void handle(AdcCommand::INF t, const AdcCommand& c) { fire(t, this, c); }
+	void handle(AdcCommand::GET t, const AdcCommand& c) { fire(t, this, c); }
+	void handle(AdcCommand::SND t, const AdcCommand& c) { fire(t, this, c);	}
+	void handle(AdcCommand::STA t, const AdcCommand& c) { fire(t, this, c);	}
+	void handle(AdcCommand::RES t, const AdcCommand& c) { fire(t, this, c); }
+	void handle(AdcCommand::GFI t, const AdcCommand& c) { fire(t, this, c);	}
 
 	// Ignore any other ADC commands for now
-	template<typename T>
-	void handle(T , const AdcCommand& ) {
-	}
+	template<typename T> void handle(T , const AdcCommand& ) { }
 
-	GETSET(string, nick, Nick);
+	GETSET(string, hubUrl, HubUrl);
 	GETSET(string, token, Token);
-	GETSET(ConnectionQueueItem*, cqi, CQI);
+	//GETSET(ConnectionQueueItem*, cqi, CQI);
 	GETSET(States, state, State);
 	GETSET(u_int32_t, lastActivity, LastActivity);
-	GETSET(Download*, tempDownload, TempDownload);
-
 private:
 	BufferedSocket* socket;
 	User::Ptr user;
+	bool secure;
 	
 	static const string UPLOAD, DOWNLOAD;
 	
@@ -348,25 +316,21 @@ private:
 	};
 
 	// We only want ConnectionManager to create this...
-	UserConnection() throw(SocketException) : cqi(NULL), state(STATE_UNCONNECTED), lastActivity(0), 
-		socket(BufferedSocket::getSocket(0)), download(NULL) { 
-		
-		socket->addListener(this);
-	};
+	UserConnection(bool secure_) throw() : /*cqi(NULL),*/ state(STATE_UNCONNECTED), lastActivity(0),
+		socket(0), secure(secure_), download(NULL) { 
+	}
 
 	virtual ~UserConnection() throw() {
-		socket->removeListener(this);
-		removeListeners();
 		BufferedSocket::putSocket(socket);
-	};
-	friend struct DeleteFunction<UserConnection*>;
+	}
+	friend struct DeleteFunction;
 
 	UserConnection(const UserConnection&);
 	UserConnection& operator=(const UserConnection&);
 
 	void setUser(const User::Ptr& aUser) {
 		user = aUser;
-	};
+	}
 
 	void onLine(const string& aLine) throw();
 	
@@ -396,10 +360,4 @@ private:
 	virtual void on(Failed, const string&) throw();
 };
 
-#endif // !defined(AFX_USERCONNECTION_H__52BFD1A0_9924_4C07_BAFA_FB9682884841__INCLUDED_)
-
-/**
- * @file
- * $Id: UserConnection.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
-
+#endif // !defined(USER_CONNECTION_H)

@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_UPLOADMANAGER_H__B0C67119_3445_4208_B5AA_938D4A019703__INCLUDED_)
-#define AFX_UPLOADMANAGER_H__B0C67119_3445_4208_B5AA_938D4A019703__INCLUDED_
+#if !defined(UPLOAD_MANAGER_H)
+#define UPLOAD_MANAGER_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -27,6 +27,7 @@
 #include "Singleton.h"
 
 #include "ClientManagerListener.h"
+#include <deque>
 #include "File.h"
 #include "MerkleTree.h"
 
@@ -43,13 +44,13 @@ public:
 	typedef vector<Ptr> List;
 	typedef List::iterator Iter;
 	
-	Upload() : tth(NULL), file(NULL) { };
+	Upload() : tth(NULL), file(NULL) { }
 	virtual ~Upload() { 
 		delete file;
 		delete tth;
-	};
+	}
 	
-	User::Ptr& getUser() { dcassert(getUserConnection() != NULL); return getUserConnection()->getUser(); };
+	User::Ptr& getUser() { dcassert(getUserConnection() != NULL); return getUserConnection()->getUser(); }
 	
 	GETSET(string, fileName, FileName);
 	GETSET(string, localFileName, LocalFileName);
@@ -59,17 +60,22 @@ public:
 
 class UploadManagerListener {
 public:
+	virtual ~UploadManagerListener() { }
 	template<int I>	struct X { enum { TYPE = I };  };
 	
 	typedef X<0> Complete;
 	typedef X<1> Failed;
 	typedef X<2> Starting;
 	typedef X<3> Tick;
+	typedef X<4> WaitingAddFile;
+	typedef X<5> WaitingRemoveUser;
 
-	virtual void on(Starting, Upload*) throw() { };
-	virtual void on(Tick, const Upload::List&) throw() { };
-	virtual void on(Complete, Upload*) throw() { };
-	virtual void on(Failed, Upload*, const string&) throw() { };
+	virtual void on(Starting, Upload*) throw() { }
+	virtual void on(Tick, const Upload::List&) throw() { }
+	virtual void on(Complete, Upload*) throw() { }
+	virtual void on(Failed, Upload*, const string&) throw() { }
+	virtual void on(WaitingAddFile, const User::Ptr, const string&) throw() { }
+	virtual void on(WaitingRemoveUser, const User::Ptr) throw() { }
 
 };
 
@@ -78,7 +84,7 @@ class UploadManager : private ClientManagerListener, private UserConnectionListe
 public:
 	
 	/** @return Number of uploads. */ 
-	size_t getUploadCount() { Lock l(cs); return uploads.size(); };
+	size_t getUploadCount() { Lock l(cs); return uploads.size(); }
 
 	/**
 	 * @remarks This is only used in the tray icons. Could be used in
@@ -96,12 +102,6 @@ public:
 		return avg;
 	}
 	
-	/**
-	 * @remarks This is defined with GETSET below.
-	 * @return Number of running uploads.
-	 */
-//	int getRunning() { return running; };
-
 	/** @return Number of free slots. */
 	int getFreeSlots() { return max((SETTING(SLOTS) - running), 0); }
 	
@@ -113,31 +113,21 @@ public:
 		/** Only grant one slot per 30 sec */
 		if(GET_TICK() < getLastGrant() + 30*1000)
 			return false;
-		/** Grant if uploadspeed is less than the threshold speed */
-		return UploadManager::getInstance()->getAverageSpeed() < (SETTING(MIN_UPLOAD_SPEED)*1024);
+		/** Grant if upload speed is less than the threshold speed */
+		return getAverageSpeed() < (SETTING(MIN_UPLOAD_SPEED)*1024);
 	}
 
 	/** @internal */
-	int getFreeExtraSlots() { return max(3 - getExtra(), 0); };
+	int getFreeExtraSlots() { return max(3 - getExtra(), 0); }
 	
 	/** @param aUser Reserve an upload slot for this user and connect. */
-	void reserveSlot(User::Ptr& aUser) {
-		{
-			Lock l(cs);
-			reservedSlots[aUser] = GET_TICK();
-		}
-		if(aUser->isOnline())
-			aUser->connect();
-	}
+	void reserveSlot(const User::Ptr& aUser);
 
-	/** @param aUser Reserve an upload slot for this user. */
-	void reserveSlot(const User::Ptr& aUser) {
-		{
-			Lock l(cs);
-			reservedSlots[aUser] = GET_TICK();
-		}
-	}
-
+	typedef set<string> FileSet;
+	typedef hash_map<User::Ptr, FileSet, User::HashFunction> FilesMap;
+	void clearUserFiles(const User::Ptr&);
+	vector<User::Ptr> getWaitingUsers();
+	const FileSet& getWaitingUserFiles(const User::Ptr &);
 
 	/** @internal */
 	void addConnection(UserConnection::Ptr conn) {
@@ -152,29 +142,41 @@ private:
 	Upload::List uploads;
 	CriticalSection cs;
 
-	typedef HASH_MAP<User::Ptr, u_int32_t, User::HashFunction> SlotMap;
-	typedef SlotMap::iterator SlotIter;
-	SlotMap reservedSlots;
+	typedef HASH_SET<User::Ptr, User::HashFunction> SlotSet;
+	typedef SlotSet::iterator SlotIter;
+	SlotSet reservedSlots;
+
+	typedef pair<User::Ptr, u_int32_t> WaitingUser;
+	typedef deque<WaitingUser> UserDeque;
+
+	struct UserMatch {
+		UserMatch(const User::Ptr& u) : u(u) { }
+		User::Ptr u;
+		bool operator()(const WaitingUser& wu) { return wu.first == u; }
+	};
+
+	struct WaitingUserFresh {
+		bool operator()(const WaitingUser& wu) { return wu.second > GET_TICK() - 5*60*1000; }
+	};
+
+	//functions for manipulating waitingFiles and waitingUsers
+	UserDeque waitingUsers;		//this one merely lists the users waiting for slots
+	FilesMap waitingFiles;		//set of files which this user has asked for
+	void addFailedUpload(UserConnection::Ptr source, string filename);
 
 	friend class Singleton<UploadManager>;
 	UploadManager() throw();
 	virtual ~UploadManager() throw();
 
-	void removeConnection(UserConnection::Ptr aConn, bool ntd);
-	void removeUpload(Upload* aUpload) {
-		Lock l(cs);
-		dcassert(find(uploads.begin(), uploads.end(), aUpload) != uploads.end());
-		uploads.erase(find(uploads.begin(), uploads.end(), aUpload));
-		aUpload->setUserConnection(NULL);
-		delete aUpload;
-	}
+	void removeConnection(UserConnection::Ptr aConn);
+	void removeUpload(Upload* aUpload);
 
 	// ClientManagerListener
-	virtual void on(ClientManagerListener::UserUpdated, const User::Ptr& aUser) throw();
+	virtual void on(ClientManagerListener::UserDisconnected, const User::Ptr& aUser) throw();
 	
 	// TimerManagerListener
-	virtual void on(TimerManagerListener::Minute, u_int32_t aTick) throw();
 	virtual void on(TimerManagerListener::Second, u_int32_t aTick) throw();
+	virtual void on(TimerManagerListener::Minute, u_int32_t aTick) throw();
 
 	// UserConnectionListener
 	virtual void on(BytesSent, UserConnection*, size_t, size_t) throw();
@@ -188,15 +190,9 @@ private:
 	
 	virtual void on(AdcCommand::GET, UserConnection*, const AdcCommand&) throw();
 	virtual void on(AdcCommand::GFI, UserConnection*, const AdcCommand&) throw();
-	virtual void on(AdcCommand::NTD, UserConnection*, const AdcCommand&) throw();
 
 	void onGetBlock(UserConnection* aSource, const string& aFile, int64_t aResume, int64_t aBytes, bool z);
 	bool prepareFile(UserConnection* aSource, const string& aType, const string& aFile, int64_t aResume, int64_t aBytes, bool listRecursive = false);
 };
 
-#endif // !defined(AFX_UPLOADMANAGER_H__B0C67119_3445_4208_B5AA_938D4A019703__INCLUDED_)
-
-/**
- * @file
- * $Id: UploadManager.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
+#endif // !defined(UPLOAD_MANAGER_H)

@@ -1,5 +1,5 @@
-	/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_SEARCHMANAGER_H__E8F009DF_D216_4F8F_8C81_07D2FA0BFB7F__INCLUDED_)
-#define AFX_SEARCHMANAGER_H__E8F009DF_D216_4F8F_8C81_07D2FA0BFB7F__INCLUDED_
+#if !defined(SEARCH_MANAGER_H)
+#define SEARCH_MANAGER_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -51,58 +51,51 @@ public:
 	typedef vector<Ptr> List;
 	typedef List::iterator Iter;
 	
-	SearchResult(Client* aClient, Types aType, int64_t aSize, const string& name, const TTHValue* aTTH, bool aUtf8);
 	SearchResult(Types aType, int64_t aSize, const string& name, const TTHValue* aTTH);
 
 	SearchResult(const User::Ptr& aUser, Types aType, int aSlots, int aFreeSlots, 
 		int64_t aSize, const string& aFile, const string& aHubName, 
-		const string& aHubIpPort, const string& aIp, bool aUtf8) :
-	file(aFile), hubName(isTTH(aHubName) ? Util::emptyString : aHubName), hubIpPort(aHubIpPort), user(aUser), 
-		size(aSize), type(aType), slots(aSlots), freeSlots(aFreeSlots), IP(aIp), 
-		tth(isTTH(aHubName) ? new TTHValue(aHubName.substr(4)) : NULL), utf8(aUtf8), ref(1) { }
-
-	SearchResult(const User::Ptr& aUser, Types aType, int aSlots, int aFreeSlots, 
-		int64_t aSize, const string& aFile, const string& aHubName, 
-		const string& aHubIpPort, TTHValue* aTTH, bool aUtf8) :
-	file(aFile), hubName(aHubName), hubIpPort(aHubIpPort), user(aUser), 
-		size(aSize), type(aType), slots(aSlots), freeSlots(aFreeSlots), 
-		tth((aTTH != NULL) ? new TTHValue(*aTTH) : NULL), utf8(aUtf8), ref(1) { }
+		const string& aHubURL, const string& ip, TTHValue* aTTH, bool aUtf8, const string& aToken) :
+	file(aFile), hubName(aHubName), hubURL(aHubURL), user(aUser), 
+		size(aSize), type(aType), slots(aSlots), freeSlots(aFreeSlots), IP(ip),
+		tth((aTTH != NULL) ? new TTHValue(*aTTH) : NULL), token(aToken), utf8(aUtf8), ref(1) { }
 
 	string getFileName() const;
-	string toSR() const;
+	string toSR(const Client& client) const;
 	AdcCommand toRES(char type) const;
 
 	User::Ptr& getUser() { return user; }
 	string getSlotString() const { return Util::toString(getFreeSlots()) + '/' + Util::toString(getSlots()); }
 
 	const string& getFile() const { return file; }
-	const string& getHubIpPort() const { return hubIpPort; }
-	const string& getHubName() const { return hubName.empty() ? user->getClientName() : hubName; }
+	const string& getHubURL() const { return hubURL; }
+	const string& getHubName() const { return hubName; }
 	int64_t getSize() const { return size; }
 	Types getType() const { return type; }
 	int getSlots() const { return slots; }
 	int getFreeSlots() const { return freeSlots; }
-	const string& getIP() const { return IP; }
 	TTHValue* getTTH() const { return tth; }
 	bool getUtf8() const { return utf8; }
+	const string& getIP() const { return IP; }
+	const string& getToken() const { return token; }
 
 	void incRef() { Thread::safeInc(ref); }
 	void decRef() { 
 		if(Thread::safeDec(ref) == 0) 
 			delete this; 
-	};
+	}
 
 private:
 	friend class SearchManager;
 
 	SearchResult();
-	~SearchResult() { delete tth; };
+	~SearchResult() { delete tth; }
 
 	SearchResult(const SearchResult& rhs);
 
 	string file;
 	string hubName;
-	string hubIpPort;
+	string hubURL;
 	User::Ptr user;
 	int64_t size;
 	Types type;
@@ -110,13 +103,10 @@ private:
 	int freeSlots;
 	string IP;
 	TTHValue* tth;
+	string token;
 	
 	bool utf8;
 	volatile long ref;
-
-	bool isTTH(const string& str) const {
-		return str.compare(0, 4, "TTH:") == 0;
-	}
 };
 
 class SearchManager : public Speaker<SearchManagerListener>, public Singleton<SearchManager>, public Thread
@@ -151,18 +141,20 @@ public:
 	}
 	static string clean(const string& aSearchString);
 	
-	void respond(const AdcCommand& cmd);
+	void respond(const AdcCommand& cmd, const CID& cid);
 
 	short getPort()
 	{
 		return port;
 	}
 
-	void setPort(short aPort) throw(SocketException);
+	void listen() throw(Exception);
 	void disconnect() throw();
 	void onSearchResult(const string& aLine) {
 		onData((const u_int8_t*)aLine.data(), aLine.length(), Util::emptyString);
 	}
+
+	void onRES(const AdcCommand& cmd, const User::Ptr& from, const string& removeIp = Util::emptyString);
 	
 	int32_t timeToSearch() {
 		return (int32_t)(((((int64_t)lastSearch) + 5000) - GET_TICK() ) / 1000);
@@ -180,7 +172,7 @@ private:
 	u_int32_t lastSearch;
 	friend class Singleton<SearchManager>;
 
-	SearchManager() : socket(NULL), port(0), stop(false), lastSearch(0) {  };
+	SearchManager() : socket(NULL), port(0), stop(false), lastSearch(0) {  }
 
 	virtual int run();
 
@@ -193,14 +185,9 @@ private:
 #endif
 			delete socket;
 		}
-	};
+	}
 
 	void onData(const u_int8_t* buf, size_t aLen, const string& address);
 };
 
-#endif // !defined(AFX_SEARCHMANAGER_H__E8F009DF_D216_4F8F_8C81_07D2FA0BFB7F__INCLUDED_)
-
-/**
- * @file
- * $Id: SearchManager.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
+#endif // !defined(SEARCH_MANAGER_H)

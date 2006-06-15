@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_ConnectionManager_H__675A2F66_AFE6_4A15_8386_6B6FD579D5FF__INCLUDED_)
-#define AFX_ConnectionManager_H__675A2F66_AFE6_4A15_8386_6B6FD579D5FF__INCLUDED_
+#if !defined(CONNECTION_MANAGER_H)
+#define CONNECTION_MANAGER_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -25,7 +25,6 @@
 
 #include "TimerManager.h"
 
-#include "ServerSocket.h"
 #include "UserConnection.h"
 #include "User.h"
 #include "CriticalSection.h"
@@ -43,17 +42,16 @@ public:
 	enum State {
 		CONNECTING,					// Recently sent request to connect
 		WAITING,					// Waiting to send request to connect
-		NO_DOWNLOAD_SLOTS,			// Bot needed right now
-		IDLE,						// In the download pool
+		NO_DOWNLOAD_SLOTS,			// Not needed right now
 		ACTIVE						// In one up/downmanager
 	};
 
-	ConnectionQueueItem(const User::Ptr& aUser, bool aDownload) : state(WAITING), connection(NULL), lastAttempt(0), download(aDownload), user(aUser) { };
+	ConnectionQueueItem(const User::Ptr& aUser, bool aDownload) : state(WAITING), lastAttempt(0), download(aDownload), user(aUser) { }
 	
-	User::Ptr& getUser() { return user; };
+	User::Ptr& getUser() { return user; }
+	const User::Ptr& getUser() const { return user; }
 	
 	GETSET(State, state, State);
-	GETSET(UserConnection*, connection, Connection);
 	GETSET(u_int32_t, lastAttempt, LastAttempt);
 	GETSET(bool, download, Download);
 private:
@@ -62,78 +60,123 @@ private:
 	
 	User::Ptr user;
 };
+
+class ExpectedMap {
+public:
+	void add(const string& aNick, const string& aMyNick, const string& aHubUrl) {
+		Lock l(cs);
+		expectedConnections.insert(make_pair(aNick, make_pair(aMyNick, aHubUrl)));
+	}
+
+	pair<string, string> remove(const string& aNick) {
+		Lock l(cs);
+		ExpectMap::iterator i = expectedConnections.find(aNick);
+		
+		if(i == expectedConnections.end()) return make_pair(Util::emptyString, Util::emptyString);
+
+		pair<string, string> tmp = make_pair(i->second.first, i->second.second);
+		expectedConnections.erase(i);
+		
+		return tmp;
+	}
+
+private:
+	/** Nick -> myNick, hubUrl for expected NMDC incoming connections */
+	typedef map<string, pair<string, string> > ExpectMap;
+	ExpectMap expectedConnections;
+
+	CriticalSection cs;
+};
+
 // Comparing with a user...
 inline bool operator==(ConnectionQueueItem::Ptr ptr, const User::Ptr& aUser) { return ptr->getUser() == aUser; }
 
 class ConnectionManager : public Speaker<ConnectionManagerListener>, 
-	public UserConnectionListener, ServerSocketListener, TimerManagerListener, 
+	public UserConnectionListener, TimerManagerListener, 
 	public Singleton<ConnectionManager>
 {
 public:
-	void nmdcConnect(const string& aServer, short aPort, const string& aNick);
-	void adcConnect(const string& aServer, short aPort, const string& aToken);
-	void getDownloadConnection(const User::Ptr& aUser);
-	void putDownloadConnection(UserConnection* aSource, bool reuse = false, bool ntd = false);
-	void putUploadConnection(UserConnection* aSource, bool ntd);
+	void nmdcExpect(const string& aNick, const string& aMyNick, const string& aHubUrl) {
+		expectedConnections.add(aNick, aMyNick, aHubUrl);
+	}
+
+	void nmdcConnect(const string& aServer, short aPort, const string& aMyNick, const string& hubUrl);
+	void adcConnect(const OnlineUser& aUser, short aPort, const string& aToken, bool secure);
 	
-	void removeConnection(const User::Ptr& aUser, int isDownload);
-	void shutdown();	
-	/**
-	 * Set this ConnectionManager to listen at a different port.
-	 */
-	void setPort(short aPort) throw(SocketException) {
-		port = aPort;
-		socket.waitForConnections(aPort);
-	}
+	void getDownloadConnection(const User::Ptr& aUser);
+
+	void disconnect(const User::Ptr& aUser, int isDownload);
+
+	void shutdown();
+
+	/** Find a suitable port to listen on, and start doing it */
+	void listen() throw(Exception);
 	void disconnect() throw() {
-		socket.disconnect();
-	}
-	unsigned short getPort() {
-		return port;
+		delete server;
+		delete secureServer;
+
+		server = secureServer = 0;
+		port = securePort = 0;
 	}
 
-	// Ugly trick to use windows messages...
-	ServerSocket& getServerSocket() {
-		return socket;
-	}
-
+	unsigned short getPort() { return port; }
+	unsigned short getSecurePort() { return securePort;	}
 private:
+
+	class Server : public Thread {
+	public:
+		Server(bool secure_, short port, const string& ip = "0.0.0.0");
+		virtual ~Server() { die = true; join(); }
+	private:
+		virtual int run() throw();
+
+		Socket sock;
+		bool secure;
+		bool die;
+	};
+
+	friend class Server;
+
 	CriticalSection cs;
 	short port;
+	short securePort;
 
 	/** All ConnectionQueueItems */
 	ConnectionQueueItem::List downloads;
 	ConnectionQueueItem::List uploads;
 
-	User::List pendingAdd;
-	UserConnection::List pendingDelete;
 	/** All active connections */
 	UserConnection::List userConnections;
 
-	ServerSocket socket;
+	User::List checkIdle;
+
 	StringList features;
 	StringList adcFeatures;
 
+	ExpectedMap expectedConnections;
+
 	u_int32_t floodCounter;
+
+	Server* server;
+	Server* secureServer;
 
 	bool shuttingDown;
 
 	friend class Singleton<ConnectionManager>;
 	ConnectionManager();
 
-	virtual ~ConnectionManager() throw() { shutdown(); };
+	virtual ~ConnectionManager() throw() { shutdown(); }
 	
-	UserConnection* getConnection(bool aNmdc) throw(SocketException);
+	UserConnection* getConnection(bool aNmdc, bool secure) throw();
 	void putConnection(UserConnection* aConn);
 
 	void addUploadConnection(UserConnection* uc);
-	void addDownloadConnection(UserConnection* uc, bool sendNTD);
+	void addDownloadConnection(UserConnection* uc);
 
 	ConnectionQueueItem* getCQI(const User::Ptr& aUser, bool download);
 	void putCQI(ConnectionQueueItem* cqi);
 
-	// ServerSocketListener
-	virtual void on(ServerSocketListener::IncomingConnection) throw();
+	void accept(const Socket& sock, bool secure) throw();
 
 	// UserConnectionListener
 	virtual void on(Connected, UserConnection*) throw();
@@ -146,7 +189,6 @@ private:
 
 	virtual void on(AdcCommand::SUP, UserConnection*, const AdcCommand&) throw();
 	virtual void on(AdcCommand::INF, UserConnection*, const AdcCommand&) throw();
-	virtual void on(AdcCommand::NTD, UserConnection*, const AdcCommand&) throw();
 	virtual void on(AdcCommand::STA, UserConnection*, const AdcCommand&) throw();
 
 	// TimerManagerListener
@@ -155,9 +197,4 @@ private:
 
 };
 
-#endif // !defined(AFX_ConnectionManager_H__675A2F66_AFE6_4A15_8386_6B6FD579D5FF__INCLUDED_)
-
-/**
- * @file
- * $Id: ConnectionManager.h,v 1.4 2005/06/25 19:24:01 paskharen Exp $
- */
+#endif // !defined(CONNECTION_MANAGER_H)

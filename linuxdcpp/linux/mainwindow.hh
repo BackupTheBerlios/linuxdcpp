@@ -25,10 +25,8 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
-#include <ext/hash_map>
 
 #include "func.hh"
-#include "selecter.hh"
 #include "settingsdialog.hh"
 #include "treeview.hh"
 #include "wulformanager.hh"
@@ -38,7 +36,7 @@
 #include <client/DCPlusPlus.h>
 #include <client/DownloadManager.h>
 #include <client/Exception.h>
-#include <client/HubManager.h>
+#include <client/FavoriteManager.h>
 #include <client/LogManager.h>
 #include <client/QueueManager.h>
 #include <client/SearchManager.h>
@@ -132,7 +130,7 @@ class MainWindow:
 		virtual void on(TimerManagerListener::Second, u_int32_t ticks) throw();
 
 		// From Queue Manager
-		virtual void on(QueueManagerListener::Finished, QueueItem *item) throw();
+		virtual void on(QueueManagerListener::Finished, QueueItem *item, int64_t avSpeed) throw();
 
 		// From Connection manager
 		virtual void on(ConnectionManagerListener::Added, ConnectionQueueItem *item) throw();
@@ -151,8 +149,8 @@ class MainWindow:
 		virtual void on(UploadManagerListener::Tick, const Upload::List &list) throw();
 		virtual void on(UploadManagerListener::Complete, Upload *ul) throw();
 
-		// From Log manager
-		virtual void on(LogManagerListener::Message, const string& str) throw();
+		//From Log manager
+		virtual void on(LogManagerListener::Message, time_t t, const string& m) throw();
 
 		class TransferItem
 		{
@@ -161,8 +159,8 @@ class MainWindow:
 			{
 				this->user = user;
 				this->isDownload = isDownload;
-				nicks = user->getNick();
-				hubs = user->getLastHubName();
+				nicks = WulforUtil::getNicks(user);
+				hubs = WulforUtil::getHubNames(user).first;
 				failed = FALSE;
 			}
 

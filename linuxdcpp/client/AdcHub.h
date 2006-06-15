@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,56 +16,45 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#if !defined(ADC_HUB_H)
+#define ADC_HUB_H
+
+#if _MSC_VER > 1000
+#pragma once
+#endif // _MSC_VER > 1000
+
 #include "Client.h"
 #include "AdcCommand.h"
+#include "TimerManager.h"
 #include "User.h"
 
 class ClientManager;
 
-class AdcHub : public Client, public CommandHandler<AdcHub> {
+class AdcHub : public Client, public CommandHandler<AdcHub>, private TimerManagerListener {
 public:
+	using Client::send;
 
-	virtual void connect(const User* user);
-	virtual void connect(const User* user, string const& token);
-	virtual void disconnect();
+	virtual void connect(const OnlineUser& user);
+	void connect(const OnlineUser& user, string const& token, bool secure);
+	virtual void disconnect(bool graceless);
 	
 	virtual void hubMessage(const string& aMessage);
-	virtual void privateMessage(const User* user, const string& aMessage);
-	virtual void send(const string& aMessage) { socket->write(aMessage); };
+	virtual void privateMessage(const OnlineUser& user, const string& aMessage);
 	virtual void sendUserCmd(const string& aUserCmd) { send(aUserCmd); }
 	virtual void search(int aSizeMode, int64_t aSize, int aFileType, const string& aString, const string& aToken);
 	virtual void password(const string& pwd);
 	virtual void info(bool alwaysSend);
 
-	virtual size_t getUserCount() const { return 0;};
-	virtual int64_t getAvailable() const { return 0; };
-	virtual const string& getName() const { return (hub ? hub->getNick() : getAddressPort()); };
-	virtual bool getOp() const { return getMe() ? getMe()->isSet(User::OP) : false; };
+	virtual size_t getUserCount() const { Lock l(cs); return users.size(); }
+	virtual int64_t getAvailable() const;
 
-	virtual User::NickMap& lockUserList() { return nickMap; };
-	virtual void unlockUserList() { };
+	virtual string escape(string const& str) const { return AdcCommand::escape(str, false); }
+	virtual void send(const AdcCommand& cmd);
 
-	template<typename T> void handle(T, AdcCommand&) { 
-		//Speaker<AdcHubListener>::fire(t, this, c);
-	}
-
-	void send(const AdcCommand& cmd) { socket->write(cmd.toString(false)); };
-	void sendUDP(const AdcCommand& cmd);
-
-	void handle(AdcCommand::SUP, AdcCommand& c) throw();
-	void handle(AdcCommand::MSG, AdcCommand& c) throw();
-	void handle(AdcCommand::INF, AdcCommand& c) throw();
-	void handle(AdcCommand::GPA, AdcCommand& c) throw();
-	void handle(AdcCommand::QUI, AdcCommand& c) throw();
-	void handle(AdcCommand::CTM, AdcCommand& c) throw();
-	void handle(AdcCommand::RCM, AdcCommand& c) throw();
-	void handle(AdcCommand::STA, AdcCommand& c) throw();
-	void handle(AdcCommand::SCH, AdcCommand& c) throw();
-
-	virtual string escape(string const& str) const { return AdcCommand::escape(str, false); };
-
+	string getMySID() { return AdcCommand::fromSID(sid); }
 private:
 	friend class ClientManager;
+	friend class CommandHandler<AdcHub>;
 
 	enum States {
 		STATE_PROTOCOL,
@@ -74,33 +63,63 @@ private:
 		STATE_NORMAL
 	} state;
 
-	AdcHub(const string& aHubURL);
+	AdcHub(const string& aHubURL, bool secure);
 
 	AdcHub(const AdcHub&);
 	AdcHub& operator=(const AdcHub&);
 	virtual ~AdcHub() throw();
-	User::NickMap nickMap;
-	User::CIDMap cidMap;
-	User::Ptr hub;
+
+	/** Map session id to OnlineUser */
+	typedef HASH_MAP<u_int32_t, OnlineUser*> SIDMap;
+	typedef SIDMap::iterator SIDIter;
+
+	SIDMap users;
 	StringMap lastInfoMap;
-	CriticalSection cs;
+	mutable CriticalSection cs;
 
 	string salt;
 
+	u_int32_t sid;
+	bool reconnect;
+
 	static const string CLIENT_PROTOCOL;
+	static const string SECURE_CLIENT_PROTOCOL;
+	static const string ADCS_FEATURE;
+	static const string TCP4_FEATURE;
+	static const string UDP4_FEATURE;
 	 
 	virtual string checkNick(const string& nick);
-	virtual string getHubURL();
 	
+	OnlineUser& getUser(const u_int32_t aSID, const CID& aCID);
+	OnlineUser* findUser(const u_int32_t sid) const;
+	void putUser(const u_int32_t sid);
+
 	void clearUsers();
+
+	void handle(AdcCommand::SUP, AdcCommand& c) throw();
+	void handle(AdcCommand::SID, AdcCommand& c) throw();
+	void handle(AdcCommand::MSG, AdcCommand& c) throw();
+	void handle(AdcCommand::INF, AdcCommand& c) throw();
+	void handle(AdcCommand::GPA, AdcCommand& c) throw();
+	void handle(AdcCommand::QUI, AdcCommand& c) throw();
+	void handle(AdcCommand::CTM, AdcCommand& c) throw();
+	void handle(AdcCommand::RCM, AdcCommand& c) throw();
+	void handle(AdcCommand::STA, AdcCommand& c) throw();
+	void handle(AdcCommand::SCH, AdcCommand& c) throw();
+	void handle(AdcCommand::CMD, AdcCommand& c) throw();
+	void handle(AdcCommand::RES, AdcCommand& c) throw();
+
+	template<typename T> void handle(T, AdcCommand&) { 
+		//Speaker<AdcHubListener>::fire(t, this, c);
+	}
+
+	void sendUDP(const AdcCommand& cmd);
 
 	virtual void on(Connecting) throw() { fire(ClientListener::Connecting(), this); }
 	virtual void on(Connected) throw();
 	virtual void on(Line, const string& aLine) throw();
 	virtual void on(Failed, const string& aLine) throw();
+	virtual void on(TimerManagerListener::Second, u_int32_t aTick) throw();
 };
 
-/**
- * @file
- * $Id: AdcHub.h,v 1.4 2005/06/25 19:24:01 paskharen Exp $
- */
+#endif // !defined(ADC_HUB_H)

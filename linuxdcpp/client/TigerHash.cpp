@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,12 +21,21 @@
 
 #include "TigerHash.h"
 
+#ifdef _WIN32
+#if defined(_M_X64)
+#define TIGER_ARCH64
+#endif
+#if !(defined(_M_IX86) || defined(_M_X64))
+#define TIGER_BIG_ENDIAN
+#endif
+#else // _WIN32
 #if defined(__x86_64__) || defined(__alpha)
 #define TIGER_ARCH64
 #endif
-#if !(defined(__i386__)||defined(__x86_64__)|| defined(__alpha))
+#if !(defined(__i386__) || defined(__x86_64__) || defined(__alpha))
 #define TIGER_BIG_ENDIAN
 #endif
+#endif // _WIN32
 
 #define PASSES 3
 
@@ -747,8 +756,3 @@ u_int64_t TigerHash::table[4*256] = {
 		_ULL(0xCD56D9430EA8280E)   /* 1020 */,    _ULL(0xC12591D7535F5065)   /* 1021 */,
 		_ULL(0xC83223F1720AEF96)   /* 1022 */,    _ULL(0xC3A0396F7363A51F)   /* 1023 */
 };
-
-/**
- * @file
- * $Id: TigerHash.cpp,v 1.5 2006/05/30 22:29:34 stevensheehy Exp $
- */

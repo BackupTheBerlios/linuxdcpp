@@ -17,6 +17,7 @@
 */
 
 #include "bookentry.hh"
+#include "wulformanager.hh"
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/Util.h>
@@ -74,16 +75,16 @@ void BookEntry::applyCallback(GCallback closeCallback)
 
 void BookEntry::setLabel_gui(std::string text)
 {
-	gtk_tooltips_set_tip(tips, eventBox, text.c_str(), text.c_str());
+	gtk_tooltips_set_tip (tips, eventBox, text.c_str(), text.c_str());
 	if (text.size() > 20) 
-		text = text.substr(0, 20) + "...";
+		text = text.substr(0, 17) + "...";
 	gtk_label_set_text(label, text.c_str());
 	title = text;
 }
 
 void BookEntry::setBold_gui()
 {
-	if (!bold)
+	if (!bold && WulforManager::get()->getMainWindow()->currentPage_gui() != getWidget())
 	{
 		char *markup = g_markup_printf_escaped("<b>%s</b>", title.c_str());
 		gtk_label_set_markup(label, markup);

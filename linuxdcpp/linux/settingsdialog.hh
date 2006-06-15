@@ -22,23 +22,22 @@
 #include <gtk/gtk.h>
 #include <glade/glade.h>
 #include "treeview.hh"
-#include <ext/hash_map>
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/SettingsManager.h>
-#include <client/HubManager.h>
+#include <client/FavoriteManager.h>
 #include <client/ShareManager.h>
 
 class Settings
 {
 public:
-	Settings ();
-	~Settings ();
+	Settings();
+	~Settings();
 
-	GtkWidget *getDialog () { return dialog; }
+	GtkWidget *getDialog() { return dialog; }
 	std::string getID() { return "Settings"; }
-	void saveSettings_client ();
+	void saveSettings_client();
 	
 private:
 	GtkWidget *dialog;
@@ -48,76 +47,116 @@ private:
 	GtkWidget *editPublic;
 	GtkWidget *virtualName;
 
+	void addOption(GtkListStore *store, TreeView view, string name, SettingsManager::IntSetting setting);
+	void onToggledClicked_gui(TreeView view, GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+
 	// General
 	void initGeneral_gui();
-	static void onActive_gui (GtkToggleButton *button, gpointer user_data);
-	static void onPassive_gui (GtkToggleButton *button, gpointer user_data);
-	static void onSocks5_gui (GtkToggleButton *button, gpointer user_data);
-	void activeClicked_gui ();
-	void passiveClicked_gui ();
-	void socks5Clicked_gui ();
+
+	// Connection
+	void initConnection_gui();
+	static void onInDirect_gui(GtkToggleButton *button, gpointer data);
+	static void onOutDirect_gui(GtkToggleButton *button, gpointer data);
+	static void onInPassive_gui(GtkToggleButton *button, gpointer data);
+	static void onInFW_NAT_gui(GtkToggleButton *button, gpointer data);
+	///@todo Uncomment when implemented
+	//static void onInFW_UPnP_gui(GtkToggleButton *button, gpointer data);
+	static void onSocks5_gui(GtkToggleButton *button, gpointer data);
+	void inDirectClicked_gui();
+	void inFW_NATClicked_gui();
+	///@todo Uncomment when implemented
+	//void inFW_UPnPClicked_gui();
+	void outDirectClicked_gui();
+	void inPassiveClicked_gui();
+	void socks5Clicked_gui();
+
 	// Downloads
 	void initDownloads_gui();
-	static void onBrowseF_gui (GtkWidget *widget, gpointer user_data);
-	static void onBrowseUF_gui (GtkWidget *widget, gpointer user_data);
-	static void onPublicHubs_gui (GtkWidget *widget, gpointer user_data);
-	static void onPublicAdd_gui (GtkWidget *widget, gpointer user_data);
-	static void onPublicMU_gui (GtkWidget *widget, gpointer user_data);
-	static void onPublicMD_gui (GtkWidget *widget, gpointer user_data);
-	static void onPublicEdit_gui (GtkWidget *widget, gpointer user_data);
-	static void onPublicRemove_gui (GtkWidget *widget, gpointer user_data);
-	void publicInit_gui ();
-	bool addFavoriteDir_client (string path, string name);
-	bool removeFavoriteDir_client (string path);
-	static void onAddFavorite_gui (GtkWidget *widget, gpointer user_data);
-	static void onRemoveFavorite_gui (GtkWidget *widget, gpointer user_data);	
-	static gboolean onFavoriteButtonReleased_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
-	TreeView downloadToView;
-	TreeView publicListView;
-	GtkListStore *downloadToStore;
-	GtkListStore *publicListStore;
+	static void onBrowseF_gui(GtkWidget *widget, gpointer data);
+	static void onBrowseUF_gui(GtkWidget *widget, gpointer data);
+
+	// Public hubs dialog
+	static void onPublicHubs_gui(GtkWidget *widget, gpointer data);
+	static void onPublicAdd_gui(GtkWidget *widget, gpointer data);
+	static void onPublicMU_gui(GtkWidget *widget, gpointer data);
+	static void onPublicMD_gui(GtkWidget *widget, gpointer data);
+	static void onPublicEdit_gui(GtkWidget *widget, gpointer data);
+	static void onPublicRemove_gui(GtkWidget *widget, gpointer data);
+
+	// downloadsTo
+	TreeView downloadToView, publicListView;
+	GtkListStore *downloadToStore, *publicListStore;
+	void publicInit_gui();
+	bool addFavoriteDir_client(string path, string name);
+	bool removeFavoriteDir_client(string path);
+	static void onAddFavorite_gui(GtkWidget *widget, gpointer data);
+	static void onRemoveFavorite_gui(GtkWidget *widget, gpointer data);
+	static gboolean onFavoriteButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+
+	// Queue
+	TreeView queueView;
+	GtkListStore *queueStore;
+	static void onQueueToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+
 	// Sharing
-	void initSharing_gui();
-	static void onAddShare_gui (GtkWidget *widget, gpointer user_data);
-	static void onRemoveShare_gui (GtkWidget *widget, gpointer user_data);
-	static gboolean onShareButtonReleased_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
-	static gboolean onShareHiddenPressed_gui (GtkToggleButton *togglebutton, gpointer user_data);
-	void shareHidden_client (bool show);
-	void modifyShare_client (bool add, string path, string name);
 	TreeView shareView;
 	GtkListStore *shareStore;
 	GdkEventType sharePrevious;
+	void initSharing_gui();
+	static void onAddShare_gui(GtkWidget *widget, gpointer data);
+	static void onRemoveShare_gui(GtkWidget *widget, gpointer data);
+	static gboolean onShareButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+	static gboolean onShareHiddenPressed_gui(GtkToggleButton *togglebutton, gpointer data);
+	void shareHidden_client(bool show);
+	void modifyShare_client(bool add, string path, string name);
+
 	// Appearance
-	void initAppearance_gui();
-	static void onAppearanceToggledClicked_gui (GtkCellRendererToggle *cell, gchar *path_str, gpointer data);
-	void addOption (string name, bool use);
 	TreeView appearanceView;
 	GtkListStore *appearanceStore;
-	static SettingsManager::IntSetting optionSettings[];
-	
+	void initAppearance_gui();
+	static void onAppearanceToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+
+	// Colors and Sound
+	TreeView colorView;
+	GtkListStore *colorStore;
+	static void onColorToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+	///@todo Uncomment when implemented
+	//static void onWinColorClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+	//static void onDownColorClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+	//static void onUpColorClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+	//static void onTextStyleClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+
+	// Windows
+	TreeView windowView1, windowView2, windowView3;
+	GtkListStore *windowStore1, *windowStore2, *windowStore3;
+	static void onWindowView1ToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+	static void onWindowView2ToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+	static void onWindowView3ToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+
 	// Logs and sound
 	void initLog_gui();
-	static void onLogBrowseClicked_gui (GtkWidget *widget, gpointer user_data);
-	static void onLogMainClicked_gui (GtkToggleButton *togglebutton, gpointer user_data);
-	static void onLogPrivateClicked_gui (GtkToggleButton *togglebutton, gpointer user_data);
-	static void onLogDownloadClicked_gui (GtkToggleButton *togglebutton, gpointer user_data);
-	static void onLogUploadClicked_gui (GtkToggleButton *togglebutton, gpointer user_data);
-	void checkClicked ();
-	
+	static void onLogBrowseClicked_gui(GtkWidget *widget, gpointer data);
+	static void onLogMainClicked_gui(GtkToggleButton *togglebutton, gpointer data);
+	static void onLogPrivateClicked_gui(GtkToggleButton *togglebutton, gpointer data);
+	static void onLogDownloadClicked_gui(GtkToggleButton *togglebutton, gpointer data);
+	static void onLogUploadClicked_gui(GtkToggleButton *togglebutton, gpointer data);
+	void checkClicked();
+
 	// Advanced
-	void initAdvanced_gui();
-	static void onAdvancedToggledClicked_gui (GtkCellRendererToggle *cell, gchar *path_str, gpointer data);
-	void addAdvanced (string name, bool use);
 	TreeView advancedView;
 	GtkListStore *advancedStore;
-	static SettingsManager::IntSetting advancedSettings[];
+	void initAdvanced_gui();
+	static void onAdvancedToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+	void addAdvanced(string name, bool use);
 
-	hash_map<string, GtkWidget *, WulforUtil::HashString> generalItems;
-	hash_map<string, GtkWidget *, WulforUtil::HashString> downloadItems;
-	hash_map<string, GtkWidget *, WulforUtil::HashString> shareItems;
-	hash_map<string, GtkWidget *, WulforUtil::HashString> appearanceItems;
-	hash_map<string, GtkWidget *, WulforUtil::HashString> logItems;
-	hash_map<string, GtkWidget *, WulforUtil::HashString> advancedItems;
+	hash_map<string, GtkWidget *> generalItems;
+	hash_map<string, GtkWidget *> connectionItems;
+	hash_map<string, GtkWidget *> queueItems;
+	hash_map<string, GtkWidget *> downloadItems;
+	hash_map<string, GtkWidget *> shareItems;
+	hash_map<string, GtkWidget *> appearanceItems;
+	hash_map<string, GtkWidget *> logItems;
+	hash_map<string, GtkWidget *> advancedItems;
 
 	string lastdir;
 	

@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,9 +30,8 @@
 
 #include "UserConnection.h"
 
-ConnectionManager::ConnectionManager() : port(0), floodCounter(0), shuttingDown(false) {
+ConnectionManager::ConnectionManager() : port(0), securePort(0), floodCounter(0), server(0), secureServer(0), shuttingDown(false) {
 	TimerManager::getInstance()->addListener(this);
-	socket.addListener(this);
 
 	features.push_back(UserConnection::FEATURE_MINISLOTS);
 	features.push_back(UserConnection::FEATURE_XML_BZLIST);
@@ -40,7 +39,49 @@ ConnectionManager::ConnectionManager() : port(0), floodCounter(0), shuttingDown(
 	features.push_back(UserConnection::FEATURE_TTHL);
 	features.push_back(UserConnection::FEATURE_TTHF);
 
-	adcFeatures.push_back("+BASE");
+	adcFeatures.push_back("AD" + UserConnection::FEATURE_ADC_BASE);
+}
+// @todo clean this up
+void ConnectionManager::listen() throw(Exception){
+	short lastPort = (short)SETTING(TCP_PORT);
+	
+	if(lastPort == 0)
+		lastPort = (short)Util::rand(1025, 32000);
+
+	short firstPort = lastPort;
+
+	disconnect();
+
+	while(true) {
+		try {
+			server = new Server(false, lastPort, SETTING(BIND_ADDRESS));
+			port = lastPort;
+			break;
+		} catch(const Exception&) {
+			short newPort = (short)((lastPort == 32000) ? 1025 : lastPort + 1);
+			if(!SettingsManager::getInstance()->isDefault(SettingsManager::TCP_PORT) || (firstPort == newPort)) {
+				throw Exception("Could not find a suitable free port");
+			}
+			lastPort = newPort;
+		}
+	}
+
+	lastPort++;
+	firstPort = lastPort;
+
+	while(true) {
+		try {
+			secureServer = new Server(true, lastPort, SETTING(BIND_ADDRESS));
+			securePort = lastPort;
+			break;
+		} catch(const Exception&) {
+			short newPort = (short)((lastPort == 32000) ? 1025 : lastPort + 1);
+			if(!SettingsManager::getInstance()->isDefault(SettingsManager::TCP_PORT) || (firstPort == newPort)) {
+				throw Exception("Could not find a suitable free port");
+			}
+			lastPort = newPort;
+		}
+	}
 }
 
 /**
@@ -57,12 +98,8 @@ void ConnectionManager::getDownloadConnection(const User::Ptr& aUser) {
 		if(i == downloads.end()) {
 			getCQI(aUser, true);
 		} else {
-			ConnectionQueueItem* cqi = *i;
-			if(cqi->getState() == ConnectionQueueItem::IDLE) {
-				if(find(pendingAdd.begin(), pendingAdd.end(), aUser) == pendingAdd.end())
-					pendingAdd.push_back(aUser);
-				return;
-			}
+			if(find(checkIdle.begin(), checkIdle.end(), aUser) == checkIdle.end())
+				checkIdle.push_back(aUser);
 		}
 	}
 }
@@ -72,14 +109,12 @@ ConnectionQueueItem* ConnectionManager::getCQI(const User::Ptr& aUser, bool down
 	if(download) {
 		dcassert(find(downloads.begin(), downloads.end(), aUser) == downloads.end());
 		downloads.push_back(cqi);
-
 	} else {
 		dcassert(find(uploads.begin(), uploads.end(), aUser) == uploads.end());
 		uploads.push_back(cqi);
 	}
 
 	fire(ConnectionManagerListener::Added(), cqi);
-	
 	return cqi;
 }
 
@@ -95,65 +130,8 @@ void ConnectionManager::putCQI(ConnectionQueueItem* cqi) {
 	delete cqi;
 }
 
-void ConnectionManager::putDownloadConnection(UserConnection* aSource, bool reuse /* = false */, bool ntd /* = false */) {
-	ConnectionQueueItem* cqi = aSource->getCQI();
-	dcassert(cqi);
-
-	if(reuse) {
-		dcdebug("ConnectionManager::putDownloadConnection Pooling reusable connection %p to %s\n", aSource, aSource->getUser()->getNick().c_str());
-		// Pool it for later usage...
-		aSource->addListener(this);
-		{
-			Lock l(cs);
-			cqi->setState(ConnectionQueueItem::IDLE);
-		}
-	} else {
-		// Disassociate the two...
-		aSource->setCQI(NULL);
-
-		bool hasDown = QueueManager::getInstance()->hasDownload(aSource->getUser());
-
-		{
-			Lock l(cs);
-			cqi->setConnection(NULL);
-			if(hasDown) {
-				cqi->setLastAttempt(GET_TICK());
-				cqi->setState(ConnectionQueueItem::WAITING);
-			} else {
-				putCQI(cqi);
-			}
-		}
-
-		if(ntd) {
-			aSource->unsetFlag(UserConnection::FLAG_DOWNLOAD);
-			addUploadConnection(aSource);
-		} else {
-			putConnection(aSource);
-		}
-	}
-}
-
-void ConnectionManager::putUploadConnection(UserConnection* aSource, bool ntd) {
-	ConnectionQueueItem* cqi = aSource->getCQI();
-	aSource->setCQI(NULL);
-
-	if(ntd) {
-		// We should pass it to the download manager...
-		aSource->unsetFlag(UserConnection::FLAG_UPLOAD);
-		aSource->setFlag(UserConnection::FLAG_DOWNLOAD);
-		addDownloadConnection(aSource, false);
-	} else {
-		putConnection(aSource);
-	}
-
-	{
-		Lock l(cs);
-		putCQI(cqi);
-	}
-}
-
-UserConnection* ConnectionManager::getConnection(bool aNmdc) throw(SocketException) {
-	UserConnection* uc = new UserConnection();
+UserConnection* ConnectionManager::getConnection(bool aNmdc, bool secure) throw() {
+	UserConnection* uc = new UserConnection(secure);
 	uc->addListener(this);
 	{
 		Lock l(cs);
@@ -165,22 +143,17 @@ UserConnection* ConnectionManager::getConnection(bool aNmdc) throw(SocketExcepti
 }
 
 void ConnectionManager::putConnection(UserConnection* aConn) {
-	aConn->removeListeners();
+	aConn->removeListener(this);
 	aConn->disconnect();
-	{
-		Lock l(cs);
-		
-		dcassert(find(userConnections.begin(), userConnections.end(), aConn) != userConnections.end());
-		userConnections.erase(find(userConnections.begin(), userConnections.end(), aConn));
-		pendingDelete.push_back(aConn);
-	}
+
+	Lock l(cs);
+	userConnections.erase(remove(userConnections.begin(), userConnections.end(), aConn), userConnections.end());
 }
 
 void ConnectionManager::on(TimerManagerListener::Second, u_int32_t aTick) throw() {
 	User::List passiveUsers;
 	ConnectionQueueItem::List removed;
-	UserConnection::List added;
-	UserConnection::List penDel;
+	User::List idlers;
 
 	bool tooMany = ((SETTING(DOWNLOAD_SLOTS) != 0) && DownloadManager::getInstance()->getDownloadCount() >= (size_t)SETTING(DOWNLOAD_SLOTS));
 	bool tooFast = ((SETTING(MAX_DOWNLOAD_SPEED) != 0 && DownloadManager::getInstance()->getAverageSpeed() >= (SETTING(MAX_DOWNLOAD_SPEED)*1024)));
@@ -188,39 +161,28 @@ void ConnectionManager::on(TimerManagerListener::Second, u_int32_t aTick) throw(
 	{
 		Lock l(cs);
 
-		int attempts = 0;
+		bool attemptDone = false;
+
+		idlers = checkIdle;
+		checkIdle.clear();
 
 		for(ConnectionQueueItem::Iter i = downloads.begin(); i != downloads.end(); ++i) {
 			ConnectionQueueItem* cqi = *i;
 
-			if(cqi->getState() == ConnectionQueueItem::ACTIVE) {
-				// Do nothing
-			} else if(cqi->getState() == ConnectionQueueItem::IDLE) {
-				User::Iter it = find(pendingAdd.begin(), pendingAdd.end(), cqi->getUser());
-				if(it != pendingAdd.end()) {
-					dcassert(cqi->getConnection());
-					dcassert(cqi->getConnection()->getCQI() == cqi);
-					cqi->setState(ConnectionQueueItem::ACTIVE);
-					cqi->getConnection()->removeListener(this);
-					added.push_back(cqi->getConnection());
-
-					pendingAdd.erase(it);
-				}
-			} else {
-				
+			if(cqi->getState() != ConnectionQueueItem::ACTIVE) {
 				if(!cqi->getUser()->isOnline()) {
 					// Not online anymore...remove it from the pending...
 					removed.push_back(cqi);
 					continue;
 				} 
 				
-				if(cqi->getUser()->isSet(User::PASSIVE) && (SETTING(CONNECTION_TYPE) != SettingsManager::CONNECTION_ACTIVE)) {
+				if(cqi->getUser()->isSet(User::PASSIVE) && !ClientManager::getInstance()->isActive()) {
 					passiveUsers.push_back(cqi->getUser());
 					removed.push_back(cqi);
 					continue;
 				}
 
-				if( ((cqi->getLastAttempt() + 60*1000) < aTick) && (attempts < 2) ) {
+				if( ((cqi->getLastAttempt() + 60*1000) < aTick) && !attemptDone ) {
 					cqi->setLastAttempt(aTick);
 
 					if(!QueueManager::getInstance()->hasDownload(cqi->getUser())) {
@@ -239,9 +201,9 @@ void ConnectionManager::on(TimerManagerListener::Second, u_int32_t aTick) throw(
 					if(cqi->getState() == ConnectionQueueItem::WAITING) {
 						if(startDown) {
 							cqi->setState(ConnectionQueueItem::CONNECTING);
-							cqi->getUser()->connect();
+							ClientManager::getInstance()->connect(cqi->getUser());
 							fire(ConnectionManagerListener::StatusChanged(), cqi);
-							attempts++;
+							attemptDone = true;
 						} else {
 							cqi->setState(ConnectionQueueItem::NO_DOWNLOAD_SLOTS);
 							fire(ConnectionManagerListener::Failed(), cqi, STRING(ALL_DOWNLOAD_SLOTS_TAKEN));
@@ -256,25 +218,18 @@ void ConnectionManager::on(TimerManagerListener::Second, u_int32_t aTick) throw(
 			}
 		}
 
-		pendingAdd.clear();
-
 		for(ConnectionQueueItem::Iter m = removed.begin(); m != removed.end(); ++m) {
 			putCQI(*m);
 		}
 
-		penDel = pendingDelete;
-		pendingDelete.clear();
-
 	}
 
-	for_each(penDel.begin(), penDel.end(), DeleteFunction<UserConnection*>());
+	for(User::Iter i = idlers.begin(); i != idlers.end(); ++i) {
+		DownloadManager::getInstance()->checkIdle(*i);
+	}
 
 	for(User::Iter ui = passiveUsers.begin(); ui != passiveUsers.end(); ++ui) {
-		QueueManager::getInstance()->removeSources(*ui, QueueItem::Source::FLAG_PASSIVE);
-	}
-
-	for(UserConnection::Iter i = added.begin(); i != added.end(); ++i) {
-		DownloadManager::getInstance()->addConnection(*i);
+		QueueManager::getInstance()->removeSource(*ui, QueueItem::Source::FLAG_PASSIVE);
 	}
 }
 
@@ -283,7 +238,7 @@ void ConnectionManager::on(TimerManagerListener::Minute, u_int32_t aTick) throw(
 
 	for(UserConnection::Iter j = userConnections.begin(); j != userConnections.end(); ++j) {
 		if(((*j)->getLastActivity() + 180*1000) < aTick) {
-			(*j)->disconnect();
+			(*j)->disconnect(true);
 		}
 	}
 }
@@ -291,21 +246,40 @@ void ConnectionManager::on(TimerManagerListener::Minute, u_int32_t aTick) throw(
 static const u_int32_t FLOOD_TRIGGER = 20000;
 static const u_int32_t FLOOD_ADD = 2000;
 
+ConnectionManager::Server::Server(bool secure_, short port, const string& ip /* = "0.0.0.0" */) : secure(secure_), die(false) {
+	sock.create();
+	sock.bind(port, ip);
+	sock.listen();
+
+	start();
+}
+
+
+static const u_int32_t POLL_TIMEOUT = 250;
+
+int ConnectionManager::Server::run() throw() {
+	while(!die) {
+		if(sock.wait(POLL_TIMEOUT, Socket::WAIT_READ) == Socket::WAIT_READ) {
+			ConnectionManager::getInstance()->accept(sock, secure);
+		}
+	}
+	return 0;
+}
+
 /**
  * Someone's connecting, accept the connection and wait for identification...
  * It's always the other fellow that starts sending if he made the connection.
  */
-void ConnectionManager::on(ServerSocketListener::IncomingConnection) throw() {
-	UserConnection* uc = NULL;
+void ConnectionManager::accept(const Socket& sock, bool secure) throw() {
 	u_int32_t now = GET_TICK();
 
 	if(now > floodCounter) {
 		floodCounter = now + FLOOD_ADD;
 	} else {
-		if(now + FLOOD_TRIGGER < floodCounter) {
+		if(false && now + FLOOD_TRIGGER < floodCounter) {
 			Socket s;
 			try {
-				s.accept(socket);
+				s.accept(sock);
 			} catch(const SocketException&) {
 				// ...
 			}
@@ -315,62 +289,84 @@ void ConnectionManager::on(ServerSocketListener::IncomingConnection) throw() {
 			floodCounter += FLOOD_ADD;
 		}
 	}
-
+	UserConnection* uc = getConnection(false, secure);
+	uc->setFlag(UserConnection::FLAG_INCOMING);
+	uc->setState(UserConnection::STATE_SUPNICK);
+	uc->setLastActivity(GET_TICK());
 	try { 
-		uc = getConnection(false);
-		uc->setFlag(UserConnection::FLAG_INCOMING);
-		uc->setState(UserConnection::STATE_SUPNICK);
-		uc->setLastActivity(GET_TICK());
-		uc->accept(socket);
-	} catch(const SocketException& e) {
-		dcdebug("ConnectionManager::OnIncomingConnection caught: %s\n", e.getError().c_str());
-		if(uc)
-			putConnection(uc);
+		uc->accept(sock);
+	} catch(const Exception&) {
+		putConnection(uc);
+		delete uc;
 	}
 }
 
-void ConnectionManager::nmdcConnect(const string& aServer, short aPort, const string& aNick) {
+void ConnectionManager::nmdcConnect(const string& aServer, short aPort, const string& aNick, const string& hubUrl) {
 	if(shuttingDown)
 		return;
 
-	UserConnection* uc = NULL;
+	UserConnection* uc = getConnection(true, false);
+	uc->setToken(aNick);
+	uc->setHubUrl(hubUrl);
+	uc->setState(UserConnection::STATE_CONNECT);
+	uc->setFlag(UserConnection::FLAG_NMDC);
 	try {
-		uc = getConnection(true);
-		uc->setNick(aNick);
-		uc->setState(UserConnection::STATE_CONNECT);
-		uc->setFlag(UserConnection::FLAG_NMDC);
 		uc->connect(aServer, aPort);
-	} catch(const SocketException&) {
-		if(uc)
-			putConnection(uc);
+	} catch(const Exception&) {
+		putConnection(uc);
+		delete uc;
 	}
 }
 
-void ConnectionManager::adcConnect(const string& aServer, short aPort, const string& aToken) {
+void ConnectionManager::adcConnect(const OnlineUser& aUser, short aPort, const string& aToken, bool secure) {
 	if(shuttingDown)
 		return;
 
-	UserConnection* uc = NULL;
+	UserConnection* uc = getConnection(false, secure);
+	uc->setToken(aToken);
+	uc->setState(UserConnection::STATE_CONNECT);
+	if(aUser.getIdentity().isOp()) {
+		uc->setFlag(UserConnection::FLAG_OP);
+	}
 	try {
-		uc = getConnection(false);
-		uc->setToken(aToken);
-		uc->setState(UserConnection::STATE_CONNECT);
-		uc->connect(aServer, aPort);
-	} catch(const SocketException&) {
-		if(uc)
-			putConnection(uc);
+		uc->connect(aUser.getIdentity().getIp(), aPort);
+	} catch(const Exception&) {
+		putConnection(uc);
+		delete uc;
 	}
 }
 
-void ConnectionManager::on(AdcCommand::SUP, UserConnection* aSource, const AdcCommand&) throw() {
+void ConnectionManager::on(AdcCommand::SUP, UserConnection* aSource, const AdcCommand& cmd) throw() {
 	if(aSource->getState() != UserConnection::STATE_SUPNICK) {
-		// Already got this once, ignore...
-		dcdebug("CM::onMyNick %p sent nick twice\n", aSource);
+		// Already got this once, ignore...@todo fix support updates
+		dcdebug("CM::onMyNick %p sent nick twice\n", (void*)aSource);
+		return;
+	}
+
+	bool baseOk = false;
+
+	for(StringIterC i = cmd.getParameters().begin(); i != cmd.getParameters().end(); ++i) {
+		if(i->compare(0, 2, "AD") == 0) {
+			string feat = i->substr(2);
+			if(feat == UserConnection::FEATURE_ADC_BASE)
+				baseOk = true;
+			else if(feat == UserConnection::FEATURE_ZLIB_GET)
+				aSource->setFlag(UserConnection::FLAG_SUPPORTS_ZLIB_GET);
+		}
+	}
+
+	if(!baseOk) {
+		aSource->send(AdcCommand(AdcCommand::SEV_FATAL, AdcCommand::ERROR_PROTOCOL_GENERIC, "Invalid SUP"));
+		aSource->disconnect();
 		return;
 	}
 
 	if(aSource->isSet(UserConnection::FLAG_INCOMING)) {
-		aSource->sup(adcFeatures);
+		StringList defFeatures = adcFeatures;
+		if(BOOLSETTING(COMPRESS_TRANSFERS)) {
+			defFeatures.push_back("AD" + UserConnection::FEATURE_ZLIB_GET);
+		}
+		aSource->sup(defFeatures);
 		aSource->inf(false);
 	} else {
 		aSource->inf(true);
@@ -378,48 +374,56 @@ void ConnectionManager::on(AdcCommand::SUP, UserConnection* aSource, const AdcCo
 	aSource->setState(UserConnection::STATE_INF);
 }
 
-void ConnectionManager::on(AdcCommand::NTD, UserConnection*, const AdcCommand&) throw() {
-
-}
-
 void ConnectionManager::on(AdcCommand::STA, UserConnection*, const AdcCommand&) throw() {
-	
+
 }
 
 void ConnectionManager::on(UserConnectionListener::Connected, UserConnection* aSource) throw() {
 	dcassert(aSource->getState() == UserConnection::STATE_CONNECT);
 	if(aSource->isSet(UserConnection::FLAG_NMDC)) {
-		aSource->myNick(aSource->getNick());
+		aSource->myNick(aSource->getToken());
 		aSource->lock(CryptoManager::getInstance()->getLock(), CryptoManager::getInstance()->getPk());
 	} else {
-		aSource->sup(adcFeatures);
+		StringList defFeatures = adcFeatures;
+		if(BOOLSETTING(COMPRESS_TRANSFERS)) {
+			defFeatures.push_back("AD" + UserConnection::FEATURE_ZLIB_GET);
+		}
+		aSource->sup(defFeatures);
 	}
 	aSource->setState(UserConnection::STATE_SUPNICK);
 }
 
-/**
- * Nick received. If it's a downloader, fine, otherwise it must be an uploader.
- */
 void ConnectionManager::on(UserConnectionListener::MyNick, UserConnection* aSource, const string& aNick) throw() {
-
 	if(aSource->getState() != UserConnection::STATE_SUPNICK) {
 		// Already got this once, ignore...
-		dcdebug("CM::onMyNick %p sent nick twice\n", aSource);
+		dcdebug("CM::onMyNick %p sent nick twice\n", (void*)aSource);
 		return;
 	}
 
-	/// @todo: Re-add dcassert and remove if statement below it when unicode issue is fixed.
-	//dcassert(aNick.size() > 0);
-	if (aNick.empty()) return;
-	dcdebug("ConnectionManager::onMyNick %p, %s\n", aSource, aNick.c_str());
+	dcassert(aNick.size() > 0);
+	dcdebug("ConnectionManager::onMyNick %p, %s\n", (void*)aSource, aNick.c_str());
 	dcassert(!aSource->getUser());
+
+	if(aSource->isSet(UserConnection::FLAG_INCOMING)) {
+		// Try to guess where this came from...
+		pair<string, string> i = expectedConnections.remove(aNick);
+		if(i.second.empty()) {
+			dcassert(i.first.empty());
+			dcdebug("Unknown incoming connection from %s\n", aNick.c_str());
+			putConnection(aSource);
+			return;
+		}
+        aSource->setToken(i.first);	
+		aSource->setHubUrl(i.second);
+	}
+	CID cid = ClientManager::getInstance()->makeCid(aNick, aSource->getHubUrl());
 
 	// First, we try looking in the pending downloads...hopefully it's one of them...
 	{
 		Lock l(cs);
 		for(ConnectionQueueItem::Iter i = downloads.begin(); i != downloads.end(); ++i) {
 			ConnectionQueueItem* cqi = *i;
-			if((cqi->getState() == ConnectionQueueItem::CONNECTING || cqi->getState() == ConnectionQueueItem::WAITING) && cqi->getUser()->getNick() == aNick) {
+			if((cqi->getState() == ConnectionQueueItem::CONNECTING || cqi->getState() == ConnectionQueueItem::WAITING) && cqi->getUser()->getCID() == cid) {
 				aSource->setUser(cqi->getUser());
 				// Indicate that we're interested in this file...
 				aSource->setFlag(UserConnection::FLAG_DOWNLOAD);
@@ -430,19 +434,22 @@ void ConnectionManager::on(UserConnectionListener::MyNick, UserConnection* aSour
 
 	if(!aSource->getUser()) {
 		// Make sure we know who it is, i e that he/she is connected...
-		if(!ClientManager::getInstance()->isOnline(aNick)) {
+
+		aSource->setUser(ClientManager::getInstance()->findUser(cid));
+		if(!aSource->getUser() || !ClientManager::getInstance()->isOnline(aSource->getUser())) {
 			dcdebug("CM::onMyNick Incoming connection from unknown user %s\n", aNick.c_str());
 			putConnection(aSource);
 			return;
 		}
-
-		aSource->setUser(ClientManager::getInstance()->getUser(aNick));
 		// We don't need this connection for downloading...make it an upload connection instead...
 		aSource->setFlag(UserConnection::FLAG_UPLOAD);
 	}
 
+	if(ClientManager::getInstance()->isOp(aSource->getUser(), aSource->getHubUrl()))
+		aSource->setFlag(UserConnection::FLAG_OP);
+
 	if( aSource->isSet(UserConnection::FLAG_INCOMING) ) {
-		aSource->myNick(aSource->getUser()->getClientNick()); 
+		aSource->myNick(aSource->getToken()); 
 		aSource->lock(CryptoManager::getInstance()->getLock(), CryptoManager::getInstance()->getPk());
 	}
 
@@ -451,7 +458,7 @@ void ConnectionManager::on(UserConnectionListener::MyNick, UserConnection* aSour
 
 void ConnectionManager::on(UserConnectionListener::CLock, UserConnection* aSource, const string& aLock, const string& aPk) throw() {
 	if(aSource->getState() != UserConnection::STATE_LOCK) {
-		dcdebug("CM::onLock %p received lock twice, ignoring\n", aSource);
+		dcdebug("CM::onLock %p received lock twice, ignoring\n", (void*)aSource);
 		return;
 	}
 	
@@ -459,7 +466,6 @@ void ConnectionManager::on(UserConnectionListener::CLock, UserConnection* aSourc
 		// Alright, we have an extended protocol, set a user flag for this user and refresh his info...
 		if( (aPk.find("DCPLUSPLUS") != string::npos) && aSource->getUser() && !aSource->getUser()->isSet(User::DCPLUSPLUS)) {
 			aSource->getUser()->setFlag(User::DCPLUSPLUS);
-			User::updated(aSource->getUser());
 		}
 		StringList defFeatures = features;
 		if(BOOLSETTING(COMPRESS_TRANSFERS)) {
@@ -477,7 +483,7 @@ void ConnectionManager::on(UserConnectionListener::CLock, UserConnection* aSourc
 
 void ConnectionManager::on(UserConnectionListener::Direction, UserConnection* aSource, const string& dir, const string& num) throw() {
 	if(aSource->getState() != UserConnection::STATE_DIRECTION) {
-		dcdebug("CM::onDirection %p received direction twice, ignoring\n", aSource);
+		dcdebug("CM::onDirection %p received direction twice, ignoring\n", (void*)aSource);
 		return;
 	}
 
@@ -509,12 +515,8 @@ void ConnectionManager::on(UserConnectionListener::Direction, UserConnection* aS
 	aSource->setState(UserConnection::STATE_KEY);
 }
 
-void ConnectionManager::addDownloadConnection(UserConnection* uc, bool sendNTD) {
-
+void ConnectionManager::addDownloadConnection(UserConnection* uc) {
 	dcassert(uc->isSet(UserConnection::FLAG_DOWNLOAD));
-
-	uc->removeListener(this);
-
 	bool addConn = false;
 	{
 		Lock l(cs);
@@ -523,12 +525,8 @@ void ConnectionManager::addDownloadConnection(UserConnection* uc, bool sendNTD) 
 		if(i != downloads.end()) {
 			ConnectionQueueItem* cqi = *i;
 			if(cqi->getState() == ConnectionQueueItem::WAITING || cqi->getState() == ConnectionQueueItem::CONNECTING) {
-				// Associate the two...
-				dcassert(uc->getCQI() == NULL);
-				uc->setCQI(cqi);
-				dcassert(cqi->getConnection() == NULL);
-				cqi->setConnection(uc);
 				cqi->setState(ConnectionQueueItem::ACTIVE);
+				uc->setFlag(UserConnection::FLAG_ASSOCIATED);
 
 				fire(ConnectionManagerListener::Connected(), cqi);
 				
@@ -540,11 +538,6 @@ void ConnectionManager::addDownloadConnection(UserConnection* uc, bool sendNTD) 
 
 	if(addConn) {
 		DownloadManager::getInstance()->addConnection(uc);
-	} else if(sendNTD) {
-		uc->ntd();
-		uc->unsetFlag(UserConnection::FLAG_DOWNLOAD);
-		uc->setFlag(UserConnection::FLAG_UPLOAD);
-		addUploadConnection(uc);
 	} else {
 		putConnection(uc);
 	}
@@ -552,8 +545,6 @@ void ConnectionManager::addDownloadConnection(UserConnection* uc, bool sendNTD) 
 
 void ConnectionManager::addUploadConnection(UserConnection* uc) {
 	dcassert(uc->isSet(UserConnection::FLAG_UPLOAD));
-
-	uc->removeListener(this);
 
 	bool addConn = false;
 	{
@@ -563,9 +554,8 @@ void ConnectionManager::addUploadConnection(UserConnection* uc) {
 		if(i == uploads.end()) {
 			ConnectionQueueItem* cqi = getCQI(uc->getUser(), false);
 
-			uc->setCQI(cqi);
-			cqi->setConnection(uc);
 			cqi->setState(ConnectionQueueItem::ACTIVE);
+			uc->setFlag(UserConnection::FLAG_ASSOCIATED);
 
 			fire(ConnectionManagerListener::Connected(), cqi);
 
@@ -590,7 +580,7 @@ void ConnectionManager::on(UserConnectionListener::Key, UserConnection* aSource,
 	dcassert(aSource->getUser());
 
 	if(aSource->isSet(UserConnection::FLAG_DOWNLOAD)) {
-		addDownloadConnection(aSource, false);
+		addDownloadConnection(aSource);
 	} else {
 		addUploadConnection(aSource);
 	}
@@ -599,64 +589,78 @@ void ConnectionManager::on(UserConnectionListener::Key, UserConnection* aSource,
 void ConnectionManager::on(AdcCommand::INF, UserConnection* aSource, const AdcCommand& cmd) throw() {
 	if(aSource->getState() != UserConnection::STATE_INF) {
 		// Already got this once, ignore...
-		aSource->sta(AdcCommand::SEV_FATAL, AdcCommand::ERROR_PROTOCOL_GENERIC, "Expecting INF");
-		dcdebug("CM::onMyNick %p sent nick twice\n", aSource);
+		aSource->send(AdcCommand(AdcCommand::SEV_FATAL, AdcCommand::ERROR_PROTOCOL_GENERIC, "Expecting INF"));
+		dcdebug("CM::onINF %p sent INF twice\n", (void*)aSource);
+		aSource->disconnect();
 		return;
 	}
 
-	aSource->setUser(ClientManager::getInstance()->getUser(cmd.getFrom(), false));
+	string cid;
+	if(!cmd.getParam("ID", 0, cid)) {
+		aSource->send(AdcCommand(AdcCommand::SEV_FATAL, AdcCommand::ERROR_INF_MISSING, "ID missing").addParam("FL", "ID"));
+		dcdebug("CM::onINF missing ID\n");
+		aSource->disconnect();
+		return;
+	}
+
+	aSource->setUser(ClientManager::getInstance()->findUser(CID(cid)));
 
 	if(!aSource->getUser()) {
 		dcdebug("CM::onINF: User not found");
-		aSource->sta(AdcCommand::SEV_FATAL, AdcCommand::ERROR_GENERIC, "User not found");
+		aSource->send(AdcCommand(AdcCommand::SEV_FATAL, AdcCommand::ERROR_GENERIC, "User not found"));
 		putConnection(aSource);
 		return;
 	}
 
 	if(aSource->isSet(UserConnection::FLAG_INCOMING)) {
 		aSource->setFlag(UserConnection::FLAG_DOWNLOAD);
-		addDownloadConnection(aSource, true);
+		addDownloadConnection(aSource);
 	} else {
 		aSource->setFlag(UserConnection::FLAG_UPLOAD);
 		addUploadConnection(aSource);
 	}
 }
 
-void ConnectionManager::on(UserConnectionListener::Failed, UserConnection* aSource, const string& /*aError*/) throw() {
-	if(aSource->isSet(UserConnection::FLAG_DOWNLOAD) && aSource->getCQI()) {
-		{
-			Lock l(cs);
+void ConnectionManager::on(UserConnectionListener::Failed, UserConnection* aSource, const string& aError) throw() {
+	Lock l(cs);
 
-			ConnectionQueueItem* cqi = aSource->getCQI();
-			dcassert(cqi->getState() == ConnectionQueueItem::IDLE);
+	if(aSource->isSet(UserConnection::FLAG_ASSOCIATED)) {
+		if(aSource->isSet(UserConnection::FLAG_DOWNLOAD)) {
+			ConnectionQueueItem::Iter i = find(downloads.begin(), downloads.end(), aSource->getUser());
+			dcassert(i != downloads.end());
+			ConnectionQueueItem* cqi = *i;
 			cqi->setState(ConnectionQueueItem::WAITING);
 			cqi->setLastAttempt(GET_TICK());
-			cqi->setConnection(NULL);
-			aSource->setCQI(NULL);
+			fire(ConnectionManagerListener::Failed(), cqi, aError);
+		} else if(aSource->isSet(UserConnection::FLAG_UPLOAD)) {
+			ConnectionQueueItem::Iter i = find(uploads.begin(), uploads.end(), aSource->getUser());
+			dcassert(i != uploads.end());
+			ConnectionQueueItem* cqi = *i;
+			putCQI(cqi);
 		}
 	}
 	putConnection(aSource);
 }
 
-void ConnectionManager::removeConnection(const User::Ptr& aUser, int isDownload) {
+void ConnectionManager::disconnect(const User::Ptr& aUser, int isDownload) {
 	Lock l(cs);
 	for(UserConnection::Iter i = userConnections.begin(); i != userConnections.end(); ++i) {
 		UserConnection* uc = *i;
 		if(uc->getUser() == aUser && uc->isSet(isDownload ? UserConnection::FLAG_DOWNLOAD : UserConnection::FLAG_UPLOAD)) {
-			uc->disconnect();
+			uc->disconnect(true);
 			break;
 		}
 	}
 }
 
 void ConnectionManager::shutdown() {
+	TimerManager::getInstance()->removeListener(this);
 	shuttingDown = true;
-	socket.removeListener(this);
-	socket.disconnect();
+	disconnect();
 	{
 		Lock l(cs);
 		for(UserConnection::Iter j = userConnections.begin(); j != userConnections.end(); ++j) {
-			(*j)->disconnect();
+			(*j)->disconnect(true);
 		}
 	}
 	// Wait until all connections have died out...
@@ -669,29 +673,27 @@ void ConnectionManager::shutdown() {
 		}
 		Thread::sleep(50);
 	}
-}		
+}
 
 // UserConnectionListener
 void ConnectionManager::on(UserConnectionListener::Supports, UserConnection* conn, const StringList& feat) throw() {
 	for(StringList::const_iterator i = feat.begin(); i != feat.end(); ++i) {
-		if(*i == UserConnection::FEATURE_GET_ZBLOCK)
-			conn->setFlag(UserConnection::FLAG_SUPPORTS_GETZBLOCK);
-		else if(*i == UserConnection::FEATURE_MINISLOTS)
+		if(*i == UserConnection::FEATURE_GET_ZBLOCK) {
+			conn->setFlag(UserConnection::FLAG_SUPPORTS_GETZBLOCK); 
+		} else if(*i == UserConnection::FEATURE_MINISLOTS) {
 			conn->setFlag(UserConnection::FLAG_SUPPORTS_MINISLOTS);
-		else if(*i == UserConnection::FEATURE_XML_BZLIST)
+		} else if(*i == UserConnection::FEATURE_XML_BZLIST) {
 			conn->setFlag(UserConnection::FLAG_SUPPORTS_XML_BZLIST);
-		else if(*i == UserConnection::FEATURE_ADCGET)
+		} else if(*i == UserConnection::FEATURE_ADCGET) {
 			conn->setFlag(UserConnection::FLAG_SUPPORTS_ADCGET);
-		else if(*i == UserConnection::FEATURE_ZLIB_GET)
+		} else if(*i == UserConnection::FEATURE_ZLIB_GET) {
 			conn->setFlag(UserConnection::FLAG_SUPPORTS_ZLIB_GET);
-		else if(*i == UserConnection::FEATURE_TTHL)
+		} else if(*i == UserConnection::FEATURE_TTHL) {
 			conn->setFlag(UserConnection::FLAG_SUPPORTS_TTHL);
-		else if(*i == UserConnection::FEATURE_TTHF)
+		} else if(*i == UserConnection::FEATURE_TTHF) {
 			conn->setFlag(UserConnection::FLAG_SUPPORTS_TTHF);
+			if(conn->getUser())
+				conn->getUser()->setFlag(User::TTH_GET);
+		}
 	}
 }
-
-/**
- * @file
- * $Id: ConnectionManager.cpp,v 1.5 2006/04/05 10:29:33 paskharen Exp $
- */

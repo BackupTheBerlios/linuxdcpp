@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,22 +16,27 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_BUFFEREDSOCKET_H__0760BAF6_91F5_481F_BFF7_7CA192EE44CC__INCLUDED_)
-#define AFX_BUFFEREDSOCKET_H__0760BAF6_91F5_481F_BFF7_7CA192EE44CC__INCLUDED_
+#if !defined(BUFFERED_SOCKET_H)
+#define BUFFERED_SOCKET_H
 
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "Socket.h"
 #include "Semaphore.h"
 #include "Thread.h"
 #include "Speaker.h"
+#include "Util.h"
+#include "ZUtils.h"
+#include "Socket.h"
 
 class InputStream;
+class Socket;
+class SocketException;
 
 class BufferedSocketListener {
 public:
+	virtual ~BufferedSocketListener() { }
 	template<int I>	struct X { enum { TYPE = I };  };
 
 	typedef X<0> Connecting;
@@ -42,7 +47,6 @@ public:
 	typedef X<5> ModeChange;
 	typedef X<6> TransmitDone;
 	typedef X<7> Failed;
-	typedef X<8> Shutdown;
 
 	virtual void on(Connecting) throw() { }
 	virtual void on(Connected) throw() { }
@@ -52,17 +56,63 @@ public:
 	virtual void on(ModeChange) throw() { }
 	virtual void on(TransmitDone) throw() { }
 	virtual void on(Failed, const string&) throw() { }
-	virtual void on(Shutdown) throw() { }
 };
 
-class BufferedSocket : public Speaker<BufferedSocketListener>, public Socket, public Thread
+class BufferedSocket : public Speaker<BufferedSocketListener>, public Thread
 {
 public:
-	enum {	
+	enum Modes {
 		MODE_LINE,
+		MODE_ZPIPE,
 		MODE_DATA
 	};
 
+	/**
+	 * BufferedSocket factory, each BufferedSocket may only be used to create one connection
+	 * @param sep Line separator
+	 * @return An unconnected socket
+	 */
+	static BufferedSocket* getSocket(char sep) throw() { 
+		return new BufferedSocket(sep); 
+	}
+
+	static void putSocket(BufferedSocket* aSock) { 
+		aSock->removeListeners(); 
+		aSock->shutdown();
+	}
+
+	static void waitShutdown() {
+		while(sockets)
+			Thread::sleep(100);
+	}
+
+	void accept(const Socket& srv, bool secure) throw(SocketException, ThreadException);
+	void connect(const string& aAddress, short aPort, bool secure, bool proxy) throw(SocketException, ThreadException);
+
+	/** Sets data mode for aBytes bytes. Must be called within onLine. */
+	void setDataMode(int64_t aBytes = -1) { mode = MODE_DATA; dataBytes = aBytes; }
+	/** 
+	 * Rollback is an ugly hack to solve problems with compressed transfers where not all data received
+	 * should be treated as data.
+	 * Must be called from within onData. 
+	 */
+	void setLineMode(size_t aRollback) { setMode (MODE_LINE, aRollback);}
+	void setMode(Modes mode, size_t aRollback = 0);
+	Modes getMode() const { return mode; }
+	const string& getIp() { return sock ? sock->getIp() : Util::emptyString; }
+	bool isConnected() { return sock && sock->isConnected(); }
+	
+	void write(const string& aData) throw() { write(aData.data(), aData.length()); }
+	void write(const char* aBuf, size_t aLen) throw();
+	/** Send the file f over this socket. */
+	void transmitFile(InputStream* f) throw() { Lock l(cs); addTask(SEND_FILE, new SendFileInfo(f)); }
+
+	void disconnect(bool graceless = false) throw() { Lock l(cs); if(graceless) disconnecting = true; addTask(DISCONNECT, 0); }
+
+	string getLocalIp() const { return sock ? sock->getLocalIp() : Util::getLocalIp(); }
+
+	GETSET(char, separator, Separator)
+private:
 	enum Tasks {
 		CONNECT,
 		DISCONNECT,
@@ -72,82 +122,21 @@ public:
 		ACCEPTED
 	};
 
-	/**
-	 * BufferedSocket factory
-	 * @param sep Line separator
-	 * @param esc A preceding backslash escapes any character, including the separator
-	 * @return An unconnected socket
-	 */
-	static BufferedSocket* getSocket(char sep) throw(SocketException) { 
-		return new BufferedSocket(sep); 
+	struct TaskData { 
+		virtual ~TaskData() { }
+	};
+	struct ConnectInfo : public TaskData {
+		ConnectInfo(string addr_, short port_, bool proxy_) : addr(addr_), port(port_), proxy(proxy_) { }
+		string addr;
+		short port;
+		bool proxy;
+	};
+	struct SendFileInfo : public TaskData {
+		SendFileInfo(InputStream* stream_) : stream(stream_) { }
+		InputStream* stream;
 	};
 
-	static void putSocket(BufferedSocket* aSock) { 
-		aSock->removeListeners(); 
-		aSock->Socket::disconnect();
-		aSock->shutdown();
-	};
-
-	virtual void shutdown() {
-		Lock l(cs);
-		addTask(SHUTDOWN);
-	}
-
-	virtual void accept(const ServerSocket& srv) throw(SocketException) { 
-		Socket::accept(srv); 
-		Lock l(cs);
-		addTask(ACCEPTED);
-	}
-
-	virtual void disconnect() throw() {
-		Lock l(cs);
-		addTask(DISCONNECT);
-	}
-	
-	/**
-	 * Sets data mode for aBytes bytes long. Must be called within an action method...
-	 */
-	void setDataMode(int64_t aBytes = -1) {
-		mode = MODE_DATA;
-		dataBytes = aBytes;
-	}
-	/**
-	 * Should be called when data mode.
-	 */
-	void setLineMode() {
-		dcassert(mode == MODE_DATA);
-		dcassert(dataBytes == -1);
-		mode = MODE_LINE;
-	}
-	int getMode() { return mode; };
-	
-	/**
-	 * Connect to aAddress / aPort
-	 * Note; this one doesn't actually throw, but it overrides one that does...
-	 */
-	virtual void connect(const string& aAddress, short aPort) throw(SocketException) {
-		Lock l(cs);
-		mode = MODE_LINE;
-		address = aAddress;
-		port = aPort;
-		addTask(CONNECT);
-	}
-	
-	void write(const string& aData) throw(SocketException) { write(aData.data(), aData.length()); };
-	virtual void write(const char* aBuf, size_t aLen) throw();
-
-	/**
-	 * Send the file f over this socket.
-	 */
-	void transmitFile(InputStream* f) throw() {
-		Lock l(cs);
-		file = f;
-		addTask(SEND_FILE);
-	}
-
-	GETSET(char, separator, Separator)
-private:
-	BufferedSocket(char aSeparator = 0x0a) throw(SocketException);
+	BufferedSocket(char aSeparator) throw();
 
 	// Dummy...
 	BufferedSocket(const BufferedSocket&);
@@ -155,64 +144,46 @@ private:
 
 	virtual ~BufferedSocket() throw();
 
-	bool fillBuffer(char* buf, int bufLen, u_int32_t timeout = 0) throw(SocketException);
-	
 	CriticalSection cs;
 
 	Semaphore taskSem;
-	vector<Tasks> tasks;
-	string address;
-	short port;
-	int mode;
+	vector<pair<Tasks, TaskData*> > tasks;
+
+	Modes mode;
+	UnZFilter *filterIn;
 	int64_t dataBytes;
-	
+	size_t rollback;
+	bool failed;
 	string line;
-	bool escaped;
-	u_int8_t* inbuf;
-	size_t inbufSize;
-	enum {BUFFERS = 2};
-	u_int8_t* outbuf[BUFFERS];
-	size_t outbufSize[BUFFERS];
-	size_t outbufPos[BUFFERS];
-	int curBuf;
+	vector<u_int8_t> inbuf;
+	vector<u_int8_t> writeBuf;
+	vector<u_int8_t> sendBuf;
 
-	InputStream* file;
-
-	virtual void create(int) throw(SocketException) { dcassert(0); }; // Sockets are created implicitly
-	virtual void bind(short) throw(SocketException) { dcassert(0); }; // Binding / UDP not supported...
+	Socket* sock;
+	bool disconnecting;
 
 	virtual int run();
 
-	void threadConnect();
-	void threadRead();
-	bool threadSendFile();
+	void threadConnect(const string& aAddr, short aPort, bool proxy) throw(SocketException);
+	void threadRead() throw(SocketException);
+	void threadSendFile(InputStream* is) throw(Exception);
 	void threadSendData();
 	void threadDisconnect();
 	
 	void fail(const string& aError) {
-		Socket::disconnect();
+		if(sock)
+			sock->disconnect();
 		fire(BufferedSocketListener::Failed(), aError);
-	}
-
-	/**
-	 * Shut down the socket and delete itself...no variables must be referenced after
-	 * calling threadShutDown, the thread function should exit as soon as possible
-	 */
-	void threadShutDown() {
-		fire(BufferedSocketListener::Shutdown());
-		removeListeners();
-		delete this;
+		failed = true;
 	}
 	
-	void addTask(Tasks task) {
-		tasks.push_back(task);
-		taskSem.signal();
-	}
+	static size_t sockets;
+
+	bool checkEvents();
+	void checkSocket();
+
+	void shutdown();
+	void addTask(Tasks task, TaskData* data) { tasks.push_back(make_pair(task, data)); taskSem.signal(); }
 };
 
-#endif // !defined(AFX_BUFFEREDSOCKET_H__0760BAF6_91F5_481F_BFF7_7CA192EE44CC__INCLUDED_)
-
-/**
- * @file
- * $Id: BufferedSocket.h,v 1.4 2005/06/25 19:24:01 paskharen Exp $
- */
+#endif // !defined(BUFFERED_SOCKET_H)

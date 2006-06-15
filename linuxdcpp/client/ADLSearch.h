@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,8 +21,8 @@
  * Henrik Engstr�m, henrikengstrom at home se
  */
 
-#if !defined(__ADLSEARCH_H__)
-#define __ADLSEARCH_H__
+#if !defined(ADL_SEARCH_H)
+#define ADL_SEARCH_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -56,7 +56,7 @@ public:
 		stringSearchList.clear();
 
 		// Replace parameters such as %[nick]
-		string stringParams = Util::formatParams(searchString, params);
+		string stringParams = Util::formatParams(searchString, params, false);
 
 		// Split into substrings
 		StringTokenizer<string> st(stringParams, ' ');
@@ -265,7 +265,7 @@ public:
 	GETSET(User::Ptr, user, User)
 
 	// @remarks Used to add ADLSearch directories to an existing DirectoryListing
-	void matchListing(DirectoryListing* /*aDirList*/) throw();
+	void matchListing(DirectoryListing& /*aDirList*/) throw();
 
 private:
 	// @internal
@@ -303,11 +303,8 @@ private:
 			}
 		}
 	}
+
+	string getConfigFile() { return Util::getConfigPath() + "ADLSearch.xml"; }
 };
 
-#endif
-
-/**
- * @file
- * $Id: ADLSearch.h,v 1.4 2005/06/25 19:24:01 paskharen Exp $
- */
+#endif // !defined(ADL_SEARCH_H)

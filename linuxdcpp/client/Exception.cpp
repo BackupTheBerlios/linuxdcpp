@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2001-2003 Jacek Sieka, j_s@telia.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,6 +23,5 @@
 
 /**
  * @file
- * $Id: Exception.cpp,v 1.4 2005/06/25 19:24:02 paskharen Exp $
+ * $Id: Exception.cpp,v 1.5 2006/06/15 18:30:50 stevensheehy Exp $
  */
-

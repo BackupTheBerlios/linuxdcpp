@@ -24,7 +24,7 @@
 using namespace std;
 
 PrivateMessage::PrivateMessage(User::Ptr user):
-	BookEntry("PM: " + user->getNick()),
+	BookEntry("PM: " + WulforUtil::getNicks(user)),
 	enterCallback(this, &PrivateMessage::sendMessage_gui)
 {
 	string file = WulforManager::get()->getPath() + "/glade/privatemessage.glade";
@@ -38,6 +38,15 @@ PrivateMessage::PrivateMessage(User::Ptr user):
 
 	entry = GTK_ENTRY(glade_xml_get_widget(xml, "entry"));
 	text = GTK_TEXT_VIEW(glade_xml_get_widget(xml, "text"));
+
+	if (SETTING(USE_OEM_MONOFONT))
+	{
+		PangoFontDescription *font_desc;
+		font_desc = pango_font_description_from_string("Mono 10");
+		gtk_widget_modify_font(GTK_WIDGET(text), font_desc);
+		pango_font_description_free(font_desc);
+	}
+
 	scroll = GTK_SCROLLED_WINDOW(glade_xml_get_widget(xml, "scroll"));
 
 	buffer = gtk_text_buffer_new(NULL);
@@ -56,12 +65,31 @@ GtkWidget *PrivateMessage::getWidget() {
 }
 
 void PrivateMessage::sendMessage_client(std::string message) {
-	user->privateMessage(message);
+	ClientManager::getInstance()->privateMessage(user, message);
 }
 
-void PrivateMessage::addMessage_gui(std::string message) {
+void PrivateMessage::addMessage_gui(User::Ptr from, std::string message) {
+	if(BOOLSETTING(LOG_PRIVATE_CHAT)) {
+		StringMap params;
+		params["message"] = Text::acpToUtf8(message);
+		params["hubNI"] = Util::toString(ClientManager::getInstance()->getHubNames(user->getCID()));
+		params["hubURL"] = Util::toString(ClientManager::getInstance()->getHubs(user->getCID()));
+		params["userCID"] = user->getCID().toBase32();
+		params["userNI"] = ClientManager::getInstance()->getNicks(user->getCID())[0];
+		params["myCID"] = ClientManager::getInstance()->getMe()->getCID().toBase32();
+		LOG(LogManager::PM, params);
+	}
+
 	GtkTextIter iter;
-	string msg = "[" + Util::getShortTimeString() + "] " + message + "\n";
+	string line;
+	if(BOOLSETTING(TIME_STAMPS)) {
+		line = "[" + Util::getShortTimeString() + "] ";
+	} else {
+		line = "";
+	}
+	line += "<" + ClientManager::getInstance()->getIdentity(from).getNick() + "> ";
+
+	string msg = line + message + "\n";
 	GtkAdjustment *adj;
 	bool setBottom;
 	
@@ -76,6 +104,37 @@ void PrivateMessage::addMessage_gui(std::string message) {
 		gtk_text_buffer_move_mark(buffer, mark, &iter);
 		gtk_text_view_scroll_to_mark(text, mark, 0, FALSE, 0, 0);
 	}
+
+	if (BOOLSETTING(BOLD_PM))
+		setBold_gui();
+}
+
+void PrivateMessage::addStatusMessage_gui(std::string message) {
+	GtkTextIter iter;
+	string line;
+	if(BOOLSETTING(TIME_STAMPS)) {
+		line = "[" + Util::getShortTimeString() + "] ";
+	} else {
+		line = "";
+	}
+	string msg = line + message + "\n";
+	GtkAdjustment *adj;
+	bool setBottom;
+
+	adj = gtk_scrolled_window_get_vadjustment(scroll);
+	setBottom = gtk_adjustment_get_value(adj) >= (adj->upper - adj->page_size);
+
+	gtk_text_buffer_get_end_iter(buffer, &iter);
+	gtk_text_buffer_insert(buffer, &iter, msg.c_str(), msg.size());
+
+	if (setBottom) {
+		gtk_text_buffer_get_end_iter(buffer, &iter);
+		gtk_text_buffer_move_mark(buffer, mark, &iter);
+		gtk_text_view_scroll_to_mark(text, mark, 0, FALSE, 0, 0);
+	}
+
+	if (BOOLSETTING(BOLD_PM))
+		setBold_gui();
 }
 
 void PrivateMessage::sendMessage_gui(GtkEntry *e, gpointer d) {
@@ -85,8 +144,7 @@ void PrivateMessage::sendMessage_gui(GtkEntry *e, gpointer d) {
 
 	if (!text.empty()) {
 		gtk_entry_set_text(entry, "");
-		message = "<" + user->getClientNick() + "> " + text;
-		addMessage_gui(message);
+		message = "<" + ClientManager::getInstance()->getIdentity(user).getNick() + "> " + text;
 		func = new F1(this, &PrivateMessage::sendMessage_client, text);
 		WulforManager::get()->dispatchClientFunc(func);
 	}

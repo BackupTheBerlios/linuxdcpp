@@ -1,7 +1,7 @@
 client_files = ['ADLSearch.cpp',	'FinishedManager.cpp',		'Socket.cpp',
 	'AdcCommand.cpp',		'HashManager.cpp',		'StringDefs.cpp',
 	'AdcHub.cpp',			'HttpConnection.cpp',	'StringTokenizer.cpp',
-	'BZUtils.cpp',			'HubManager.cpp',		'Text.cpp',
+	'BZUtils.cpp',			'FavoriteManager.cpp',		'Text.cpp',
 	'BufferedSocket.cpp',	'LogManager.cpp',		'Thread.cpp',
 	'Client.cpp',			'NmdcHub.cpp',			'TigerHash.cpp',
 	'ClientManager.cpp',	'QueueManager.cpp',		'TimerManager.cpp',

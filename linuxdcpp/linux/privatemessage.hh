@@ -44,7 +44,8 @@ class PrivateMessage:
 		void sendMessage_client(std::string message);
 		
 		//gui thread functions
-		void addMessage_gui(std::string message);
+		void addMessage_gui(User::Ptr from, std::string message);
+		void addStatusMessage_gui(std::string message);
 		void sendMessage_gui(GtkEntry *entry, gpointer data);
 
 	private:

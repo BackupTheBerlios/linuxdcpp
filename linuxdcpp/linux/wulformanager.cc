@@ -471,7 +471,7 @@ Hub *WulforManager::addHub_gui(string address, string nick, string desc, string 
 
 PrivateMessage *WulforManager::addPrivMsg_gui(User::Ptr user)
 {
-	BookEntry *entry = getBookEntry_gui("PM: " + user->getNick(), FALSE);
+	BookEntry *entry = getBookEntry_gui("PM: " + WulforUtil::getNicks(user), FALSE);
 	if (entry) return dynamic_cast<PrivateMessage *>(entry);
 
 	PrivateMessage *privMsg = new PrivateMessage(user);
@@ -483,7 +483,7 @@ PrivateMessage *WulforManager::addPrivMsg_gui(User::Ptr user)
 
 ShareBrowser *WulforManager::addShareBrowser_gui(User::Ptr user, string file)
 {
-	BookEntry *entry = getBookEntry_gui("List: " + user->getNick());
+	BookEntry *entry = getBookEntry_gui("List: " + WulforUtil::getNicks(user));
 	if (entry) return dynamic_cast<ShareBrowser *>(entry);
 
 	ShareBrowser *browser = new ShareBrowser(user, file);

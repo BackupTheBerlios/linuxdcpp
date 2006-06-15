@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,15 +25,21 @@
 #include "SearchManager.h"
 #include "CryptoManager.h"
 #include "ConnectionManager.h"
-#include "HubManager.h"
+#include "FavoriteManager.h"
+#include "SimpleXML.h"
+#include "UserCommand.h"
+#include "ResourceManager.h"
 
 #include "AdcHub.h"
 #include "NmdcHub.h"
 
+
 Client* ClientManager::getClient(const string& aHubURL) {
 	Client* c;
 	if(Util::strnicmp("adc://", aHubURL.c_str(), 6) == 0) {
-		c = new AdcHub(aHubURL);
+		c = new AdcHub(aHubURL, false);
+	} else if(Util::strnicmp("adcs://", aHubURL.c_str(), 7) == 0) {
+		c = new AdcHub(aHubURL, true);
 	} else {
 		c = new NmdcHub(aHubURL);
 	}
@@ -48,10 +54,11 @@ Client* ClientManager::getClient(const string& aHubURL) {
 }
 
 void ClientManager::putClient(Client* aClient) {
-	aClient->disconnect();
+	aClient->shutdown();
+
 	fire(ClientManagerListener::ClientDisconnected(), aClient);
 	aClient->removeListeners();
-
+	
 	{
 		Lock l(cs);
 
@@ -67,7 +74,257 @@ void ClientManager::putClient(Client* aClient) {
 			}
 		}
 	}
-	aClient->scheduleDestruction();
+	delete aClient;
+}
+
+size_t ClientManager::getUserCount() {
+	Lock l(cs);
+	return onlineUsers.size();
+}
+
+StringList ClientManager::getHubs(const CID& cid) {
+	Lock l(cs);
+	StringList lst;
+	OnlinePair op = onlineUsers.equal_range(cid);
+	for(OnlineIter i = op.first; i != op.second; ++i) {
+		lst.push_back(i->second->getClient().getHubUrl());
+	}
+	return lst;
+}
+
+StringList ClientManager::getHubNames(const CID& cid) {
+	Lock l(cs);
+	StringList lst;
+	OnlinePair op = onlineUsers.equal_range(cid);
+	for(OnlineIter i = op.first; i != op.second; ++i) {
+		lst.push_back(i->second->getClient().getHubName());
+	}
+	return lst;
+}
+
+StringList ClientManager::getNicks(const CID& cid) {
+	Lock l(cs);
+	StringList lst;
+	OnlinePair op = onlineUsers.equal_range(cid);
+	for(OnlineIter i = op.first; i != op.second; ++i) {
+		lst.push_back(i->second->getIdentity().getNick());
+	}
+	if(lst.empty()) {
+		// Offline perhaps?
+		UserIter i = users.find(cid);
+		if(i != users.end() && !i->second->getFirstNick().empty()) {
+			lst.push_back(i->second->getFirstNick());
+		} else {
+			lst.push_back('{' + cid.toBase32() + '}');
+		}
+	}
+	return lst;
+}
+
+string ClientManager::getConnection(const CID& cid) {
+	Lock l(cs);
+	OnlineIter i = onlineUsers.find(cid);
+	if(i != onlineUsers.end()) {
+		return i->second->getIdentity().getConnection();
+	}
+	return STRING(OFFLINE);
+}
+
+int64_t ClientManager::getAvailable() {
+	Lock l(cs);
+	int64_t bytes = 0;
+	for(OnlineIter i = onlineUsers.begin(); i != onlineUsers.end(); ++i) {
+		bytes += i->second->getIdentity().getBytesShared();
+	}
+
+	return bytes;
+}
+
+bool ClientManager::isConnected(const string& aUrl) {
+	Lock l(cs);
+
+	for(Client::Iter i = clients.begin(); i != clients.end(); ++i) {
+		if((*i)->getHubUrl() == aUrl) {
+			return true;
+		}
+	}
+	return false;
+}
+
+string ClientManager::findHub(const string& ipPort) {
+	Lock l(cs);
+
+	string ip;
+	short port = 411;
+	string::size_type i = ipPort.find(':');
+	if(i == string::npos) {
+		ip = ipPort;
+	} else {
+		ip = ipPort.substr(0, i);
+		port = (short)Util::toInt(ipPort.substr(i+1));
+	}
+
+	string url;
+	for(Client::Iter i = clients.begin(); i != clients.end(); ++i) {
+		Client* c = *i;
+		if(c->getIp() == ip) {
+			// If exact match is found, return it
+			if(c->getPort() == port)
+				return c->getHubUrl();
+
+			// Port is not always correct, so use this as a best guess...
+			url = c->getHubUrl();
+		}
+	}
+	
+	return url;
+}
+
+User::Ptr ClientManager::findLegacyUser(const string& aNick) const throw() {
+	Lock l(cs);
+	dcassert(aNick.size() > 0);
+
+	for(OnlineMap::const_iterator i = onlineUsers.begin(); i != onlineUsers.end(); ++i) {
+		const OnlineUser* ou = i->second;
+		if(ou->getUser()->isSet(User::NMDC) && Util::stricmp(ou->getIdentity().getNick(), aNick) == 0)
+			return ou->getUser();
+	}
+	return User::Ptr();
+}
+
+User::Ptr ClientManager::getUser(const string& aNick, const string& aHubUrl) throw() {
+	CID cid = makeCid(aNick, aHubUrl);
+	Lock l(cs);
+
+	UserIter ui = users.find(cid);
+	if(ui != users.end()) {
+		if(ui->second->getFirstNick().empty())		// Could happen on bad queue loads etc...
+			ui->second->setFirstNick(aNick);	
+		ui->second->setFlag(User::NMDC);
+		return ui->second;
+	}
+
+	User::Ptr p(new User(aNick));
+
+	p->setCID(cid);
+	users.insert(make_pair(cid, p));
+
+	return p;
+}
+
+User::Ptr ClientManager::getUser(const CID& cid) throw() {
+	Lock l(cs);
+	UserIter ui = users.find(cid);
+	if(ui != users.end()) {
+		return ui->second;
+	}
+
+	User::Ptr p(new User(cid));
+	users.insert(make_pair(cid, p));
+	return p;
+}
+
+User::Ptr ClientManager::findUser(const CID& cid) throw() {
+	Lock l(cs);
+	UserIter ui = users.find(cid);
+	if(ui != users.end()) {
+		return ui->second;
+	}
+	return NULL;
+}
+
+bool ClientManager::isOp(const User::Ptr& user, const string& aHubUrl) {
+	Lock l(cs);
+	pair<OnlineIter, OnlineIter> p = onlineUsers.equal_range(user->getCID());
+	for(OnlineIter i = p.first; i != p.second; ++i) {
+		if(i->second->getClient().getHubUrl() == aHubUrl) {
+			return i->second->getIdentity().isOp();
+		}
+	}
+	return false;
+}
+
+CID ClientManager::makeCid(const string& aNick, const string& aHubUrl) throw() {
+	string n = Text::toLower(aNick);
+	TigerHash th;
+	th.update(n.c_str(), n.length());
+	th.update(Text::toLower(aHubUrl).c_str(), aHubUrl.length());
+	// Construct hybrid CID from the first 64 bits of the tiger hash - should be
+	// fairly random, and hopefully low-collision
+	return CID(th.finalize());
+}
+
+void ClientManager::putOnline(OnlineUser& ou) throw() {
+	{
+		Lock l(cs);
+		dcassert(!ou.getUser()->getCID().isZero());
+		onlineUsers.insert(make_pair(ou.getUser()->getCID(), &ou));
+	}
+
+	if(!ou.getUser()->isOnline()) {
+		ou.getUser()->setFlag(User::ONLINE);
+		fire(ClientManagerListener::UserConnected(), ou.getUser());
+	}
+}
+
+void ClientManager::putOffline(OnlineUser& ou) throw() {
+	bool lastUser = false;
+	{
+		Lock l(cs);
+		OnlinePair op = onlineUsers.equal_range(ou.getUser()->getCID());
+		dcassert(op.first != op.second);
+		for(OnlineIter i = op.first; i != op.second; ++i) {
+			OnlineUser* ou2 = i->second;
+			/// @todo something nicer to compare with...
+			if(&ou.getClient() == &ou2->getClient()) {
+				lastUser = (distance(op.first, op.second) == 1);
+				onlineUsers.erase(i);
+				break;
+			}
+		}
+	}
+
+	if(lastUser) {
+		ou.getUser()->unsetFlag(User::ONLINE);
+		fire(ClientManagerListener::UserDisconnected(), ou.getUser());
+	}
+}
+
+void ClientManager::connect(const User::Ptr& p) {
+	Lock l(cs);
+	OnlineIter i = onlineUsers.find(p->getCID());
+	if(i != onlineUsers.end()) {
+		OnlineUser* u = i->second;
+		u->getClient().connect(*u);
+	}
+}
+
+void ClientManager::privateMessage(const User::Ptr& p, const string& msg) {
+	Lock l(cs);
+	OnlineIter i = onlineUsers.find(p->getCID());
+	if(i != onlineUsers.end()) {
+		OnlineUser* u = i->second;
+		u->getClient().privateMessage(*u, msg);
+	}
+}
+
+void ClientManager::send(AdcCommand& cmd, const CID& cid) {
+	Lock l(cs);
+	OnlineIter i = onlineUsers.find(cid);
+	if(i != onlineUsers.end()) {
+		OnlineUser& u = *i->second;
+		if(cmd.getType() == AdcCommand::TYPE_UDP && !u.getIdentity().isUdpActive()) {
+			cmd.setType(AdcCommand::TYPE_DIRECT);
+			cmd.setTo(u.getIdentity().getSID());
+			u.getClient().send(cmd);
+		} else {
+			try {
+				s.writeTo(u.getIdentity().getIp(), static_cast<short>(Util::toInt(u.getIdentity().getUdpPort())), cmd.toString(getMe()->getCID()));
+			} catch(const SocketException&) {
+				dcdebug("Socket exception sending ADC UDP command\n");
+			}
+		}
+	}
 }
 
 void ClientManager::infoUpdated() {
@@ -87,7 +344,7 @@ void ClientManager::on(NmdcSearch, Client* aClient, const string& aSeeker, int a
 	bool isPassive = (aSeeker.compare(0, 4, "Hub:") == 0);
 
 	// We don't wan't to answer passive searches if we're in passive mode...
-	if(isPassive && SETTING(CONNECTION_TYPE) != SettingsManager::CONNECTION_ACTIVE) {
+	if(isPassive && !ClientManager::getInstance()->isActive()) {
 		return;
 	}
 	
@@ -101,7 +358,7 @@ void ClientManager::on(NmdcSearch, Client* aClient, const string& aSeeker, int a
 			string str;
 			for(SearchResult::Iter i = l.begin(); i != l.end(); ++i) {
 				SearchResult* sr = *i;
-				str += sr->toSR();
+				str += sr->toSR(*aClient);
 				str[str.length()-1] = 5;
 				str += name;
 				str += '|';
@@ -121,7 +378,7 @@ void ClientManager::on(NmdcSearch, Client* aClient, const string& aSeeker, int a
 				if(port == 0) port = 412;
 				for(SearchResult::Iter i = l.begin(); i != l.end(); ++i) {
 					SearchResult* sr = *i;
-					s.writeTo(ip, port, sr->toSR());
+					s.writeTo(ip, port, sr->toSR(*aClient));
 					sr->decRef();
 				}
 			} catch(const SocketException& /* e */) {
@@ -131,113 +388,35 @@ void ClientManager::on(NmdcSearch, Client* aClient, const string& aSeeker, int a
 	}
 }
 
-void ClientManager::on(AdcSearch, Client*, const AdcCommand& adc) throw() {
-	SearchManager::getInstance()->respond(adc);
+void ClientManager::userCommand(const User::Ptr& p, const ::UserCommand& uc, StringMap& params, bool compatibility) {
+	OnlineIter i = onlineUsers.find(p->getCID());
+	if(i == onlineUsers.end())
+		return;
+
+	OnlineUser& ou = *i->second;
+	ou.getIdentity().getParams(params, "user", compatibility);
+	ou.getClient().getHubIdentity().getParams(params, "hub", false);
+	ou.getClient().getMyIdentity().getParams(params, "my", compatibility);
+	ou.getClient().escapeParams(params);
+	ou.getClient().sendUserCmd(Util::formatParams(uc.getCommand(), params, false));
 }
 
-User::Ptr ClientManager::getUser(const string& aNick, const string& aHint /* = Util::emptyString */) {
-	Lock l(cs);
-	dcassert(aNick.size() > 0);
-	UserPair p = users.equal_range(aNick);
-
-	if(p.first == p.second) {
-		User::Ptr& u = users.insert(make_pair(aNick, new User(aNick)))->second;
-		u->setLastHubAddress(aHint);
-		return u;
-	}
-
-	UserIter i;
-	if(aHint.empty()) {
-		// No hint, first, try finding an online user...
-		for(i = p.first; i != p.second; ++i) {
-			if(i->second->isOnline()) {
-				return i->second;
-			}
-		}
-		// Blah...return the first one...doesn't matter now...
-		return p.first->second;
-	}
-
-	// Since we have a hint, make sure we use it...
-	for(i = p.first; i != p.second; ++i) {
-		if(i->second->getLastHubAddress() == aHint) {
-			return i->second;
-		}
-	}
-	// Since old dc++'s didn't return port in $SR's we'll check for port-less hints as well
-	string::size_type k = aHint.find(':');
-	if(k != string::npos) {
-		string hint = aHint.substr(0, k); 
-		for(i = p.first; i != p.second; ++i) {
-			if(i->second->getLastHubAddress() == hint) {
-				return i->second;
-			}
-		}
-	}
-	
-	// Try to find an online user, higher probablility that it's one of these...
-	for(i = p.first; i != p.second; ++i) {
-		if(i->second->isOnline()) {
-			return i->second;
-		}
-	}
-
-	return users.insert(make_pair(aNick, new User(aNick)))->second;
+void ClientManager::on(AdcSearch, Client*, const AdcCommand& adc, const CID& from) throw() {
+	SearchManager::getInstance()->respond(adc, from);
 }
 
-User::Ptr ClientManager::getUser(const string& aNick, Client* aClient, bool putOnline /* = true */) {
-	Lock l(cs);
-	/// @todo: Re-add dcassert and remove nick declaration statement below it when unicode issue is fixed.
-	//dcassert(aNick.size() > 0);
-	string nick = aNick.empty() ? Util::toString((int)GET_TICK()) : aNick;
-	dcassert(aClient != NULL);
-	dcassert(find(clients.begin(), clients.end(), aClient) != clients.end());
-
-	UserPair p = users.equal_range(nick);
-	UserIter i;
-
-	// Check for a user already online
-	for(i = p.first; i != p.second; ++i) {
-		if(i->second->isClient(aClient)) {
-			return i->second;
-		}
+Identity ClientManager::getIdentity(const User::Ptr& aUser) {
+	OnlineIter i = onlineUsers.find(aUser->getCID());
+	if(i != onlineUsers.end()) {
+		return i->second->getIdentity();
 	}
-
-	// Check for an offline user that was on that hub that we can put online again
-	for(i = p.first; i != p.second; ++i) {
-		if( (!i->second->isOnline()) && 
-			((i->second->getLastHubAddress() == aClient->getAddressPort()) || (i->second->getLastHubAddress() == aClient->getIpPort())) )
-		{
-			if(putOnline) {
-				i->second->setClient(aClient);
-				fire(ClientManagerListener::UserUpdated(), i->second);
-			}
-			return i->second;
-		}
-	}
-
-	// Check for any offline user
-	for(i = p.first; i != p.second; ++i) {
-		if( (!i->second->isOnline()) ) {
-			if(putOnline) {
-				i->second->setClient(aClient);
-				fire(ClientManagerListener::UserUpdated(), i->second);
-			}
-			return i->second;
-		}
-	}
-	
-	// Create a new user
-	i = users.insert(make_pair(nick, new User(nick)));
-	if(putOnline) {
-		i->second->setClient(aClient);
-		fire(ClientManagerListener::UserUpdated(), i->second);
-	}
-	return i->second;
+	return Identity(aUser, Util::emptyString, 0);
 }
 
 void ClientManager::search(int aSizeMode, int64_t aSize, int aFileType, const string& aString, const string& aToken) {
 	Lock l(cs);
+	
+	updateCachedIp(); // no point in doing a resolve for every single hub we're searching on
 
 	for(Client::Iter i = clients.begin(); i != clients.end(); ++i) {
 		if((*i)->isConnected()) {
@@ -249,70 +428,17 @@ void ClientManager::search(int aSizeMode, int64_t aSize, int aFileType, const st
 void ClientManager::search(StringList& who, int aSizeMode, int64_t aSize, int aFileType, const string& aString, const string& aToken) {
 	Lock l(cs);
 
+	updateCachedIp(); // no point in doing a resolve for every single hub we're searching on
+
 	for(StringIter it = who.begin(); it != who.end(); ++it) {
 		string& client = *it;
 		for(Client::Iter j = clients.begin(); j != clients.end(); ++j) {
 			Client* c = *j;
-			if(c->isConnected() && c->getIpPort() == client) {
+			if(c->isConnected() && c->getHubUrl() == client) {
 				c->search(aSizeMode, aSize, aFileType, aString, aToken);
 			}
 		}
 	}
-}
-
-void ClientManager::putUserOffline(User::Ptr& aUser, bool quitHub /*= false*/) {
-	{
-		Lock l(cs);
-		aUser->setIp(Util::emptyString);
-		aUser->unsetFlag(User::PASSIVE);
-		aUser->unsetFlag(User::OP);
-		aUser->unsetFlag(User::DCPLUSPLUS);
-		if(quitHub)
-			aUser->setFlag(User::QUIT_HUB);
-		aUser->setClient(NULL);
-	}
-	fire(ClientManagerListener::UserUpdated(), aUser);
-}
-
-User::Ptr ClientManager::getUser(const CID& cid, bool createUser) {
-	Lock l(cs);
-	dcassert(!cid.isZero());
-	AdcIter i = adcUsers.find(cid);
-	if(i != adcUsers.end())
-		return i->second;
-
-	return createUser ? adcUsers.insert(make_pair(cid, new User(cid)))->second : User::Ptr();
-}
-
-User::Ptr ClientManager::getUser(const CID& cid, Client* aClient, bool putOnline /* = true */) {
-	Lock l(cs);
-	dcassert(!cid.isZero());
-	dcassert(aClient != NULL && find(clients.begin(), clients.end(), aClient) != clients.end());
-
-	AdcPair p = adcUsers.equal_range(cid);
-	for(AdcIter i = p.first; i != p.second; ++i) {
-		User::Ptr& u = i->second;
-		if(u->isClient(aClient))
-			return u;
-	}
-
-	if(putOnline) {
-		User::Ptr up;
-		for(AdcIter i = p.first; i != p.second; ++i) {
-			if(!i->second->isOnline()) {
-				up = i->second;
-			}
-		}
-		if(!up)
-			up = adcUsers.insert(make_pair(cid, new User(cid)))->second;
-
-		up->setClient(aClient);
-		fire(ClientManagerListener::UserUpdated(), up);
-		return up;
-	}
-
-	// Create a new user
-	return adcUsers.insert(make_pair(cid, new User(cid)))->second;
 }
 
 void ClientManager::on(TimerManagerListener::Minute, u_int32_t /* aTick */) throw() {
@@ -327,36 +453,127 @@ void ClientManager::on(TimerManagerListener::Minute, u_int32_t /* aTick */) thro
 			++i;
 		}
 	}
-	AdcIter k = adcUsers.begin();
-	while(k != adcUsers.end()) {
-		if(k->second->unique()) {
-			adcUsers.erase(k++);
-		} else {
-			++k;
-		}
-	}
 
 	for(Client::Iter j = clients.begin(); j != clients.end(); ++j) {
 		(*j)->info(false);
 	}
 }
 
+void ClientManager::save() {
+	Lock l(cs);
+
+	try {
+		string tmp;
+
+		File ff(getUsersFile() + ".tmp", File::WRITE, File::CREATE | File::TRUNCATE);
+		BufferedOutputStream<false> f(&ff);
+
+		f.write(SimpleXML::utf8Header);
+		f.write(LIT("<Users Version=\"1\">\r\n"));
+		for(UserIter i = users.begin(); i != users.end(); ++i) {
+			User::Ptr& p = i->second;
+			if(p->isSet(User::SAVE_NICK) && !p->getCID().isZero() && !p->getFirstNick().empty()) {
+				f.write(LIT("\t<User CID=\""));
+				f.write(p->getCID().toBase32());
+				f.write(LIT("\" Nick=\""));
+				f.write(SimpleXML::escape(p->getFirstNick(), tmp, true));
+				f.write(LIT("\"/>\r\n"));
+			}
+		}
+
+		f.write("</Users>\r\n");
+		f.flush();
+		ff.close();
+		File::deleteFile(getUsersFile());
+		File::renameFile(getUsersFile() + ".tmp", getUsersFile());
+
+	} catch(const FileException&) {
+		// ...
+	}
+}
+
+void ClientManager::on(Save, SimpleXML*) throw() {
+	save();
+}
+
+User::Ptr& ClientManager::getMe() {
+	if(!me) {
+		Lock l(cs);
+		if(!me) {
+			me = new User(getMyCID());
+			me->setFirstNick(SETTING(NICK));
+		}
+	}
+	return me;
+}
+
+const CID& ClientManager::getMyPID() {
+	if(pid.isZero())
+		pid = CID(SETTING(PRIVATE_ID));
+	return pid;
+}
+
+CID ClientManager::getMyCID() {
+	TigerHash tiger;
+	tiger.update(getMyPID().data(), CID::SIZE);
+	return CID(tiger.finalize());
+}
+
+void ClientManager::on(Load, SimpleXML*) throw() {
+	users.insert(make_pair(getMe()->getCID(), getMe()));
+
+	try {
+		SimpleXML xml;
+		xml.fromXML(File(getUsersFile(), File::READ, File::OPEN).read());
+		if(xml.findChild("Users") && xml.getChildAttrib("Version") == "1") {
+			xml.stepIn();
+			while(xml.findChild("User")) {
+				const string& cid = xml.getChildAttrib("CID");
+				const string& nick = xml.getChildAttrib("Nick");
+                if(cid.length() != 39 || nick.empty())
+					continue;
+				User::Ptr p(new User(CID(cid)));
+				p->setFirstNick(xml.getChildData());
+				users.insert(make_pair(p->getCID(), p));
+			}
+		}
+	} catch(const Exception& e) {
+		dcdebug("Error loading Users.xml: %s\n", e.getError().c_str());
+	}
+}
+
 void ClientManager::on(Failed, Client* client, const string&) throw() { 
-	HubManager::getInstance()->removeUserCommand(client->getAddressPort());
+	FavoriteManager::getInstance()->removeUserCommand(client->getHubUrl());
 	fire(ClientManagerListener::ClientDisconnected(), client);
 }
 
 void ClientManager::on(UserCommand, Client* client, int aType, int ctx, const string& name, const string& command) throw() { 
 	if(BOOLSETTING(HUB_USER_COMMANDS)) {
  		if(aType == ::UserCommand::TYPE_CLEAR) {
- 			HubManager::getInstance()->removeHubUserCommands(ctx, client->getAddressPort());
+ 			FavoriteManager::getInstance()->removeHubUserCommands(ctx, client->getHubUrl());
  		} else {
- 			HubManager::getInstance()->addUserCommand(aType, ctx, ::UserCommand::FLAG_NOSAVE, name, command, client->getAddressPort());
+ 			FavoriteManager::getInstance()->addUserCommand(aType, ctx, ::UserCommand::FLAG_NOSAVE, name, command, client->getHubUrl());
  		}
 	}
 }
 
-/**
- * @file
- * $Id: ClientManager.cpp,v 1.5 2006/06/04 01:56:02 stevensheehy Exp $
- */
+void ClientManager::updateCachedIp() {
+	// Best case - the server detected it
+	if((!BOOLSETTING(NO_IP_OVERRIDE) || SETTING(EXTERNAL_IP).empty())) {
+		for(Client::Iter i = clients.begin(); i != clients.end(); ++i) {
+			if(!(*i)->getMyIdentity().getIp().empty()) {
+				cachedIp = (*i)->getMyIdentity().getIp();
+				return;
+			}
+		}
+	}
+
+	if(!SETTING(EXTERNAL_IP).empty()) {
+		cachedIp = Socket::resolve(SETTING(EXTERNAL_IP));
+		return;
+	}
+
+	//if we've come this far just use the first client to get the ip.
+	if(clients.size() > 0)
+		cachedIp = (*clients.begin())->getLocalIp();
+}

@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_SIMPLEXML_H__3FDC96DD_A4D6_4357_9557_9D7585529A98__INCLUDED_)
-#define AFX_SIMPLEXML_H__3FDC96DD_A4D6_4357_9557_9D7585529A98__INCLUDED_
+#if !defined(SIMPLE_XML_H)
+#define SIMPLE_XML_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -81,7 +81,7 @@ class SimpleXML
 public:
 	SimpleXML() : root("BOGUSROOT", Util::emptyString, NULL), current(&root), found(false) { 
 		resetCurrentChild();
-	};
+	}
 	~SimpleXML() { }
 	
 	void addTag(const string& aName, const string& aData = Util::emptyString) throw(SimpleXMLException);
@@ -169,8 +169,8 @@ public:
 	}
 	
 	void fromXML(const string& aXML) throw(SimpleXMLException);
-	string toXML() { string tmp; StringOutputStream os(tmp); toXML(&os); return tmp; };
-	void toXML(OutputStream* f) throw(FileException) { if(!root.children.empty()) root.children[0]->toXML(0, f); };
+	string toXML() { string tmp; StringOutputStream os(tmp); toXML(&os); return tmp; }
+	void toXML(OutputStream* f) throw(FileException) { if(!root.children.empty()) root.children[0]->toXML(0, f); }
 	
 	static const string& escape(const string& str, string& tmp, bool aAttrib, bool aLoading = false, bool utf8 = true) {
 		if(needsEscape(str, aAttrib, aLoading, utf8)) {
@@ -181,7 +181,7 @@ public:
 	}
 	static string& escape(string& aString, bool aAttrib, bool aLoading = false, bool utf8 = true);
 	/** 
-	 * This is a heurestic for whether escape needs to be called or not. The results are
+	 * This is a heuristic for whether escape needs to be called or not. The results are
  	 * only guaranteed for false, i e sometimes true might be returned even though escape
 	 * was not needed...
 	 */
@@ -218,10 +218,10 @@ private:
 		Ptr parent;
 
 		Tag(const string& aName, const StringPairList& a, Ptr aParent) : attribs(a), name(aName), data(), parent(aParent) { 
-		};
+		}
 
 		Tag(const string& aName, const string& d, Ptr aParent) : name(aName), data(d), parent(aParent) { 
-		};
+		}
 		
 		const string& getAttrib(const string& aName, const string& aDefault = Util::emptyString) {
 			StringPairIter i = find_if(attribs.begin(), attribs.end(), CompareFirst<string,string>(aName));
@@ -244,7 +244,7 @@ private:
 
 	class TagReader : public SimpleXMLReader::CallBack {
 	public:
-		TagReader(Tag* root) : cur(root) { };
+		TagReader(Tag* root) : cur(root) { }
 		virtual bool getData(string&) { return false; }
 		virtual void startTag(const string& name, StringPairList& attribs, bool simple) {
 			cur->children.push_back(new Tag(name, attribs, cur));
@@ -280,10 +280,4 @@ private:
 	bool found;
 };
 
-#endif // !defined(AFX_SIMPLEXML_H__3FDC96DD_A4D6_4357_9557_9D7585529A98__INCLUDED_)
-
-/**
- * @file
- * $Id: SimpleXML.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
-
+#endif // !defined(SIMPLE_XML_H)

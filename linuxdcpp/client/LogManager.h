@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_LOGMANAGER_H__73C7E0F5_5C7D_4A2A_827B_53267D0EF4C5__INCLUDED_)
-#define AFX_LOGMANAGER_H__73C7E0F5_5C7D_4A2A_827B_53267D0EF4C5__INCLUDED_
+#if !defined(LOG_MANAGER_H)
+#define LOG_MANAGER_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -30,10 +30,11 @@
 
 class LogManagerListener {
 public:
+	virtual ~LogManagerListener() { }
 	template<int I>	struct X { enum { TYPE = I };  };
 
 	typedef X<0> Message;
-	virtual void on(Message, const string&) throw() { };
+	virtual void on(Message, time_t, const string&) throw() { }
 };
 
 class LogManager : public Singleton<LogManager>, public Speaker<LogManagerListener>
@@ -46,11 +47,13 @@ public:
 		string path = SETTING(LOG_DIRECTORY);
 		string msg;
 	
-		path += Util::formatParams(getSetting(area, FILE), params);
-		msg = Util::formatParams(getSetting(area, FORMAT), params);
+		path += Util::formatParams(getSetting(area, FILE), params, true);
+		msg = Util::formatParams(getSetting(area, FORMAT), params, false);
 
 		log(path, msg);
 	}
+
+	deque<pair<time_t, string> > getLastLogs() { Lock l(cs); return lastLogs; }
 
 	void message(const string& msg) {
 		if(BOOLSETTING(LOG_SYSTEM)) {
@@ -58,7 +61,15 @@ public:
 			params["message"] = msg;
 			log(LogManager::SYSTEM, params);
 		}
-		fire(LogManagerListener::Message(), msg);
+		time_t t = GET_TIME();
+		{
+			Lock l(cs);
+			// Keep the last 100 messages (completely arbitrary number...)
+			while(lastLogs.size() > 100)
+				lastLogs.pop_front();
+			lastLogs.push_back(make_pair(t, msg));
+		}
+		fire(LogManagerListener::Message(), t, msg);
 	}
 
 	const string& getSetting(int area, int sel) {
@@ -85,14 +96,15 @@ private:
 
 	friend class Singleton<LogManager>;
 	CriticalSection cs;
+	deque<pair<time_t, string> > lastLogs;
 
 	int logOptions[LAST][2];
 
 	LogManager() {
 		logOptions[UPLOAD][FILE]		= SettingsManager::LOG_FILE_UPLOAD;
 		logOptions[UPLOAD][FORMAT]		= SettingsManager::LOG_FORMAT_POST_UPLOAD;
-        	logOptions[DOWNLOAD][FILE]		= SettingsManager::LOG_FILE_DOWNLOAD;
-		logOptions[DOWNLOAD][FORMAT]		= SettingsManager::LOG_FORMAT_POST_DOWNLOAD;
+        logOptions[DOWNLOAD][FILE]		= SettingsManager::LOG_FILE_DOWNLOAD;
+		logOptions[DOWNLOAD][FORMAT]	= SettingsManager::LOG_FORMAT_POST_DOWNLOAD;
 		logOptions[CHAT][FILE]			= SettingsManager::LOG_FILE_MAIN_CHAT;
 		logOptions[CHAT][FORMAT]		= SettingsManager::LOG_FORMAT_MAIN_CHAT;
 		logOptions[PM][FILE]			= SettingsManager::LOG_FILE_PRIVATE_CHAT;
@@ -101,16 +113,11 @@ private:
 		logOptions[SYSTEM][FORMAT]		= SettingsManager::LOG_FORMAT_SYSTEM;
 		logOptions[STATUS][FILE]		= SettingsManager::LOG_FILE_STATUS;
 		logOptions[STATUS][FORMAT]		= SettingsManager::LOG_FORMAT_STATUS;
-	};
-	virtual ~LogManager() throw() { };
+	}
+	virtual ~LogManager() throw() { }
 
 };
 
 #define LOG(area, msg) LogManager::getInstance()->log(area, msg)
 
-#endif // !defined(AFX_LOGMANAGER_H__73C7E0F5_5C7D_4A2A_827B_53267D0EF4C5__INCLUDED_)
-
-/**
- * @file
- * $Id: LogManager.h,v 1.4 2005/06/25 19:24:02 paskharen Exp $
- */
+#endif // !defined(LOG_MANAGER_H)

@@ -19,7 +19,7 @@
 #include "sharebrowser.hh"
 
 ShareBrowser::ShareBrowser(User::Ptr user, std::string file):
-	BookEntry("List: " + user->getNick()),
+	BookEntry("List: " + WulforUtil::getNicks(user)),
 	listing(user),
 	lastDir(""),
 	posDir(NULL)
@@ -329,7 +329,7 @@ void ShareBrowser::buildDownloadMenus_gui(int menu) {
 			gtk_container_remove(GTK_CONTAINER (dirDownloadMenu), *it);
 		dirDownloadItems.clear();	
 			
-		StringPairList spl = HubManager::getInstance()->getFavoriteDirs();
+		StringPairList spl = FavoriteManager::getInstance()->getFavoriteDirs();
 		if (spl.size() > 0)
 		{
 			for(StringPairIter i = spl.begin(); i != spl.end(); i++) 
@@ -353,7 +353,7 @@ void ShareBrowser::buildDownloadMenus_gui(int menu) {
 			gtk_container_remove(GTK_CONTAINER(fileDownloadMenu), *it);
 		fileDownloadItems.clear();
 						
-		StringPairList spl = HubManager::getInstance()->getFavoriteDirs();
+		StringPairList spl = FavoriteManager::getInstance()->getFavoriteDirs();
 		if (spl.size() > 0) 
 		{
 			for(StringPairIter i = spl.begin(); i != spl.end(); i++) 
@@ -853,7 +853,7 @@ void ShareBrowser::matchQueue_client() {
 	ostringstream stream;
 	int matched;
 
-	matched = QueueManager::getInstance()->matchListing(&listing);
+	matched = QueueManager::getInstance()->matchListing(listing);
 	stream << "Matched " << matched << " files";
 
 	typedef Func2<ShareBrowser, GtkStatusbar *, string> F2;

@@ -255,7 +255,7 @@ void Search::buildDownloadMenu_gui (int menu)
 
 		downloadItems.clear ();
 						
-		StringPairList spl = HubManager::getInstance()->getFavoriteDirs();
+		StringPairList spl = FavoriteManager::getInstance()->getFavoriteDirs();
 		if (spl.size() > 0) 
 		{
 			for(StringPairIter i = spl.begin(); i != spl.end(); i++) 
@@ -279,7 +279,7 @@ void Search::buildDownloadMenu_gui (int menu)
 			
 		downloadDirItems.clear ();			
 			
-		StringPairList spl = HubManager::getInstance()->getFavoriteDirs();
+		StringPairList spl = FavoriteManager::getInstance()->getFavoriteDirs();
 		if (spl.size() > 0) 
 		{
 			for(StringPairIter i = spl.begin(); i != spl.end(); i++) 
@@ -406,7 +406,7 @@ void Search::onAddFavoriteUserClicked_gui (GtkMenuItem *item, gpointer user_data
 	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
 		return;
 	SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter, "Info");
-	HubManager::getInstance()->addFavoriteUser(si->result->getUser ());
+	FavoriteManager::getInstance()->addFavoriteUser(si->result->getUser ());
 }
 
 void Search::onGrantExtraSlotClicked_gui (GtkMenuItem *item, gpointer user_data)
@@ -444,7 +444,7 @@ void Search::onRemoveUserFromQueueClicked_gui (GtkMenuItem *item, gpointer user_
 	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
 		return;	
 	SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter, "Info");
-	QueueManager::getInstance()->removeSources(si->result->getUser (), QueueItem::Source::FLAG_REMOVED);
+	QueueManager::getInstance()->removeSource(si->result->getUser (), QueueItem::Source::FLAG_REMOVED);
 }
 
 void Search::onDownloadFavoriteClicked_gui (GtkMenuItem *item, gpointer user_data)
@@ -473,7 +473,7 @@ void Search::onDownloadFavoriteClicked_gui (GtkMenuItem *item, gpointer user_dat
 	}	
 	
 	string label = s->getTextFromMenu(item), path;
-	StringPairList spl = HubManager::getInstance()->getFavoriteDirs();
+	StringPairList spl = FavoriteManager::getInstance()->getFavoriteDirs();
 	bool found=false;
 	if (spl.size() > 0) 
 	{
@@ -520,7 +520,7 @@ void Search::onDownloadFavoriteDirClicked_gui (GtkMenuItem *item, gpointer user_
 	}	
 	
 	string label = s->getTextFromMenu(item), path;
-	StringPairList spl = HubManager::getInstance()->getFavoriteDirs();
+	StringPairList spl = FavoriteManager::getInstance()->getFavoriteDirs();
 	bool found=false;
 	if (spl.size() > 0) 
 	{
@@ -620,7 +620,7 @@ void Search::onToggledClicked_gui (GtkCellRendererToggle *cell, gchar *path_str,
 	GtkTreeIter iter;
 	gboolean fixed;
 	GtkTreeModel *m = gtk_tree_view_get_model(s->hubView.get());
-  	
+
 	gtk_tree_model_get_iter (m, &iter, gtk_tree_path_new_from_string (path_str));
 	fixed = s->hubView.getValue<gboolean>(&iter, "Search");
 	fixed = !fixed;
@@ -915,11 +915,6 @@ void Search::search_gui ()
 
 	int ftype = gtk_combo_box_get_active (GTK_COMBO_BOX (searchItems["File type"]));
 
-	if(BOOLSETTING(CLEAR_SEARCH))
-		gtk_entry_set_text (GTK_ENTRY (GTK_BIN (searchItems["Search"])->child), "");
-	else
-		lastSearch = TimerManager::getInstance()->getTick();
-
 	// Add new searches to the last-search dropdown list
 	if(find(lastSearches.begin(), lastSearches.end(), s) == lastSearches.end()) 
 	{
@@ -941,7 +936,10 @@ void Search::search_gui ()
 			}	
 		}
 		else
+		{
 			listItems++;
+		}
+
 		gtk_list_store_insert (GTK_LIST_STORE (m), &iter, 0);
 		gtk_list_store_set (GTK_LIST_STORE (m), &iter, 0, s.c_str(), -1);
 
@@ -961,7 +959,27 @@ void Search::search_gui ()
 	gtk_statusbar_push(GTK_STATUSBAR (searchItems["Status2"]), 0, "");
 	gtk_statusbar_pop(GTK_STATUSBAR (searchItems["Status3"]), 0);
 	gtk_statusbar_push(GTK_STATUSBAR (searchItems["Status3"]), 0, "");	
-	SearchManager::getInstance()->search(clients, s, llsize, (SearchManager::TypeModes)ftype, (SearchManager::SizeModes)mode, "");
+
+	if(SearchManager::getInstance()->okToSearch()) {
+		SearchManager::getInstance()->search(clients, s, llsize, (SearchManager::TypeModes)ftype, (SearchManager::SizeModes)mode, "manual");
+
+		if(BOOLSETTING(CLEAR_SEARCH)) // Only clear if the search was sent.
+			gtk_entry_set_text (GTK_ENTRY (GTK_BIN (searchItems["Search"])->child), "");
+
+	} else {
+		int32_t waitFor = SearchManager::getInstance()->timeToSearch();
+		string line = "Searching too soon, retry in %i s\n";
+		char buf[line.size() + 16];
+		sprintf(buf, line.c_str(), waitFor);
+		gtk_statusbar_pop(GTK_STATUSBAR (searchItems["Status1"]), 0);
+		gtk_statusbar_push(GTK_STATUSBAR (searchItems["Status1"]), 0, buf);
+		gtk_statusbar_pop(GTK_STATUSBAR (searchItems["Status2"]), 0);
+		gtk_statusbar_push(GTK_STATUSBAR (searchItems["Status2"]), 0, "");
+		gtk_statusbar_pop(GTK_STATUSBAR (searchItems["Status3"]), 0);
+		gtk_statusbar_push(GTK_STATUSBAR (searchItems["Status3"]), 0, "");
+
+		///@todo: add a timer to change the status line (countdown).
+	}
 }
 
 void Search::initHubs_gui ()
@@ -971,7 +989,7 @@ void Search::initHubs_gui ()
 	gtk_list_store_set (hubStore, &iter, 
 		hubView.col("Search"), false,
 		hubView.col("Name"), "Only where I'm op",
-		hubView.col("Info"), new HubInfo ("", "Only where I'm op", false),
+		hubView.col("Info"), new HubInfo (0, "", "Only where I'm op", false),
 		-1);
 
 	ClientManager* clientMgr = ClientManager::getInstance();
@@ -986,7 +1004,7 @@ void Search::initHubs_gui ()
 		if (!client->isConnected())
 			continue;
 
-		changeHubs_gui (0, new HubInfo (client->getIpPort (), client->getName (), client->getOp ()));
+		changeHubs_gui (0, new HubInfo (client, client->getHubUrl(), client->getHubName(), client->isOp()));
 	}
 
 	clientMgr->unlock();
@@ -1015,17 +1033,21 @@ void Search::changeHubs_gui (int mode, HubInfo *i)
 		while (1)
 		{
 			HubInfo *hi = hubView.getValue<gpointer,HubInfo*>(&iter, "Info");
- 			if (hi->ipPort == i->ipPort)
- 			{
- 				if (hi->name == i->name)
- 					return;
- 				pthread_mutex_lock (&searchLock);
-				gtk_list_store_set (hubStore, &iter,
-					hubView.col("Name"), i->name.c_str (),
-					hubView.col("Info"), (gpointer)i,
-					-1);
-				pthread_mutex_unlock (&searchLock);
-				return;
+			if (hi->client != NULL)
+			{
+				if (hi->client == i->client)
+				{
+					if (hi->ipPort == i->ipPort && hi->name == i->name)
+						return;
+
+					pthread_mutex_lock(&searchLock);
+					gtk_list_store_set (hubStore, &iter,
+						hubView.col("Name"), i->name.c_str(),
+						hubView.col("Info"), (gpointer)i,
+						-1);
+					pthread_mutex_unlock(&searchLock);
+					return;
+				}
 			}
 			if (!gtk_tree_model_iter_next (GTK_TREE_MODEL (hubStore), &iter))
 				return;
@@ -1039,7 +1061,7 @@ void Search::changeHubs_gui (int mode, HubInfo *i)
 			
 		while (1)
 		{
-			if (hubView.getValue<gpointer,HubInfo*>(&iter, "Info")->ipPort == i->ipPort)
+			if (hubView.getValue<gpointer,HubInfo*>(&iter, "Info")->client == i->client)
 			{
 				pthread_mutex_lock (&searchLock);
 				gtk_list_store_remove (hubStore, &iter);
@@ -1132,7 +1154,7 @@ void Search::addResult_gui (SearchInfo *info)
 		type = "Directory";
 	}
 	slots = r->getSlotString ();
-	connection = r->getUser ()->getConnection ();
+	connection = ClientManager::getInstance()->getIdentity(r->getUser()).getConnection();
 	hubName = r->getHubName ();
 	ip = r->getIP ();
 	if(r->getTTH() != NULL)
@@ -1157,7 +1179,7 @@ void Search::addResult_gui (SearchInfo *info)
 	
 	gtk_list_store_append (resultStore, &iter);
 	gtk_list_store_set (resultStore, &iter,
-		resultView.col("Nick"), r->getUser()->getNick().c_str(),
+		resultView.col("Nick"), WulforUtil::getNicks(r->getUser()).c_str(),
 		resultView.col("Filename"), fileName.c_str(),
 		resultView.col("Slots"), slots.c_str(),
 		resultView.col("Size"), size.c_str(),
@@ -1175,21 +1197,24 @@ void Search::addResult_gui (SearchInfo *info)
 	gtk_statusbar_pop(GTK_STATUSBAR (searchItems["Status2"]), 0);
 	gtk_statusbar_push(GTK_STATUSBAR (searchItems["Status2"]), 0, string (Util::toString(searchHits) + " items").c_str ());
 	pthread_mutex_unlock (&searchLock);
+
+	if (BOOLSETTING(BOLD_SEARCH))
+		setBold_gui();
 }
 void Search::on(ClientManagerListener::ClientConnected, Client *c) throw ()
 {
 	Lock l(cs);
-	changeHubs_gui (0, new HubInfo (c->getIpPort (), c->getName (), c->getOp ()));
+	changeHubs_gui (0, new HubInfo (c, c->getHubUrl(), c->getHubName (), c->isOp ()));
 }
 void Search::on(ClientManagerListener::ClientUpdated, Client *c) throw ()
 {
 	Lock l(cs);
-	changeHubs_gui (1, new HubInfo (c->getIpPort (), c->getName (), c->getOp ()));
+	changeHubs_gui (1, new HubInfo (c, c->getHubUrl(), c->getHubName (), c->isOp ()));
 }
 void Search::on(ClientManagerListener::ClientDisconnected, Client *c) throw ()
 {
 	Lock l(cs);
-	changeHubs_gui (2, new HubInfo (c->getIpPort (), c->getName (), c->getOp ()));
+	changeHubs_gui (2, new HubInfo (c, c->getHubUrl(), c->getHubName (), c->isOp ()));
 }
 
 void Search::on(SearchManagerListener::SR, SearchResult* aResult) throw()
@@ -1267,9 +1292,9 @@ void Search::SearchInfo::download ()
 	{
 		if(result->getType() == SearchResult::TYPE_FILE) 
 		{
-			QueueManager::getInstance()->add(result->getFile(), result->getSize(), result->getUser(), 
-				target, result->getTTH(), QueueItem::FLAG_RESUME | (result->getUtf8() ? QueueItem::FLAG_SOURCE_UTF8 : 0),
-				QueueItem::DEFAULT);
+			QueueManager::getInstance()->add(target, result->getSize(), result->getTTH(),
+			                                 result->getUser(), result->getFile(), result->getUtf8(),
+			                                 QueueItem::FLAG_RESUME, QueueItem::DEFAULT);
 		} 
 		else 
 		{
@@ -1279,6 +1304,7 @@ void Search::SearchInfo::download ()
 	} 
 	catch(const Exception&) 
 	{
+		///@todo add status message.
 		cout << "Couldn't add file to queue." << endl;
 	}
 }
@@ -1289,9 +1315,9 @@ void Search::SearchInfo::downloadTo (string target)
 	{
 		if(result->getType() == SearchResult::TYPE_FILE) 
 		{
-			QueueManager::getInstance()->add(result->getFile(), result->getSize(), result->getUser(), 
-				target, result->getTTH(), QueueItem::FLAG_RESUME | (result->getUtf8() ? QueueItem::FLAG_SOURCE_UTF8 : 0),
-				QueueItem::DEFAULT);
+			QueueManager::getInstance()->add(target, result->getSize(), result->getTTH(),
+			                                 result->getUser(), result->getFile(), result->getUtf8(),
+			                                 QueueItem::FLAG_RESUME, QueueItem::DEFAULT);
 		} 
 		else 
 		{

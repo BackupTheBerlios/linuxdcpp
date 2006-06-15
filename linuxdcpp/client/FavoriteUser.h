@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,34 +16,34 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_FAVORITEUSER_H__64E4A69E_BB58_425D_830C_ADD1760E29A4__INCLUDED_)
-#define AFX_FAVORITEUSER_H__64E4A69E_BB58_425D_830C_ADD1760E29A4__INCLUDED_
+#if !defined(FAVORITE_USER_H)
+#define FAVORITE_USER_H
 
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
 
 #include "FastAlloc.h"
+#include "User.h"
+#include "CID.h"
 
-class FavoriteUser : public Flags, public FastAlloc<FavoriteUser>
-{
+class FavoriteUser : public Flags {
 public:
-	typedef FavoriteUser* Ptr;
-	
+	FavoriteUser(const User::Ptr& user_, const string& nick_, const string& hubUrl_) : user(user_), nick(nick_), url(hubUrl_), lastSeen(0) { }
+
 	enum Flags {
 		FLAG_GRANTSLOT = 1 << 0
 	};
 
-	GETSET(string, description, Description);
-	GETSET(u_int32_t, lastSeen, LastSeen);
+	User::Ptr& getUser() { return user; }
 
-	FavoriteUser() : lastSeen(0) {}
-	~FavoriteUser() {}
+	void update(const OnlineUser& info) { setNick(info.getIdentity().getNick()); setUrl(info.getIdentity().getHubUrl()); }
+
+	GETSET(User::Ptr, user, User);
+	GETSET(string, nick, Nick);
+	GETSET(string, url, Url);
+	GETSET(u_int32_t, lastSeen, LastSeen);
+	GETSET(string, description, Description);
 };
 
-#endif // !defined(AFX_FAVORITEUSER_H__64E4A69E_BB58_425D_830C_ADD1760E29A4__INCLUDED_)
-
-/**
- * @file
- * $Id: FavoriteUser.h,v 1.4 2005/06/25 19:24:02 paskharen Exp $
- */
+#endif // !defined(FAVORITE_USER_H)

@@ -21,7 +21,7 @@
 FavoriteHubs::FavoriteHubs():
 	BookEntry("Favorite Hubs")
 {
-	HubManager::getInstance()->addListener(this);
+	FavoriteManager::getInstance()->addListener(this);
 
 	// Load glade file
 	string file = WulforManager::get()->getPath() + "/glade/favoritehubs.glade";
@@ -108,7 +108,7 @@ FavoriteHubs::FavoriteHubs():
 
 FavoriteHubs::~FavoriteHubs()
 {
-	HubManager::getInstance()->removeListener(this);
+	FavoriteManager::getInstance()->removeListener(this);
 	gtk_widget_destroy(GTK_WIDGET(deleteDialog));
 	gtk_widget_destroy(GTK_WIDGET(errorDialog));
 }
@@ -120,7 +120,7 @@ GtkWidget *FavoriteHubs::getWidget()
 
 void FavoriteHubs::updateList_gui()
 {
-	const FavoriteHubEntry::List& fl = HubManager::getInstance()->getFavoriteHubs();
+	const FavoriteHubEntry::List& fl = FavoriteManager::getInstance()->getFavoriteHubs();
 	for (FavoriteHubEntry::List::const_iterator i = fl.begin(); i != fl.end(); i++)
 		addEntry_gui(*i);
 }
@@ -163,13 +163,13 @@ void FavoriteHubs::popupMenu_gui(GdkEventButton *event, gpointer data)
 void FavoriteHubs::setConnect_client(FavoriteHubEntry *entry, bool active)
 {
 	entry->setConnect(active);
-	HubManager::getInstance()->save();
+	FavoriteManager::getInstance()->save();
 }
 
 void FavoriteHubs::addEntry_client(const FavoriteHubEntry entry)
 {
-	HubManager::getInstance()->addFavorite(entry);
-	HubManager::getInstance()->save();
+	FavoriteManager::getInstance()->addFavorite(entry);
+	FavoriteManager::getInstance()->save();
 }
 
 void FavoriteHubs::editEntry_client(FavoriteHubEntry *oldEntry, const FavoriteHubEntry newEntry)
@@ -182,12 +182,12 @@ void FavoriteHubs::editEntry_client(FavoriteHubEntry *oldEntry, const FavoriteHu
 	if (pass != string(pass.size(), '*') || pass.empty())
 		oldEntry->setPassword(pass);
 	oldEntry->setUserDescription(newEntry.getUserDescription());
-	HubManager::getInstance()->save();
+	FavoriteManager::getInstance()->save();
 }
 
 void FavoriteHubs::removeEntry_client(FavoriteHubEntry *entry)
 {
-	HubManager::getInstance()->removeFavorite(entry);
+	FavoriteManager::getInstance()->removeFavorite(entry);
 }
 
 void FavoriteHubs::connect(GtkWidget *widget, gpointer data)
@@ -405,14 +405,14 @@ void FavoriteHubs::removeEntry(GtkWidget *widget, gpointer data)
 	gtk_widget_set_sensitive(fh->button["Connect"], FALSE);
 }
 
-void FavoriteHubs::on(HubManagerListener::FavoriteAdded, const FavoriteHubEntry *entry) throw()
+void FavoriteHubs::on(FavoriteManagerListener::FavoriteAdded, const FavoriteHubEntry *entry) throw()
 {
 	typedef Func1<FavoriteHubs, const FavoriteHubEntry *> F1;
 	F1 *f1 = new F1(this, &FavoriteHubs::addEntry_gui, entry);
 	WulforManager::get()->dispatchGuiFunc(f1);
 }
 
-void FavoriteHubs::on(HubManagerListener::FavoriteRemoved, const FavoriteHubEntry *entry) throw()
+void FavoriteHubs::on(FavoriteManagerListener::FavoriteRemoved, const FavoriteHubEntry *entry) throw()
 {
 	GtkTreeIter iter;
 	GtkTreeModel *m = GTK_TREE_MODEL(favoriteStore);

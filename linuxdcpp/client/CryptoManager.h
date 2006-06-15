@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_CRYPTO_H__28F66860_0AD5_44AD_989C_BA4326C42F46__INCLUDED_)
-#define AFX_CRYPTO_H__28F66860_0AD5_44AD_989C_BA4326C42F46__INCLUDED_
+#if !defined(CRYPTO_MANAGER_H)
+#define CRYPTO_MANAGER_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -46,8 +46,8 @@ public:
 	Node* left;
 	Node* right;
 	
-	Node(int aChr, int aWeight) : chr(aChr), weight(aWeight), left(NULL), right(NULL) { };
-	Node(Node* aLeft, Node* aRight) :  chr(-1), weight(aLeft->weight + aRight->weight), left(aLeft), right(aRight) { };
+	Node(int aChr, int aWeight) : chr(aChr), weight(aWeight), left(NULL), right(NULL) { }
+	Node(Node* aLeft, Node* aRight) :  chr(-1), weight(aLeft->weight + aRight->weight), left(aLeft), right(aRight) { }
 	~Node() {
 		delete left;
 		delete right;
@@ -73,26 +73,25 @@ class CryptoManager : public Singleton<CryptoManager>
 {
 public:
 	string makeKey(const string& aLock);
-	const string& getLock() { return lock; };
-	const string& getPk() { return pk; };
-	bool isExtended(const string& aLock) { return strncmp(aLock.c_str(), "EXTENDEDPROTOCOL", 16) == 0; };
+	const string& getLock() { return lock; }
+	const string& getPk() { return pk; }
+	bool isExtended(const string& aLock) { return strncmp(aLock.c_str(), "EXTENDEDPROTOCOL", 16) == 0; }
 
 	void decodeHuffman(const u_int8_t* /*is*/, string& /*os*/, const size_t /*len*/) throw(CryptoException);
-	void encodeHuffman(const string& is, string& os);
 	void decodeBZ2(const u_int8_t* is, size_t sz, string& os) throw(CryptoException);
 private:
 
 	friend class Singleton<CryptoManager>;
 	
-	CryptoManager() : lock("EXTENDEDPROTOCOLABCABCABCABCABCABC"), pk("DCPLUSPLUS" VERSIONSTRING "ABCABC") { };
-	virtual ~CryptoManager() { };
+	CryptoManager() : lock("EXTENDEDPROTOCOLABCABCABCABCABCABC"), pk("DCPLUSPLUS" VERSIONSTRING "ABCABC") { }
+	virtual ~CryptoManager() { }
 
 	class Leaf : public FastAlloc<Leaf> {
 	public:
 		int chr;
 		int len;
-		Leaf(int aChr, int aLen) : chr(aChr), len(aLen) { };
-		Leaf() : chr(-1), len(-1) { };
+		Leaf(int aChr, int aLen) : chr(aChr), len(aLen) { }
+		Leaf() : chr(-1), len(-1) { }
 	};
 	
 	class DecNode : public FastAlloc<DecNode> {
@@ -100,9 +99,9 @@ private:
 		int chr;
 		DecNode* left;
 		DecNode* right;
-		DecNode(int aChr) : chr(aChr), left(NULL), right(NULL) { };
-		DecNode(DecNode* aLeft, DecNode* aRight) : chr(-1), left(aLeft), right(aRight) { };
-		DecNode() : chr(-1), left(NULL), right(NULL) { };
+		DecNode(int aChr) : chr(aChr), left(NULL), right(NULL) { }
+		DecNode(DecNode* aLeft, DecNode* aRight) : chr(-1), left(aLeft), right(aRight) { }
+		DecNode() : chr(-1), left(NULL), right(NULL) { }
 		~DecNode() {
 			delete left;
 			delete right;
@@ -123,9 +122,4 @@ private:
 	}
 };
 
-#endif // !defined(AFX_CRYPTO_H__28F66860_0AD5_44AD_989C_BA4326C42F46__INCLUDED_)
-
-/**
- * @file
- * $Id: CryptoManager.h,v 1.4 2005/06/25 19:24:01 paskharen Exp $
- */
+#endif // !defined(CRYPTO_MANAGER_H)

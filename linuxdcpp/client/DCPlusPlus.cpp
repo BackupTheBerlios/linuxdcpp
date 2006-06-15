@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,10 +29,11 @@
 #include "ClientManager.h"
 #include "HashManager.h"
 #include "LogManager.h"
-#include "HubManager.h"
+#include "FavoriteManager.h"
 #include "SettingsManager.h"
 #include "FinishedManager.h"
 #include "ADLSearch.h"
+#include "SSLSocket.h"
 
 #include "StringTokenizer.h"
 
@@ -56,10 +57,11 @@ void startup(void (*f)(void*, const string&), void* p) {
 	DownloadManager::newInstance();
 	UploadManager::newInstance();
 	ShareManager::newInstance();
-	HubManager::newInstance();
+	FavoriteManager::newInstance();
 	QueueManager::newInstance();
 	FinishedManager::newInstance();
 	ADLSearchManager::newInstance();
+	//SSLSocketFactory::newInstance();
 
 	SettingsManager::getInstance()->load();
 
@@ -67,15 +69,8 @@ void startup(void (*f)(void*, const string&), void* p) {
 		ResourceManager::getInstance()->loadLanguage(SETTING(LANGUAGE_FILE));
 	}
 
-	HubManager::getInstance()->load();
-	int i;
-	for(i = 0; i < SettingsManager::SPEED_LAST; i++) {
-		if(SETTING(CONNECTION) == SettingsManager::connectionSpeeds[i])
-			break;
-	}
-	if(i == SettingsManager::SPEED_LAST) {
-		SettingsManager::getInstance()->set(SettingsManager::CONNECTION, SettingsManager::connectionSpeeds[0]);
-	}
+	FavoriteManager::getInstance()->load();
+	//SSLSocketFactory::getInstance()->loadCertificates();
 
 	if(f != NULL)
 		(*f)(p, STRING(HASH_DATABASE));
@@ -90,12 +85,15 @@ void startup(void (*f)(void*, const string&), void* p) {
 }
 
 void shutdown() {
-	ConnectionManager::getInstance()->shutdown();
+	TimerManager::getInstance()->shutdown();
 	HashManager::getInstance()->shutdown();
+	ConnectionManager::getInstance()->shutdown();
 
-	TimerManager::getInstance()->removeListeners();
+	BufferedSocket::waitShutdown();
+
 	SettingsManager::getInstance()->save();
 	
+	//SSLSocketFactory::deleteInstance();
 	ADLSearchManager::deleteInstance();
 	FinishedManager::deleteInstance();
 	ShareManager::deleteInstance();
@@ -105,17 +103,11 @@ void shutdown() {
 	QueueManager::deleteInstance();
 	ConnectionManager::deleteInstance();
 	SearchManager::deleteInstance();
+	FavoriteManager::deleteInstance();
 	ClientManager::deleteInstance();
-	HubManager::deleteInstance();
 	HashManager::deleteInstance();
 	LogManager::deleteInstance();
 	SettingsManager::deleteInstance();
 	TimerManager::deleteInstance();
 	ResourceManager::deleteInstance();
 }
-
-/**
- * @file
- * $Id: DCPlusPlus.cpp,v 1.4 2005/06/25 19:24:01 paskharen Exp $
- */
-

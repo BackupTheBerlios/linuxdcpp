@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,9 @@
 #include "ResourceManager.h"
 #include "HashManager.h"
 #include "AdcCommand.h"
+#include "FavoriteManager.h"
+
+#include <functional>
 
 static const string UPLOAD_AREA = "Uploads";
 
@@ -71,7 +74,7 @@ bool UploadManager::prepareFile(UserConnection* aSource, const string& aType, co
 	try {
 		if(aType == "file") {
 			file = ShareManager::getInstance()->translateFileName(aFile);
-			userlist = (Util::stricmp(aFile.c_str(), "files.xml.bz2") == 0);
+			userlist = (aFile == "files.xml.bz2");
 
 			try {
 				File* f = new File(file, File::READ, File::OPEN);
@@ -135,11 +138,10 @@ bool UploadManager::prepareFile(UserConnection* aSource, const string& aType, co
 			aSource->fileNotAvail();
 			return false;
 		}
-	} catch(const ShareException&) {
-		aSource->fileNotAvail();
+	} catch(const ShareException& e) {
+		aSource->fileNotAvail(e.getError());
 		return false;
 	}
-
 
 	Lock l(cs);
 
@@ -147,19 +149,29 @@ bool UploadManager::prepareFile(UserConnection* aSource, const string& aType, co
 
 	if(!aSource->isSet(UserConnection::FLAG_HASSLOT)) {
 		bool hasReserved = (reservedSlots.find(aSource->getUser()) != reservedSlots.end());
-		bool isFavorite = aSource->getUser()->getFavoriteGrantSlot();
+		bool isFavorite = FavoriteManager::getInstance()->hasSlot(aSource->getUser());
 
 		if(!(hasReserved || isFavorite || getFreeSlots() > 0 || getAutoSlot())) {
-			bool supportsFree = aSource->getUser()->isSet(User::DCPLUSPLUS) || aSource->isSet(UserConnection::FLAG_SUPPORTS_MINISLOTS) || !aSource->isSet(UserConnection::FLAG_NMDC);
-			bool allowedFree = aSource->isSet(UserConnection::FLAG_HASEXTRASLOT) || aSource->getUser()->isSet(User::OP) || getFreeExtraSlots() > 0;
+			bool supportsFree = aSource->isSet(UserConnection::FLAG_SUPPORTS_MINISLOTS) || !aSource->isSet(UserConnection::FLAG_NMDC);
+			bool allowedFree = aSource->isSet(UserConnection::FLAG_HASEXTRASLOT) || aSource->isSet(UserConnection::FLAG_OP) || getFreeExtraSlots() > 0;
 			if(free && supportsFree && allowedFree) {
 				extraSlot = true;
 			} else {
 				delete is;
 				aSource->maxedOut();
+
+				// Check for tth root identifier
+				string tFile = aFile;
+				if (tFile.compare(0, 4, "TTH/") == 0)
+					tFile = ShareManager::getInstance()->translateTTH(aFile.substr(4));
+
+				addFailedUpload(aSource, tFile +
+					" (" + Util::toString((aStartPos*1000/(File::getSize(file)+10))/10.0)+"% of " + Util::formatBytes(File::getSize(file)) + " done)");
 				aSource->disconnect();
 				return false;
 			}
+		} else {
+			clearUserFiles(aSource->getUser());	// this user is using a full slot, nix them.
 		}
 
 		setLastGrant(GET_TICK());
@@ -202,9 +214,28 @@ bool UploadManager::prepareFile(UserConnection* aSource, const string& aType, co
 			aSource->setFlag(UserConnection::FLAG_HASSLOT);
 			running++;
 		}
+
+		reservedSlots.erase(aSource->getUser());
 	}
 
 	return true;
+}
+
+void UploadManager::removeUpload(Upload* aUpload) {
+	Lock l(cs);
+	dcassert(find(uploads.begin(), uploads.end(), aUpload) != uploads.end());
+	uploads.erase(find(uploads.begin(), uploads.end(), aUpload));
+	aUpload->setUserConnection(NULL);
+	delete aUpload;
+}
+
+void UploadManager::reserveSlot(const User::Ptr& aUser) {
+	{
+		Lock l(cs);
+		reservedSlots.insert(aUser);
+	}
+	if(aUser->isOnline())
+		ClientManager::getInstance()->connect(aUser);
 }
 
 void UploadManager::on(UserConnectionListener::Get, UserConnection* aSource, const string& aFile, int64_t aResume) throw() {
@@ -272,7 +303,7 @@ void UploadManager::on(UserConnectionListener::Failed, UserConnection* aSource, 
 		removeUpload(u);
 	}
 
-	removeConnection(aSource, false);
+	removeConnection(aSource);
 }
 
 void UploadManager::on(UserConnectionListener::TransmitDone, UserConnection* aSource) throw() {
@@ -286,16 +317,22 @@ void UploadManager::on(UserConnectionListener::TransmitDone, UserConnection* aSo
 	if(BOOLSETTING(LOG_UPLOADS) && !u->isSet(Upload::FLAG_TTH_LEAVES) && (BOOLSETTING(LOG_FILELIST_TRANSFERS) || !u->isSet(Upload::FLAG_USER_LIST))) {
 		StringMap params;
 		params["source"] = u->getFileName();
-		params["user"] = aSource->getUser()->getNick();
-		params["userip"] = aSource->getRemoteIp();
-		params["hub"] = aSource->getUser()->getLastHubName();
-		params["hubip"] = aSource->getUser()->getLastHubAddress();
-		params["size"] = Util::toString(u->getSize());
-		params["sizeshort"] = Util::formatBytes(u->getSize());
-		params["chunksize"] = Util::toString(u->getTotal());
-		params["chunksizeshort"] = Util::formatBytes(u->getTotal());
-		params["actualsize"] = Util::toString(u->getActual());
-		params["actualsizeshort"] = Util::formatBytes(u->getActual());
+		params["userNI"] = Util::toString(ClientManager::getInstance()->getNicks(aSource->getUser()->getCID()));
+		params["userI4"] = aSource->getRemoteIp();
+		StringList hubNames = ClientManager::getInstance()->getHubNames(aSource->getUser()->getCID());
+		if(hubNames.empty())
+			hubNames.push_back(STRING(OFFLINE));
+		params["hub"] = Util::toString(hubNames);
+		StringList hubs = ClientManager::getInstance()->getHubs(aSource->getUser()->getCID());
+		if(hubs.empty())
+			hubs.push_back(STRING(OFFLINE));
+		params["hubURL"] = Util::toString(hubs);
+		params["fileSI"] = Util::toString(u->getSize());
+		params["fileSIshort"] = Util::formatBytes(u->getSize());
+		params["fileSIchunk"] = Util::toString(u->getTotal());
+		params["fileSIchunkshort"] = Util::formatBytes(u->getTotal());
+		params["fileSIactual"] = Util::toString(u->getActual());
+		params["fileSIactualshort"] = Util::formatBytes(u->getActual());
 		params["speed"] = Util::formatBytes(u->getAverageSpeed()) + "/s";
 		params["time"] = Util::formatSeconds((GET_TICK() - u->getStart()) / 1000);
 
@@ -309,7 +346,43 @@ void UploadManager::on(UserConnectionListener::TransmitDone, UserConnection* aSo
 	removeUpload(u);
 }
 
-void UploadManager::removeConnection(UserConnection::Ptr aConn, bool ntd) {
+void UploadManager::addFailedUpload(UserConnection::Ptr source, string filename) {
+	{
+		Lock l(cs);
+		if (!count_if(waitingUsers.begin(), waitingUsers.end(), UserMatch(source->getUser())))
+			waitingUsers.push_back(WaitingUser(source->getUser(), GET_TICK()));
+		waitingFiles[source->getUser()].insert(filename);		//files for which user's asked
+	}
+
+	fire(UploadManagerListener::WaitingAddFile(), source->getUser(), filename);
+}
+
+void UploadManager::clearUserFiles(const User::Ptr& source) {
+	Lock l(cs);
+	//run this when a user's got a slot or goes offline.
+	UserDeque::iterator sit = find_if(waitingUsers.begin(), waitingUsers.end(), UserMatch(source));
+	if (sit == waitingUsers.end()) return;
+
+	FilesMap::iterator fit = waitingFiles.find(sit->first);
+	if (fit != waitingFiles.end()) waitingFiles.erase(fit);
+	fire(UploadManagerListener::WaitingRemoveUser(), sit->first);
+
+	waitingUsers.erase(sit);
+}
+
+vector<User::Ptr> UploadManager::getWaitingUsers() {
+	Lock l(cs);
+	vector<User::Ptr> u;
+	transform(waitingUsers.begin(), waitingUsers.end(), back_inserter(u), select1st<WaitingUser>());
+	return u;
+}
+
+const UploadManager::FileSet& UploadManager::getWaitingUserFiles(const User::Ptr &u) {
+	Lock l(cs);
+	return waitingFiles.find(u)->second;
+}
+
+void UploadManager::removeConnection(UserConnection::Ptr aConn) {
 	dcassert(aConn->getUpload() == NULL);
 	aConn->removeListener(this);
 	if(aConn->isSet(UserConnection::FLAG_HASSLOT)) {
@@ -320,26 +393,23 @@ void UploadManager::removeConnection(UserConnection::Ptr aConn, bool ntd) {
 		extra--;
 		aConn->unsetFlag(UserConnection::FLAG_HASEXTRASLOT);
 	}
-	ConnectionManager::getInstance()->putUploadConnection(aConn, ntd);
 }
 
-void UploadManager::on(TimerManagerListener::Minute, u_int32_t aTick) throw() {
+void UploadManager::on(TimerManagerListener::Minute, u_int32_t /* aTick */) throw() {
 	Lock l(cs);
-	for(SlotIter j = reservedSlots.begin(); j != reservedSlots.end();) {
-		if(j->second + 600 * 1000 < aTick) {
-			reservedSlots.erase(j++);
-		} else {
-			++j;
-		}
+
+	UserDeque::iterator i = stable_partition(waitingUsers.begin(), waitingUsers.end(), WaitingUserFresh());
+	for (UserDeque::iterator j = i; j != waitingUsers.end(); ++j) {
+		FilesMap::iterator fit = waitingFiles.find(j->first);
+		if (fit != waitingFiles.end()) waitingFiles.erase(fit);
+		fire(UploadManagerListener::WaitingRemoveUser(), j->first);
 	}
+
+	waitingUsers.erase(i, waitingUsers.end());
 }
 
 void UploadManager::on(GetListLength, UserConnection* conn) throw() { 
-	conn->listLen(ShareManager::getInstance()->getListLenString()); 
-}
-
-void UploadManager::on(AdcCommand::NTD, UserConnection* aConn, const AdcCommand&) throw() {
-	removeConnection(aConn, true);
+	conn->listLen("42"); 
 }
 
 void UploadManager::on(AdcCommand::GET, UserConnection* aSource, const AdcCommand& c) throw() {
@@ -378,10 +448,9 @@ void UploadManager::on(AdcCommand::GET, UserConnection* aSource, const AdcComman
 	}
 }
 
-/** @todo fixme */
 void UploadManager::on(AdcCommand::GFI, UserConnection* aSource, const AdcCommand& c) throw() {
 	if(c.getParameters().size() < 2) {
-		aSource->sta(AdcCommand::SEV_RECOVERABLE, AdcCommand::ERROR_PROTOCOL_GENERIC, "Missing parameters");
+		aSource->send(AdcCommand(AdcCommand::SEV_RECOVERABLE, AdcCommand::ERROR_PROTOCOL_GENERIC, "Missing parameters"));
 		return;
 	}
 
@@ -393,13 +462,13 @@ void UploadManager::on(AdcCommand::GFI, UserConnection* aSource, const AdcComman
 		StringList sl;
 
 		if(ident.compare(0, 4, "TTH/") != 0) {
-			aSource->sta(AdcCommand::SEV_RECOVERABLE, AdcCommand::ERROR_PROTOCOL_GENERIC, "Invalid identifier");
+			aSource->send(AdcCommand(AdcCommand::SEV_RECOVERABLE, AdcCommand::ERROR_PROTOCOL_GENERIC, "Invalid identifier"));
 			return;
 		}
 		sl.push_back("TH" + ident.substr(4));
 		ShareManager::getInstance()->search(l, sl, 1);
 		if(l.empty()) {
-			aSource->sta(AdcCommand::SEV_RECOVERABLE, AdcCommand::ERROR_FILE_NOT_AVAILABLE, "Not found");
+			aSource->send(AdcCommand(AdcCommand::SEV_RECOVERABLE, AdcCommand::ERROR_FILE_NOT_AVAILABLE, "Not found"));
 		} else {
 			aSource->send(l[0]->toRES(AdcCommand::TYPE_CLIENT));
 			l[0]->decRef();
@@ -418,30 +487,29 @@ void UploadManager::on(TimerManagerListener::Second, u_int32_t) throw() {
 	
 	if(ticks.size() > 0)
 		fire(UploadManagerListener::Tick(), ticks);
-
 }
 
-void UploadManager::on(ClientManagerListener::UserUpdated, const User::Ptr& aUser) throw() {
-	if( (!aUser->isOnline()) && 
-		(aUser->isSet(User::QUIT_HUB)) && 
-		(BOOLSETTING(AUTO_KICK)) ){
+void UploadManager::on(ClientManagerListener::UserDisconnected, const User::Ptr& aUser) throw() {
+
+	/// @todo Don't kick when /me disconnects
+	if( BOOLSETTING(AUTO_KICK) && !(BOOLSETTING(AUTO_KICK_NO_FAVS) && FavoriteManager::getInstance()->isFavoriteUser(aUser)) ) {
 
 		Lock l(cs);
 		for(Upload::Iter i = uploads.begin(); i != uploads.end(); ++i) {
 			Upload* u = *i;
 			if(u->getUser() == aUser) {
 				// Oops...adios...
-				u->getUserConnection()->disconnect();
+				u->getUserConnection()->disconnect(true);
 				// But let's grant him/her a free slot just in case...
 				if (!u->getUserConnection()->isSet(UserConnection::FLAG_HASEXTRASLOT))
 					reserveSlot(aUser);
-				LogManager::getInstance()->message(STRING(DISCONNECTED_USER) + aUser->getFullNick());
+				LogManager::getInstance()->message(STRING(DISCONNECTED_USER) + Util::toString(ClientManager::getInstance()->getNicks(aUser->getCID())));
 			}
 		}
 	}
-}
 
-/**
- * @file
- * $Id: UploadManager.cpp,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
+	//Remove references to them.
+	if(!aUser->isOnline()) {
+		clearUserFiles(aUser);
+	}
+}

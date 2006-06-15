@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef EXCEPTION_H
+#if !defined(EXCEPTION_H)
 #define EXCEPTION_H
 
 #if _MSC_VER > 1000
@@ -26,10 +26,10 @@
 class Exception  
 {
 public:
-	Exception() { };
-	Exception(const string& aError) throw() : error(aError) { dcdrun(if(error.size()>0)) dcdebug("Thrown: %s\n", error.c_str()); };
-	virtual ~Exception() throw() { };
-	virtual const string& getError() const throw() { return error; };
+	Exception() { }
+	Exception(const string& aError) throw() : error(aError) { dcdrun(if(error.size()>0)) dcdebug("Thrown: %s\n", error.c_str()); }
+	virtual ~Exception() throw() { }
+	virtual const string& getError() const throw() { return error; }
 protected:
 	string error;
 };
@@ -53,9 +53,4 @@ public:\
 }
 #endif
 
-#endif // EXCEPTION_H
-
-/**
- * @file
- * $Id: Exception.h,v 1.4 2005/06/25 19:24:02 paskharen Exp $
- */
+#endif // !defined(EXCEPTION_H)

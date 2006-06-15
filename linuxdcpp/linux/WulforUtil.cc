@@ -17,6 +17,7 @@
 */
 
 #include "WulforUtil.hh"
+#include <client/ClientManager.h>
 
 vector<int> WulforUtil::splitString(const string &str, const string &delimiter)
 {
@@ -53,4 +54,28 @@ string WulforUtil::windowsSeparator(const string &ps)
 		if ((*it) == '/')
 			(*it) = '\\';
 	return str;
+}
+
+string WulforUtil::getNicks(const CID& cid)
+{
+	return Util::toString(ClientManager::getInstance()->getNicks(cid));
+}
+
+string WulforUtil::getNicks(const User::Ptr& user)
+{
+	return getNicks(user->getCID());
+}
+
+pair<string, bool> WulforUtil::getHubNames(const CID& cid)
+{
+	StringList hubs = ClientManager::getInstance()->getHubNames(cid);
+	if (hubs.empty())
+		return make_pair("Offline", FALSE);
+	else
+		return make_pair(Util::toString(hubs), TRUE);
+}
+
+pair<string, bool> WulforUtil::getHubNames(const User::Ptr& user)
+{
+	return getHubNames(user->getCID());
 }

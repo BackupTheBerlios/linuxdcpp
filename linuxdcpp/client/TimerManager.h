@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_TIMERMANAGER_H__2172C2AD_D4FD_4B46_A1B2_7959D7359CCD__INCLUDED_)
-#define AFX_TIMERMANAGER_H__2172C2AD_D4FD_4B46_A1B2_7959D7359CCD__INCLUDED_
+#if !defined(TIMER_MANAGER_H)
+#define TIMER_MANAGER_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -34,6 +34,7 @@
 
 class TimerManagerListener {
 public:
+	virtual ~TimerManagerListener() { }
 	template<int I>	struct X { enum { TYPE = I };  };
 
 	typedef X<0> Second;
@@ -47,6 +48,11 @@ public:
 class TimerManager : public Speaker<TimerManagerListener>, public Singleton<TimerManager>, public Thread
 {
 public:
+	void shutdown() {
+		s.signal();
+		join();
+	}
+
 	static time_t getTime() {
 		return (time_t)time(NULL);
 	}
@@ -58,7 +64,7 @@ public:
 		gettimeofday(&tv2, NULL);
 		return (u_int32_t)((tv2.tv_sec - tv.tv_sec) * 1000 ) + ( (tv2.tv_usec - tv.tv_usec) / 1000);
 #endif
-	};
+	}
 private:
 
 	Semaphore s;
@@ -68,14 +74,13 @@ private:
 #ifndef _WIN32
 		gettimeofday(&tv, NULL);
 #endif
-	};
-	
+	}
+
 	virtual ~TimerManager() throw() {
 		dcassert(listeners.empty());
-		s.signal();
-		join();
-	};
-	
+		shutdown();
+	}
+
 	virtual int run();
 	
 #ifndef _WIN32
@@ -86,10 +91,4 @@ private:
 #define GET_TICK() TimerManager::getTick()
 #define GET_TIME() TimerManager::getTime()
 
-#endif // !defined(AFX_TIMERMANAGER_H__2172C2AD_D4FD_4B46_A1B2_7959D7359CCD__INCLUDED_)
-
-/**
- * @file
- * $Id: TimerManager.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
-
+#endif // !defined(TIMER_MANAGER_H)

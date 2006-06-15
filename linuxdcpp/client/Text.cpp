@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,11 +20,13 @@
 #include "DCPlusPlus.h"
 
 #include "Text.h"
+#include <glib.h>
+#include "../linux/settingsmanager.hh"
 
 char Text::asciiLower[128];
 wchar_t Text::lower[65536];
 
-// When using GNU C library; setlocale should be called before Text::initialize 
+// When using GNU C library; setlocale should be called before Text::initialize
 
 void Text::initialize() {
 	for(size_t i = 0; i < 65536; ++i) {
@@ -126,6 +128,8 @@ string& Text::acpToUtf8(const string& str, string& tmp) throw() {
 }
 
 wstring& Text::acpToWide(const string& str, wstring& tmp) throw() {
+	if(str.empty())
+		return tmp;
 #ifdef _WIN32
 	int n = MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str.c_str(), (int)str.length(), NULL, 0);
 	if(n == 0) {
@@ -146,13 +150,13 @@ wstring& Text::acpToWide(const string& str, wstring& tmp) throw() {
 	if (n < 1) {
 		return tmp;
 	}
-	src = str.c_str(); // Certain mbsrtowcs() implementations destroy the src
+	src = str.c_str();
 	tmp.resize(n);
 	n = mbsrtowcs(&tmp[0], &src, n, NULL);
 	if (n < 1) {
 		tmp.clear();
 		return tmp;
-	} 
+	}
 	return tmp;
 #endif
 }
@@ -166,6 +170,8 @@ string& Text::wideToUtf8(const wstring& str, string& tgt) throw() {
 }
 
 string& Text::wideToAcp(const wstring& str, string& tmp) throw() {
+	if(str.empty())
+		return tmp;
 #ifdef _WIN32
 	int n = WideCharToMultiByte(CP_ACP, 0, str.c_str(), (int)str.length(), NULL, 0, NULL, NULL);
 	if(n == 0) {
@@ -182,7 +188,7 @@ string& Text::wideToAcp(const wstring& str, string& tmp) throw() {
 #else
 	const wchar_t* src = str.c_str();
 	int n = wcsrtombs(NULL, &src, 0, NULL);
-	if (n < 1) {
+	if(n < 1) {
 		return tmp;
 	}
 	src = str.c_str();
@@ -240,6 +246,8 @@ wstring& Text::toLower(const wstring& str, wstring& tmp) throw() {
 }
 
 string& Text::toLower(const string& str, string& tmp) throw() {
+	if(str.empty())
+		return tmp;
 	tmp.reserve(str.length());
 	const char* end = &str[0] + str.length();
 	for(const char* p = &str[0]; p < end;) {
@@ -256,7 +264,42 @@ string& Text::toLower(const string& str, string& tmp) throw() {
 	return tmp;
 }
 
-/**
- * @file
- * $Id: Text.cpp,v 1.6 2006/05/29 22:23:55 stevensheehy Exp $
- */
+string Text::acpToUtf8(const string& str) throw()
+{
+	std::string utf8String;
+	gchar *utf8CString = g_locale_to_utf8(str.c_str(), -1, NULL, NULL, NULL);
+	if (utf8CString == NULL)
+	{
+		utf8CString = g_convert_with_fallback(str.c_str(), -1, "UTF-8", WGETS("fallback-encoding").c_str(), "", NULL, NULL, NULL);
+		if (utf8CString == NULL)
+			return utf8String;
+	}
+	utf8String = string(utf8CString);
+	g_free(utf8CString);
+	return utf8String;
+}
+
+string Text::utf8ToAcp(const string& str) throw()
+{
+	std::string acpString;
+	gchar *acpCString = g_locale_from_utf8(str.c_str(), -1, NULL, NULL, NULL);
+	if (acpCString == NULL)
+		return acpString;
+	acpString = string(acpCString);
+	g_free(acpCString);
+	return acpString;
+}
+
+string Text::toLower(const string& str) throw()
+{
+	std::string lowerString = acpToUtf8(str);
+	gchar *lowerCString;
+	if (!lowerString.empty())
+	{
+		lowerCString = g_utf8_strdown(lowerString.c_str(), -1);
+		lowerString = string(lowerCString);
+		g_free(lowerCString);
+	}
+	return lowerString;
+}
+

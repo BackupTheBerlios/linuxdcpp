@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef FINISHEDMANAGER_H
-#define FINISHEDMANAGER_H
+#if !defined(FINISHED_MANAGER_H)
+#define FINISHED_MANAGER_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -44,7 +44,7 @@ public:
 	{
 	}
 
-	int64_t getAvgSpeed() { return milliSeconds > 0 ? (chunkSize * ((int64_t)1000) / milliSeconds) : 0; };
+	int64_t getAvgSpeed() { return milliSeconds > 0 ? (chunkSize * ((int64_t)1000) / milliSeconds) : 0; }
 
 	GETSET(string, target, Target);
 	GETSET(string, user, User);
@@ -61,6 +61,7 @@ private:
 
 class FinishedManagerListener {
 public:
+	virtual ~FinishedManagerListener() { }
 	template<int I>	struct X { enum { TYPE = I };  };
 
 	typedef X<0> AddedUl;
@@ -83,8 +84,8 @@ class FinishedManager : public Singleton<FinishedManager>,
 	public Speaker<FinishedManagerListener>, private DownloadManagerListener, private UploadManagerListener
 {
 public:
-	FinishedItem::List& lockList(bool upload = false) { cs.enter(); return upload ? uploads : downloads; };
-	void unlockList() { cs.leave(); };
+	FinishedItem::List& lockList(bool upload = false) { cs.enter(); return upload ? uploads : downloads; }
+	void unlockList() { cs.leave(); }
 
 	void remove(FinishedItem *item, bool upload = false);
 	void removeAll(bool upload = false);
@@ -104,9 +105,4 @@ private:
 	FinishedItem::List downloads, uploads;
 };
 
-#endif // FINISHEDMANAGER_H
-
-/**
- * @file
- * $Id: FinishedManager.h,v 1.4 2005/06/25 19:24:02 paskharen Exp $
- */
+#endif // !defined(FINISHED_MANAGER_H)

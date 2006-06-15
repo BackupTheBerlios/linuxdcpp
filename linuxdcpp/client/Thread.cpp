@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,15 +36,10 @@ void Thread::start() throw(ThreadException) {
 }
 
 #else
-void Thread::start() throw(ThreadException) { 
+void Thread::start() throw(ThreadException) {
 	join();
 	if(pthread_create(&threadHandle, NULL, &starter, this) != 0) {
 		throw ThreadException(STRING(UNABLE_TO_CREATE_THREAD));
 	}
 }
 #endif
-/**
- * @file
- * $Id: Thread.cpp,v 1.5 2006/05/29 22:23:55 stevensheehy Exp $
- */
-

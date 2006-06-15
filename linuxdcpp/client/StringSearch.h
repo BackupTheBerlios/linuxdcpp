@@ -1,23 +1,27 @@
-/* 
-* Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-*/
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
 
-#ifndef STRINGSEARCH_H
-#define STRINGSEARCH_H
+#if !defined(STRING_SEARCH_H)
+#define STRING_SEARCH_H
+
+#if _MSC_VER > 1000
+#pragma once
+#endif // _MSC_VER > 1000
 
 #include "Text.h"
 
@@ -35,10 +39,10 @@ public:
 
 	explicit StringSearch(const string& aPattern) throw() : pattern(Text::toLower(aPattern)) { 
 		initDelta1();
-	};
+	}
 	StringSearch(const StringSearch& rhs) throw() : pattern(rhs.pattern) { 
 		memcpy(delta1, rhs.delta1, sizeof(delta1));
-	};
+	}
 	const StringSearch& operator=(const StringSearch& rhs) {
 		memcpy(delta1, rhs.delta1, sizeof(delta1));
 		pattern = rhs.pattern;
@@ -50,9 +54,9 @@ public:
 		return *this;
 	}
 
-	bool operator==(const StringSearch& rhs) { return pattern == rhs.pattern; };
+	bool operator==(const StringSearch& rhs) { return pattern == rhs.pattern; }
 
-	const string& getPattern() const { return pattern; };
+	const string& getPattern() const { return pattern; }
 
 	/** Match a text against the pattern */
 	bool match(const string& aText) const throw() {
@@ -110,8 +114,4 @@ private:
 	}
 };
 
-#endif // STRINGSEARCH_H
-/**
- * @file
- * $Id: StringSearch.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
+#endif // !defined(STRING_SEARCH_H)

@@ -1,3 +1,29 @@
+2006-06-15 - Naga & Steven Sheehy
+* Upgraded the client core to version 0.691:
+	<WARNING> 
+		* All sources to downloads will be lost (not the files) due to Queue.xml core changes.
+		* Some settings will have to be reconfigured (namely connection mode & speed).
+	</WARNING>
+	* Added features:
+		* Disconnect slow users.
+		* IP field can accept a hostname.
+		* Markers for ZDownloads, TTH Trees, TTH Check, Secure (Not supported) & Rollback.
+		* Show timestamps options.
+		* Log Hub, PM and Filelist transfers.
+		* Option to use Monospaced font for Hub & PM (thanks UrkeMMI).
+		* Tab bolding options for Hub, PM, Search, Finished Downloads and Finished Uploads.
+		* Notification when searching too soon.
+	* Fixed bugs:
+		* Bug #6103: crashes when have no permission to create file/directory (untested)
+		* Bug #6294: Hub topics not working
+		* Bug #6462: User list loading very slow (on Open DC hubs)
+		* Switching connection mode requires a restart.
+* Completely rewrote settings dialog to make room for the new options.
+* Hid most of the unimplemented settings.
+* Fixed bug #7651: GUI Freeze (in downloadqueue)
+* Rewrote the character encoding code to use a user-specified fallback locale (default CP1252)
+  if current locale fails. Not a 100% fix for unicode issues, but a start.
+
 2006-06-13 - Steven Sheehy
 * Don't redefine NULL
 * Fixed PM windows from stealing focus if it's already open.

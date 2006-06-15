@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef FILE_H
+#if !defined(FILE_H)
 #define FILE_H
 
 #if _MSC_VER > 1000
@@ -101,7 +101,7 @@ public:
 		return 0;
 	}
 
-	bool isOpen() { return h != INVALID_HANDLE_VALUE; };
+	bool isOpen() { return h != INVALID_HANDLE_VALUE; }
 
 	virtual void close() throw() {
 		if(isOpen()) {
@@ -259,7 +259,7 @@ public:
 		return (u_int32_t)s.st_mtime;
 	}
 
-	bool isOpen() { return h != -1; };
+	bool isOpen() { return h != -1; }
 
 	virtual void close() throw() {
 		if(h != -1) {
@@ -280,9 +280,9 @@ public:
 		return (int64_t) lseek(h, 0, SEEK_CUR);
 	}
 
-	virtual void setPos(int64_t pos) throw(FileException) { lseek(h, (off_t)pos, SEEK_SET); };
-	virtual void setEndPos(int64_t pos) throw(FileException) { lseek(h, (off_t)pos, SEEK_END); };
-	virtual void movePos(int64_t pos) throw(FileException) { lseek(h, (off_t)pos, SEEK_CUR); };
+	virtual void setPos(int64_t pos) throw(FileException) { lseek(h, (off_t)pos, SEEK_SET); }
+	virtual void setEndPos(int64_t pos) throw(FileException) { lseek(h, (off_t)pos, SEEK_END); }
+	virtual void movePos(int64_t pos) throw(FileException) { lseek(h, (off_t)pos, SEEK_CUR); }
 
 	virtual size_t read(void* buf, size_t& len) throw(FileException) {
 		ssize_t x = ::read(h, buf, len);
@@ -342,24 +342,23 @@ public:
 		return 0;
 	}
 
-	static void deleteFile(const string& aFileName) throw() { ::unlink(aFileName.c_str()); };
-	
+	static void deleteFile(const string& aFileName) throw() { ::unlink(aFileName.c_str()); }
+
 	/* ::rename seems to have problems when source and target is on different partitions
-	   from "man 2 rename" EXDEV  oldpath  and  newpath are not on the same mounted
-	   filesystem.  (Linux permits a filesystem to be mounted at multiple points, 
-	   but rename(2) does not work across different mount points, even if the same 
-	   filesystem is mounted on both.)
-	*/
+       from "man 2 rename"
+       EXDEV  oldpath  and  newpath are not on the same mounted filesystem.  (Linux permits a
+       filesystem to be mounted at multiple points, but rename(2) does not
+       work across different mount points, even if the same filesystem is mounted on both.)
+    */
 	static void renameFile(const string& source, const string& target) throw() {
 		int ret = ::rename(source.c_str(), target.c_str());
-		if (( ret != 0 ) && ( errno == EXDEV )) {
-			copyFile(source.c_str(), target.c_str());
-			deleteFile(source.c_str());
-		} else if (ret != 0) {
-			throw FileException(source.c_str() + Util::translateError(errno));
-		}
-	}
-	
+		if ( ( ret != 0 ) && ( errno == EXDEV ) ) {
+          copyFile(source.c_str(), target.c_str());
+          deleteFile(source.c_str());
+        } else if (ret != 0)
+             throw FileException(source.c_str() + Util::translateError(errno));
+    }
+
 	// This doesn't assume all bytes are written in one write call, it is a bit safer
 	static void copyFile(const string& source, const string& target) throw(FileException) { 
 		const size_t BUF_SIZE = 64 * 1024;
@@ -419,7 +418,7 @@ public:
 		return read((u_int32_t)sz);
 	}
 
-	void write(const string& aString) throw(FileException) { write((void*)aString.data(), aString.size()); };
+	void write(const string& aString) throw(FileException) { write((void*)aString.data(), aString.size()); }
 
 protected:
 #ifdef _WIN32
@@ -432,10 +431,4 @@ private:
 	File& operator=(const File&);
 };
 
-#endif // FILE_H
-
-/**
- * @file
- * $Id: File.h,v 1.7 2006/02/14 20:07:03 paskharen Exp $
- */
-
+#endif // !defined(FILE_H)

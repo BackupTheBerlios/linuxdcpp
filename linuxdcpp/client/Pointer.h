@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_POINTER_H__FCC38D23_858F_43AC_BF23_73FD708FDC82__INCLUDED_)
-#define AFX_POINTER_H__FCC38D23_858F_43AC_BF23_73FD708FDC82__INCLUDED_
+#if !defined(POINTER_H)
+#define POINTER_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -46,7 +46,7 @@ public:
 	}
 	
 protected:
-	PointerBase() throw() : ref(0) { };
+	PointerBase() throw() : ref(0) { }
 	
 	virtual ~PointerBase() throw() {
 		dcassert(!ref);
@@ -114,14 +114,14 @@ public:
 	
 	operator		  bool()  const   { return base != NULL; }
 	
-	bool operator==(T* rhs) const { return (T*)base == rhs; };
-	bool operator==(const Pointer& rhs) const { return base == rhs.base; };
-	bool operator!=(T* rhs) const { return (T*)base != rhs; };
-	bool operator!=(const Pointer& rhs) const { return base != rhs.base; };
-	bool operator<(T* rhs) const { return (T*)base < rhs; };
-	bool operator<(const Pointer& rhs) const { return base < rhs.base; };
-	bool operator>(T* rhs) const { return (T*)base > rhs; };
-	bool operator>(const Pointer& rhs) const { return base > rhs.base; };
+	bool operator==(T* rhs) const { return (T*)base == rhs; }
+	bool operator==(const Pointer& rhs) const { return base == rhs.base; }
+	bool operator!=(T* rhs) const { return (T*)base != rhs; }
+	bool operator!=(const Pointer& rhs) const { return base != rhs.base; }
+	bool operator<(T* rhs) const { return (T*)base < rhs; }
+	bool operator<(const Pointer& rhs) const { return base < rhs.base; }
+	bool operator>(T* rhs) const { return (T*)base > rhs; }
+	bool operator>(const Pointer& rhs) const { return base > rhs.base; }
 	
 
 	static void swap ( Pointer &lhs, Pointer &rhs ) {
@@ -157,15 +157,9 @@ bool operator<(T* lhs, const Pointer<T>& rhs) { return rhs > lhs; }
 template <class T>
 bool operator>(T* lhs, const Pointer<T>& rhs) { return rhs < lhs; }
 
-template <class T>
 struct DeleteFunction {
-	void operator()(const T& p) const { delete p; };
+	template<typename T>
+	void operator()(const T& p) const { delete p; }
 };
 
-#endif // !defined(AFX_POINTER_H__FCC38D23_858F_43AC_BF23_73FD708FDC82__INCLUDED_)
-
-/**
- * @file
- * $Id: Pointer.h,v 1.4 2005/06/25 19:24:02 paskharen Exp $
- */
-
+#endif // !defined(POINTER_H)

@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef UTIL_H
+#if !defined(UTIL_H)
 #define UTIL_H
 
 #if _MSC_VER > 1000
@@ -64,8 +64,8 @@ public: TypeTraits<type>::ParameterType get##name2() const { return name; } \
 template<class T1, class T2, class op = equal_to<T1> >
 class CompareFirst {
 public:
-	CompareFirst(const T1& compareTo) : a(compareTo) { };
-	bool operator()(const pair<T1, T2>& p) { return op()(p.first, a); };
+	CompareFirst(const T1& compareTo) : a(compareTo) { }
+	bool operator()(const pair<T1, T2>& p) { return op()(p.first, a); }
 private:
 	CompareFirst& operator=(const CompareFirst&);
 	const T1& a;
@@ -75,8 +75,8 @@ private:
 template<class T1, class T2, class op = equal_to<T2> >
 class CompareSecond {
 public:
-	CompareSecond(const T2& compareTo) : a(compareTo) { };
-	bool operator()(const pair<T1, T2>& p) { return op()(p.second, a); };
+	CompareSecond(const T2& compareTo) : a(compareTo) { }
+	bool operator()(const pair<T1, T2>& p) { return op()(p.second, a); }
 private:
 	CompareSecond& operator=(const CompareSecond&);
 	const T2& a;
@@ -88,12 +88,12 @@ struct PointerHash {
 	static const size_t bucket_size = 4; 
 	static const size_t min_buckets = 8; 
 #endif 
-	size_t operator()(const T* a) const { return ((size_t)a)/sizeof(T); };
-	bool operator()(const T* a, const T* b) { return a < b; };
+	size_t operator()(const T* a) const { return ((size_t)a)/sizeof(T); }
+	bool operator()(const T* a, const T* b) { return a < b; }
 };
 template<>
 struct PointerHash<void> {
-	size_t operator()(const void* a) const { return ((size_t)a)>>2; };
+	size_t operator()(const void* a) const { return ((size_t)a)>>2; }
 };
 
 /** 
@@ -107,14 +107,14 @@ class Flags {
 	public:
 		typedef int MaskType;
 
-		Flags() : flags(0) { };
-		Flags(const Flags& rhs) : flags(rhs.flags) { };
-		Flags(MaskType f) : flags(f) { };
-		bool isSet(MaskType aFlag) const { return (flags & aFlag) == aFlag; };
-		bool isAnySet(MaskType aFlag) const { return (flags & aFlag) != 0; };
-		void setFlag(MaskType aFlag) { flags |= aFlag; };
-		void unsetFlag(MaskType aFlag) { flags &= ~aFlag; };
-		Flags& operator=(const Flags& rhs) { flags = rhs.flags; return *this; };
+		Flags() : flags(0) { }
+		Flags(const Flags& rhs) : flags(rhs.flags) { }
+		Flags(MaskType f) : flags(f) { }
+		bool isSet(MaskType aFlag) const { return (flags & aFlag) == aFlag; }
+		bool isAnySet(MaskType aFlag) const { return (flags & aFlag) != 0; }
+		void setFlag(MaskType aFlag) { flags |= aFlag; }
+		void unsetFlag(MaskType aFlag) { flags &= ~aFlag; }
+		Flags& operator=(const Flags& rhs) { flags = rhs.flags; return *this; }
 	private:
 		MaskType flags;
 };
@@ -123,11 +123,11 @@ template<typename T>
 class AutoArray {
 	typedef T* TPtr;
 public:
-	explicit AutoArray(TPtr t) : p(t) { };
-	explicit AutoArray(size_t size) : p(new T[size]) { };
-	~AutoArray() { delete[] p; };
-	operator TPtr() { return p; };
-	AutoArray& operator=(TPtr t) { delete[] p; p = t; return *this; };
+	explicit AutoArray(TPtr t) : p(t) { }
+	explicit AutoArray(size_t size) : p(new T[size]) { }
+	~AutoArray() { delete[] p; }
+	operator TPtr() { return p; }
+	AutoArray& operator=(TPtr t) { delete[] p; p = t; return *this; }
 private:
 	AutoArray(const AutoArray&);
 	AutoArray& operator=(const AutoArray&);
@@ -169,18 +169,7 @@ public:
 #endif // _WIN32
 	}	
 
-	/**
-	 * Get the path to where the applications settings.
-	 * 
-	 * @return Path to settings directory.
-	 */
-	static string getConfigPath();
-
-	/**
-	 * Get the directory for temporary files.
-	 *
-	 * @return Path to temp directory.
-	 */
+	/** Path of temporary storage */
 	static string getTempPath() {
 #ifdef _WIN32
 		TCHAR buf[MAX_PATH + 1];
@@ -191,30 +180,25 @@ public:
 #endif
 	}
 
-	/**
-	 * Get the directory to the application resources.
-	 *
-	 * @todo On non Windows system this still returns the path to the
-	 * configuration directory. Later this will be completed with a patch for
-	 * Mac OS X. And the Linux(?) implementation is also wrong right now.
-	 * @return Path to resource directory.
-	 */
-	static string getDataPath() {
-#ifdef _WIN32
-		return getAppPath();
-#else
-		char* home = getenv("HOME");
-		if (home) {
-			return string(home) + "/.dc++/";
-		}
-		return emptyString;
-#endif
+	/** Path of resource directory */
+	static string getDataPath();
+
+	/** Path of configuration files */
+	static string getConfigPath();
+
+	/** Path of file lists */
+	static string getListPath() {
+		return getConfigPath() + "FileLists" PATH_SEPARATOR_STR;
+	}
+	/** Notepad filename */
+	static string getNotepadFile() {
+		return getConfigPath() + "Notepad.txt";
 	}
 
 	static string translateError(int aError) {
 #ifdef _WIN32
 		LPVOID lpMsgBuf;
-		FormatMessage( 
+		DWORD chars = FormatMessage( 
 			FORMAT_MESSAGE_ALLOCATE_BUFFER | 
 			FORMAT_MESSAGE_FROM_SYSTEM | 
 			FORMAT_MESSAGE_IGNORE_INSERTS,
@@ -225,6 +209,9 @@ public:
 			0,
 			NULL 
 			);
+		if(chars == 0) {
+			return string();
+		}
 		string tmp = Text::fromT((LPCTSTR)lpMsgBuf);
 		// Free the buffer.
 		LocalFree( lpMsgBuf );
@@ -281,14 +268,22 @@ public:
 
 	static void decodeUrl(const string& aUrl, string& aServer, u_int16_t& aPort, string& aFile);
 	static string validateFileName(string aFile);
+	static string cleanPathChars(string aNick);
 	
 	static string formatBytes(const string& aString) {
 		return formatBytes(toInt64(aString));
 	}
+	
+///@todo send to DC++
+#ifdef WIN32
+	double toBytes(TCHAR* aSize);
+#else
+	double toBytes(char* aSize);
+#endif
 
 	static string toDOS(const string& tmp);
 
-	static string getShortTimeString();
+	static string getShortTimeString(time_t t = time(NULL) );
 
 	static string getTimeString() {
 		char buf[64];
@@ -341,7 +336,7 @@ public:
 		return buf;
 	}
 
-	static string formatParams(const string& msg, StringMap& params);
+	static string formatParams(const string& msg, StringMap& params, bool filter);
 	static string formatTime(const string &msg, const time_t t);
 
 	static int64_t toInt64(const string& aString) {
@@ -431,6 +426,21 @@ public:
 		sprintf(buf, "%0.2f", val);
 		return buf;
 	}
+
+	static string toString(const StringList& lst) {
+		if(lst.size() == 1)
+			return lst[0];
+		string tmp("[");
+		for(StringList::const_iterator i = lst.begin(); i != lst.end(); ++i) {
+			tmp += *i + ',';
+		}
+		if(tmp.length() == 1)
+			tmp.push_back(']');
+		else
+			tmp[tmp.length()-1] = ']';
+		return tmp;
+	}
+
 	static string toHexEscape(char val) {
 		char buf[sizeof(int)*2+1+1];
 		sprintf(buf, "%%%X", val&0x0FF);
@@ -442,6 +452,17 @@ public:
 		return static_cast<char>(res);
 	}
 
+	template<typename T>
+	static T& intersect(T& t1, const T& t2) {
+		for(typename T::iterator i = t1.begin(); i != t1.end();) {
+			if(find_if(t2.begin(), t2.end(), bind1st(equal_to<typename T::value_type>(), *i)) == t2.end())
+				i = t1.erase(i);
+			else
+				++i;
+		}
+		return t1;
+	}
+
 	static string encodeURI(const string& /*aString*/, bool reverse = false);
 	static string getLocalIp();
 	static bool isPrivateIp(string const& ip);
@@ -450,6 +471,7 @@ public:
 	 * @return First position found or string::npos
 	 */
 	static string::size_type findSubString(const string& aString, const string& aSubString, string::size_type start = 0) throw();
+	static wstring::size_type findSubString(const wstring& aString, const wstring& aSubString, wstring::size_type start = 0) throw();
 
 	/* Utf-8 versions of strnicmp and stricmp, unicode char code order (!) */
 	static int stricmp(const char* a, const char* b);
@@ -467,10 +489,10 @@ public:
 		return n == 0 ? 0 : ((int)Text::toLower(*a)) - ((int)Text::toLower(*b));
 	}
 
-	static int stricmp(const string& a, const string& b) { return stricmp(a.c_str(), b.c_str()); };
-	static int strnicmp(const string& a, const string& b, size_t n) { return strnicmp(a.c_str(), b.c_str(), n); };
-	static int stricmp(const wstring& a, const wstring& b) { return stricmp(a.c_str(), b.c_str()); };
-	static int strnicmp(const wstring& a, const wstring& b, size_t n) { return strnicmp(a.c_str(), b.c_str(), n); };
+	static int stricmp(const string& a, const string& b) { return stricmp(a.c_str(), b.c_str()); }
+	static int strnicmp(const string& a, const string& b, size_t n) { return strnicmp(a.c_str(), b.c_str(), n); }
+	static int stricmp(const wstring& a, const wstring& b) { return stricmp(a.c_str(), b.c_str()); }
+	static int strnicmp(const wstring& a, const wstring& b, size_t n) { return strnicmp(a.c_str(), b.c_str(), n); }
 	
 	static string validateMessage(string tmp, bool reverse, bool checkNewLines = true);
 
@@ -478,25 +500,29 @@ public:
 
 	static string getIpCountry (string IP);
 
-	static bool getAway() { return away; };
+	static bool getAway() { return away; }
 	static void setAway(bool aAway) {
 		away = aAway;
 		if (away)
 			awayTime = time(NULL);
-	};
-	static string getAwayMessage();
+	}
 
-	static void setAwayMessage(const string& aMsg) { awayMsg = aMsg; };
+	static bool getManualAway() { return manualAway; }
+	static void setManualAway(bool aManualAway) { manualAway = aManualAway;	}
+
+	static string getAwayMessage();
+	static void setAwayMessage(const string& aMsg) { awayMsg = aMsg; }
 
 	static u_int32_t rand();
-	static u_int32_t rand(u_int32_t high) { return rand() % high; };
-	static u_int32_t rand(u_int32_t low, u_int32_t high) { return rand(high-low) + low; };
-	static double randd() { return ((double)rand()) / ((double)0xffffffff); };
+	static u_int32_t rand(u_int32_t high) { return rand() % high; }
+	static u_int32_t rand(u_int32_t low, u_int32_t high) { return rand(high-low) + low; }
+	static double randd() { return ((double)rand()) / ((double)0xffffffff); }
 
 private:
 	static string appPath;
 	static string dataPath;
 	static bool away;
+	static bool manualAway;
 	static string awayMsg;
 	static time_t awayTime;
 
@@ -584,9 +610,4 @@ struct noCaseStringLess {
 	}
 };
 
-#endif // UTIL_H
-
-/**
- * @file
- * $Id: Util.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
+#endif // !defined(UTIL_H)

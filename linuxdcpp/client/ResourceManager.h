@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_RESOURCEMANAGER_H__AA978E1D_82F9_434B_8C3C_1D58B93F7582__INCLUDED_)
-#define AFX_RESOURCEMANAGER_H__AA978E1D_82F9_434B_8C3C_1D58B93F7582__INCLUDED_
+#if !defined(RESOURCE_MANAGER_H)
+#define RESOURCE_MANAGER_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -31,24 +31,26 @@ public:
 #include "StringDefs.h"
 
 	void loadLanguage(const string& aFile);
-	const string& getString(Strings x) const { dcassert(x >= 0 && x < LAST); return strings[x]; };
-	const wstring& getStringW(Strings x) const { dcassert(x >= 0 && x < LAST); return wstrings[x]; };
-
+	const string& getString(Strings x) const { dcassert(x >= 0 && x < LAST); return strings[x]; }
+	const wstring& getStringW(Strings x) const { dcassert(x >= 0 && x < LAST); return wstrings[x]; }
+	bool isRTL() { return rtl; }
 private:
 	friend class Singleton<ResourceManager>;
 	
 	typedef HASH_MAP<string, Strings> NameMap;
 	typedef NameMap::iterator NameIter;
 
-	ResourceManager() { 
+	ResourceManager() : rtl(false) {
 		createWide();
-	};
+	}
 
-	virtual ~ResourceManager() { };
-	
+	virtual ~ResourceManager() { }
+
 	static string strings[LAST];
 	static wstring wstrings[LAST];
 	static string names[LAST];
+
+	bool rtl;
 
 	void createWide();
 };
@@ -74,9 +76,4 @@ private:
 #endif
 
 
-#endif // !defined(AFX_RESOURCEMANAGER_H__AA978E1D_82F9_434B_8C3C_1D58B93F7582__INCLUDED_)
-
-/**
- * @file
- * $Id: ResourceManager.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
+#endif // !defined(RESOURCE_MANAGER_H)

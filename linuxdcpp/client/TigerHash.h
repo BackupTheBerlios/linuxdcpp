@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef _TIGER_HASH
-#define _TIGER_HASH
+#if !defined(TIGER_HASH_H)
+#define TIGER_HASH_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -42,7 +42,7 @@ public:
 	/** Call once all data has been processed. */
 	u_int8_t* finalize();
 
-	u_int8_t* getResult() { return (u_int8_t*) res; };
+	u_int8_t* getResult() { return (u_int8_t*) res; }
 private:
 	enum { BLOCK_SIZE = 512/8 };
 	/** 512 bit blocks for the compress function */
@@ -57,9 +57,4 @@ private:
 	void tigerCompress(const u_int64_t* data, u_int64_t state[3]);
 };
 
-#endif // _TIGER_HASH
-
-/**
- * @file
- * $Id: TigerHash.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
+#endif // !defined(TIGER_HASH_H)

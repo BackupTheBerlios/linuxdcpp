@@ -22,7 +22,6 @@
 #include <gtk/gtk.h>
 #include <glade/glade.h>
 #include <iostream>
-#include <ext/hash_map>
 
 #include "bookentry.hh"
 #include "treeview.hh"
@@ -30,11 +29,11 @@
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
-#include <client/HubManager.h>
+#include <client/FavoriteManager.h>
 
 class FavoriteHubs:
 	public BookEntry,
-	public HubManagerListener
+	public FavoriteManagerListener
 {
 public:
 	FavoriteHubs();
@@ -67,18 +66,18 @@ private:
 	static void editEntry(GtkWidget *widget, gpointer data);
 	static void removeEntry(GtkWidget *widget, gpointer data);
 
-	// From HubManagerListener
-	virtual	void on(HubManagerListener::FavoriteAdded, const FavoriteHubEntry *entry) throw();
-	virtual void on(HubManagerListener::FavoriteRemoved, const FavoriteHubEntry *entry) throw();
+	// From FavoriteManagerListener
+	virtual void on(FavoriteManagerListener::FavoriteAdded, const FavoriteHubEntry *entry) throw();
+	virtual void on(FavoriteManagerListener::FavoriteRemoved, const FavoriteHubEntry *entry) throw();
 
 	GtkWidget *mainBox;
 	GtkDialog *deleteDialog;
 	GtkDialog *errorDialog;
 	GtkLabel *errorLabel;
 	GtkMenu *menu;
-	hash_map<std::string, GtkWidget *, WulforUtil::HashString> button;
-	hash_map<std::string, GtkWidget *, WulforUtil::HashString> dialog;
-	hash_map<std::string, GtkWidget *, WulforUtil::HashString> menuItems;
+	hash_map<std::string, GtkWidget *> button;
+	hash_map<std::string, GtkWidget *> dialog;
+	hash_map<std::string, GtkWidget *> menuItems;
 	TreeView favoriteView;
 	GtkListStore *favoriteStore;
 	GtkTreeSelection *favoriteSelection;

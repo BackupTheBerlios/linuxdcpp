@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,13 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#if !defined(MERKLE_CHECK_OUTPUT_STREAM_H)
+#define MERKLE_CHECK_OUTPUT_STREAM_H
+
+#if _MSC_VER > 1000
+#pragma once
+#endif // _MSC_VER > 1000
+
 #include "Streams.h"
 #include "MerkleTree.h"
 
@@ -25,13 +32,17 @@ public:
 	MerkleCheckOutputStream(const TreeType& aTree, OutputStream* aStream, int64_t start) : s(aStream), real(aTree), cur(aTree.getBlockSize()), verified(0), bufPos(0) {
 		// Only start at block boundaries
 		dcassert(start % aTree.getBlockSize() == 0);
-		// Sanity check
-		dcassert(aTree.getLeaves().size() > (size_t)(start / aTree.getBlockSize()));
 		cur.setFileSize(start);
-		cur.getLeaves().insert(cur.getLeaves().begin(), aTree.getLeaves().begin(), aTree.getLeaves().begin() + (size_t)(start / aTree.getBlockSize()));
+
+		size_t nBlocks = static_cast<size_t>(start / aTree.getBlockSize());
+		if(nBlocks > aTree.getLeaves().size()) {
+			dcdebug("Invalid tree / parameters");
+			return;
+		}
+		cur.getLeaves().insert(cur.getLeaves().begin(), aTree.getLeaves().begin(), aTree.getLeaves().begin() + nBlocks);
 	}
 
-	virtual ~MerkleCheckOutputStream() throw() { if(managed) delete s; };
+	virtual ~MerkleCheckOutputStream() throw() { if(managed) delete s; }
 
 	virtual size_t flush() throw(FileException) {
 		if (bufPos != 0)
@@ -105,7 +116,4 @@ private:
 	}
 };
 
-/**
- * @file
- * $Id: MerkleCheckOutputStream.h,v 1.3 2005/06/25 19:24:02 paskharen Exp $
- */
+#endif // !defined(MERKLE_CHECK_OUTPUT_STREAM_H)

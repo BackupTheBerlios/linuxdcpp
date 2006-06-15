@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_DIRECTORYLISTING_H__D2AF61C5_DEDE_42E0_8257_71D5AB567D39__INCLUDED_)
-#define AFX_DIRECTORYLISTING_H__D2AF61C5_DEDE_42E0_8257_71D5AB567D39__INCLUDED_
+#if !defined(DIRECTORY_LISTING_H)
+#define DIRECTORY_LISTING_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -49,11 +49,11 @@ public:
 		File(Directory* aDir, const string& aName, int64_t aSize, const string& aTTH) throw() : 
 			name(aName), size(aSize), parent(aDir), tthRoot(new TTHValue(aTTH)), adls(false)
 		{ 
-		};
+		}
 		File(Directory* aDir, const string& aName, int64_t aSize) throw() : 
 			name(aName), size(aSize), parent(aDir), tthRoot(NULL), adls(false)
 		{ 
-		};
+		}
 			
 		File(const File& rhs, bool _adls = false) : name(rhs.name), size(rhs.size), parent(rhs.parent), tthRoot(rhs.tthRoot == NULL ? NULL : new TTHValue(*rhs.tthRoot)), adls(_adls)
 		{
@@ -90,17 +90,20 @@ public:
 		File::List files;
 		
 		Directory(Directory* aParent, const string& aName, bool _adls, bool aComplete) 
-			: name(aName), parent(aParent), adls(_adls), complete(aComplete) { };
+			: name(aName), parent(aParent), adls(_adls), complete(aComplete) { }
 		
 		virtual ~Directory() {
-			for_each(directories.begin(), directories.end(), DeleteFunction<Directory*>());
-			for_each(files.begin(), files.end(), DeleteFunction<File*>());
+			for_each(directories.begin(), directories.end(), DeleteFunction());
+			for_each(files.begin(), files.end(), DeleteFunction());
 		}
 
 		size_t getTotalFileCount(bool adls = false);		
 		int64_t getTotalSize(bool adls = false);
+		void filterList(DirectoryListing& dirList);
+		void filterList(HASH_SET_X(TTHValue, TTHValue::Hash, equal_to<TTHValue>, less<TTHValue>)& l);
+		void getHashList(HASH_SET_X(TTHValue, TTHValue::Hash, equal_to<TTHValue>, less<TTHValue>)& l);
 		
-		size_t getFileCount() { return files.size(); };
+		size_t getFileCount() { return files.size(); }
 		
 		int64_t getSize() {
 			int64_t x = 0;
@@ -122,17 +125,17 @@ public:
 
 	class AdlDirectory : public Directory {
 	public:
-		AdlDirectory(const string& aFullPath, Directory* aParent, const string& aName) : Directory(aParent, aName, true, true), fullPath(aFullPath) { };
+		AdlDirectory(const string& aFullPath, Directory* aParent, const string& aName) : Directory(aParent, aName, true, true), fullPath(aFullPath) { }
 
 		GETSET(string, fullPath, FullPath);
 	};
 
 	DirectoryListing(const User::Ptr& aUser) : user(aUser), utf8(false), root(new Directory(NULL, Util::emptyString, false, false)) {
-	};
-	
+	}
+
 	~DirectoryListing() {
 		delete root;
-	};
+	}
 
 	void loadFile(const string& name);
 
@@ -143,13 +146,16 @@ public:
 	void download(Directory* aDir, const string& aTarget, bool highPrio);
 	void download(File* aFile, const string& aTarget, bool view, bool highPrio);
 	
-	string getPath(Directory* d);
-	string getPath(File* f) { return getPath(f->getParent()); };
+	string getPath(const Directory* d) const;
+	string getPath(const File* f) const { return getPath(f->getParent()); }
 
-	int64_t getTotalSize(bool adls = false) { return root->getTotalSize(adls); };
-	size_t getTotalFileCount(bool adls = false) { return root->getTotalFileCount(adls); };
+	int64_t getTotalSize(bool adls = false) { return root->getTotalSize(adls); }
+	size_t getTotalFileCount(bool adls = false) { return root->getTotalFileCount(adls); }
 
-	Directory* getRoot() { return root; };
+	const Directory* getRoot() const { return root; }
+	Directory* getRoot() { return root; }
+
+	static User::Ptr getUserFromFilename(const string& fileName);
 
 	GETSET(User::Ptr, user, User);
 	GETSET(bool, utf8, Utf8);
@@ -169,9 +175,4 @@ private:
 inline bool operator==(DirectoryListing::Directory::Ptr a, const string& b) { return Util::stricmp(a->getName(), b) == 0; }
 inline bool operator==(DirectoryListing::File::Ptr a, const string& b) { return Util::stricmp(a->getName(), b) == 0; }
 
-#endif // !defined(AFX_DIRECTORYLISTING_H__D2AF61C5_DEDE_42E0_8257_71D5AB567D39__INCLUDED_)
-
-/**
- * @file
- * $Id: DirectoryListing.h,v 1.4 2005/06/25 19:24:02 paskharen Exp $
- */
+#endif // !defined(DIRECTORY_LISTING_H)

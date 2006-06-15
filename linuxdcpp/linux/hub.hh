@@ -23,7 +23,6 @@
 #include <glade/glade.h>
 #include <gtk/gtk.h>
 #include <iostream>
-#include <ext/hash_map>
 #include <pthread.h>
 #include <semaphore.h>
 #include <string>
@@ -59,27 +58,29 @@ class Hub:
 		void setStatus_gui(GtkStatusbar *status, std::string text);
 		void updateUser_gui(std::string nick, int64_t shared, std::string iconFile,
 				std::string description, std::string tag, std::string connection, 
-				std::string email, bool opstatus=false);
+				std::string email, Identity id, bool opstatus=false);
 		void findUser_gui(std::string nick, GtkTreeIter *iter);
+		Identity getUserID(std::string nick);
 		void removeUser_gui(std::string nick);
 		void clearNickList_gui();
 		void getPassword_gui();
 		void addMessage_gui(std::string msg);
 		void sendMessage_gui(GtkEntry *entry, gpointer data);
-		void addPrivateMessage_gui(User::Ptr user, std::string msg);
+		void addPrivateMessage_gui(User::Ptr tabUser, User::Ptr msgMuser, std::string msg);
 
 		void popupNickMenu_gui(GtkWidget *, GdkEventButton *, gpointer);
 		void browseItemClicked_gui(GtkMenuItem *, gpointer);
 		void msgItemClicked_gui(GtkMenuItem *, gpointer);
 		void grantItemClicked_gui(GtkMenuItem *, gpointer);
 		void completion_gui(GtkWidget *, GdkEventKey *, gpointer);
-                void setChatEntryFocus(GtkWidget *, GdkEventKey *, gpointer);
+		void setChatEntryFocus(GtkWidget *, GdkEventKey *, gpointer);
+		void onRedirect_gui(Client* cl, string address);
 
 		//to be called from client thread
 		void connectClient_client(string address, 
 			string nick="", string desc="", string password="");
 		void setPassword_client(std::string password);
-		void updateUser_client(User::Ptr user);
+		void updateUser_client(const OnlineUser& user);
 		void sendMessage_client(std::string message);
 		void getFileList_client(std::string nick);
 		void grantSlot_client(string userName);
@@ -88,23 +89,24 @@ class Hub:
 		void on(ClientListener::Connecting, Client *client) throw();
 		void on(ClientListener::Connected, Client *client) throw();
 		void on(ClientListener::BadPassword, Client *client) throw();
-		void on(ClientListener::UserUpdated, Client *client, 
-			const User::Ptr&) throw();
+		void on(ClientListener::UserUpdated, Client *client,
+			const OnlineUser&) throw();
 		void on(ClientListener::UsersUpdated, 
-			Client *client, const User::List &list) throw();
+			Client *client, const OnlineUser::List &list) throw();
 		void on(ClientListener::UserRemoved, 
-			Client *client, const User::Ptr &user) throw();
+			Client *client, const OnlineUser &user) throw();
 		void on(ClientListener::Redirect, 
 			Client *client, const string &address) throw();
 		void on(ClientListener::Failed, 
 			Client *client, const string &reason) throw();
 		void on(ClientListener::GetPassword, Client *client) throw();
 		void on(ClientListener::HubUpdated, Client *client) throw();
-		void on(ClientListener::Message, 
-			Client *client, const string &msg) throw();
-		void on(ClientListener::PrivateMessage, 
-			Client *client, const User::Ptr &user, const string &msg) throw();
-		void on(ClientListener::UserCommand, Client *client, 
+		void on(ClientListener::Message, const OnlineUser&, const string &msg) throw();
+		void on(ClientListener::StatusMessage, Client* client, const string &msg) throw();
+		void on(ClientListener::PrivateMessage,
+		        Client *client, const OnlineUser &from, const OnlineUser& to,
+		        const OnlineUser& replyTo, const string &msg) throw();
+		void on(ClientListener::UserCommand, Client *client,
 			int, int, const string&, const string&) throw();
 		void on(ClientListener::HubFull, Client *client) throw();
 		void on(ClientListener::NickTaken, Client *client) throw();
@@ -112,6 +114,7 @@ class Hub:
 			const string &msg) throw();
 		void on(ClientListener::NmdcSearch, Client *client, const string&, 
 			int, int64_t, int, const string&) throw();
+		void on(ClientListener::AdcSearch, Client* client, const CID* cid) throw() {};
 
 	private:
 		Client *client;
@@ -121,7 +124,7 @@ class Hub:
 		Callback2<Hub, void, GtkMenuItem *> browseCallback, msgCallback, grantCallback;
 		Callback3<Hub, void, GtkWidget *, GdkEventKey *> completionCallback, setFocusCallback;
 
-		void onUserRemoved_gui(string nick, size_t userCount, int64_t available);
+		void onUserRemoved_gui(std::string nick, size_t userCount, int64_t available);
 
 		typedef StringMap NicksMap;
 		typedef NicksMap::iterator NicksMapIter;
@@ -133,7 +136,8 @@ class Hub:
 		GtkMenu *nickMenu;
 		GtkMenuItem *browseItem, *msgItem, *grantItem;
 
-		hash_map<std::string, GdkPixbuf *, WulforUtil::HashString> userIcons;
+		hash_map<std::string, GdkPixbuf *> userIcons;
+		hash_map<std::string, Identity> idMap;
 
 		GtkWidget *mainBox;
 		GtkPaned *nickPane;

@@ -152,7 +152,7 @@ int TreeView::getRowCount()
 GType* TreeView::getGTypes()
 {
 	int i = 0;
-	GType *gtypes = new GType[count]; // @todo: fix memory leak
+	GType *gtypes = new GType[count]; ///@todo: fix memory leak
 
 	for (SortedColIter iter = sortedColumns.begin(); iter != sortedColumns.end(); iter++)
 		gtypes[i++] = columns[iter->second].gtype;

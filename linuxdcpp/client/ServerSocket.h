@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_SERVERSOCKET_H__789A5170_2834_4B7B_9E44_A22566439C9F__INCLUDED_)
-#define AFX_SERVERSOCKET_H__789A5170_2834_4B7B_9E44_A22566439C9F__INCLUDED_
+#if !defined(SERVER_SOCKET_H)
+#define SERVER_SOCKET_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -28,6 +28,7 @@
 
 class ServerSocketListener {
 public:
+	virtual ~ServerSocketListener() { }
 	template<int I>	struct X { enum { TYPE = I };  };
 
 	typedef X<0> IncomingConnection;
@@ -36,38 +37,24 @@ public:
 
 class ServerSocket : public Speaker<ServerSocketListener> {
 public:
-	void waitForConnections(short aPort) throw(SocketException);
-	ServerSocket() : sock(INVALID_SOCKET) { };
+	ServerSocket() throw() { }
 
-	virtual ~ServerSocket() throw() {
-		disconnect();
-	}
-	
-	void disconnect() throw() {
-		if(sock != INVALID_SOCKET) {
-			closesocket(sock);
-			sock = INVALID_SOCKET;
-		}
-	}
-
-	socket_t getSocket() const { return sock; }
+	void listen(short port) throw(SocketException);
+	void disconnect() throw() { socket.disconnect(); }
 
 	/** This is called by windows whenever an "FD_ACCEPT" is sent...doesn't work with unix... */
 	void incoming() {
 		fire(ServerSocketListener::IncomingConnection());
 	}
 	
+	operator const Socket&() const { return socket; }
 private:
 	ServerSocket(const ServerSocket&);
 	ServerSocket& operator=(const ServerSocket&);
 
-	socket_t sock;
+	friend class Socket;
+	
+	Socket socket;
 };
- 
-#endif // !defined(AFX_SERVERSOCKET_H__789A5170_2834_4B7B_9E44_A22566439C9F__INCLUDED_)
 
-/**
- * @file
- * $Id: ServerSocket.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
-
+#endif // !defined(SERVER_SOCKET_H)

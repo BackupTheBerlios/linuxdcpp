@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef THREAD_H
+#if !defined(THREAD_H)
 #define THREAD_H
 
 #if _MSC_VER > 1000
@@ -43,11 +43,11 @@ public:
 		HIGH = THREAD_PRIORITY_ABOVE_NORMAL
 	};
 
-	Thread() throw() : threadHandle(NULL), threadId(0){ };
+	Thread() throw() : threadHandle(NULL), threadId(0){ }
 	virtual ~Thread() { 
 		if(threadHandle)
 			CloseHandle(threadHandle);
-	};
+	}
 	
 	void start() throw(ThreadException);
 	void join() throw(ThreadException) {
@@ -60,13 +60,13 @@ public:
 		threadHandle = NULL;
 	}
 
-	void setThreadPriority(Priority p) throw() { ::SetThreadPriority(threadHandle, p); };
+	void setThreadPriority(Priority p) throw() { ::SetThreadPriority(threadHandle, p); }
 	
-	static void sleep(u_int32_t millis) { ::Sleep(millis); };
-	static void yield() { ::Sleep(0); };
-	static long safeInc(volatile long& v) { return InterlockedIncrement(&v); };
-	static long safeDec(volatile long& v) { return InterlockedDecrement(&v); };
-	static long safeExchange(volatile long& target, long value) { return InterlockedExchange(&target, value); };
+	static void sleep(u_int32_t millis) { ::Sleep(millis); }
+	static void yield() { ::Sleep(1); }
+	static long safeInc(volatile long& v) { return InterlockedIncrement(&v); }
+	static long safeDec(volatile long& v) { return InterlockedDecrement(&v); }
+	static long safeExchange(volatile long& target, long value) { return InterlockedExchange(&target, value); }
 
 #else
 
@@ -76,35 +76,35 @@ public:
 		NORMAL = 0,
 		HIGH = -1
 	};
-	Thread() throw() : threadHandle(0) { };
+	Thread() throw() : threadHandle(0) { }
 	virtual ~Thread() { 
-		if (threadHandle != 0) {
+		if(threadHandle != 0) {
 			pthread_detach(threadHandle);
 		}
-	};
+	}
 	void start() throw(ThreadException);
 	void join() throw() { 
-		if (threadHandle != 0) {
+		if (threadHandle) {
 			pthread_join(threadHandle, 0);
 			threadHandle = 0;
 		}
-	};
+	}
 
-	void setThreadPriority(Priority p) { setpriority(PRIO_PROCESS, 0, p); };
-	static void sleep(u_int32_t millis) { ::usleep(millis*1000); };
-	static void yield() { ::sched_yield(); };
-	static long safeInc(volatile long& v) {
+	void setThreadPriority(Priority p) { setpriority(PRIO_PROCESS, 0, p); }
+	static void sleep(u_int32_t millis) { ::usleep(millis*1000); }
+	static void yield() { ::sched_yield(); }
+	static long safeInc(volatile long& v) { 
 		pthread_mutex_lock(&mtx);
 		long ret = ++v;
 		pthread_mutex_unlock(&mtx);
 		return ret;
-	};
-	static long safeDec(volatile long& v) {
+	}
+	static long safeDec(volatile long& v) { 
 		pthread_mutex_lock(&mtx);
 		long ret = --v;
 		pthread_mutex_unlock(&mtx);
 		return ret;
-	};
+	}
 #endif
 
 protected:
@@ -133,10 +133,4 @@ private:
 #endif
 };
 
-#endif // !defined(AFX_THREAD_H__3006956B_7C69_4DAD_9596_A49E1BD007D5__INCLUDED_)
-
-/**
- * @file
- * $Id: Thread.h,v 1.8 2006/05/29 22:23:55 stevensheehy Exp $
- */
-
+#endif // !defined(THREAD_H)

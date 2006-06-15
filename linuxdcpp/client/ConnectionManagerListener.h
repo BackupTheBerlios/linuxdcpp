@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_CONNECTIONMANAGERLISTENER_H__E8F009DF_D216_4F8F_8C81_07D2FA0BFB7F__INCLUDED_)
-#define AFX_CONNECTIONMANAGERLISTENER_H__E8F009DF_D216_4F8F_8C81_07D2FA0BFB7F__INCLUDED_
+#if !defined(CONNECTION_MANAGER_LISTENER_H)
+#define CONNECTION_MANAGER_LISTENER_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -27,6 +27,7 @@ class ConnectionQueueItem;
 
 class ConnectionManagerListener {
 public:
+	virtual ~ConnectionManagerListener() { }
 	template<int I>	struct X { enum { TYPE = I };  };
 
 	typedef X<0> Added;
@@ -35,16 +36,11 @@ public:
 	typedef X<3> Failed;
 	typedef X<4> StatusChanged;
 
-	virtual void on(Added, ConnectionQueueItem*) throw() { };
-	virtual void on(Connected, ConnectionQueueItem*) throw() { };
-	virtual void on(Removed, ConnectionQueueItem*) throw() { };
-	virtual void on(Failed, ConnectionQueueItem*, const string&) throw() { };
-	virtual void on(StatusChanged, ConnectionQueueItem*) throw() { };
+	virtual void on(Added, ConnectionQueueItem*) throw() { }
+	virtual void on(Connected, ConnectionQueueItem*) throw() { }
+	virtual void on(Removed, ConnectionQueueItem*) throw() { }
+	virtual void on(Failed, ConnectionQueueItem*, const string&) throw() { }
+	virtual void on(StatusChanged, ConnectionQueueItem*) throw() { }
 };
 
-#endif
-
-/**
-* @file
-* $Id: ConnectionManagerListener.h,v 1.4 2005/06/25 19:24:01 paskharen Exp $
-*/
+#endif // !defined(CONNECTION_MANAGER_LISTENER_H)

@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,11 +20,12 @@
 #include "DCPlusPlus.h"
 
 #include "FinishedManager.h"
+#include "ClientManager.h"
 
 FinishedManager::~FinishedManager() throw() {
 	Lock l(cs);
-	for_each(downloads.begin(), downloads.end(), DeleteFunction<FinishedItem*>());
-	for_each(uploads.begin(), uploads.end(), DeleteFunction<FinishedItem*>());
+	for_each(downloads.begin(), downloads.end(), DeleteFunction());
+	for_each(uploads.begin(), uploads.end(), DeleteFunction());
 	DownloadManager::getInstance()->removeListener(this);
 	UploadManager::getInstance()->removeListener(this);
 
@@ -52,7 +53,7 @@ void FinishedManager::removeAll(bool upload /* = false */) {
 	{
 		Lock l(cs);
 		FinishedItem::List *listptr = upload ? &uploads : &downloads;
-		for_each(listptr->begin(), listptr->end(), DeleteFunction<FinishedItem*>());
+		for_each(listptr->begin(), listptr->end(), DeleteFunction());
 		listptr->clear();
 	}
 	if (!upload)
@@ -65,8 +66,8 @@ void FinishedManager::on(DownloadManagerListener::Complete, Download* d) throw()
 {
 	if(!d->isSet(Download::FLAG_TREE_DOWNLOAD) && (!d->isSet(Download::FLAG_USER_LIST) || BOOLSETTING(LOG_FILELIST_TRANSFERS))) {
 		FinishedItem *item = new FinishedItem(
-			d->getTarget(), d->getUserConnection()->getUser()->getNick(),
-			d->getUserConnection()->getUser()->getLastHubName(),
+			d->getTarget(), Util::toString(ClientManager::getInstance()->getNicks(d->getUserConnection()->getUser()->getCID())),
+			Util::toString(ClientManager::getInstance()->getHubNames(d->getUserConnection()->getUser()->getCID())),
 			d->getSize(), d->getTotal(), (GET_TICK() - d->getStart()), GET_TIME(), d->isSet(Download::FLAG_CRC32_OK));
 		{
 			Lock l(cs);
@@ -81,8 +82,8 @@ void FinishedManager::on(UploadManagerListener::Complete, Upload* u) throw()
 {
 	if(!u->isSet(Upload::FLAG_TTH_LEAVES) && (!u->isSet(Upload::FLAG_USER_LIST) || BOOLSETTING(LOG_FILELIST_TRANSFERS))) {
 		FinishedItem *item = new FinishedItem(
-			u->getLocalFileName(), u->getUserConnection()->getUser()->getNick(),
-			u->getUserConnection()->getUser()->getLastHubName(),
+			u->getLocalFileName(), Util::toString(ClientManager::getInstance()->getNicks(u->getUserConnection()->getUser()->getCID())),
+			Util::toString(ClientManager::getInstance()->getHubNames(u->getUserConnection()->getUser()->getCID())),
 			u->getSize(), u->getTotal(), (GET_TICK() - u->getStart()), GET_TIME());
 		{
 			Lock l(cs);
@@ -92,8 +93,3 @@ void FinishedManager::on(UploadManagerListener::Complete, Upload* u) throw()
 		fire(FinishedManagerListener::AddedUl(), item);
 	}
 }
-
-/**
- * @file
- * $Id: FinishedManager.cpp,v 1.4 2005/06/25 19:24:02 paskharen Exp $
- */

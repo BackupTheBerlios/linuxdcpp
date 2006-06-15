@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,12 +40,34 @@ ZFilter::~ZFilter() {
 
 bool ZFilter::operator()(const void* in, size_t& insize, void* out, size_t& outsize) {
 	if(outsize == 0)
-		return 0;
+		return false;
 
-	zs.avail_in = insize;
 	zs.next_in = (Bytef*)in;
-	zs.avail_out = outsize;
 	zs.next_out = (Bytef*)out;
+
+	// Check if there's any use compressing; if not, save some cpu...
+	if(compressing && insize > 0 && outsize > 16 && (totalIn > (64*1024)) && ((static_cast<double>(totalOut) / totalIn) > 0.95)) {
+		zs.avail_in = 0;
+		zs.avail_out = outsize;
+		if(deflateParams(&zs, 0, Z_DEFAULT_STRATEGY) != Z_OK) {
+			throw Exception(STRING(COMPRESSION_ERROR));
+		}
+		zs.avail_in = insize;
+		compressing = false;
+		dcdebug("Dynamically disabled compression");
+
+		// Check if we ate all space already...
+		if(zs.avail_out == 0) {
+			outsize = outsize - zs.avail_out;
+			insize = insize - zs.avail_in;
+			totalOut += outsize;
+			totalIn += insize;
+			return true;
+		}
+	} else {
+		zs.avail_in = insize;
+		zs.avail_out = outsize;
+	}
 
 	if(insize == 0) {
 		int err = ::deflate(&zs, Z_FINISH);
@@ -73,13 +95,12 @@ bool ZFilter::operator()(const void* in, size_t& insize, void* out, size_t& outs
 UnZFilter::UnZFilter() {
 	memset(&zs, 0, sizeof(zs));
 
-	if(inflateInit(&zs) != Z_OK) 
+	if(inflateInit(&zs) != Z_OK)
 		throw Exception(STRING(DECOMPRESSION_ERROR));
-
 }
 
 UnZFilter::~UnZFilter() {
-	dcdebug("UnZFilter end, %ld/%ld = %.04f\n", zs.total_out, zs.total_in, (float)zs.total_out / max((float)zs.total_in, (float)1)); 
+	dcdebug("UnZFilter end, %ld/%ld = %.04f\n", zs.total_out, zs.total_in, (float)zs.total_out / max((float)zs.total_in, (float)1));
 	inflateEnd(&zs);
 }
 
@@ -104,8 +125,3 @@ bool UnZFilter::operator()(const void* in, size_t& insize, void* out, size_t& ou
 	insize = insize - zs.avail_in;
 	return err == Z_OK;
 }
-
-/**
- * @file
- * $Id: ZUtils.cpp,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */

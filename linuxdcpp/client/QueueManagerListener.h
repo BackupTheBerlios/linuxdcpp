@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_QUEUEMANAGERLISTENER_H__07D44A33_1277_482D_AFB4_05E3473B4379__INCLUDED_)
-#define AFX_QUEUEMANAGERLISTENER_H__07D44A33_1277_482D_AFB4_05E3473B4379__INCLUDED_
+#if !defined(QUEUE_MANAGER_LISTENER_H)
+#define QUEUE_MANAGER_LISTENER_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -27,6 +27,7 @@ class QueueItem;
 
 class QueueManagerListener {
 public:
+	virtual ~QueueManagerListener() { }
 	template<int I>	struct X { enum { TYPE = I };  };
 
 	typedef X<0> Added;
@@ -39,7 +40,7 @@ public:
 	typedef X<7> PartialList;
 
 	virtual void on(Added, QueueItem*) throw() { }
-	virtual void on(Finished, QueueItem*) throw() { }
+	virtual void on(Finished, QueueItem*, int64_t) throw() { }
 	virtual void on(Removed, QueueItem*) throw() { }
 	virtual void on(Moved, QueueItem*) throw() { }
 	virtual void on(SourcesUpdated, QueueItem*) throw() { }
@@ -48,9 +49,4 @@ public:
 	virtual void on(PartialList, const User::Ptr&, const string&) throw() { }
 };
 
-#endif
-
-/**
- * @file
- * $Id: QueueManagerListener.h,v 1.4 2005/06/25 19:24:02 paskharen Exp $
- */
+#endif // !defined(QUEUE_MANAGER_LISTENER_H)

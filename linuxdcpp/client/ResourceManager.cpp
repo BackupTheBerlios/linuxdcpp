@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,6 +40,8 @@ void ResourceManager::loadLanguage(const string& aFile) {
 		}
 
 		if(xml.findChild("Language")) {
+			rtl = xml.getBoolChildAttrib("RightToLeft");
+
 			xml.stepIn();
 			if(xml.findChild("Strings")) {
 				xml.stepIn();
@@ -65,9 +67,3 @@ void ResourceManager::createWide() {
 		Text::utf8ToWide(strings[i], wstrings[i]);
 	}
 }
-
-/**
- * @file
- * $Id: ResourceManager.cpp,v 1.4 2005/06/25 19:24:02 paskharen Exp $
- */
-

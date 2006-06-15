@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef CONFIG_H
+#if !defined(CONFIG_H)
 #define CONFIG_H
 
 #if _MSC_VER > 1000
@@ -29,13 +29,16 @@
 
 // Changing this number will change the maximum number of simultaneous users
 // we can handle (when using select)...
-//#define FD_SETSIZE 4096
+#ifdef _WIN32
+#define FD_SETSIZE 4096
+#endif
 
 // Remove this line if hashes are not available in your stl
 #define HAVE_HASH 1
 
 // This enables stlport's debug mode (and slows it down to a crawl...)
-//# define _STLP_DEBUG 1
+//#define _STLP_DEBUG 1
+//#define _STLP_USE_NEWALLOC 1
 
 // --- Shouldn't have to change anything under here...
 
@@ -44,8 +47,14 @@
 #endif
 
 #ifdef HAVE_STLPORT
+# define _STLP_DONT_USE_SHORT_STRING_OPTIM 1	// Lots of memory issues with this undefined...wonder what's up with that..
+# define _STLP_USE_PTR_SPECIALIZATIONS 1
+# define _STLP_USE_TEMPLATE_EXPRESSION 1
+# define _STLP_NO_ANACHRONISMS 1
+# define _STLP_NO_CUSTOM_IO 1
+# define _STLP_NO_IOSTREAMS 1
 # ifndef _DEBUG
-#  define _STLP_NO_EXCEPTIONS 1
+#  define _STLP_DONT_USE_EXCEPTIONS 1
 # endif
 #endif
 
@@ -55,8 +64,9 @@
 # pragma warning(disable: 4290) // C++ Exception Specification ignored
 # pragma warning(disable: 4127) // constant expression
 # pragma warning(disable: 4710) // function not inlined
+# pragma warning(disable: 4503) // decorated name length exceeded, name was truncated
 
-# if _MSC_VER == 1200 || _MSC_VER == 1300 || _MSC_VER == 1310
+# if _MSC_VER == 1200 || _MSC_VER == 1300 || _MSC_VER == 1310 || _MSC_VER == 1400
 
 typedef signed char int8_t;
 typedef signed short int16_t;
@@ -119,9 +129,4 @@ typedef unsigned __int64 u_int64_t;
 # define _WIN32_IE	0x0500
 #endif
 
-#endif // CONFIG_H
-
-/**
- * @file
- * $Id: config.h,v 1.6 2006/01/13 15:51:54 paskharen Exp $
- */
+#endif // !defined(CONFIG_H)

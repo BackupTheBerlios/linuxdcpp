@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,10 +28,12 @@
 #include "version.h"
 #include "CID.h"
 
+StringList SettingsManager::connectionSpeeds;
+
 const string SettingsManager::settingTags[] =
 {
 	// Strings
-	"Connection", "Description", "DownloadDirectory", "EMail", "Nick", "Server",
+	"Nick", "UploadSpeed", "Description", "DownloadDirectory", "EMail", "ExternalIp",
 	"Font", "MainFrameOrder", "MainFrameWidths", "HubFrameOrder", "HubFrameWidths", 
 	"LanguageFile", "SearchFrameOrder", "SearchFrameWidths", "FavoritesFrameOrder", "FavoritesFrameWidths", 
 	"HublistServers", "QueueFrameOrder", "QueueFrameWidths", "PublicHubsFrameOrder", "PublicHubsFrameWidths", 
@@ -42,40 +44,59 @@ const string SettingsManager::settingTags[] =
 	"FinishedULWidths", "FinishedULOrder", "CID", "SpyFrameWidths", "SpyFrameOrder", "LogFileMainChat", 
 	"LogFilePrivateChat", "LogFileStatus", "LogFileUpload", "LogFileDownload", "LogFileSystem", 
 	"LogFormatSystem", "LogFormatStatus", "DirectoryListingFrameOrder", "DirectoryListingFrameWidths",
+	"SslPrivateKeyFile", "SslCertificateFile", "SslTrustedCertificatesPath",
 	"SENTRY", 
 	// Ints
-	"ConnectionType", "InPort", "Slots", "Rollback", "AutoFollow", "ClearSearch",
+	"IncomingConnections", "InPort", "Slots", "Rollback", "AutoFollow", "ClearSearch",
 	"BackgroundColor", "TextColor", "UseOemMonoFont", "ShareHidden", "FilterMessages", "MinimizeToTray",
 	"AutoSearch", "TimeStamps", "ConfirmExit", "IgnoreOffline", "PopupOffline",
 	"ListDuplicates", "BufferSize", "DownloadSlots", "MaxDownloadSpeed", "LogMainChat", "LogPrivateChat",
 	"LogDownloads", "LogUploads", "StatusInChat", "ShowJoins", "PrivateMessageBeep", "PrivateMessageBeepOpen",
 	"UseSystemIcons", "PopupPMs", "MinUploadSpeed", "GetUserInfo", "UrlHandler", "MainWindowState", 
 	"MainWindowSizeX", "MainWindowSizeY", "MainWindowPosX", "MainWindowPosY", "AutoAway",
-	"SmallSendBuffer", "SocksPort", "SocksResolve", "KeepLists", "AutoKick", "QueueFrameShowTree",
-	"CompressTransfers", "ShowProgressBars", "SFVCheck", "MaxTabRows", "AutoUpdateList",
-	"MaxCompression", "FinishedDirty", "QueueDirty", "TabDirty", "AntiFrag", "MDIMaxmimized", "NoAwayMsgToBots",
-	"SkipZeroByte", "AdlsBreakOnFirst", "TabCompletion", 
+	"SocksPort", "SocksResolve", "KeepLists", "AutoKick", "QueueFrameShowTree",
+	"CompressTransfers", "ShowProgressBars", "SFVCheck", "MaxTabRows",
+	"MaxCompression", "AntiFrag", "MDIMaxmimized", "NoAwayMsgToBots",
+	"SkipZeroByte", "AdlsBreakOnFirst", 
 	"HubUserCommands", "AutoSearchAutoMatch", "DownloadBarColor", "UploadBarColor", "LogSystem",
 	"LogFilelistTransfers", "SendUnknownCommands", "MaxHashSpeed", "OpenUserCmdHelp",
 	"GetUserCountry", "FavShowJoins", "LogStatusMessages", "ShowStatusbar",
 	"ShowToolbar", "ShowTransferview", "PopunderPm", "PopunderFilelist", "MagnetAsk", "MagnetAction", "MagnetRegister",
-	"AddFinishedInstantly", "UseUPnP", "DontDLAlreadyShared", "UseCTRLForLineHistory", "ConfirmHubRemoval", 
+	"AddFinishedInstantly", "DontDLAlreadyShared", "UseCTRLForLineHistory", "ConfirmHubRemoval", 
 	"OpenNewWindow", "UDPPort", "SearchOnlyTTH", "ShowLastLinesLog", "ConfirmItemRemoval",
-	"AdvancedResume", "AdcDebug", "ToggleActiveWindow", "SearchHistory", "SetMinislotSize",
+	"AdvancedResume", "AdcDebug", "ToggleActiveWindow", "SearchHistory", "SetMinislotSize", "MaxFilelistSize", 
 	"HighestPrioSize", "HighPrioSize", "NormalPrioSize", "LowPrioSize", "LowestPrio", 
+	"AutoDropSpeed", "AutoDropInterval", "AutoDropElapsed", "AutoDropInactivity", "AutoDropMinSources", "AutoDropFilesize", 
+	"AutoDropAll", "AutoDropFilelists", "AutoDropDisconnect", 
 	"OpenPublic", "OpenFavoriteHubs", "OpenFavoriteUsers", "OpenQueue", "OpenFinishedDownloads",
-	"OpenFinishedUploads", "OpenSearchSpy", "OpenNetworkStatistics", "OpenNotepad",
+	"OpenFinishedUploads", "OpenSearchSpy", "OpenNetworkStatistics", "OpenNotepad", "OutgoingConnections",
+	"NoIpOverride", "SearchOnlyFreeSlots", "LastSearchType", "BoldFinishedDownloads", "BoldFinishedUploads", "BoldQueue", 
+	"BoldHub", "BoldPm", "BoldSearch", "SocketInBuffer", "SocketOutBuffer", "OnlyDlTthFiles", 
+	"OpenWaitingUsers", "BoldWaitingUsers", "OpenSystemLog", "BoldSystemLog", "AutoRefreshTime",
+	"UseSsl", "AutoSearchLimit", "AltSortOrder", "AutoKickNoFavs", "PromptPassword",
 	"SENTRY",
 	// Int64
 	"TotalUpload", "TotalDownload",
 	"SENTRY"
 };
 
-const string SettingsManager::connectionSpeeds[] = { "28.8Kbps", "33.6Kbps", "56Kbps", "ISDN", 
-"Satellite", "Cable", "DSL", "LAN(T1)", "LAN(T3)" };
-
 SettingsManager::SettingsManager()
 {
+	connectionSpeeds.push_back("0.005");
+	connectionSpeeds.push_back("0.01");
+	connectionSpeeds.push_back("0.02");
+	connectionSpeeds.push_back("0.05");
+	connectionSpeeds.push_back("0.1");
+	connectionSpeeds.push_back("0.2");
+	connectionSpeeds.push_back("0.5");
+	connectionSpeeds.push_back("1");
+	connectionSpeeds.push_back("2");
+	connectionSpeeds.push_back("5");
+	connectionSpeeds.push_back("10");
+	connectionSpeeds.push_back("20");
+	connectionSpeeds.push_back("50");
+	connectionSpeeds.push_back("100");
+
 	for(int i=0; i<SETTINGS_LAST; i++)
 		isSet[i] = false;
 
@@ -88,21 +109,22 @@ SettingsManager::SettingsManager()
 		int64Settings[k] = 0;
 	}
 	
-	setDefault(DOWNLOAD_DIRECTORY, Util::getAppPath() + "Downloads" PATH_SEPARATOR_STR);
-	setDefault(TEMP_DOWNLOAD_DIRECTORY, Util::getAppPath() + "Incomplete" PATH_SEPARATOR_STR);
+	setDefault(DOWNLOAD_DIRECTORY, Util::getConfigPath() + "Downloads" PATH_SEPARATOR_STR);
+	setDefault(TEMP_DOWNLOAD_DIRECTORY, Util::getConfigPath() + "Incomplete" PATH_SEPARATOR_STR);
 	setDefault(SLOTS, 1);
-	//setDefault(SERVER, Util::getLocalIp());
-	setDefault(IN_PORT, Util::rand(1025, 32000));
-	setDefault(UDP_PORT, Util::rand(1025, 32000));
+	setDefault(TCP_PORT, 0);
+	setDefault(UDP_PORT, 0);
+	setDefault(INCOMING_CONNECTIONS, INCOMING_DIRECT);
+	setDefault(OUTGOING_CONNECTIONS, OUTGOING_DIRECT);
 	setDefault(ROLLBACK, 4096);
 	setDefault(AUTO_FOLLOW, true);
 	setDefault(CLEAR_SEARCH, true);
 	setDefault(SHARE_HIDDEN, false);
 	setDefault(FILTER_MESSAGES, true);
-	setDefault(MINIMIZE_TRAY, false);
+	setDefault(MINIMIZE_TRAY, true);
 	setDefault(AUTO_SEARCH, false);
 	setDefault(TIME_STAMPS, false);
-	setDefault(CONFIRM_EXIT, false);
+	setDefault(CONFIRM_EXIT, true);
 	setDefault(IGNORE_OFFLINE, false);
 	setDefault(POPUP_OFFLINE, false);
 	setDefault(LIST_DUPES, true);
@@ -110,36 +132,35 @@ SettingsManager::SettingsManager()
 	setDefault(HUBLIST_SERVERS, "http://www.hublist.org/PublicHubList.xml.bz2;http://dc.selwerd.nl/hublist.xml.bz2");
 	setDefault(DOWNLOAD_SLOTS, 3);
 	setDefault(MAX_DOWNLOAD_SPEED, 0);
-	setDefault(LOG_DIRECTORY, Util::getAppPath() + "Logs" PATH_SEPARATOR_STR);
+	setDefault(LOG_DIRECTORY, Util::getConfigPath() + "Logs" PATH_SEPARATOR_STR);
 	setDefault(LOG_UPLOADS, false);
 	setDefault(LOG_DOWNLOADS, false);
 	setDefault(LOG_PRIVATE_CHAT, false);
 	setDefault(LOG_MAIN_CHAT, false);
 	setDefault(STATUS_IN_CHAT, true);
 	setDefault(SHOW_JOINS, false);
-	setDefault(CONNECTION, connectionSpeeds[0]);
+	setDefault(UPLOAD_SPEED, connectionSpeeds[0]);
 	setDefault(PRIVATE_MESSAGE_BEEP, false);
 	setDefault(PRIVATE_MESSAGE_BEEP_OPEN, false);
 	setDefault(USE_SYSTEM_ICONS, true);
 	setDefault(USE_OEM_MONOFONT, false);
 	setDefault(POPUP_PMS, true);
 	setDefault(MIN_UPLOAD_SPEED, 0);
-	setDefault(LOG_FORMAT_POST_DOWNLOAD, "%Y-%m-%d %H:%M: %[target]" + STRING(DOWNLOADED_FROM) + "%[user], %[size] (%[chunksize]), %[speed], %[time]");
-	setDefault(LOG_FORMAT_POST_UPLOAD, "%Y-%m-%d %H:%M: %[source]" + STRING(UPLOADED_TO) + "%[user], %[size] (%[chunksize]), %[speed], %[time]");
+	setDefault(LOG_FORMAT_POST_DOWNLOAD, "%Y-%m-%d %H:%M: %[target]" + STRING(DOWNLOADED_FROM) + "%[userNI] (%[userCID]), %[fileSI] (%[fileSIchunk]), %[speed], %[time]");
+	setDefault(LOG_FORMAT_POST_UPLOAD, "%Y-%m-%d %H:%M: %[source]" + STRING(UPLOADED_TO) + "%[userNI] (%[userCID]), %[fileSI] (%[fileSIchunk]), %[speed], %[time]");
 	setDefault(LOG_FORMAT_MAIN_CHAT, "[%Y-%m-%d %H:%M] %[message]");
 	setDefault(LOG_FORMAT_PRIVATE_CHAT, "[%Y-%m-%d %H:%M] %[message]");
 	setDefault(LOG_FORMAT_STATUS, "[%Y-%m-%d %H:%M] %[message]");
 	setDefault(LOG_FORMAT_SYSTEM, "[%Y-%m-%d %H:%M] %[message]");
-	setDefault(LOG_FILE_MAIN_CHAT, "%[hubaddr].log");
-	setDefault(LOG_FILE_STATUS, "%[hubaddr]_status.log");
-	setDefault(LOG_FILE_PRIVATE_CHAT, "%[user].log");
+	setDefault(LOG_FILE_MAIN_CHAT, "%[hubURL].log");
+	setDefault(LOG_FILE_STATUS, "%[hubURL]_status.log");
+	setDefault(LOG_FILE_PRIVATE_CHAT, "%[userNI].%[userCID].log");
 	setDefault(LOG_FILE_UPLOAD, "Uploads.log");
 	setDefault(LOG_FILE_DOWNLOAD, "Downloads.log");
 	setDefault(LOG_FILE_SYSTEM, "system.log");
 	setDefault(GET_USER_INFO, true);
 	setDefault(URL_HANDLER, false);
 	setDefault(AUTO_AWAY, false);
-	setDefault(SMALL_SEND_BUFFER, false);
 	setDefault(BIND_ADDRESS, "0.0.0.0");
 	setDefault(SOCKS_PORT, 1080);
 	setDefault(SOCKS_RESOLVE, 1);
@@ -153,19 +174,14 @@ SettingsManager::SettingsManager()
 	setDefault(DEFAULT_AWAY_MESSAGE, "I'm away. State your business and I might answer later if you're lucky.");
 	setDefault(TIME_STAMPS_FORMAT, "%H:%M");
 	setDefault(MAX_TAB_ROWS, 2);
-	setDefault(AUTO_UPDATE_LIST, true);
 	setDefault(MAX_COMPRESSION, 6);
-	setDefault(FINISHED_DIRTY, true);
-	setDefault(QUEUE_DIRTY, true);
-	setDefault(TAB_DIRTY, true);
 	setDefault(ANTI_FRAG, false);
 	setDefault(NO_AWAYMSG_TO_BOTS, true);
 	setDefault(SKIP_ZERO_BYTE, false);
 	setDefault(ADLS_BREAK_ON_FIRST, false);
-	setDefault(TAB_COMPLETION, true);
 	setDefault(HUB_USER_COMMANDS, true);
 	setDefault(AUTO_SEARCH_AUTO_MATCH, true);
-	setDefault(LOG_FILELIST_TRANSFERS, true);
+	setDefault(LOG_FILELIST_TRANSFERS, false);
 	setDefault(LOG_SYSTEM, false);
 	setDefault(SEND_UNKNOWN_COMMANDS, true);
 	setDefault(MAX_HASH_SPEED, 0);
@@ -182,24 +198,33 @@ SettingsManager::SettingsManager()
 	setDefault(MAGNET_ASK, true);
 	setDefault(MAGNET_ACTION, MAGNET_AUTO_SEARCH);
 	setDefault(ADD_FINISHED_INSTANTLY, false);
-	setDefault(SETTINGS_USE_UPNP, false);
 	setDefault(DONT_DL_ALREADY_SHARED, false);
 	setDefault(CONFIRM_HUB_REMOVAL, false);
-	setDefault(SETTINGS_USE_CTRL_FOR_LINE_HISTORY, true);
-	setDefault(SETTINGS_OPEN_NEW_WINDOW, false);
+	setDefault(USE_CTRL_FOR_LINE_HISTORY, true);
+	setDefault(JOIN_OPEN_NEW_WINDOW, false);
 	setDefault(SEARCH_ONLY_TTH, false);
 	setDefault(SHOW_LAST_LINES_LOG, 0);
-	setDefault(CONFIRM_ITEM_REMOVAL, 0);
+	setDefault(CONFIRM_ITEM_REMOVAL, true);
 	setDefault(ADVANCED_RESUME, true);
 	setDefault(ADC_DEBUG, false);
 	setDefault(TOGGLE_ACTIVE_WINDOW, true);
 	setDefault(SEARCH_HISTORY, 10);
 	setDefault(SET_MINISLOT_SIZE, 64);
+	setDefault(MAX_FILELIST_SIZE, 512);
 	setDefault(PRIO_HIGHEST_SIZE, 64);
 	setDefault(PRIO_HIGH_SIZE, 0);
 	setDefault(PRIO_NORMAL_SIZE, 0);
 	setDefault(PRIO_LOW_SIZE, 0);
-	setDefault(PRIO_LOWEST, 0);
+	setDefault(PRIO_LOWEST, false);
+	setDefault(AUTODROP_SPEED, 1024);
+	setDefault(AUTODROP_INTERVAL, 10);
+	setDefault(AUTODROP_ELAPSED, 15);
+	setDefault(AUTODROP_INACTIVITY, 10);
+	setDefault(AUTODROP_MINSOURCES, 2);
+	setDefault(AUTODROP_FILESIZE, 0);
+	setDefault(AUTODROP_ALL, false);
+	setDefault(AUTODROP_FILELISTS, false);
+	setDefault(AUTODROP_DISCONNECT, false);
 	setDefault(OPEN_PUBLIC, false);
 	setDefault(OPEN_FAVORITE_HUBS, false);
 	setDefault(OPEN_FAVORITE_USERS, false);
@@ -209,7 +234,30 @@ SettingsManager::SettingsManager()
 	setDefault(OPEN_SEARCH_SPY, false);
 	setDefault(OPEN_NETWORK_STATISTICS, false);
 	setDefault(OPEN_NOTEPAD, false);
-	
+	setDefault(NO_IP_OVERRIDE, false);
+	setDefault(SEARCH_ONLY_FREE_SLOTS, false);
+	setDefault(LAST_SEARCH_TYPE, 0);
+	setDefault(SOCKET_IN_BUFFER, 64*1024);
+	setDefault(SOCKET_OUT_BUFFER, 64*1024);
+	setDefault(ONLY_DL_TTH_FILES, false);
+	setDefault(OPEN_WAITING_USERS, false);
+	setDefault(OPEN_SYSTEM_LOG, true);
+	setDefault(SSL_TRUSTED_CERTIFICATES_PATH, Util::getConfigPath() + "Certificates" PATH_SEPARATOR_STR);
+	setDefault(BOLD_FINISHED_DOWNLOADS, true);
+	setDefault(BOLD_FINISHED_UPLOADS, true);
+	setDefault(BOLD_QUEUE, true);
+	setDefault(BOLD_HUB, true);
+	setDefault(BOLD_PM, true);
+	setDefault(BOLD_SEARCH, true);
+	setDefault(BOLD_WAITING_USERS, true);
+	setDefault(BOLD_SYSTEM_LOG, true);
+	setDefault(AUTO_REFRESH_TIME, 60);
+	setDefault(USE_SSL, false);
+	setDefault(AUTO_SEARCH_LIMIT, 5);
+	setDefault(ALT_SORT_ORDER, false);
+	setDefault(AUTO_KICK_NO_FAVS, false);
+	setDefault(PROMPT_PASSWORD, false);
+
 #ifdef _WIN32
 	setDefault(MAIN_WINDOW_STATE, SW_SHOWNORMAL);
 	setDefault(MAIN_WINDOW_SIZE_X, CW_USEDEFAULT);
@@ -273,40 +321,48 @@ void SettingsManager::load(string const& aFileName)
 
 		double v = Util::toDouble(SETTING(CONFIG_VERSION));
 		// if(v < 0.x) { // Fix old settings here }
-		if(v < 0.668 && isSet[IN_PORT]) {
-			set(UDP_PORT, SETTING(IN_PORT));
-		}
 
-		if(CID(SETTING(CLIENT_ID)).isZero())
-			set(CLIENT_ID, CID::generate().toBase32());
+		if(v <= 0.674 || SETTING(PRIVATE_ID).length() != 39 || CID(SETTING(PRIVATE_ID)).isZero()) {
+			set(PRIVATE_ID, CID::generate().toBase32());
+
+			// Formats changed, might as well remove these...
+			set(LOG_FORMAT_POST_DOWNLOAD, Util::emptyString);
+			set(LOG_FORMAT_POST_UPLOAD, Util::emptyString);
+			set(LOG_FORMAT_MAIN_CHAT, Util::emptyString);
+			set(LOG_FORMAT_PRIVATE_CHAT, Util::emptyString);
+			set(LOG_FORMAT_STATUS, Util::emptyString);
+			set(LOG_FORMAT_SYSTEM, Util::emptyString);
+			set(LOG_FILE_MAIN_CHAT, Util::emptyString);
+			set(LOG_FILE_STATUS, Util::emptyString);
+			set(LOG_FILE_PRIVATE_CHAT, Util::emptyString);
+			set(LOG_FILE_UPLOAD, Util::emptyString);
+			set(LOG_FILE_DOWNLOAD, Util::emptyString);
+			set(LOG_FILE_SYSTEM, Util::emptyString);
+		}
 
 		if(SETTING(SET_MINISLOT_SIZE) < 64)
 			set(SET_MINISLOT_SIZE, 64);
-		if(SETTING(PRIO_HIGHEST_SIZE) < 16)
-			set(PRIO_HIGHEST_SIZE, 16);
-		if(SETTING(PRIO_HIGH_SIZE) < 0)
-			set(PRIO_HIGH_SIZE, 0);
-		if(SETTING(PRIO_NORMAL_SIZE) < 0)
-			set(PRIO_NORMAL_SIZE, 0);
-		if(SETTING(PRIO_LOW_SIZE) < 0)
-			set(PRIO_LOW_SIZE, 0);
-		if(SETTING(PRIO_LOWEST) < 0)
-			set(PRIO_LOWEST, 0);
-		if(SETTING(PRIO_LOWEST) > 1)
-			set(PRIO_LOWEST, 1);
+		if(SETTING(AUTODROP_INTERVAL) < 1)
+			set(AUTODROP_INTERVAL, 1);
+		if(SETTING(AUTODROP_ELAPSED) < 1)
+			set(AUTODROP_ELAPSED, 1);
+		if(SETTING(AUTO_SEARCH_LIMIT) > 5)
+			set(AUTO_SEARCH_LIMIT, 5);
+		else if(SETTING(AUTO_SEARCH_LIMIT) < 1)
+			set(AUTO_SEARCH_LIMIT, 1);
 
 #ifdef _DEBUG
-		set(CLIENT_ID, CID::generate().toBase32());
+		set(PRIVATE_ID, CID::generate().toBase32());
 #endif
-		setDefault(UDP_PORT, SETTING(IN_PORT));
+		setDefault(UDP_PORT, SETTING(TCP_PORT));
 		
 		fire(SettingsManagerListener::Load(), &xml);
 
 		xml.stepOut();
 
 	} catch(const Exception&) {
-		if(CID(SETTING(CLIENT_ID)).isZero())
-			set(CLIENT_ID, CID::generate().toBase32());
+		if(CID(SETTING(PRIVATE_ID)).isZero())
+			set(PRIVATE_ID, CID::generate().toBase32());
 	}
 }
 
@@ -366,9 +422,3 @@ void SettingsManager::save(string const& aFileName) {
 		// ...
 	}
 }
-
-/**
- * @file
- * $Id: SettingsManager.cpp,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
-

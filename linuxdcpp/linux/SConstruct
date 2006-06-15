@@ -1,14 +1,13 @@
-gui_files = [	'selecter.cc',				'wulformanager.cc',
-				'bookentry.cc',				'mainwindow.cc',
-				'wulfor.cc', 				'prefix.cc',
-				'publichubs.cc',			'treeview.cc',
-				'hub.cc',					'privatemessage.cc',
-				'downloadqueue.cc',			'favoritehubs.cc',
-				'settingsdialog.cc',		'sharebrowser.cc',
-				'search.cc',				'hashdialog.cc',
-				'finishedtransfers.cc',		'dialogentry.cc',
-				'settingsmanager.cc', 		'WulforUtil.cc',
-				'eggtrayicon.c']
+gui_files = [	'wulfor.cc',				'wulformanager.cc',
+			'bookentry.cc',			'mainwindow.cc',
+			'dialogentry.cc', 			'prefix.cc',
+			'publichubs.cc',			'treeview.cc',
+			'hub.cc',					'privatemessage.cc',
+			'downloadqueue.cc',			'favoritehubs.cc',
+			'settingsdialog.cc',		'sharebrowser.cc',
+			'search.cc',				'hashdialog.cc',
+			'finishedtransfers.cc',		'settingsmanager.cc',
+			'WulforUtil.cc', 			'eggtrayicon.c']
 
 Import('env')
 guiObjs = env.Object(gui_files)

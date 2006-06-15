@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_SHAREMANAGER_H__6CD5D87C_D13F_46E2_8C1E_5F116107C118__INCLUDED_)
-#define AFX_SHAREMANAGER_H__6CD5D87C_D13F_46E2_8C1E_5F116107C118__INCLUDED_
+#if !defined(SHARE_MANAGER_H)
+#define SHARE_MANAGER_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -51,16 +51,17 @@ class ShareManager : public Singleton<ShareManager>, private SettingsManagerList
 {
 public:
 	/**
-	 * @param aDirectory Physical directory localtion
+	 * @param aDirectory Physical directory location
 	 * @param aName Virtual name
 	 */
 	void addDirectory(const string& aDirectory, const string & aName) throw(ShareException);
 	void removeDirectory(const string& aName, bool duringRefresh = false);	
 	void renameDirectory(const string& oName, const string& nName) throw(ShareException);
+	string translateTTH(const string& TTH) throw(ShareException);
 	string translateFileName(const string& aFile) throw(ShareException);
 	bool getTTH(const string& aFile, TTHValue& tth) throw();
-	void refresh(bool dirs = false, bool aUpdate = true, bool block = false) throw(ShareException);
-	void setDirty() { xmlDirty = nmdcDirty = true; };
+	void refresh(bool dirs = false, bool aUpdate = true, bool block = false) throw(ThreadException, ShareException);
+	void setDirty() { xmlDirty = true; }
 
 	void search(SearchResult::List& l, const string& aString, int aSearchType, int64_t aSize, int aFileType, Client* aClient, StringList::size_type maxResults);
 	void search(SearchResult::List& l, const StringList& params, StringList::size_type maxResults);
@@ -77,11 +78,8 @@ public:
 
 	size_t getSharedFiles() throw();
 
-	string getShareSizeString() { return Util::toString(getShareSize()); };
-	string getShareSizeString(const string& aDir) { return Util::toString(getShareSize(aDir)); };
-	
-	int64_t getListLen() { return generateNmdcList(), listLen; };
-	string getListLenString() { return Util::toString(getListLen()); };
+	string getShareSizeString() { return Util::toString(getShareSize()); }
+	string getShareSizeString(const string& aDir) { return Util::toString(getShareSize(aDir)); }
 	
 	SearchManager::TypeModes getType(const string& fileName);
 
@@ -118,22 +116,26 @@ private:
 				StringComp& operator=(const StringComp&);
 			};
 			struct FileLess {
-				int operator()(const File& a, const File& b) const { return Util::stricmp(a.getName(), b.getName()); }
+				bool operator()(const File& a, const File& b) const { return (Util::stricmp(a.getName(), b.getName()) < 0); }
 			};
 			typedef set<File, FileLess> Set;
 			typedef Set::iterator Iter;
 
-			File() : size(0), parent(NULL) { };
+			File() : size(0), parent(NULL) { }
 			File(const string& aName, int64_t aSize, Directory* aParent, const TTHValue& aRoot) : 
-			name(aName), tth(aRoot), size(aSize), parent(aParent) { };
+			name(aName), tth(aRoot), size(aSize), parent(aParent) { }
 			File(const File& rhs) : 
-			name(rhs.getName()), tth(rhs.getTTH()), size(rhs.getSize()), parent(rhs.getParent()) { };
+			name(rhs.getName()), tth(rhs.getTTH()), size(rhs.getSize()), parent(rhs.getParent()) { }
 
 			~File() { }
 
 			File& operator=(const File& rhs) {
 				name = rhs.name; size = rhs.size; parent = rhs.parent; tth = rhs.tth;
 				return *this;
+			}
+
+			bool operator==(const File& rhs) const {
+				return getParent() == rhs.getParent() && (Util::stricmp(getName(), rhs.getName()) == 0);
 			}
 
 			string getADCPath() const { return parent->getADCPath() + name; }
@@ -155,7 +157,7 @@ private:
 
 		Directory(const string& aName = Util::emptyString, Directory* aParent = NULL) : 
 		size(0), name(aName), parent(aParent), fileTypes(0) { 
-		};
+		}
 
 		~Directory();
 
@@ -251,19 +253,22 @@ private:
 
 	int64_t listLen;
 	int64_t bzXmlListLen;
+	TTHValue xmlbzRoot;
+	TTHValue xmlRoot;
+
 	bool xmlDirty;
-	bool nmdcDirty;
 	bool refreshDirs;
 	bool update;
 	bool initial;
 	
 	int listN;
 
+	volatile long refreshing;
+
 	File* lFile;
 	File* xFile;
 
 	u_int32_t lastXmlUpdate;
-	u_int32_t lastNmdcUpdate;
 	u_int32_t lastFullUpdate;
 
 	mutable RWLock<> cs;
@@ -287,11 +292,10 @@ private:
 	Directory* buildTree(const string& aName, Directory* aParent);
 	void addTree(Directory* aDirectory);
 	void addFile(Directory* dir, Directory::File::Iter i);
-	void generateNmdcList();
 	void generateXmlList();
 	bool loadCache();
 
-	void removeTTH(const TTHValue& tth, const Directory::File::Iter&);
+	void removeTTH(const TTHValue& tth, const Directory::File& file);
 
 	Directory* getDirectory(const string& fname);
 
@@ -318,10 +322,4 @@ private:
 	
 };
 
-#endif // !defined(AFX_SHAREMANAGER_H__6CD5D87C_D13F_46E2_8C1E_5F116107C118__INCLUDED_)
-
-/**
- * @file
- * $Id: ShareManager.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
-
+#endif // !defined(SHARE_MANAGER_H)

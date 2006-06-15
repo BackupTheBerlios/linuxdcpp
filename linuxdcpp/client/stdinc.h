@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef STDINC_H
+#if !defined(STDINC_H)
 #define STDINC_H
 
 #include "config.h"
@@ -31,6 +31,13 @@
 #define _ATL_NO_COM
 #define _ATL_NO_HOSTING
 #define _ATL_NO_OLD_NAMES
+
+#if _MSC_VER == 1400
+//disable the deperecated warnings for the crt functions.
+#define _CRT_SECURE_NO_DEPRECATE 1
+#define _ATL_SECURE_NO_DEPRECATE 1
+#define _CRT_NON_CONFORMING_SWPRINTFS 1
+#endif
 
 #include <Winsock2.h>
 
@@ -57,16 +64,20 @@
 #include <deque>
 #include <list>
 #include <utility>
+#include <functional>
 
 // Use maps if hash_maps aren't available
 #ifdef HAVE_HASH
 # ifdef HAVE_STLPORT
+#  define HASH_SET_X(key, hfunc, eq, order) hash_set<key, hfunc, eq >
 #  define HASH_MAP_X(key, type, hfunc, eq, order) hash_map<key, type, hfunc, eq >
 #  define HASH_MULTIMAP_X(key, type, hfunc, eq, order) hash_multimap<key, type, hfunc, eq >
 # elif defined(__GLIBCPP__) || defined(__GLIBCXX__)  // Using GNU C++ library?
+#  define HASH_SET_X(key, hfunc, eq, order) hash_set<key, hfunc, eq >
 #  define HASH_MAP_X(key, type, hfunc, eq, order) hash_map<key, type, hfunc, eq >
 #  define HASH_MULTIMAP_X(key, type, hfunc, eq, order) hash_multimap<key, type, hfunc, eq >
 # elif defined(_MSC_VER)  // Assume the msvc 7.x stl
+#  define HASH_SET_X(key, hfunc, eq, order) hash_set<key, hfunc >
 #  define HASH_MAP_X(key, type, hfunc, eq, order) hash_map<key, type, hfunc >
 #  define HASH_MULTIMAP_X(key, type, hfunc, eq, order) hash_multimap<key, type, hfunc >
 # else
@@ -79,6 +90,7 @@
 
 #else // HAVE_HASH
 
+#define HASH_SET_X(key, hfunc, eq, order) 
 # define HASH_SET set
 # define HASH_MAP map
 # define HASH_MAP_X(key, type, hfunc, eq, order) map<key, type, order >
@@ -91,13 +103,15 @@
 #ifdef HAVE_STLPORT
 using namespace _STL;
 #include <hash_map>
+#include <hash_set>
 
 #elif defined(__GLIBCPP__) || defined(__GLIBCXX__)  // Using GNU C++ library?
 #include <ext/hash_map>
-                                                                                
+#include <ext/hash_set>
+#include <ext/functional>
 using namespace std;
 using namespace __gnu_cxx;
-                                                                                
+
 // GNU C++ library doesn't have hash(std::string) or hash(long long int)
 namespace __gnu_cxx {
 	template<> struct hash<std::string> {
@@ -111,14 +125,11 @@ namespace __gnu_cxx {
 #else // __GLIBCPP__
 
 #include <hash_map>
+#include <hash_set>
+
 using namespace std;
 using namespace stdext;
 
 #endif // __GLIBCPP__
 
-#endif // STDINC_H
-
-/**
- * @file
- * $Id: stdinc.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
+#endif // !defined(STDINC_H)

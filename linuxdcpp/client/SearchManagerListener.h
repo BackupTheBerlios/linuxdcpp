@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_SEARCHMANAGERLISTENER_H__E8F009DF_D216_4F8F_8C81_07D2FA0BFB7F__INCLUDED_)
-#define AFX_SEARCHMANAGERLISTENER_H__E8F009DF_D216_4F8F_8C81_07D2FA0BFB7F__INCLUDED_
+#if !defined(SEARCH_MANAGER_LISTENER_H)
+#define SEARCH_MANAGER_LISTENER_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -27,15 +27,11 @@ class SearchResult;
 
 class SearchManagerListener {
 public:
+	virtual ~SearchManagerListener() { }
 	template<int I>	struct X { enum { TYPE = I };  };
 
 	typedef X<0> SR;
 	virtual void on(SR, SearchResult*) throw() = 0;
 };
 
-#endif
-
-/**
- * @file
- * $Id: SearchManagerListener.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
+#endif // !defined(SEARCH_MANAGER_LISTENER_H)

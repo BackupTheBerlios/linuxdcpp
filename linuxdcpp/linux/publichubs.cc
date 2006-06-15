@@ -34,7 +34,7 @@ PublicHubs::PublicHubs():
 	hubs(0),
 	filter("")
 {
-	HubManager *hman = HubManager::getInstance();
+	FavoriteManager *hman = FavoriteManager::getInstance();
 	GObject *o;
 
 	hman->addListener(this);
@@ -143,13 +143,13 @@ PublicHubs::PublicHubs():
 }
 
 PublicHubs::~PublicHubs() {
-	HubManager::getInstance()->removeListener(this);
+	FavoriteManager::getInstance()->removeListener(this);
 	pthread_mutex_destroy(&hubLock);
 	gtk_widget_destroy(GTK_WIDGET(configureDialog));
 }
 
 void PublicHubs::downloadList_client() {
-	HubManager *man = HubManager::getInstance();
+	FavoriteManager *man = FavoriteManager::getInstance();
 	
 	pthread_mutex_lock(&hubLock);
 	hubs = man->getPublicHubs();
@@ -265,7 +265,7 @@ void PublicHubs::addFav_gui(GtkMenuItem *i, gpointer d) {
 }
 
 void PublicHubs::addFav_client(FavoriteHubEntry entry) {
-	HubManager::getInstance()->addFavorite(entry);
+	FavoriteManager::getInstance()->addFavorite(entry);
 }
 
 void PublicHubs::filterHubs_gui(GtkWidget *w, gpointer d) {
@@ -287,7 +287,7 @@ void PublicHubs::connect_gui(GtkWidget *w, gpointer d) {
 
 void PublicHubs::refresh_gui(GtkWidget *widget, gpointer data) {
 	int pos = gtk_combo_box_get_active(combo);
-	HubManager::getInstance()->setHubList(pos);
+	FavoriteManager::getInstance()->setHubList(pos);
 	Func0<PublicHubs> *f = new Func0<PublicHubs>(this, &PublicHubs::refresh_client);
 	WulforManager::get()->dispatchClientFunc(f);
 }
@@ -316,7 +316,7 @@ void PublicHubs::configure_gui(GtkWidget *widget, gpointer data) {
 
 	if (ret == GTK_RESPONSE_OK) {
 		string lists;
-		int pos = HubManager::getInstance()->getSelectedHubList();
+		int pos = FavoriteManager::getInstance()->getSelectedHubList();
 
 		gtk_list_store_clear(comboStore);
 		m = GTK_TREE_MODEL(listsStore);
@@ -406,10 +406,10 @@ void PublicHubs::setStatus_gui(GtkStatusbar *status, string text) {
 }
 
 void PublicHubs::refresh_client() {
-	HubManager::getInstance()->refresh();
+	FavoriteManager::getInstance()->refresh();
 }
 
-void PublicHubs::on(HubManagerListener::DownloadStarting, 
+void PublicHubs::on(FavoriteManagerListener::DownloadStarting, 
 	const string &file) throw()
 {
 	string msg = "Download starting: " + file;
@@ -418,7 +418,7 @@ void PublicHubs::on(HubManagerListener::DownloadStarting,
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 	
-void PublicHubs::on(HubManagerListener::DownloadFailed, 
+void PublicHubs::on(FavoriteManagerListener::DownloadFailed, 
 	const string &file) throw()
 {
 	string msg = "Download failed: " + file;
@@ -427,7 +427,7 @@ void PublicHubs::on(HubManagerListener::DownloadFailed,
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
-void PublicHubs::on(HubManagerListener::DownloadFinished, 
+void PublicHubs::on(FavoriteManagerListener::DownloadFinished, 
 	const string &file) throw()
 {
 	string msg = "Download finished: " + file;
@@ -436,7 +436,7 @@ void PublicHubs::on(HubManagerListener::DownloadFinished,
 	WulforManager::get()->dispatchGuiFunc(f2);
 
 	pthread_mutex_lock(&hubLock);
-	hubs = HubManager::getInstance()->getPublicHubs();
+	hubs = FavoriteManager::getInstance()->getPublicHubs();
 	pthread_mutex_unlock(&hubLock);
 
 	Func0<PublicHubs> *f0 = new Func0<PublicHubs>(this, &PublicHubs::updateList_gui);

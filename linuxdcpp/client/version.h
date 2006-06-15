@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,12 +17,12 @@
  */
 
 #define APPNAME "DC++"
-#define VERSIONSTRING "0.674"
-#define VERSIONFLOAT 0.674
+#define VERSIONSTRING "0.691"
+#define VERSIONFLOAT 0.691
 
 /* Update the .rc file as well... */
 
 /**
  * @file
- * $Id: version.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
+ * $Id: version.h,v 1.5 2006/06/15 18:30:50 stevensheehy Exp $
  */

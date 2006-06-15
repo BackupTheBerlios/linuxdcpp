@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #include "DCPlusPlus.h"
 
 #include "UserConnection.h"
+#include "ClientManager.h"
 
 #include "StringTokenizer.h"
 #include "AdcCommand.h"
@@ -31,6 +32,7 @@ const string UserConnection::FEATURE_ADCGET = "ADCGet";
 const string UserConnection::FEATURE_ZLIB_GET = "ZLIG";
 const string UserConnection::FEATURE_TTHL = "TTHL";
 const string UserConnection::FEATURE_TTHF = "TTHF";
+const string UserConnection::FEATURE_ADC_BASE = "BAS0";
 
 const string UserConnection::FILE_NOT_AVAILABLE = "File Not Available";
 
@@ -174,12 +176,33 @@ void UserConnection::on(BufferedSocketListener::Line, const string& aLine) throw
 	}
 }
 
+void UserConnection::connect(const string& aServer, short aPort) throw(SocketException, ThreadException) { 
+	dcassert(!socket);
+
+	socket = BufferedSocket::getSocket(0);
+	socket->addListener(this);
+	socket->connect(aServer, aPort, secure, true);
+}
+
+void UserConnection::accept(const Socket& aServer) throw(SocketException, ThreadException) {
+	dcassert(!socket);
+	socket = BufferedSocket::getSocket(0);
+	socket->addListener(this);
+	socket->accept(aServer, secure);
+}
+
+void UserConnection::inf(bool withToken) { 
+	AdcCommand c(AdcCommand::CMD_INF);
+	c.addParam("ID", ClientManager::getInstance()->getMyCID().toBase32());
+	if(withToken) {
+		c.addParam("TO", getToken());
+	}
+	send(c);
+}
+
 void UserConnection::on(BufferedSocketListener::Failed, const string& aLine) throw() {
 	setState(STATE_UNCONNECTED);
 	fire(UserConnectionListener::Failed(), this, aLine);
-}
 
-/**
- * @file
- * $Id: UserConnection.cpp,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
+	delete this;
+}

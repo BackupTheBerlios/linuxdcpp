@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_DOWNLOADMANAGER_H__D6409156_58C2_44E9_B63C_B58C884E36A3__INCLUDED_)
-#define AFX_DOWNLOADMANAGER_H__D6409156_58C2_44E9_B63C_B58C884E36A3__INCLUDED_
+#if !defined(DOWNLOAD_MANAGER_H)
+#define DOWNLOAD_MANAGER_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -57,7 +57,8 @@ public:
 		FLAG_UTF8 = 0x80,
 		FLAG_TREE_DOWNLOAD = 0x100,
 		FLAG_TREE_TRIED = 0x200,
-		FLAG_PARTIAL_LIST = 0x400
+		FLAG_PARTIAL_LIST = 0x400,
+		FLAG_TTH_CHECK = 0x800
 	};
 
 	Download() throw();
@@ -126,6 +127,7 @@ private:
  */
 class DownloadManagerListener {
 public:
+	virtual ~DownloadManagerListener() { }
 	template<int I>	struct X { enum { TYPE = I };  };
 
 	typedef X<0> Complete;
@@ -137,18 +139,18 @@ public:
 	 * This is the first message sent before a download starts. 
 	 * No other messages will be sent before.
 	 */
-	virtual void on(Starting, Download*) throw() { };
+	virtual void on(Starting, Download*) throw() { }
 
 	/**
 	 * Sent once a second if something has actually been downloaded.
 	 */
-	virtual void on(Tick, const Download::List&) throw() { };
+	virtual void on(Tick, const Download::List&) throw() { }
 
 	/** 
 	 * This is the last message sent before a download is deleted. 
 	 * No more messages will be sent after it.
 	 */
-	virtual void on(Complete, Download*) throw() { };
+	virtual void on(Complete, Download*) throw() { }
 
 	/** 
 	 * This indicates some sort of failure with a particular download.
@@ -157,7 +159,7 @@ public:
 	 * @remarks Should send an error code instead of a string and let the GUI
 	 * display an error string.
 	 */
-	virtual void on(Failed, Download*, const string&) throw() { };
+	virtual void on(Failed, Download*, const string&) throw() { }
 };
 
 
@@ -176,6 +178,8 @@ public:
 		conn->addListener(this);
 		checkDownloads(conn);
 	}
+
+	void checkIdle(const User::Ptr& user);
 
 	/** @internal */
 	void abortDownload(const string& aTarget);
@@ -206,8 +210,8 @@ private:
 	enum { MOVER_LIMIT = 10*1024*1024 };
 	class FileMover : public Thread {
 	public:
-		FileMover() : active(false) { };
-		virtual ~FileMover() { join(); };
+		FileMover() : active(false) { }
+		virtual ~FileMover() { join(); }
 
 		void moveFile(const string& source, const string& target);
 		virtual int run();
@@ -224,9 +228,10 @@ private:
 	
 	CriticalSection cs;
 	Download::List downloads;
-	
+	UserConnection::List idlers;
+
 	bool checkRollback(Download* aDownload, const u_int8_t* aBuf, int aLen) throw(FileException);
-	void removeConnection(UserConnection::Ptr aConn, bool reuse = false, bool ntd = false);
+	void removeConnection(UserConnection::Ptr aConn);
 	void removeDownload(Download* aDown);
 	void fileNotAvailable(UserConnection* aSource);
 	void noSlots(UserConnection* aSource);
@@ -240,7 +245,7 @@ private:
 	friend class Singleton<DownloadManager>;
 	DownloadManager() { 
 		TimerManager::getInstance()->addListener(this);
-	};
+	}
 
 	virtual ~DownloadManager() throw() {
 		TimerManager::getInstance()->removeListener(this);
@@ -252,7 +257,7 @@ private:
 			}
 			Thread::sleep(100);
 		}
-	};
+	}
 	
 	void checkDownloads(UserConnection* aConn);
 	void handleEndData(UserConnection* aSource);
@@ -273,9 +278,4 @@ private:
 	virtual void on(TimerManagerListener::Second, u_int32_t aTick) throw();
 };
 
-#endif // !defined(AFX_DOWNLOADMANAGER_H__D6409156_58C2_44E9_B63C_B58C884E36A3__INCLUDED_)
-
-/**
- * @file
- * $Id: DownloadManager.h,v 1.4 2005/06/25 19:24:02 paskharen Exp $
- */
+#endif // !defined(DOWNLOAD_MANAGER_H)

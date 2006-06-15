@@ -1,36 +1,35 @@
-/* 
-* Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-*/
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
 
 /*
-* Automatic Directory Listing Search
-* Henrik Engstr�m, henrikengstrom at home se
-*/
+ * Automatic Directory Listing Search
+ * Henrik Engström, henrikengstrom at home se
+ */
 
 #include "stdinc.h"
 #include "DCPlusPlus.h"
 
 #include "ADLSearch.h"
 #include "QueueManager.h"
+#include "ClientManager.h"
 
 #include "File.h"
 #include "SimpleXML.h"
-
-#define ADLS_STORE_FILENAME "ADLSearch.xml"
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -45,7 +44,7 @@ void ADLSearchManager::Load()
 	// Load file as a string
 	try {
 		SimpleXML xml;
-		xml.fromXML(File(Util::getAppPath() + ADLS_STORE_FILENAME, File::READ, File::OPEN).read());
+		xml.fromXML(File(getConfigFile(), File::READ, File::OPEN).read());
 
 		if(xml.findChild("ADLSearch")) {
 			xml.stepIn();
@@ -166,7 +165,7 @@ void ADLSearchManager::Save()
 
 		// Save string to file			
 		try {
-			File fout(Util::getAppPath() + ADLS_STORE_FILENAME, File::WRITE, File::CREATE | File::TRUNCATE);
+			File fout(getConfigFile(), File::WRITE, File::CREATE | File::TRUNCATE);
 			fout.write(SimpleXML::utf8Header);
 			fout.write(xml.toXML());
 			fout.close();
@@ -207,7 +206,8 @@ void ADLSearchManager::MatchesFile(DestDirList& destDirVector, DirectoryListing:
 			destDirVector[is->ddIndex].fileAdded = true;
 
 			if(is->isAutoQueue){
-				QueueManager::getInstance()->add(currentFile->getName(), currentFile->getSize(), getUser(), SETTING(DOWNLOAD_DIRECTORY) + currentFile->getName(), currentFile->getTTH());
+				QueueManager::getInstance()->add(SETTING(DOWNLOAD_DIRECTORY) + currentFile->getName(),
+					currentFile->getSize(), currentFile->getTTH(), getUser(), currentFile->getName());
 			}
 
 			if(breakOnFirst) {
@@ -293,19 +293,21 @@ void ADLSearchManager::PrepareDestinationDirectories(DestDirList& destDirVector,
 	}
 }
 
-void ADLSearchManager::matchListing(DirectoryListing* aDirList) throw() {
+void ADLSearchManager::matchListing(DirectoryListing& aDirList) throw() {
 	StringMap params;
-	params["nick"] = aDirList->getUser()->getNick();
-	setUser(aDirList->getUser());
+	params["userNI"] = ClientManager::getInstance()->getNicks(aDirList.getUser()->getCID())[0];
+	params["userCID"] = aDirList.getUser()->getCID().toBase32();
+
+	setUser(aDirList.getUser());
 
 	DestDirList destDirs;
-	PrepareDestinationDirectories(destDirs, aDirList->getRoot(), params);
+	PrepareDestinationDirectories(destDirs, aDirList.getRoot(), params);
 	setBreakOnFirst(BOOLSETTING(ADLS_BREAK_ON_FIRST));
 
-	string path(aDirList->getRoot()->getName());
-	matchRecurse(destDirs, aDirList->getRoot(), path);
+	string path(aDirList.getRoot()->getName());
+	matchRecurse(destDirs, aDirList.getRoot(), path);
 
-	FinalizeDestinationDirectories(destDirs, aDirList->getRoot());
+	FinalizeDestinationDirectories(destDirs, aDirList.getRoot());
 }
 
 void ADLSearchManager::matchRecurse(DestDirList &aDestList, DirectoryListing::Directory* aDir, string &aPath) {
@@ -319,9 +321,3 @@ void ADLSearchManager::matchRecurse(DestDirList &aDestList, DirectoryListing::Di
 	}
 	StepUpDirectory(aDestList);
 }
-
-/**
-* @file
-* $Id: ADLSearch.cpp,v 1.4 2005/06/25 19:24:01 paskharen Exp $
-*/
-

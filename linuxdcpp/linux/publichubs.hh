@@ -32,14 +32,14 @@
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
-#include <client/HubManager.h>
+#include <client/FavoriteManager.h>
 #include <client/StringSearch.h>
 
 using namespace std;
 
 class PublicHubs: 
 	public BookEntry,
-	public HubManagerListener
+	public FavoriteManagerListener
 {
 	public:
 		//constructor must be called from gui thread
@@ -74,12 +74,12 @@ class PublicHubs:
 		void updateList_gui();
 		void setStatus_gui(GtkStatusbar *status, std::string text);
 
-		//from HubManagerListener
-		void on(HubManagerListener::DownloadStarting, 
+		//from FavoriteManagerListener
+		void on(FavoriteManagerListener::DownloadStarting, 
 			const string &file) throw();
-		void on(HubManagerListener::DownloadFailed, 
+		void on(FavoriteManagerListener::DownloadFailed, 
 			const string &file) throw();
-		void on(HubManagerListener::DownloadFinished, 
+		void on(FavoriteManagerListener::DownloadFinished, 
 			const string &file) throw();
 
 	private:

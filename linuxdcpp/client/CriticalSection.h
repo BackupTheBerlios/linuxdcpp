@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef CRITICALSECTION_H
-#define CRITICALSECTION_H
+#if !defined(CRITICAL_SECTION_H)
+#define CRITICAL_SECTION_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -54,14 +54,14 @@ public:
 		pthread_mutexattr_init(&ma);
 		pthread_mutexattr_settype(&ma, PTHREAD_MUTEX_RECURSIVE);
 		pthread_mutex_init(&mtx, &ma);
-	};
+	}
 	~CriticalSection() throw() {
 		pthread_mutex_destroy(&mtx);
 		pthread_mutexattr_destroy(&ma);
-	};
-	void enter() throw() { pthread_mutex_lock(&mtx); };
-	void leave() throw() { pthread_mutex_unlock(&mtx); };
-	pthread_mutex_t& getMutex() { return mtx; };
+	}
+	void enter() throw() { pthread_mutex_lock(&mtx); }
+	void leave() throw() { pthread_mutex_unlock(&mtx); }
+	pthread_mutex_t& getMutex() { return mtx; }
 private:
 	pthread_mutex_t mtx;
 	pthread_mutexattr_t ma;
@@ -81,7 +81,7 @@ private:
 class FastCriticalSection {
 public:
 #ifdef _WIN32
-	FastCriticalSection() : state(0) { };
+	FastCriticalSection() : state(0) { }
 
 	void enter() {
 		while(Thread::safeExchange(state, 1) == 1) {
@@ -99,10 +99,10 @@ private:
 	FastCriticalSection() { 
 		static pthread_mutex_t fastmtx = PTHREAD_MUTEX_INITIALIZER;
 		mtx = fastmtx;
-	};
-	~FastCriticalSection() { pthread_mutex_destroy(&mtx); };
-	void enter() { pthread_mutex_lock(&mtx); };
-	void leave() { pthread_mutex_unlock(&mtx); };
+	}
+	~FastCriticalSection() { pthread_mutex_destroy(&mtx); }
+	void enter() { pthread_mutex_lock(&mtx); }
+	void leave() { pthread_mutex_unlock(&mtx); }
 private:
 	pthread_mutex_t mtx;	
 #endif
@@ -111,8 +111,8 @@ private:
 template<class T>
 class LockBase {
 public:
-	LockBase(T& aCs) throw() : cs(aCs)  { cs.enter(); };
-	~LockBase() throw() { cs.leave(); };
+	LockBase(T& aCs) throw() : cs(aCs)  { cs.enter(); }
+	~LockBase() throw() { cs.leave(); }
 private:
 	LockBase& operator=(const LockBase&);
 	T& cs;
@@ -128,21 +128,19 @@ public:
 	~RWLock() throw() { dcassert(readers==0); }
 
 	void enterRead() throw() {
-		Lock l(cs);
+		cs.enter();
 		readers++;
 		dcassert(readers < 100);
+		cs.leave();
 	}
-
 	void leaveRead() throw() {
+		dcassert(readers > 0);
 		Thread::safeDec(readers);
-		dcassert(readers >= 0);
 	}
 	void enterWrite() throw() {
 		cs.enter();
 		while(readers > 0) {
-			cs.leave();
 			Thread::yield();
-			cs.enter();
 		}
 	}
 	void leaveWrite() {
@@ -156,8 +154,8 @@ private:
 template<class T = CriticalSection>
 class RLock {
 public:
-	RLock(RWLock<T>& aRwl) throw() : rwl(aRwl)  { rwl.enterRead(); };
-	~RLock() throw() { rwl.leaveRead(); };
+	RLock(RWLock<T>& aRwl) throw() : rwl(aRwl)  { rwl.enterRead(); }
+	~RLock() throw() { rwl.leaveRead(); }
 private:
 	RLock& operator=(const RLock&);
 	RWLock<T>& rwl;
@@ -166,16 +164,11 @@ private:
 template<class T = CriticalSection>
 class WLock {
 public:
-	WLock(RWLock<T>& aRwl) throw() : rwl(aRwl)  { rwl.enterWrite(); };
-	~WLock() throw() { rwl.leaveWrite(); };
+	WLock(RWLock<T>& aRwl) throw() : rwl(aRwl)  { rwl.enterWrite(); }
+	~WLock() throw() { rwl.leaveWrite(); }
 private:
 	WLock& operator=(const WLock&);
 	RWLock<T>& rwl;
 };
 
-#endif // CRITICALSECTION_H
-
-/**
- * @file
- * $Id: CriticalSection.h,v 1.5 2006/05/29 22:23:55 stevensheehy Exp $
- */
+#endif // !defined(CRITICAL_SECTION_H)

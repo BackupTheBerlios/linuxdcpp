@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,8 +20,3 @@
 #include "DCPlusPlus.h"
 
 #include "LogManager.h"
-
-/**
- * @file
- * $Id: LogManager.cpp,v 1.4 2005/06/25 19:24:02 paskharen Exp $
- */

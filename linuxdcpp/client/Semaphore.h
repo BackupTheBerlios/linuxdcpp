@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_SEMAPHORE_H__99141DD0_FECE_4131_BC9B_7BE4CF216874__INCLUDED_)
-#define AFX_SEMAPHORE_H__99141DD0_FECE_4131_BC9B_7BE4CF216874__INCLUDED_
+#if !defined(SEMAPHORE_H)
+#define SEMAPHORE_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -34,30 +34,30 @@ class Semaphore
 public:
 	Semaphore() throw() {
 		h = CreateSemaphore(NULL, 0, MAXLONG, NULL);
-	};
+	}
 
 	void signal() throw() {
 		ReleaseSemaphore(h, 1, NULL);
 	}
 
-	bool wait() throw() { return WaitForSingleObject(h, INFINITE) == WAIT_OBJECT_0; };
-	bool wait(u_int32_t millis) throw() { return WaitForSingleObject(h, millis) == WAIT_OBJECT_0; };
+	bool wait() throw() { return WaitForSingleObject(h, INFINITE) == WAIT_OBJECT_0; }
+	bool wait(u_int32_t millis) throw() { return WaitForSingleObject(h, millis) == WAIT_OBJECT_0; }
 
 	~Semaphore() throw() {
 		CloseHandle(h);
-	};
+	}
 
 private:
 	HANDLE h;
 #else
 public:
-	Semaphore() throw() : count(0) { pthread_cond_init(&cond, NULL); };
-	~Semaphore() throw() { pthread_cond_destroy(&cond); };
+	Semaphore() throw() : count(0) { pthread_cond_init(&cond, NULL); }
+	~Semaphore() throw() { pthread_cond_destroy(&cond); }
 	void signal() throw() { 
 		Lock l(cs);
 		count++;
 		pthread_cond_signal(&cond);
-	};
+	}
 
 	bool wait() throw() { 
 		Lock l(cs);
@@ -66,7 +66,7 @@ public:
 		}
 		count--;
 		return true;
-	};
+	}
 	bool wait(u_int32_t millis) throw() { 
 		Lock l(cs);
 		if(count == 0) {
@@ -83,7 +83,7 @@ public:
 		}
 		count--;
 		return true;
-	};
+	}
 
 private:
 	pthread_cond_t cond;
@@ -95,9 +95,4 @@ private:
 
 };
 
-#endif // !defined(AFX_SEMAPHORE_H__99141DD0_FECE_4131_BC9B_7BE4CF216874__INCLUDED_)
-
-/**
- * @file
- * $Id: Semaphore.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
+#endif // !defined(SEMAPHORE_H)

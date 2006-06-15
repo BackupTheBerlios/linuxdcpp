@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef _HASH_MANAGER
-#define _HASH_MANAGER
+#if !defined(HASH_MANAGER_H)
+#define HASH_MANAGER_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -34,9 +34,12 @@
 #include "Text.h"
 
 STANDARD_EXCEPTION(HashException);
+class File;
+class CRC32Filter;
 
 class HashManagerListener {
 public:
+	virtual ~HashManagerListener() { }
 	template<int I>	struct X { enum { TYPE = I };  };
 
 	typedef X<0> TTHDone;
@@ -74,19 +77,18 @@ public:
 	void setPriority(Thread::Priority p) {
 		hasher.setThreadPriority(p);
 	}
-	/**
-	 * @return TTH root
-	 */
-	const TTHValue& getTTH(const string& aFileName, int64_t aSize) throw(HashException);
+
+	/** @return TTH root */
+	TTHValue getTTH(const string& aFileName, int64_t aSize) throw(HashException);
 
 	bool getTree(const TTHValue& root, TigerTree& tt);
 
 	void addTree(const string& aFileName, u_int32_t aTimeStamp, const TigerTree& tt) {
 		hashDone(aFileName, aTimeStamp, tt, -1);
 	}
-	void addTree(const TigerTree& tt) {
+	void addTree(const TigerTree& tree) {
 		Lock l(cs);
-		store.addTree(tt);
+		store.addTree(tree);
 	}
 
 	void getStats(string& curFile, int64_t& bytesLeft, size_t& filesLeft) {
@@ -116,13 +118,12 @@ private:
 
 	class Hasher : public Thread {
 	public:
-		Hasher() : stop(false), running(false), rebuild(false), total(0) { }
+		Hasher() : stop(false), running(false), rebuild(false), currentSize(0) { }
 
 		void hashFile(const string& fileName, int64_t size) {
 			Lock l(cs);
 			if(w.insert(make_pair(fileName, size)).second) {
 				s.signal();
-				total += size;
 			}
 		}
 
@@ -130,7 +131,6 @@ private:
 			Lock l(cs);
 			for(WorkIter i = w.begin(); i != w.end(); ) {
 				if(Util::strnicmp(baseDir, i->first, baseDir.length()) == 0) {
-					total -= i->second;
 					w.erase(i++);
 				} else {
 					++i;
@@ -140,18 +140,19 @@ private:
 
 		virtual int run();
 #ifdef _WIN32
-		bool fastHash(const string& fname, u_int8_t* buf, TigerTree& tth, int64_t size);
+		bool fastHash(const string& fname, u_int8_t* buf, TigerTree& tth, int64_t size, CRC32Filter* xcrc32);
 #endif
 		void getStats(string& curFile, int64_t& bytesLeft, size_t& filesLeft) {
 			Lock l(cs);
-			curFile = file;
+			curFile = currentFile;
 			filesLeft = w.size();
 			if(running)
 				filesLeft++;
-			// Just in case...
-			if(total < 0)
-				total = 0;
-			bytesLeft = total;
+			bytesLeft = 0;
+			for(WorkMap::const_iterator i = w.begin(); i != w.end(); ++i) {
+				bytesLeft += i->second;
+			}
+			bytesLeft += currentSize;
 		}
 		void shutdown() {
 			stop = true;
@@ -175,8 +176,8 @@ private:
 		bool stop;
 		bool running;
 		bool rebuild;
-		int64_t total;
-		string file;
+		string currentFile;
+		int64_t currentSize;
 	};
 
 	friend class Hasher;
@@ -185,7 +186,6 @@ private:
 	public:
 		HashStore();
 		void addFile(const string& aFileName, u_int32_t aTimeStamp, const TigerTree& tth, bool aUsed);
-		bool addTree(const TigerTree& tt);
 
 		void load();
 		void save();
@@ -194,9 +194,10 @@ private:
 
 		bool checkTTH(const string& aFileName, int64_t aSize, u_int32_t aTimeStamp);
 
+		void addTree(const TigerTree& tt);
 		const TTHValue* getTTH(const string& aFileName);
 		bool getTree(const TTHValue& root, TigerTree& tth);
-		bool isDirty() { return dirty; };
+		bool isDirty() { return dirty; }
 	private:
 		/** Root -> tree mapping info, we assume there's only one tree for each root (a collision would mean we've broken tiger...) */
 		struct TreeInfo {
@@ -213,16 +214,10 @@ private:
 		/** File -> root mapping info */
 		struct FileInfo {
 		public:
-			struct StringComp {
-				const string& str;
-				StringComp(const string& aStr) : str(aStr) { }
-				bool operator()(const FileInfo& a) { return a.getFileName() == str; }	
-			private:
-				StringComp& operator=(const StringComp&);
-			};
-
 			FileInfo(const string& aFileName, const TTHValue& aRoot, u_int32_t aTimeStamp, bool aUsed) :
-			  fileName(aFileName), root(aRoot), timeStamp(aTimeStamp), used(aUsed) { }
+				fileName(aFileName), root(aRoot), timeStamp(aTimeStamp), used(aUsed) { }
+
+			bool operator==(const string& name) { return name == fileName; }
 
 			GETSET(string, fileName, FileName);
 			GETSET(TTHValue, root, Root);
@@ -236,7 +231,7 @@ private:
 		typedef HASH_MAP<string, FileInfoList> DirMap;
 		typedef DirMap::iterator DirIter;
 
-		typedef HASH_MAP_X(TTHValue, TreeInfo, TTHValue::Hash, TTHValue::Hash, TTHValue::Less) TreeMap;
+		typedef HASH_MAP_X(TTHValue, TreeInfo, TTHValue::Hash, equal_to<TTHValue>, less<TTHValue>) TreeMap;
 		typedef TreeMap::iterator TreeIter;
 
 		friend class HashLoader;
@@ -244,13 +239,15 @@ private:
 		DirMap fileIndex;
 		TreeMap treeIndex;
 
-		string indexFile;
-		string dataFile;
-
 		bool dirty;
 
 		void createDataFile(const string& name);
-		int64_t addLeaves(const TigerTree::MerkleList& leaves);
+
+		bool loadTree(File& dataFile, const TreeInfo& ti, const TTHValue& root, TigerTree& tt);
+		int64_t saveTree(File& dataFile, const TigerTree& tt);
+
+		string getIndexFile() { return Util::getConfigPath() + "HashIndex.xml"; }
+		string getDataFile() { return Util::getConfigPath() + "HashData.dat"; }
 	};
 
 	friend class HashLoader;
@@ -262,7 +259,6 @@ private:
 
 	/** Single node tree where node = root, no storage in HashData.dat */
 	static const int64_t SMALL_TREE = -1;
-	static const int64_t STORE_FAILED = 0;
 
 	void hashDone(const string& aFileName, u_int32_t aTimeStamp, const TigerTree& tth, int64_t speed);
 	void doRebuild() {
@@ -275,9 +271,4 @@ private:
 	}
 };
 
-#endif // _HASH_MANAGER
-
-/**
- * @file
- * $Id: HashManager.h,v 1.4 2005/06/25 19:24:02 paskharen Exp $
- */
+#endif // !defined(HASH_MANAGER_H)

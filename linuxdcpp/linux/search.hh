@@ -21,7 +21,6 @@
 
 #include <gtk/gtk.h>
 #include <glade/glade.h>
-#include <ext/hash_map>
 
 #include "bookentry.hh"
 #include "treeview.hh"
@@ -31,7 +30,7 @@
 #include <client/ClientManagerListener.h>
 #include <client/CriticalSection.h>
 #include <client/DCPlusPlus.h>
-#include <client/HubManager.h>
+#include <client/FavoriteManager.h>
 #include <client/QueueManager.h>
 #include <client/SearchManager.h>
 #include <client/stdinc.h>
@@ -52,19 +51,18 @@ public:
 		
 	// From BookEntry
 	GtkWidget *getWidget();
-	
+
 	virtual void on(SearchManagerListener::SR, SearchResult* aResult) throw();
 
 	// ClientManagerListener
 	virtual void on(ClientManagerListener::ClientConnected, Client* c) throw();
  	virtual void on(ClientManagerListener::ClientUpdated, Client* c) throw();
 	virtual void on(ClientManagerListener::ClientDisconnected, Client* c) throw();
-	
-	
+
 private:
 	GtkWidget *mainBox;	
 	
-	hash_map<string, GtkWidget *, WulforUtil::HashString> searchItems;
+	hash_map<string, GtkWidget *> searchItems;
 
 	TreeView hubView, resultView;
 	GtkListStore *hubStore;
@@ -72,7 +70,7 @@ private:
 	GtkWidget *dirChooser;
 	GtkWidget *fileChooser;
 	GtkMenu *mainMenu, *downloadMenu, *downloadDirMenu;
-	hash_map<string, GtkWidget *, WulforUtil::HashString> menuItems;
+	hash_map<string, GtkWidget *> menuItems;
 	vector<GtkWidget*> downloadItems, downloadDirItems;
 	GdkEventType previous;
 	
@@ -122,9 +120,11 @@ private:
 	class HubInfo
 	{
 	public:
-		HubInfo (const string aIpPort, const string aName, bool aOp) : ipPort (aIpPort), name (aName), op (aOp) { };
+		HubInfo (Client* aClient, const string aIpPort, const string aName, bool aOp) :
+		client(aClient), ipPort (aIpPort), name (aName), op (aOp) { };
 		~HubInfo () { };
 		
+		Client* client;
 		string ipPort;
 		string name;
 		bool op;

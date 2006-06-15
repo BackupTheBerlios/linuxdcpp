@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@
 #include "File.h"
 #include "FilteredFile.h"
 #include "MerkleCheckOutputStream.h"
+#include "ClientManager.h"
 
 #include <limits>
 
@@ -98,6 +99,33 @@ void DownloadManager::on(TimerManagerListener::Second, u_int32_t /*aTick*/) thro
 
 	if(tickList.size() > 0)
 		fire(DownloadManagerListener::Tick(), tickList);
+
+	// Automatically remove or disconnect slow sources
+	if((u_int32_t)(GET_TICK() / 1000) % SETTING(AUTODROP_INTERVAL) == 0) {
+		for(Download::Iter i = downloads.begin(); i != downloads.end(); ++i) {
+			u_int32_t timeElapsed = GET_TICK() - (*i)->getStart();
+			u_int32_t timeInactive = GET_TICK() - (*i)->getUserConnection()->getLastActivity();
+			u_int64_t bytesDownloaded = (*i)->getTotal();
+			bool timeElapsedOk = timeElapsed >= (u_int32_t)SETTING(AUTODROP_ELAPSED) * 1000;
+			bool timeInactiveOk = timeInactive <= (u_int32_t)SETTING(AUTODROP_INACTIVITY) * 1000;
+			bool speedTooLow = timeElapsedOk && timeInactiveOk && bytesDownloaded > 0 ?
+			bytesDownloaded / timeElapsed * 1000 < (u_int32_t)SETTING(AUTODROP_SPEED) : false;
+			bool onlineSourcesOk = (*i)->isSet(Download::FLAG_USER_LIST) ?
+			true : QueueManager::getInstance()->countOnlineSources((*i)->getTarget()) >= SETTING(AUTODROP_MINSOURCES);
+			bool filesizeOk = !((*i)->isSet(Download::FLAG_USER_LIST)) && (*i)->getSize() >= ((size_t)SETTING(AUTODROP_FILESIZE)) * 1024;
+			bool dropIt = ((*i)->isSet(Download::FLAG_USER_LIST) && BOOLSETTING(AUTODROP_FILELISTS)) ||
+			(filesizeOk && BOOLSETTING(AUTODROP_ALL));
+			if(speedTooLow && onlineSourcesOk && dropIt) {
+				if(BOOLSETTING(AUTODROP_DISCONNECT) && !((*i)->isSet(Download::FLAG_USER_LIST))) {
+					(*i)->getUserConnection()->disconnect();
+				} else {
+					QueueManager::getInstance()->removeSource((*i)->getTarget(),
+					(*i)->getUserConnection()->getUser(), QueueItem::Source::FLAG_SLOW_SOURCE);
+				}
+				continue;
+			}
+		}
+	}
 }
 
 void DownloadManager::FileMover::moveFile(const string& source, const string& target) {
@@ -124,15 +152,25 @@ int DownloadManager::FileMover::run() {
 		try {
 			File::renameFile(next.first, next.second);
 		} catch(const FileException&) {
-			// Too bad...
+			try {
+				// Try to just rename it to the correct name  at least
+				string newTarget = Util::getFilePath(next.first) + Util::getFileName(next.second);
+				File::renameFile(next.first, newTarget);
+				LogManager::getInstance()->message(next.first + STRING(RENAMED_TO) + newTarget);
+			} catch(const FileException& e) {
+				LogManager::getInstance()->message(STRING(UNABLE_TO_RENAME) + next.first + ": " + e.getError());
+			}
 		}
 	}
 }
 
-void DownloadManager::removeConnection(UserConnection::Ptr aConn, bool reuse /* = false */, bool ntd /* = false */) {
+void DownloadManager::removeConnection(UserConnection::Ptr aConn) {
 	dcassert(aConn->getDownload() == NULL);
 	aConn->removeListener(this);
-	ConnectionManager::getInstance()->putDownloadConnection(aConn, reuse, ntd);
+	aConn->disconnect();
+
+	Lock l(cs);
+	idlers.erase(remove(idlers.begin(), idlers.end(), aConn), idlers.end());
 }
 
 class TreeOutputStream : public OutputStream {
@@ -171,6 +209,18 @@ private:
 	size_t bufPos;
 };
 
+void DownloadManager::checkIdle(const User::Ptr& user) {
+	Lock l(cs);
+	for(UserConnection::Iter i = idlers.begin(); i != idlers.end(); ++i) {
+		UserConnection* uc = *i;
+		if(uc->getUser() == user) {
+			idlers.erase(i);
+			checkDownloads(uc);
+			return;
+		}
+	}
+}
+
 void DownloadManager::checkDownloads(UserConnection* aConn) {
 	dcassert(aConn->getDownload() == NULL);
 
@@ -188,13 +238,9 @@ void DownloadManager::checkDownloads(UserConnection* aConn) {
 	Download* d = QueueManager::getInstance()->getDownload(aConn->getUser(), aConn->isSet(UserConnection::FLAG_SUPPORTS_TTHL));
 
 	if(d == NULL) {
-		removeConnection(aConn, true);
-		return;
-	}
-
-	{
 		Lock l(cs);
-		downloads.push_back(d);
+		idlers.push_back(aConn);
+		return;
 	}
 
 	d->setUserConnection(aConn);
@@ -220,7 +266,10 @@ void DownloadManager::checkDownloads(UserConnection* aConn) {
 			d->setFlag(Download::FLAG_ANTI_FRAG);
 		}
 
-		if(BOOLSETTING(ADVANCED_RESUME) && d->getTreeValid() && start > 0) {
+		if(BOOLSETTING(ADVANCED_RESUME) && d->getTreeValid() && start > 0 &&
+		   (d->getTigerTree().getLeaves().size() > 32 || // 32 leaves is 5 levels
+		    d->getTigerTree().getBlockSize() * 10 < d->getSize())) 
+		{
 			d->setStartPos(getResumePos(d->getDownloadTarget(), d->getTigerTree(), start));
 		} else {
 			int rollback = SETTING(ROLLBACK);
@@ -242,6 +291,11 @@ void DownloadManager::checkDownloads(UserConnection* aConn) {
 			if(!aConn->isSet(UserConnection::FLAG_NMDC) || aConn->isSet(UserConnection::FLAG_SUPPORTS_ADCGET))
 				d->setFlag(Download::FLAG_UTF8);
 		}
+	}
+
+	{
+		Lock l(cs);
+		downloads.push_back(d);
 	}
 
 	// File ok for adcget in nmdc-conns
@@ -273,9 +327,10 @@ public:
 
 int64_t DownloadManager::getResumePos(const string& file, const TigerTree& tt, int64_t startPos) {
 	// Always discard data until the last block
-	startPos = startPos - (startPos % tt.getBlockSize());
 	if(startPos < tt.getBlockSize())
 		return 0;
+
+	startPos -= (startPos % tt.getBlockSize());
 
 	DummyOutputStream dummy;
 
@@ -283,9 +338,10 @@ int64_t DownloadManager::getResumePos(const string& file, const TigerTree& tt, i
 
 	do {
 		int64_t blockPos = startPos - tt.getBlockSize();
-		MerkleCheckOutputStream<TigerTree, false> check(tt, &dummy, blockPos);
 
 		try {
+			MerkleCheckOutputStream<TigerTree, false> check(tt, &dummy, blockPos);
+
 			File inFile(file, File::READ, File::OPEN);
 			inFile.setPos(blockPos);
 			int64_t bytesLeft = tt.getBlockSize();
@@ -357,7 +413,7 @@ void DownloadManager::on(AdcCommand::SND, UserConnection* aSource, const AdcComm
 
 class RollbackException : public FileException {
 public:
-	RollbackException (const string& aError) : FileException(aError) { };
+	RollbackException (const string& aError) : FileException(aError) { }
 };
 
 template<bool managed>
@@ -368,7 +424,7 @@ public:
 		f->read(buf, n);
 		f->movePos(-((int64_t)bytes));
 	}
-	virtual ~RollbackOutputStream() throw() { delete[] buf; if(managed) delete s; };
+	virtual ~RollbackOutputStream() throw() { delete[] buf; if(managed) delete s; }
 
 	virtual size_t flush() throw(FileException) {
 		return s->flush();
@@ -475,10 +531,11 @@ bool DownloadManager::prepareFile(UserConnection* aSource, int64_t newSize, bool
 			d->setFile(crc);
 		}
 
-		/** @todo something when resuming... */
+		/** @todo check the rest of the file when resuming? */
 		if(d->getTreeValid()) {
 			if((d->getPos() % d->getTigerTree().getBlockSize()) == 0) {
 				d->setFile(new MerkleCheckOutputStream<TigerTree, true>(d->getTigerTree(), d->getFile(), d->getPos()));
+				d->setFlag(Download::FLAG_TTH_CHECK);
 			}
 		}
 		if(d->isSet(Download::FLAG_ROLLBACK)) {
@@ -512,7 +569,7 @@ void DownloadManager::on(UserConnectionListener::Data, UserConnection* aSource, 
 			throw Exception(STRING(TOO_MUCH_DATA));
 		} else if(d->getPos() == d->getSize()) {
 			handleEndData(aSource);
-			aSource->setLineMode();
+			aSource->setLineMode(0);
 		}
 	} catch(const RollbackException& e) {
 		string target = d->getTarget();
@@ -696,22 +753,28 @@ bool DownloadManager::checkSfv(UserConnection* aSource, Download* d, u_int32_t c
 void DownloadManager::logDownload(UserConnection* aSource, Download* d) {
 	StringMap params;
 	params["target"] = d->getTarget();
-	params["user"] = aSource->getUser()->getNick();
-	params["userip"] = aSource->getRemoteIp();
-	params["hub"] = aSource->getUser()->getLastHubName();
-	params["hubip"] = aSource->getUser()->getLastHubAddress();
-	params["size"] = Util::toString(d->getSize());
-	params["sizeshort"] = Util::formatBytes(d->getSize());
-	params["chunksize"] = Util::toString(d->getTotal());
-	params["chunksizeshort"] = Util::formatBytes(d->getTotal());
-	params["actualsize"] = Util::toString(d->getActual());
-	params["actualsizeshort"] = Util::formatBytes(d->getActual());
+	params["userNI"] = Util::toString(ClientManager::getInstance()->getNicks(aSource->getUser()->getCID()));
+	params["userI4"] = aSource->getRemoteIp();
+	StringList hubNames = ClientManager::getInstance()->getHubNames(aSource->getUser()->getCID());
+	if(hubNames.empty())
+		hubNames.push_back(STRING(OFFLINE));
+	params["hub"] = Util::toString(hubNames);
+	StringList hubs = ClientManager::getInstance()->getHubs(aSource->getUser()->getCID());
+	if(hubs.empty())
+		hubs.push_back(STRING(OFFLINE));
+	params["hubURL"] = Util::toString(hubs);
+	params["fileSI"] = Util::toString(d->getSize());
+	params["fileSIshort"] = Util::formatBytes(d->getSize());
+	params["fileSIchunk"] = Util::toString(d->getTotal());
+	params["fileSIchunkshort"] = Util::formatBytes(d->getTotal());
+	params["fileSIactual"] = Util::toString(d->getActual());
+	params["fileSIactualshort"] = Util::formatBytes(d->getActual());
 	params["speed"] = Util::formatBytes(d->getAverageSpeed()) + "/s";
 	params["time"] = Util::formatSeconds((GET_TICK() - d->getStart()) / 1000);
 	params["sfv"] = Util::toString(d->isSet(Download::FLAG_CRC32_OK) ? 1 : 0);
 	TTHValue *hash = d->getTTH();
 	if(hash != NULL) {
-		params["tth"] = d->getTTH()->toBase32();
+		params["fileTR"] = d->getTTH()->toBase32();
 	}
 	LOG(LogManager::DOWNLOAD, params);
 }
@@ -759,7 +822,7 @@ void DownloadManager::noSlots(UserConnection* aSource) {
 
 	aSource->setDownload(NULL);
 	QueueManager::getInstance()->putDownload(d, false);
-	removeConnection(aSource, false, !aSource->isSet(UserConnection::FLAG_NMDC));
+	removeConnection(aSource);
 }
 
 void DownloadManager::on(UserConnectionListener::Failed, UserConnection* aSource, const string& aError) throw() {
@@ -883,9 +946,3 @@ void DownloadManager::fileNotAvailable(UserConnection* aSource) {
 	QueueManager::getInstance()->putDownload(d, false);
 	checkDownloads(aSource);
 }
-
-
-/**
- * @file
- * $Id: DownloadManager.cpp,v 1.4 2005/06/25 19:24:02 paskharen Exp $
- */

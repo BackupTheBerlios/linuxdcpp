@@ -24,6 +24,8 @@
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/Util.h>
+#include <client/CID.h>
+#include <client/User.h>
 
 #include <gtk/gtk.h>
 
@@ -33,13 +35,11 @@ class WulforUtil
 		static std::vector<int> splitString(const std::string &str, const std::string &delimiter);
 		static std::string linuxSeparator(const std::string &ps);
 		static std::string windowsSeparator(const std::string &ps);
-		struct HashString
-		{
-			size_t operator() (const std::string& x) const
-			{
-				return hash<const char *> () (x.c_str());
-			}
-		};
+		static std::string getNicks(const CID& cid);
+		static std::string getNicks(const User::Ptr& user);
+		/** @return Pair of hubnames as a string and a bool representing the user's online status */
+		static pair<std::string, bool> getHubNames(const CID& cid);
+		static pair<std::string, bool> getHubNames(const User::Ptr& user);
 };
 
 #endif

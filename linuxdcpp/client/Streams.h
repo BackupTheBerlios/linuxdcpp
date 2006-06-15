@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef STREAMS_H
+#if !defined(STREAMS_H)
 #define STREAMS_H
+
+#if _MSC_VER > 1000
+#pragma once
+#endif // _MSC_VER > 1000
 
 #include "Exception.h"
 STANDARD_EXCEPTION(FileException);
@@ -45,7 +49,7 @@ public:
 	 */
 	virtual size_t flush() throw(Exception) = 0;
 
-	size_t write(const string& str) throw(Exception) { return write(str.c_str(), str.size()); };
+	size_t write(const string& str) throw(Exception) { return write(str.c_str(), str.size()); }
 private:
 	OutputStream(const OutputStream&);
 	OutputStream& operator=(const OutputStream&);
@@ -125,7 +129,7 @@ public:
 	using OutputStream::write;
 
 	BufferedOutputStream(OutputStream* aStream, size_t aBufSize = SETTING(BUFFER_SIZE) * 1024) : s(aStream), pos(0), bufSize(aBufSize), buf(aBufSize) { }
-	virtual ~BufferedOutputStream() throw() { 
+	virtual ~BufferedOutputStream() throw() {
 		try {
 			// We must do this in order not to lose bytes when a download
 			// is disconnected prematurely
@@ -187,9 +191,4 @@ private:
 };
 
 
-#endif // STREAMS_H
-
-/**
-* @file
-* $Id: Streams.h,v 1.3 2005/06/25 19:24:03 paskharen Exp $
-*/
+#endif // !defined(STREAMS_H)

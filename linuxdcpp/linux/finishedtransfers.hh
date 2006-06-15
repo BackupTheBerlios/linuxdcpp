@@ -19,8 +19,6 @@
 #ifndef WULFOR_FINISHED_TRANSFERS
 #define WULFOR_FINISHED_TRANSFERS
 
-#include <ext/hash_map>
-
 #include "bookentry.hh"
 #include "callback.hh"
 #include "func.hh"
@@ -67,7 +65,7 @@ class FinishedTransfers:
 		int items;
 		bool getType;
 		int64_t totalBytes, totalTime;
-		hash_map<std::string, FinishedItem *, WulforUtil::HashString> finishedList;
+		hash_map<std::string, FinishedItem *> finishedList;
 		
 		GtkMenu *finishedTransfersMenu;
 		GtkMenuItem *openWith, *remove, *removeAll;

@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,9 +66,12 @@ void HttpConnection::downloadFile(const string& aUrl) {
 	if(!socket) {
 		socket = BufferedSocket::getSocket(0x0a);
 	}
-	socket->setNoproxy(true);
 	socket->addListener(this);
-	socket->connect(server, port);
+	try {
+		socket->connect(server, port, false, false);
+	} catch(const Exception& e) {
+		fire(HttpConnectionListener::Failed(), this, e.getError() + " (" + currentUrl + ")");
+	}
 }
 
 void HttpConnection::on(BufferedSocketListener::Connected) throw() { 
@@ -155,9 +158,3 @@ void HttpConnection::on(BufferedSocketListener::ModeChange) throw() {
 void HttpConnection::on(BufferedSocketListener::Data, u_int8_t* aBuf, size_t aLen) throw() {
 	fire(HttpConnectionListener::Data(), this, aBuf, aLen);
 }
-
-/**
- * @file
- * $Id: HttpConnection.cpp,v 1.4 2005/06/25 19:24:02 paskharen Exp $
- */
-

@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_CLIENTMANAGERLISTENER_H__8EF173E1_F7DC_40B5_B2F3_F92297701034__INCLUDED_)
-#define AFX_CLIENTMANAGERLISTENER_H__8EF173E1_F7DC_40B5_B2F3_F92297701034__INCLUDED_
+#if !defined(CLIENT_MANAGER_LISTENER_H)
+#define CLIENT_MANAGER_LISTENER_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -25,24 +25,26 @@
 
 class ClientManagerListener {
 public:
+	virtual ~ClientManagerListener() { }
 	template<int I>	struct X { enum { TYPE = I };  };
 
-	typedef X<0> UserUpdated;
-	typedef X<1> IncomingSearch;
-	typedef X<2> ClientConnected;
-	typedef X<3> ClientUpdated;
-	typedef X<4> ClientDisconnected;
+	typedef X<0> UserConnected;
+	typedef X<1> UserUpdated;
+	typedef X<2> UserDisconnected;
+	typedef X<3> IncomingSearch;
+	typedef X<4> ClientConnected;
+	typedef X<5> ClientUpdated;
+	typedef X<6> ClientDisconnected;
 
-	virtual void on(UserUpdated, const User::Ptr&) throw() { }
+	/** User online in at least one hub */
+	virtual void on(UserConnected, const User::Ptr&) throw() { }
+	virtual void on(UserUpdated, const OnlineUser&) throw() { }
+	/** User offline in all hubs */
+	virtual void on(UserDisconnected, const User::Ptr&) throw() { }
 	virtual void on(IncomingSearch, const string&) throw() { }
 	virtual void on(ClientConnected, Client*) throw() { }
 	virtual void on(ClientUpdated, Client*) throw() { }
 	virtual void on(ClientDisconnected, Client*) throw() { }
 };
 
-#endif
-
-/**
- * @file
- * $Id: ClientManagerListener.h,v 1.4 2005/06/25 19:24:01 paskharen Exp $
- */
+#endif // !defined(CLIENT_MANAGER_LISTENER_H)

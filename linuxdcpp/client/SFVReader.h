@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#if !defined(SFV_READER_H)
+#define SFV_READER_H
+
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
@@ -25,7 +28,7 @@
 class SFVReader {
 public:
 	/** @see load */
-	SFVReader(const string& aFileName) : crc32(0), crcFound(false) { load(aFileName); }; 
+	SFVReader(const string& aFileName) : crc32(0), crcFound(false) { load(aFileName); } 
 
 	/**
 	 * Search for a CRC32 file in all .sfv files in the directory of fileName. 
@@ -38,8 +41,8 @@ public:
 	 */
 	void load(const string& fileName) throw();
 
-	bool hasCRC() const throw() { return crcFound; };
-	u_int32_t getCRC() const throw() { return crc32; };
+	bool hasCRC() const throw() { return crcFound; }
+	u_int32_t getCRC() const throw() { return crc32; }
 	
 private:
 
@@ -50,7 +53,4 @@ private:
 	
 };
 
-/**
- * @file
- * $Id: SFVReader.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
+#endif // !defined(SFV_READER_H)

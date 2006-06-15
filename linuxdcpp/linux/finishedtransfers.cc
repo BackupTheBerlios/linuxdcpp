@@ -111,7 +111,7 @@ void FinishedTransfers::removeItems_gui(GtkMenuItem *, gpointer data)
 	GtkTreeIter it;
 	string time;
 	FinishedItem *entry;
-	hash_map<string, FinishedItem *, WulforUtil::HashString>::iterator iter;
+	hash_map<string, FinishedItem *>::iterator iter;
 	
 	gtk_tree_selection_get_selected(transferSelection, NULL, &it);
 	time = transferView.getString(&it, "Time");
@@ -171,8 +171,10 @@ void FinishedTransfers::updateStatus()
 {
 	string status = Util::toString(items) + " Items";
 	gtk_statusbar_push(totalItems, 0, status.c_str());
-	gtk_statusbar_push(totalSize, 0, Text::toT(Util::formatBytes(totalBytes)).c_str());
-	gtk_statusbar_push(averageSpeed, 0, Text::toT(Util::formatBytes((totalTime > 0) ? totalBytes * ((int64_t)1000) / totalTime : 0) + "/s").c_str());
+	gtk_statusbar_push(totalSize, 0, Text::utf8ToAcp(Util::formatBytes(totalBytes)).c_str());
+	gtk_statusbar_push(averageSpeed, 0, Text::utf8ToAcp(Util::formatBytes((totalTime > 0) ? totalBytes * ((int64_t)1000) / totalTime : 0) + "/s").c_str());
+	if (getType && BOOLSETTING(BOLD_FINISHED_DOWNLOADS) || !getType && BOOLSETTING(BOLD_FINISHED_UPLOADS))
+		setBold_gui();
 }
 
 void FinishedTransfers::on(AddedDl, FinishedItem* entry) throw(){

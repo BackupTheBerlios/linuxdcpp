@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#if !defined(AFX_HUBMANAGER_H__75858D5D_F12F_40D0_B127_5DDED226C098__INCLUDED_)
-#define AFX_HUBMANAGER_H__75858D5D_F12F_40D0_B127_5DDED226C098__INCLUDED_
+#if !defined(FAVORITE_MANAGER_H)
+#define FAVORITE_MANAGER_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -31,6 +31,8 @@
 #include "UserCommand.h"
 #include "FavoriteUser.h"
 #include "Singleton.h"
+#include "ClientManagerListener.h"
+#include "ClientManager.h"
 
 class HubEntry {
 public:
@@ -39,7 +41,7 @@ public:
 	
 	HubEntry(const string& aName, const string& aServer, const string& aDescription, const string& aUsers) throw() : 
 	name(aName), server(aServer), description(aDescription), country(Util::emptyString), 
-	rating(Util::emptyString), reliability(0.0), shared(0), minShare(0), users(Util::toInt(aUsers)), minSlots(0), maxHubs(0), maxUsers(0) { };
+	rating(Util::emptyString), reliability(0.0), shared(0), minShare(0), users(Util::toInt(aUsers)), minSlots(0), maxHubs(0), maxUsers(0) { }
 
 	HubEntry(const string& aName, const string& aServer, const string& aDescription, const string& aUsers, const string& aCountry,
 		const string& aShared, const string& aMinShare, const string& aMinSlots, const string& aMaxHubs, const string& aMaxUsers,
@@ -50,12 +52,12 @@ public:
 
 	}
 
-	HubEntry() throw() { };
+	HubEntry() throw() { }
 	HubEntry(const HubEntry& rhs) throw() : name(rhs.name), server(rhs.server), description(rhs.description), country(rhs.country), 
 		rating(rhs.rating), reliability(rhs.reliability), shared(rhs.shared), minShare(rhs.minShare), users(rhs.users), minSlots(rhs.minSlots),
 		maxHubs(rhs.maxHubs), maxUsers(rhs.maxUsers) { }
 
-	~HubEntry() throw() { };
+	~HubEntry() throw() { }
 
 	GETSET(string, name, Name);
 	GETSET(string, server, Server);
@@ -77,17 +79,17 @@ public:
 	typedef vector<Ptr> List;
 	typedef List::iterator Iter;
 
-	FavoriteHubEntry() throw() : connect(false), bottom(0), top(0), left(0), right(0){ };
-	FavoriteHubEntry(const HubEntry& rhs) throw() : name(rhs.getName()), server(rhs.getServer()), description(rhs.getDescription()), connect(false), bottom(0), top(0), left(0), right(0){ };
+	FavoriteHubEntry() throw() : connect(false), bottom(0), top(0), left(0), right(0){ }
+	FavoriteHubEntry(const HubEntry& rhs) throw() : name(rhs.getName()), server(rhs.getServer()), description(rhs.getDescription()), connect(false), bottom(0), top(0), left(0), right(0){ }
 	FavoriteHubEntry(const FavoriteHubEntry& rhs) throw() : userdescription(rhs.userdescription), name(rhs.getName()), server(rhs.getServer()), description(rhs.getDescription()), 
-		password(rhs.getPassword()), connect(rhs.getConnect()), bottom(rhs.getBottom()), top(rhs.getTop()), left(rhs.getLeft()), right(rhs.getRight()), nick(rhs.nick){ };
+		password(rhs.getPassword()), connect(rhs.getConnect()), bottom(rhs.getBottom()), top(rhs.getTop()), left(rhs.getLeft()), right(rhs.getRight()), nick(rhs.nick){ }
 	~FavoriteHubEntry() throw() { }	
 	
 	const string& getNick(bool useDefault = true) const { 
 		return (!nick.empty() || !useDefault) ? nick : SETTING(NICK);
 	}
 
-	void setNick(const string& aNick) { nick = aNick; };
+	void setNick(const string& aNick) { nick = aNick; }
 
 	GETSET(string, userdescription, UserDescription);
 	GETSET(string, name, Name);
@@ -106,8 +108,9 @@ private:
 	string nick;
 };
 
-class HubManagerListener {
+class FavoriteManagerListener {
 public:
+	virtual ~FavoriteManagerListener() { }
 	template<int I>	struct X { enum { TYPE = I };  };
 
 	typedef X<0> DownloadStarting;
@@ -117,14 +120,16 @@ public:
 	typedef X<4> FavoriteRemoved;
 	typedef X<5> UserAdded;
 	typedef X<6> UserRemoved;
+	typedef X<7> StatusChanged;
 
 	virtual void on(DownloadStarting, const string&) throw() { }
 	virtual void on(DownloadFailed, const string&) throw() { }
 	virtual void on(DownloadFinished, const string&) throw() { }
 	virtual void on(FavoriteAdded, const FavoriteHubEntry*) throw() { }
 	virtual void on(FavoriteRemoved, const FavoriteHubEntry*) throw() { }
-	virtual void on(UserAdded, const User::Ptr&) throw() { }
-	virtual void on(UserRemoved, const User::Ptr&) throw() { }
+	virtual void on(UserAdded, const FavoriteUser&) throw() { }
+	virtual void on(UserRemoved, const FavoriteUser&) throw() { }
+	virtual void on(StatusChanged, const User::Ptr&) throw() { }
 };
 
 class SimpleXML;
@@ -132,8 +137,8 @@ class SimpleXML;
 /**
  * Public hub list, favorites (hub&user). Assumed to be called only by UI thread.
  */
-class HubManager : public Speaker<HubManagerListener>, private HttpConnectionListener, public Singleton<HubManager>,
-	private SettingsManagerListener
+class FavoriteManager : public Speaker<FavoriteManagerListener>, private HttpConnectionListener, public Singleton<FavoriteManager>,
+	private SettingsManagerListener, private ClientManagerListener
 {
 public:
 // Public Hubs
@@ -143,26 +148,35 @@ public:
 	};
 	StringList getHubLists();
 	bool setHubList(int /*aHubList*/);
-	int getSelectedHubList() { return lastServer; };
+	int getSelectedHubList() { return lastServer; }
 	void refresh();
-	HubTypes getHubListType() { return listType; };
+	HubTypes getHubListType() { return listType; }
 	HubEntry::List getPublicHubs() {
 		Lock l(cs);
 		return publicListMatrix[publicListServer];
 	}
-	bool isDownloading() { return running; };
+	bool isDownloading() { return running; }
 
 // Favorite Users
-	User::List& getFavoriteUsers() { return users; };
+	typedef HASH_MAP_X(CID, FavoriteUser, CID::Hash, equal_to<CID>, less<CID>) FavoriteMap;
+	FavoriteMap getFavoriteUsers() { Lock l(cs); return users; }
 	
 	void addFavoriteUser(User::Ptr& aUser);
+	bool isFavoriteUser(const User::Ptr& aUser) const { Lock l(cs); return users.find(aUser->getCID()) != users.end(); }
 	void removeFavoriteUser(User::Ptr& aUser);
 
+	bool hasSlot(const User::Ptr& aUser) const;
+	void setUserDescription(const User::Ptr& aUser, const string& description);
+	void setAutoGrant(const User::Ptr& aUser, bool grant);
+	void userUpdated(const OnlineUser& info);
+	time_t getLastSeen(const User::Ptr& aUser) const;
 // Favorite Hubs
-	FavoriteHubEntry::List& getFavoriteHubs() { return favoriteHubs; };
+	FavoriteHubEntry::List& getFavoriteHubs() { return favoriteHubs; }
 
 	void addFavorite(const FavoriteHubEntry& aEntry);
 	void removeFavorite(FavoriteHubEntry* entry);
+	bool checkFavHubExists(const FavoriteHubEntry& aEntry);
+	FavoriteHubEntry* getFavoriteHubEntry(const string& aServer);
 
 // Favorite Directories
 	bool addFavoriteDir(const string& aDirectory, const string& aName);
@@ -170,27 +184,18 @@ public:
 	bool renameFavoriteDir(const string& aName, const string& anotherName);
 	StringPairList getFavoriteDirs() { return favoriteDirs; }
 
-	FavoriteHubEntry* getFavoriteHubEntry(const string& aServer) {
-		for(FavoriteHubEntry::Iter i = favoriteHubs.begin(); i != favoriteHubs.end(); ++i) {
-			FavoriteHubEntry* hub = *i;
-			if(Util::stricmp(hub->getServer(), aServer) == 0) {
-				return hub;
-			}
-		}
-		return NULL;
-	}
-
 // User Commands
 	UserCommand addUserCommand(int type, int ctx, int flags, const string& name, const string& command, const string& hub);
 	bool getUserCommand(int cid, UserCommand& uc);
+	int findUserCommand(const string& aName);
 	bool moveUserCommand(int cid, int pos);
 	void updateUserCommand(const UserCommand& uc);
 	void removeUserCommand(int cid);
 	void removeUserCommand(const string& srv);
 	void removeHubUserCommands(int ctx, const string& hub);
 
-	UserCommand::List getUserCommands() { Lock l(cs); return userCommands; };
-	UserCommand::List getUserCommands(int ctx, const string& hub, bool op);
+	UserCommand::List getUserCommands() { Lock l(cs); return userCommands; }
+	UserCommand::List getUserCommands(int ctx, const StringList& hub);
 
 	void load();
 	void save();
@@ -201,9 +206,9 @@ private:
 	UserCommand::List userCommands;
 	int lastId;
 
-	User::List users;
+	FavoriteMap users;
 
-	CriticalSection cs;
+	mutable CriticalSection cs;
 
 	// Public Hubs
 	typedef map<string, HubEntry::List> PubListMap;
@@ -218,13 +223,15 @@ private:
 	/** Used during loading to prevent saving. */
 	bool dontSave;
 
-	friend class Singleton<HubManager>;
+	friend class Singleton<FavoriteManager>;
 	
-	HubManager() : lastId(0), running(false), c(NULL), lastServer(0), listType(TYPE_NORMAL), dontSave(false) {
+	FavoriteManager() : lastId(0), running(false), c(NULL), lastServer(0), listType(TYPE_NORMAL), dontSave(false) {
 		SettingsManager::getInstance()->addListener(this);
+		ClientManager::getInstance()->addListener(this);
 	}
 
-	virtual ~HubManager() throw() {
+	virtual ~FavoriteManager() throw() {
+		ClientManager::getInstance()->removeListener(this);
 		SettingsManager::getInstance()->removeListener(this);
 		if(c) {
 			c->removeListener(this);
@@ -232,7 +239,7 @@ private:
 			c = NULL;
 		}
 		
-		for_each(favoriteHubs.begin(), favoriteHubs.end(), DeleteFunction<FavoriteHubEntry*>());
+		for_each(favoriteHubs.begin(), favoriteHubs.end(), DeleteFunction());
 	}
 	
 	FavoriteHubEntry::Iter getFavoriteHub(const string& aServer) {
@@ -245,6 +252,11 @@ private:
 	}
 
 	void loadXmlList(const string& xml);
+
+	// ClientManagerListener
+	virtual void on(UserUpdated, const OnlineUser& user) throw();
+	virtual void on(UserConnected, const User::Ptr& user) throw();
+	virtual void on(UserDisconnected, const User::Ptr& user) throw();
 
 	// HttpConnectionListener
 	virtual void on(Data, HttpConnection*, const u_int8_t*, size_t) throw();
@@ -263,12 +275,7 @@ private:
 
 	void load(SimpleXML* aXml);
 	
+	string getConfigFile() { return Util::getConfigPath() + "Favorites.xml"; }
 };
 
-#endif // !defined(AFX_HUBMANAGER_H__75858D5D_F12F_40D0_B127_5DDED226C098__INCLUDED_)
-
-/**
- * @file
- * $Id: HubManager.h,v 1.4 2005/06/25 19:24:02 paskharen Exp $
- */
-
+#endif // !defined(FAVORITE_MANAGER_H)

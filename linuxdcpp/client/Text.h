@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,10 +16,14 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef TEXT_H
+#if !defined(TEXT_H)
 #define TEXT_H
 
-/** 
+#if _MSC_VER > 1000
+#pragma once
+#endif // _MSC_VER > 1000
+
+/**
  * Text handling routines for DC++. DC++ internally uses UTF-8 for
  * (almost) all string:s, hence all foreign text must be converted
  * appropriately...
@@ -36,10 +40,7 @@ public:
 	static void initialize();
 
 	static string& acpToUtf8(const string& str, string& tmp) throw();
-	static string acpToUtf8(const string& str) throw() { 
-		string tmp;
-		return acpToUtf8(str, tmp);
-	}
+	static string acpToUtf8(const string& str) throw();
 
 	static wstring& acpToWide(const string& str, wstring& tmp) throw();
 	static wstring acpToWide(const string& str) throw() {
@@ -48,10 +49,7 @@ public:
 	}
 
 	static string& utf8ToAcp(const string& str, string& tmp) throw();
-	static string utf8ToAcp(const string& str) throw() {
-		string tmp;
-		return utf8ToAcp(str, tmp);
-	}
+	static string utf8ToAcp(const string& str) throw();
 
 	static wstring& utf8ToWide(const string& str, wstring& tmp) throw();
 	static wstring utf8ToWide(const string& str) throw() {
@@ -108,20 +106,13 @@ public:
 		return toLower(str, tmp);
 	}
 	static wstring& toLower(const wstring& str, wstring& tmp) throw();
-	static string toLower(const string& str) throw() {
-		string tmp;
-		return toLower(str, tmp);
-	}
+	static string toLower(const string& str) throw();
 	static string& toLower(const string& str, string& tmp) throw();
+
 private:
 	static char asciiLower[128];
 	static wchar_t lower[65536];
 
 };
 
-#endif
-
-/**
- * @file
- * $Id: Text.h,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
+#endif // !defined(TEXT_H)

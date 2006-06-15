@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef _BZ_UTILS
-#define _BZ_UTILS
+#if !defined(BZ_UTILS_H)
+#define BZ_UTILS_H
 
 #if _MSC_VER > 1000
 #pragma once
@@ -63,9 +63,4 @@ private:
 	bz_stream zs;
 };
 
-#endif // _BZ_UTILS
-
-/**
-* @file
-* $Id: BZUtils.h,v 1.4 2005/06/25 19:24:01 paskharen Exp $
-*/
+#endif // !defined(BZ_UTILS_H)

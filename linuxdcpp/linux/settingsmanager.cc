@@ -62,6 +62,7 @@ WulforSettingsManager::WulforSettingsManager() {
 	defaultString["sharebrowser-order"] = "";
 	defaultString["sharebrowser-width"] = "";
 	defaultString["sharebrowser-visibility"] = "";
+	defaultString["fallback-encoding"] = "CP1252";
 }
 
 WulforSettingsManager *WulforSettingsManager::get() {

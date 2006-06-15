@@ -89,7 +89,7 @@ DownloadQueue::~DownloadQueue()
 {
 	QueueManager::getInstance()->removeListener(this);
 	pthread_mutex_destroy(&queueLock);
-	hash_map<string, std::vector<QueueItemInfo*>, WulforUtil::HashString>::iterator iter;
+	hash_map<string, std::vector<QueueItemInfo*> >::iterator iter;
 	std::vector<QueueItemInfo*>::iterator iter2;
 	for (iter = dirFileMap.begin(); iter != dirFileMap.end(); iter++)
 		for (iter2 = iter->second.begin(); iter2 != iter->second.end(); iter2++)
@@ -112,14 +112,10 @@ string DownloadQueue::getTextFromMenu(GtkMenuItem *item)
 	return text;
 }
 
-void DownloadQueue::contentUpdated()
+void DownloadQueue::contentUpdated_gui()
 {
-	if (WulforManager::get()->getMainWindow()->currentPage_gui() != getWidget())
-	{
-		typedef Func0<BookEntry> F0;
-		F0 *f0 = new F0(this, &BookEntry::setBold_gui);
-		WulforManager::get()->dispatchGuiFunc(f0);
-	}
+	if (BOOLSETTING(BOLD_QUEUE))
+		setBold_gui();
 }
 
 void DownloadQueue::buildStaticMenu_gui ()
@@ -297,14 +293,14 @@ void DownloadQueue::buildDynamicMenu_gui ()
 			bool found=false;
 			for (int j=0;j<names.size ();j++)
 			{
-				if (names[j] == it->getUser ()->getFullNick ())
+				if (names[j] == it->getUser()->getFirstNick ())
 				{
 					found = true;
 					break;
 				}
 			}
 			if (!found)
-				names.push_back (it->getUser ()->getFullNick ());
+				names.push_back (it->getUser()->getFirstNick ());
 		}
 	}
 	for (int i=0;i<names.size ();i++)
@@ -542,7 +538,7 @@ void DownloadQueue::onGetFileListClicked_gui (GtkMenuItem *item, gpointer user_d
 		
 	QueueItemInfo *ii = q->fileView.getValue<gpointer,QueueItemInfo*>(&iter, "Info");	
 	for (QueueItemInfo::SourceIter it=ii->getSources ().begin (); it != ii->getSources ().end (); it++)
-		if (it->getUser ()->getFullNick () == name)
+		if (it->getUser ()->getFirstNick () == name)
 		{
 			ii->getUserList (name);
 			break;
@@ -568,7 +564,7 @@ void DownloadQueue::onSendPrivateMessageClicked_gui (GtkMenuItem *item, gpointer
 		
 	QueueItemInfo *ii = q->fileView.getValue<gpointer,QueueItemInfo*>(&iter, "Info");	
 	for (QueueItemInfo::SourceIter it=ii->getSources ().begin (); it != ii->getSources ().end (); it++)
-		if (it->getUser ()->getFullNick () == name)
+		if (it->getUser()->getFirstNick() == name)
 		{
 			ii->sendPrivateMessage (name);
 			break;
@@ -594,7 +590,7 @@ void DownloadQueue::onReAddSourceClicked_gui (GtkMenuItem *item, gpointer user_d
 		
 	QueueItemInfo *ii = q->fileView.getValue<gpointer,QueueItemInfo*>(&iter, "Info");
 	for (QueueItemInfo::SourceIter it=ii->getSources ().begin (); it != ii->getSources ().end (); it++)
-		if (it->getUser ()->getFullNick () == name)
+		if (it->getUser()->getFirstNick() == name)
 		{
 			ii->reAddSource (name, q);
 			break;
@@ -620,7 +616,7 @@ void DownloadQueue::onRemoveSourceClicked_gui (GtkMenuItem *item, gpointer user_
 
 	QueueItemInfo *ii = q->fileView.getValue<gpointer,QueueItemInfo*>(&iter, "Info");
 	for (QueueItemInfo::SourceIter it=ii->getSources ().begin (); it != ii->getSources ().end (); it++)
-		if (it->getUser ()->getFullNick () == name)
+		if (it->getUser()->getFirstNick() == name)
 		{
 			ii->removeSource (name);
 			break;
@@ -646,9 +642,9 @@ void DownloadQueue::onRemoveUserFromQueueClicked_gui (GtkMenuItem *item, gpointe
 			
 	QueueItemInfo *ii = q->fileView.getValue<gpointer,QueueItemInfo*>(&iter, "Info");
 		for (QueueItemInfo::SourceIter it=ii->getSources ().begin (); it != ii->getSources ().end (); it++)
-		if (it->getUser ()->getFullNick () == name)
+		if (it->getUser()->getFirstNick() == name)
 		{
-			ii->removeSources (name);
+			ii->removeSource(name);
 			break;
 		}
 }
@@ -894,7 +890,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 					if(j->getUser()->isOnline())
 						online++;
 	
-					tmp += j->getUser()->getFullNick();
+					tmp += WulforUtil::getNicks(j->getUser());
 			}
 			gtk_list_store_set(dq->fileStore, &it, dq->fileView.col("Users"), string (tmp.empty() ? "No users" : tmp).c_str (), -1);
 		}		
@@ -980,7 +976,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 				{
 					if(tmp.size() > 0)
 						tmp += ", ";
-					tmp += j->getUser()->getNick();
+					tmp += WulforUtil::getNicks(j->getUser());
 					tmp += " (";
 					if(j->isSet(QueueItem::Source::FLAG_FILE_NOT_AVAILABLE))
 						tmp += "File not available";
@@ -1027,7 +1023,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 					if(j->getUser()->isOnline())
 						online++;
 	
-					tmp += j->getUser()->getFullNick();
+					tmp += WulforUtil::getNicks(j->getUser());
 			}
 			gtk_list_store_set(dq->fileStore, &it, dq->fileView.col("Users"), string(tmp.empty() ? "No users" : tmp).c_str(), -1);
 		}
@@ -1115,7 +1111,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 				{
 					if(tmp.size() > 0)
 						tmp += ", ";
-					tmp += j->getUser()->getNick();
+					tmp += WulforUtil::getNicks(j->getUser());
 					tmp += " (";
 					if(j->isSet(QueueItem::Source::FLAG_FILE_NOT_AVAILABLE))
 						tmp += "File not available";
@@ -1284,11 +1280,16 @@ void DownloadQueue::removeFile_gui (string target)
 	if (dirFileMap[path].empty ())
 		removeDir_gui (path);
 		
-	WulforManager::get ()->dispatchGuiFunc (new Func0<DownloadQueue>(this, &DownloadQueue::update_gui));
-	WulforManager::get ()->dispatchGuiFunc (new Func0<DownloadQueue>(this, &DownloadQueue::updateStatus_gui));
+	update_gui();
+	updateStatus_gui();
 }
 
 void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
+{
+	WulforManager::get()->dispatchGuiFunc(new Func1<DownloadQueue, QueueItem*>(this, &DownloadQueue::queueItemAdded_gui, aQI));
+}
+
+void DownloadQueue::queueItemAdded_gui(QueueItem *aQI)
 {
 	GtkTreeIter row;
 	GtkTreeModel *m = GTK_TREE_MODEL (dirStore);
@@ -1303,19 +1304,19 @@ void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
 					-1);
 		dirMap[realpath] = row;
 		string tmp;
-		addDir_gui (getRemainingDir (Util::getFilePath(aQI->getTarget())), &row, tmp);
+		addDir_gui(getRemainingDir (Util::getFilePath(aQI->getTarget())), &row, tmp);
 		fileMap[aQI->getTarget ()] = aQI;
-		addFile_gui (i, tmp);
+		addFile_gui(i, tmp);
 	}
 	else
 	{
 		string tmp;
-		addDir_gui (getRemainingDir (Util::getFilePath(aQI->getTarget())), &dirMap[realpath], tmp);
+		addDir_gui(getRemainingDir (Util::getFilePath(aQI->getTarget())), &dirMap[realpath], tmp);
 		fileMap[aQI->getTarget ()] = aQI;
-		addFile_gui (i, tmp);
+		addFile_gui(i, tmp);
 	}
 	gtk_tree_view_expand_all (dirView.get ());
-	contentUpdated ();
+	contentUpdated_gui();
 	GtkTreeSelection *selection;
 	GtkTreeIter iter;
 	selection = gtk_tree_view_get_selection(dirView.get ());
@@ -1324,22 +1325,26 @@ void DownloadQueue::on(QueueManagerListener::Added, QueueItem* aQI) throw()
 		return;
 	
 	if (showingDir == dirView.getString(&iter, "Path"))
-		WulforManager::get ()->dispatchGuiFunc (new Func2<DownloadQueue, QueueItemInfo*, bool> (this, &DownloadQueue::updateItem_gui, i, true));
+		updateItem_gui(i, true);
 }
 
 void DownloadQueue::on(QueueManagerListener::Removed, QueueItem* aQI) throw()
 {
-	removeFile_gui (aQI->getTarget ());
-	contentUpdated ();
+	WulforManager::get()->dispatchGuiFunc(new Func1<DownloadQueue, string>(this, &DownloadQueue::removeFile_gui, aQI->getTarget()));
+	WulforManager::get()->dispatchGuiFunc(new Func0<DownloadQueue>(this, &DownloadQueue::contentUpdated_gui));
 }
-void DownloadQueue::on(QueueManagerListener::Finished, QueueItem* aQI) throw()
+
+void DownloadQueue::on(QueueManagerListener::Finished, QueueItem* aQI, int64_t avSpeed) throw()
 {
 	
 }
+
 void DownloadQueue::on(QueueManagerListener::Moved, QueueItem* aQI) throw()
 {
-	contentUpdated ();
+	///@todo: implement
+	WulforManager::get()->dispatchGuiFunc(new Func0<DownloadQueue>(this, &DownloadQueue::contentUpdated_gui));
 }
+
 void DownloadQueue::updateFiles_gui (QueueItem *aQI)
 {
 	QueueItemInfo* ii = NULL;
@@ -1387,6 +1392,6 @@ void DownloadQueue::updateFiles_gui (QueueItem *aQI)
 void DownloadQueue::QueueItemInfo::sendPrivateMessage (string text)
 {
 	for(SourceIter i = sources.begin(); i != sources.end(); ++i)
-		if(i->getUser()->getFullNick () == text)			
+		if(i->getUser()->getFirstNick() == text)
 			WulforManager::get()->addPrivMsg_gui(i->getUser ());
 }	

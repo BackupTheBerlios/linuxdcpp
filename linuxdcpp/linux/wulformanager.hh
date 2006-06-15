@@ -24,7 +24,6 @@
 #include <semaphore.h>
 #include <string>
 #include <vector>
-#include <ext/hash_map>
 
 #include "func.hh"
 #include "mainwindow.hh"
@@ -100,8 +99,8 @@ class WulforManager
 
 		std::vector<FuncBase *> guiFuncs;
 		std::vector<FuncBase *> clientFuncs;
-		hash_map<std::string, BookEntry *, WulforUtil::HashString> bookEntries;
-		hash_map<std::string, DialogEntry *, WulforUtil::HashString> dialogEntries;
+		hash_map<std::string, BookEntry *> bookEntries;
+		hash_map<std::string, DialogEntry *> dialogEntries;
 
 		pthread_mutex_t clientCallLock;
 		pthread_mutex_t guiQueueLock, clientQueueLock;

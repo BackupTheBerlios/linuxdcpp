@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+/*
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,200 +19,48 @@
 #include "stdinc.h"
 #include "DCPlusPlus.h"
 
-#include "SettingsManager.h"
-#include "ResourceManager.h"
-#include "TimerManager.h"
-
 #include "User.h"
-
 #include "Client.h"
-#include "FavoriteUser.h"
+#include "StringTokenizer.h"
 
-User::~User() throw() {
-	delete favoriteUser;
+OnlineUser::OnlineUser(const User::Ptr& ptr, Client& client_, u_int32_t sid_) : user(ptr), identity(ptr, client_.getHubUrl(), sid_), client(&client_) { 
+
 }
 
-void User::connect() {
-	RLock<> l(cs);
-	if(client) {
-		client->connect(this);
+void Identity::getParams(StringMap& sm, const string& prefix, bool compatibility) const {
+	for(InfMap::const_iterator i = info.begin(); i != info.end(); ++i) {
+		sm[prefix + string((char*)(&i->first), 2)] = i->second;
+	}
+	if(user) {
+		sm[prefix + "SID"] = getSIDString();
+		sm[prefix + "CID"] = user->getCID().toBase32();
+		sm[prefix + "TAG"] = getTag();
+		sm[prefix + "SSshort"] = Util::formatBytes(get("SS"));
+
+		if(compatibility) {
+			if(prefix == "my") {
+				sm["mynick"] = getNick();
+				sm["mycid"] = user->getCID().toBase32();
+			} else {
+				sm["nick"] = getNick();
+				sm["cid"] = user->getCID().toBase32();
+				sm["ip"] = get("I4");
+				sm["tag"] = getTag();
+				sm["description"] = get("DE");
+				sm["email"] = get("EM");
+				sm["share"] = get("SS");
+				sm["shareshort"] = Util::formatBytes(get("SS"));
+			}
+		}
 	}
 }
 
-const string& User::getClientNick() const {
-	RLock<> l(cs);
-	if(client) {
-		return client->getNick();
-	} else {
-		return SETTING(NICK);
-	}
-}
-
-CID User::getClientCID() const {
-	RLock<> l(cs);
-	if(client) {
-		return client->getMe()->getCID();
-	} else {
-		return CID(SETTING(CLIENT_ID));
-	}
-}
-
-void User::updated(User::Ptr& aUser) {
-	RLock<> l(aUser->cs);
-	if(aUser->client) {
-		aUser->client->updated(aUser);
-	}
-}
-
-const string& User::getClientName() const {
-	RLock<> l(cs);
-	if(client) {
-		return client->getName();
-	} else if(!getLastHubName().empty()) {
-		return getLastHubName();
-	} else {
-		return STRING(OFFLINE);
-	}
-}
-
-string User::getClientAddressPort() const {
-	RLock<> l(cs);
-	if(client) {
-		return client->getAddressPort();
-	} else {
-		return Util::emptyString;
-	}
-}
-
-void User::privateMessage(const string& aMsg) {
-	RLock<> l(cs);
-	if(client) {
-		client->privateMessage(this, aMsg);
-	}
-}
-
-bool User::isClientOp() const {
-	RLock<> l(cs);
-	if(client) {
-		return client->getOp();
+bool Identity::supports(const string& name) const {
+	const string& su = get("SU");
+	StringTokenizer<string> st(su, ',');
+	for(StringIter i = st.getTokens().begin(); i != st.getTokens().end(); ++i) {
+		if(*i == name)
+			return true;
 	}
 	return false;
 }
-
-void User::send(const string& aMsg) {
-	RLock<> l(cs);
-	if(client) {
-		client->send(aMsg);
-	}
-}
-
-void User::sendUserCmd(const string& aUserCmd) {
-	RLock<> l(cs);
-	if(client) {
-		client->sendUserCmd(aUserCmd);
-	}
-}
-
-void User::clientMessage(const string& aMsg) {
-	RLock<> l(cs);
-	if(client) {
-		client->hubMessage(aMsg);
-	}
-}
-
-void User::setClient(Client* aClient) { 
-	WLock<> l(cs); 
-	client = aClient; 
-	if(client == NULL) {
-		if (isSet(ONLINE) && isFavoriteUser())
-			setFavoriteLastSeen();
-		unsetFlag(ONLINE);
-	}
-	else {
-		setLastHubAddress(aClient->getIpPort());
-		setLastHubName(aClient->getName());
-		setFlag(ONLINE);
-		unsetFlag(QUIT_HUB);
-	}
-}
-
-void User::getParams(StringMap& ucParams) {
-	ucParams["nick"] = getNick();
-	ucParams["cid"] = getCID().toBase32();
-	ucParams["tag"] = getTag();
-	ucParams["description"] = getDescription();
-	ucParams["email"] = getEmail();
-	ucParams["share"] = Util::toString(getBytesShared());
-	ucParams["shareshort"] = Util::formatBytes(getBytesShared());
-	ucParams["ip"] = getIp();
-}
-
-// favorite user stuff
-void User::setFavoriteUser(FavoriteUser* aUser) {
-	WLock<> l(cs);
-	delete favoriteUser;
-	favoriteUser = aUser;
-}
-
-bool User::isFavoriteUser() const {
-	RLock<> l(cs);
-	return (favoriteUser != NULL);
-}
-
-bool User::getFavoriteGrantSlot() const {
-	RLock<> l(cs);
-	return (favoriteUser != NULL && favoriteUser->isSet(FavoriteUser::FLAG_GRANTSLOT));
-}
-
-void User::setFavoriteGrantSlot(bool grant) {
-	WLock<> l(cs);
-	if (favoriteUser == NULL)
-		return;
-
-	if (grant)
-		favoriteUser->setFlag(FavoriteUser::FLAG_GRANTSLOT);
-	else
-		favoriteUser->unsetFlag(FavoriteUser::FLAG_GRANTSLOT);
-}
-
-void User::setFavoriteLastSeen(u_int32_t anOfflineTime) {
-	WLock<> l(cs);
-	if (favoriteUser != NULL) {
-		if (anOfflineTime != 0)
-			favoriteUser->setLastSeen(anOfflineTime);
-		else
-			favoriteUser->setLastSeen(GET_TIME());
-	}
-}
-
-u_int32_t User::getFavoriteLastSeen() const {
-	RLock<> l(cs);
-	if (favoriteUser != NULL)
-		return favoriteUser->getLastSeen();
-	else
-		return 0;
-}
-
-const string& User::getUserDescription() const {
-	RLock<> l(cs);
-	if (favoriteUser != NULL)
-		return favoriteUser->getDescription();
-	else
-		return Util::emptyString;
-}
-
-void User::setUserDescription(const string& aDescription) {
-	WLock<> l(cs);
-	if (favoriteUser != NULL)
-		favoriteUser->setDescription(aDescription);
-}
-
-StringMap& User::clientEscapeParams(StringMap& sm) const {
-	return client->escapeParams(sm);
-}
-
-/**
- * @file
- * $Id: User.cpp,v 1.4 2005/06/25 19:24:03 paskharen Exp $
- */
-

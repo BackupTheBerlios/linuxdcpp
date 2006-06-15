@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2001-2005 Jacek Sieka, arnetheduck on gmail point com
+ * Copyright (C) 2001-2006 Jacek Sieka, arnetheduck on gmail point com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,8 +31,8 @@ class Speaker {
 	typedef typename ListenerList::iterator ListenerIter;
 
 public:
-	Speaker() throw() { };
-	virtual ~Speaker() throw() { };
+	Speaker() throw() { }
+	virtual ~Speaker() throw() { }
 
 	template<typename T0>
 	void fire(T0 type) throw() {
@@ -122,8 +122,3 @@ protected:
 };
 
 #endif // !defined(SPEAKER_H)
-
-/**
- * @file
- * $Id: Speaker.h,v 1.5 2005/09/14 08:49:58 paskharen Exp $
- */

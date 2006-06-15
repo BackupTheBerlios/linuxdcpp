@@ -23,12 +23,10 @@
 #include <glade/glade.h>
 #include <iostream>
 #include <sstream>
-#include <ext/hash_map>
 
 #include "bookentry.hh"
 #include "search.hh"
 #include "treeview.hh"
-#include "wulformanager.hh"
 #include "wulformanager.hh"
 
 #include <client/stdinc.h>
@@ -54,7 +52,7 @@ public:
 	void updateStatus_gui ();
 
 	virtual void on(QueueManagerListener::Added, QueueItem* aQI) throw();
-	virtual void on(QueueManagerListener::Finished, QueueItem* aQI) throw();
+	virtual void on(QueueManagerListener::Finished, QueueItem* aQI, int64_t avSpeed) throw();
 	virtual void on(QueueManagerListener::Moved, QueueItem* aQI) throw();
 	virtual void on(QueueManagerListener::Removed, QueueItem* aQI) throw();
 	virtual void on(QueueManagerListener::SourcesUpdated, QueueItem* aQI) throw() { updateFiles_gui (aQI); }
@@ -95,8 +93,8 @@ private:
 	// Popup-Menus
 	GtkMenu *dirMenu, *fileMenu, *dirPriority, *filePriority;
 	GtkMenu *browseMenu, *pmMenu, *readdMenu, *removeMenu, *removeallMenu;
-	hash_map<std::string, GtkWidget *, WulforUtil::HashString> dirItems;
-	hash_map<std::string, GtkWidget *, WulforUtil::HashString> fileItems;
+	hash_map<std::string, GtkWidget *> dirItems;
+	hash_map<std::string, GtkWidget *> fileItems;
 	std::vector<GtkWidget*> browseItems;
 	std::vector<GtkWidget*> readdItems;
 	std::vector<GtkWidget*> pmItems;
@@ -137,14 +135,15 @@ private:
 	// Queue-handling functions and datastorage
 	void addDir_gui (string path, GtkTreeIter *row, string &current);
 	void addFile_gui (QueueItemInfo *i, string path);
+	void queueItemAdded_gui(QueueItem *aQI);
 	string getNextSubDir (string path);
 	string getTrailingSubDir (string path);
 	string getRemainingDir (string path);
 	void getChildren (string path, vector<GtkTreeIter> *iter);
 	void getChildren (string path, vector<string> *iter);
-	hash_map<std::string, GtkTreeIter, WulforUtil::HashString> dirMap;
-	hash_map<std::string, std::vector<QueueItemInfo*>, WulforUtil::HashString> dirFileMap;
-	hash_map<std::string, QueueItem *, WulforUtil::HashString> fileMap;
+	hash_map<std::string, GtkTreeIter> dirMap;
+	hash_map<std::string, std::vector<QueueItemInfo*> > dirFileMap;
+	hash_map<std::string, QueueItem *> fileMap;
 
 	int64_t queueSize;
 	int queueItems;
@@ -153,7 +152,7 @@ private:
 	GdkEventType dirPrevious;
 	static string getTextFromMenu (GtkMenuItem *item);
 	
-	void contentUpdated ();
+	void contentUpdated_gui();
 
 	class QueueItemInfo : public Flags
 	{
@@ -206,7 +205,7 @@ private:
 		void getUserList (string text)
 		{
 			for(SourceIter i = sources.begin(); i != sources.end(); ++i)
-				if(i->getUser()->getFullNick () == text)
+				if(i->getUser()->getFirstNick() == text)
 				{
 					try 
 					{
@@ -222,7 +221,7 @@ private:
 		void reAddSource (string text, DownloadQueue *q)
 		{
 			for(SourceIter i = sources.begin(); i != sources.end(); ++i)
-				if(i->getUser()->getFullNick () == text)
+				if(i->getUser()->getFirstNick() == text)
 				{
 					try 
 					{
@@ -238,7 +237,7 @@ private:
 		void removeSource (string text)
 		{
 			for(SourceIter i = sources.begin(); i != sources.end(); ++i)
-				if(i->getUser()->getFullNick () == text)
+				if(i->getUser()->getFirstNick() == text)
 				{
 					QueueManager::getInstance()->removeSource(getTarget(), i->getUser(), QueueItem::Source::FLAG_REMOVED);
 					break;
@@ -247,9 +246,9 @@ private:
 		void removeSources (string text)
 		{
 			for(SourceIter i = sources.begin(); i != sources.end(); ++i)
-				if(i->getUser()->getFullNick () == text)			
+				if(i->getUser()->getFirstNick() == text)			
 				{
-					QueueManager::getInstance()->removeSources(i->getUser(), QueueItem::Source::FLAG_REMOVED);
+					QueueManager::getInstance()->removeSource(i->getUser(), QueueItem::Source::FLAG_REMOVED);
 					break;
 				}
 		}
