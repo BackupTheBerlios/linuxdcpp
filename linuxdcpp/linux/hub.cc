@@ -1,20 +1,20 @@
 /* 
-* Copyright (C) 2004 Jens Oknelid, paskharen@gmail.com
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-*/
+ * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
 
 #include "hub.hh"
 
@@ -29,8 +29,7 @@ Hub::Hub(std::string address):
 	setFocusCallback(this, &Hub::setChatEntryFocus),
 	lastUpdate(0)
 {
-	string file = WulforManager::get()->getPath() + "/glade/hub.glade";
-	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
+	GladeXML *xml = getGladeXML("hub.glade");
 
 	GtkWidget *window = glade_xml_get_widget(xml, "hubWindow");
 	mainBox = glade_xml_get_widget(xml, "hubBox");

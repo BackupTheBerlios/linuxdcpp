@@ -1,3 +1,7 @@
+2006-06-16 - Steven Sheehy
+* Updated copyright on source files to latest year.
+* Added error detection for when glade files can't be found.
+
 2006-06-15 - Naga & Steven Sheehy
 * Upgraded the client core to version 0.691:
 	<WARNING> 
