@@ -280,6 +280,7 @@ void Settings::saveSettings_client()
 			sm->set(SettingsManager::EXTERNAL_IP, gtk_entry_get_text(GTK_ENTRY(connectionItems["IP"])));
 			sm->set(SettingsManager::TCP_PORT, atoi(gtk_entry_get_text(GTK_ENTRY(connectionItems["TCP"]))));
 			sm->set(SettingsManager::UDP_PORT, atoi(gtk_entry_get_text(GTK_ENTRY(connectionItems["UDP"]))));
+			sm->set(SettingsManager::NO_IP_OVERRIDE, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(connectionItems["ForceIP"])));
 			sm->set(SettingsManager::SOCKS_SERVER, gtk_entry_get_text(GTK_ENTRY(connectionItems["Socks"])));
 			sm->set(SettingsManager::SOCKS_USER, gtk_entry_get_text(GTK_ENTRY(connectionItems["Username"])));
 			sm->set(SettingsManager::SOCKS_PORT, atoi(gtk_entry_get_text(GTK_ENTRY(connectionItems["Port"]))));
@@ -1044,14 +1045,16 @@ void Settings::onAddShare_gui(GtkWidget *widget, gpointer data)
 				if (path[path.length ()-1] != PATH_SEPARATOR)
 					path += PATH_SEPARATOR;
 
-				s->modifyShare_client(true, path, name);
+				typedef Func3<Settings, bool, string, string> F3;
+				F3 *f3 = new F3(s, &Settings::modifyShare_client, TRUE, path, name);
+				WulforManager::get()->dispatchClientFunc(f3);
 				GtkTreeIter iter;
 				gtk_list_store_append(s->shareStore, &iter);
 				gtk_list_store_set(s->shareStore, &iter,
 					s->shareView.col("Virtual Name"), name.c_str(),
 					s->shareView.col("Directory"), path.c_str(),
-					s->shareView.col("Size"), Util::formatBytes(ShareManager::getInstance()->getShareSize(path)).c_str(),
-					s->shareView.col("Real Size"), ShareManager::getInstance()->getShareSize(path),
+					s->shareView.col("Size"), Util::formatBytes(0).c_str(),
+					s->shareView.col("Real Size"), 0,
 					-1);
 			}
 			catch (const ShareException& e)

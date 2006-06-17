@@ -623,7 +623,10 @@ int HashManager::Hasher::run() {
 							u_int32_t minTime = n * 1000LL / (SETTING(MAX_HASH_SPEED) * 1024LL * 1024LL);
 							if(lastRead + minTime > now) {
 								Thread::sleep(minTime - (now - lastRead));
-							}
+							} 
+							lastRead = lastRead + minTime;
+						} else {
+							lastRead = GET_TICK();
 						}
 						n = f.read(buf, bufSize);
 						tth->update(buf, n);

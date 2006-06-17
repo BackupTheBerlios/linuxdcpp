@@ -1,6 +1,9 @@
 2006-06-16 - Steven Sheehy
 * Updated copyright on source files to latest year.
 * Added error detection for when glade files can't be found.
+* Fixed hash speed limiting not working.
+* Fixed adding a share from freezing the gui temporarily.
+* Fixed "Don't allow hub/UPnP to override" setting from not saving correctly.
 
 2006-06-15 - Naga & Steven Sheehy
 * Upgraded the client core to version 0.691:
