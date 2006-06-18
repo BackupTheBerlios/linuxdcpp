@@ -628,8 +628,8 @@ void MainWindow::settingsClicked_gui(GtkWidget *widget, gpointer data)
 	Settings *s = WulforManager::get()->openSettingsDialog_gui();
 	typedef Func0<MainWindow> F0;
 
-	short tcpPort = (short)SETTING(TCP_PORT);
-	short udpPort = (short)SETTING(UDP_PORT);
+	unsigned short tcpPort = (unsigned short)SETTING(TCP_PORT);
+	unsigned short udpPort = (unsigned short)SETTING(UDP_PORT);
 	int lastConn = SETTING(INCOMING_CONNECTIONS);
 	bool lastShowProgressSetting = SETTING(SHOW_PROGRESS_BARS);
 

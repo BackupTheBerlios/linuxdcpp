@@ -1,3 +1,8 @@
+2006-06-17 - Steven Sheehy
+* Fixed port signedness and added some error checking.
+* Fixed core from creating files and directories with incorrect default permissions.
+* Fixed core from creating multiple filelists directories due to case-sensitivity.
+
 2006-06-16 - Steven Sheehy
 * Updated copyright on source files to latest year.
 * Added error detection for when glade files can't be found.

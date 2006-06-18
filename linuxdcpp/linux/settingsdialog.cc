@@ -278,13 +278,20 @@ void Settings::saveSettings_client()
 				sm->set (SettingsManager::OUTGOING_CONNECTIONS, SettingsManager::OUTGOING_SOCKS5);
 			}
 			sm->set(SettingsManager::EXTERNAL_IP, gtk_entry_get_text(GTK_ENTRY(connectionItems["IP"])));
-			sm->set(SettingsManager::TCP_PORT, atoi(gtk_entry_get_text(GTK_ENTRY(connectionItems["TCP"]))));
-			sm->set(SettingsManager::UDP_PORT, atoi(gtk_entry_get_text(GTK_ENTRY(connectionItems["UDP"]))));
 			sm->set(SettingsManager::NO_IP_OVERRIDE, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(connectionItems["ForceIP"])));
 			sm->set(SettingsManager::SOCKS_SERVER, gtk_entry_get_text(GTK_ENTRY(connectionItems["Socks"])));
 			sm->set(SettingsManager::SOCKS_USER, gtk_entry_get_text(GTK_ENTRY(connectionItems["Username"])));
-			sm->set(SettingsManager::SOCKS_PORT, atoi(gtk_entry_get_text(GTK_ENTRY(connectionItems["Port"]))));
 			sm->set(SettingsManager::SOCKS_PASSWORD, gtk_entry_get_text(GTK_ENTRY(connectionItems["Password"])));
+
+			int port = Util::toInt(gtk_entry_get_text(GTK_ENTRY(connectionItems["TCP"])));
+			if (port > 0 && port <= 65535) // atoi returns 0 on error
+				sm->set(SettingsManager::TCP_PORT, port);
+			port = Util::toInt(gtk_entry_get_text(GTK_ENTRY(connectionItems["UDP"])));
+			if (port > 0 && port <= 65535)
+				sm->set(SettingsManager::UDP_PORT, port);
+			port = Util::toInt(gtk_entry_get_text(GTK_ENTRY(connectionItems["Port"])));
+			if (port > 0 && port <= 65535)
+				sm->set(SettingsManager::SOCKS_PORT, port);
 		}
 	}
 
