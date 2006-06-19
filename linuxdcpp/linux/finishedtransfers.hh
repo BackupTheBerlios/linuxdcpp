@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,6 @@
 #define WULFOR_FINISHED_TRANSFERS
 
 #include "bookentry.hh"
-#include "callback.hh"
 #include "func.hh"
 #include "wulformanager.hh"
 
@@ -31,48 +30,47 @@ class FinishedTransfers:
 	public FinishedManagerListener
 {
 	public:
-	
 		FinishedTransfers(std::string title);
 		~FinishedTransfers();
-	
+
 		// From BookEntry
 		GtkWidget *getWidget();
-	
-		void popupMenu_gui(GtkWidget *, GdkEventButton *, gpointer);
-		void removeItems_gui(GtkMenuItem *, gpointer);
-		void removeAll_gui(GtkMenuItem *, gpointer);
-		void updateList(FinishedItem::List& list);
-		void addEntry(FinishedItem *entry);
-		void updateStatus();
-		void openWith_gui(GtkMenuItem *, gpointer);
-	
-		//from FinishedManagerListener
-		void on(AddedDl, FinishedItem* entry) throw();
-		void on(AddedUl, FinishedItem* entry) throw();
-	
+
 	private:
+		// GUI functions
+		void updateList_gui(FinishedItem::List& list);
+		void addEntry_gui(FinishedItem *entry);
+		void updateStatus_gui();
+
+		// GUI callbacks
+		static gboolean popupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean onKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
+		static void removeItems_gui(GtkMenuItem *item, gpointer data);
+		static void removeAll_gui(GtkMenuItem *item, gpointer data);
+		static void openWith_gui(GtkMenuItem *item, gpointer data);
+
+		// Client callbacks
+		virtual void on(FinishedManagerListener::AddedDl, FinishedItem* entry) throw();
+		virtual void on(FinishedManagerListener::AddedUl, FinishedItem* entry) throw();
+
+		// For open with thread
+		static void *runCommand(void *command);
+
 		GtkWidget *mainBox;
 		GtkListStore *transferStore;
 		TreeView transferView;
 		GtkTreeSelection *transferSelection;
-		GtkTreeIter treeIter;
 		GtkStatusbar *totalItems, *totalSize, *averageSpeed;
 		GtkDialog *openWithDialog;
 		GtkEntry *openWithEntry;
 		pthread_t openWithThread;
-		static void *runCommand(void *command);
-
+		bool isUpload;
 		int items;
-		bool getType;
 		int64_t totalBytes, totalTime;
-		hash_map<std::string, FinishedItem *> finishedList;
-		
 		GtkMenu *finishedTransfersMenu;
 		GtkMenuItem *openWith, *remove, *removeAll;
-	
-		Callback3<FinishedTransfers, void, GtkWidget *, GdkEventButton *> menuCallback;
-		Callback2<FinishedTransfers, void, GtkMenuItem *> removeCallback, removeAllCallback, openWithCallback;	
 };
+
 #else
 class FinishedTransfers;
 #endif

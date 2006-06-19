@@ -33,53 +33,55 @@ class FavoriteHubs:
 	public BookEntry,
 	public FavoriteManagerListener
 {
-public:
-	FavoriteHubs();
-	~FavoriteHubs();
+	public:
+		FavoriteHubs();
+		~FavoriteHubs();
 
-	// From BookEntry
-	GtkWidget *getWidget();
+		// From BookEntry
+		GtkWidget *getWidget();
 
-private:
-	// GUI functions
-	void updateList_gui();
-	void addEntry_gui(const FavoriteHubEntry *entry);
-	void removeEntry_gui(GtkTreeIter iter);
-	void showErrorDialog_gui(std::string description);
-	void popupMenu_gui(GdkEventButton *event, gpointer data);
+	private:
+		// GUI functions
+		void updateList_gui();
+		void addEntry_gui(const FavoriteHubEntry *entry);
+		void removeEntry_gui(const FavoriteHubEntry *entry);
+		void showErrorDialog_gui(std::string description);
+		void popupMenu_gui(GdkEventButton *event, gpointer data);
+		void connect_gui(GtkTreeIter iter);
 
-	// Client functions
-	void setConnect_client(FavoriteHubEntry *entry, bool active);
-	void addEntry_client(const FavoriteHubEntry entry);
-	void editEntry_client(FavoriteHubEntry *oldEntry, const FavoriteHubEntry newEntry);
-	void removeEntry_client(FavoriteHubEntry *entry);
+		// Client functions
+		void setConnect_client(FavoriteHubEntry *entry, bool active);
+		void addEntry_client(const FavoriteHubEntry entry);
+		void editEntry_client(FavoriteHubEntry *oldEntry, const FavoriteHubEntry newEntry);
+		void removeEntry_client(FavoriteHubEntry *entry);
 
-	// GUI callbacks
-	static void connect(GtkWidget *widget, gpointer data);
-	static void onToggledClicked(GtkCellRendererToggle *cell, gchar *path, gpointer data);
-	static gboolean onButtonPressed(GtkWidget *widget, GdkEventButton *event, gpointer data);
-	static gboolean onButtonReleased(GtkWidget *widget, GdkEventButton *event, gpointer data);
-  	static gboolean onPopupMenu(GtkWidget *widget, gpointer data);
-	static void addEntry(GtkWidget *widget, gpointer data);
-	static void editEntry(GtkWidget *widget, gpointer data);
-	static void removeEntry(GtkWidget *widget, gpointer data);
+		// GUI callbacks
+		static void connect(GtkWidget *widget, gpointer data);
+		static void onToggledClicked(GtkCellRendererToggle *cell, gchar *path, gpointer data);
+		static gboolean onButtonPressed(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean onButtonReleased(GtkWidget *widget, GdkEventButton *event, gpointer data);
+	  	static gboolean onPopupMenu(GtkWidget *widget, gpointer data);
+		static gboolean onKeyReleased(GtkWidget *widget, GdkEventKey *event, gpointer data);
+		static void addEntry(GtkWidget *widget, gpointer data);
+		static void editEntry(GtkWidget *widget, gpointer data);
+		static void removeEntry(GtkWidget *widget, gpointer data);
 
-	// From FavoriteManagerListener
-	virtual void on(FavoriteManagerListener::FavoriteAdded, const FavoriteHubEntry *entry) throw();
-	virtual void on(FavoriteManagerListener::FavoriteRemoved, const FavoriteHubEntry *entry) throw();
+		// Client callbacks
+		virtual void on(FavoriteManagerListener::FavoriteAdded, const FavoriteHubEntry *entry) throw();
+		virtual void on(FavoriteManagerListener::FavoriteRemoved, const FavoriteHubEntry *entry) throw();
 
-	GtkWidget *mainBox;
-	GtkDialog *deleteDialog;
-	GtkDialog *errorDialog;
-	GtkLabel *errorLabel;
-	GtkMenu *menu;
-	hash_map<std::string, GtkWidget *> button;
-	hash_map<std::string, GtkWidget *> dialog;
-	hash_map<std::string, GtkWidget *> menuItems;
-	TreeView favoriteView;
-	GtkListStore *favoriteStore;
-	GtkTreeSelection *favoriteSelection;
-	GdkEventType previous;
+		GtkWidget *mainBox;
+		GtkDialog *deleteDialog;
+		GtkDialog *errorDialog;
+		GtkLabel *errorLabel;
+		GtkMenu *menu;
+		hash_map<std::string, GtkWidget *> button;
+		hash_map<std::string, GtkWidget *> dialog;
+		hash_map<std::string, GtkWidget *> menuItems;
+		TreeView favoriteView;
+		GtkListStore *favoriteStore;
+		GtkTreeSelection *favoriteSelection;
+		GdkEventType previous;
 };
 
 #else

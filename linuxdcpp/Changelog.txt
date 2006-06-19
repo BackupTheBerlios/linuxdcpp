@@ -1,3 +1,9 @@
+2006-06-19 - Steven Sheehy
+* Added keyboard events to favorites & finished transfers.
+* Fixed possible gui freezes in favorites & finished transfers.
+* Major code clean-up in finished transfers.
+* Fixed a crash when adding a share with an empty virtual name.
+
 2006-06-17 - Steven Sheehy
 * Fixed port signedness and added some error checking.
 * Fixed core from creating files and directories with incorrect default permissions.

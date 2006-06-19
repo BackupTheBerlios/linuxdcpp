@@ -1041,20 +1041,23 @@ void Settings::onAddShare_gui(GtkWidget *widget, gpointer data)
 		string path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->dirChooser));
 		s->lastdir = path;
 
-		gtk_entry_set_text (GTK_ENTRY (s->shareItems["Virtual"]), "");
+		gtk_entry_set_text(GTK_ENTRY(s->shareItems["Virtual"]), "");
 		response = gtk_dialog_run (GTK_DIALOG (s->virtualName));
 		gtk_widget_hide(s->virtualName);
-		if (response == GTK_RESPONSE_OK)
+		string name = string(gtk_entry_get_text(GTK_ENTRY(s->shareItems["Virtual"])));
+
+		if (response == GTK_RESPONSE_OK && !name.empty())
 		{
 			try
 			{
-				string name = ShareManager::getInstance()->validateVirtual(gtk_entry_get_text(GTK_ENTRY(s->shareItems["Virtual"])));
+				name = ShareManager::getInstance()->validateVirtual(name);
 				if (path[path.length ()-1] != PATH_SEPARATOR)
 					path += PATH_SEPARATOR;
 
 				typedef Func3<Settings, bool, string, string> F3;
 				F3 *f3 = new F3(s, &Settings::modifyShare_client, TRUE, path, name);
 				WulforManager::get()->dispatchClientFunc(f3);
+
 				GtkTreeIter iter;
 				gtk_list_store_append(s->shareStore, &iter);
 				gtk_list_store_set(s->shareStore, &iter,
