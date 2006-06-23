@@ -61,7 +61,7 @@ _CrtDbgBreak(); } } while(false)
 #else
 #define dcasserta(exp)
 #endif // _WIN32
-#define dcdebug if (false) printf
+#define dcdebug
 #define dcassert(exp)
 #define dcdrun(exp)
 #endif //_DEBUG

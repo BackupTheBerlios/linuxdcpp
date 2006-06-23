@@ -13,7 +13,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 #include "settingsdialog.hh"
@@ -1022,9 +1022,6 @@ void Settings::modifyShare_client(bool add, string path, string name)
 		ShareManager::getInstance()->addDirectory(path, name);
 	else
 		ShareManager::getInstance()->removeDirectory(path);
-
-	gtk_label_set_text(GTK_LABEL(shareItems["Size"]), string("Total size: " + 
-		Util::formatBytes(ShareManager::getInstance()->getShareSize())).c_str());
 }
 
 void Settings::onAddShare_gui(GtkWidget *widget, gpointer data)
@@ -1064,7 +1061,7 @@ void Settings::onAddShare_gui(GtkWidget *widget, gpointer data)
 					s->shareView.col("Virtual Name"), name.c_str(),
 					s->shareView.col("Directory"), path.c_str(),
 					s->shareView.col("Size"), Util::formatBytes(0).c_str(),
-					s->shareView.col("Real Size"), 0,
+					s->shareView.col("Real Size"), (int64_t)0,
 					-1);
 			}
 			catch (const ShareException& e)

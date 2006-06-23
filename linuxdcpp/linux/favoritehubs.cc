@@ -13,7 +13,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 #include "favoritehubs.hh"
@@ -97,9 +97,8 @@ FavoriteHubs::FavoriteHubs():
 	g_list_free(list);
 
 	g_signal_connect(renderer, "toggled", G_CALLBACK(onToggledClicked), (gpointer)this);
-	g_signal_connect(G_OBJECT(favoriteView.get()), "button_press_event", G_CALLBACK(onButtonPressed), (gpointer)this);
-	g_signal_connect(G_OBJECT(favoriteView.get()), "button_release_event", G_CALLBACK(onButtonReleased), (gpointer)this);
-	g_signal_connect(G_OBJECT(favoriteView.get()), "popup_menu", G_CALLBACK(onPopupMenu), (gpointer)this);
+	g_signal_connect(G_OBJECT(favoriteView.get()), "button-press-event", G_CALLBACK(onButtonPressed), (gpointer)this);
+	g_signal_connect(G_OBJECT(favoriteView.get()), "button-release-event", G_CALLBACK(onButtonReleased), (gpointer)this);
 	g_signal_connect(G_OBJECT(favoriteView.get()), "key-release-event", G_CALLBACK(onKeyReleased), (gpointer)this);
 
 	updateList_gui();
@@ -165,12 +164,6 @@ void FavoriteHubs::showErrorDialog_gui(string description)
 	gtk_widget_hide(GTK_WIDGET(errorDialog));
 }
 
-void FavoriteHubs::popupMenu_gui(GdkEventButton *event, gpointer data)
-{
-    gtk_menu_popup(menu, NULL, NULL, NULL, NULL,
-		event ? event->button : 0, gdk_event_get_time((GdkEvent*)event));
-}
-
 void FavoriteHubs::connect_gui(GtkTreeIter iter)
 {
 	WulforManager::get()->addHub_gui(
@@ -224,61 +217,83 @@ void FavoriteHubs::onToggledClicked(GtkCellRendererToggle *cell, gchar *path, gp
 	FavoriteHubs *fh = (FavoriteHubs*)data;
   	GtkTreeIter iter;
   	gboolean fixed;
-	GtkTreeModel *m = gtk_tree_view_get_model(fh->favoriteView.get());
-  	gtk_tree_model_get_iter(m, &iter, gtk_tree_path_new_from_string(path));
-  	fixed = fh->favoriteView.getValue<gboolean>(&iter, "Auto Connect");
-  	fixed = !fixed;
-  	gtk_list_store_set(GTK_LIST_STORE(m), &iter, fh->favoriteView.col("Auto Connect"), fixed, -1);
+	GtkTreeModel *m = GTK_TREE_MODEL(fh->favoriteStore);
 
-	FavoriteHubEntry *entry = fh->favoriteView.getValue<gpointer,FavoriteHubEntry*>(&iter, "Entry");
-	typedef Func2<FavoriteHubs, FavoriteHubEntry*, bool> F2;
-	F2 *func = new F2(fh, &FavoriteHubs::setConnect_client, entry, fixed);
-	WulforManager::get()->dispatchClientFunc(func);
+  	if (gtk_tree_model_get_iter_from_string(m, &iter, path))
+  	{
+  		fixed = fh->favoriteView.getValue<gboolean>(&iter, "Auto Connect");
+		fixed = !fixed;
+  		gtk_list_store_set(fh->favoriteStore, &iter, fh->favoriteView.col("Auto Connect"), fixed, -1);
+
+		FavoriteHubEntry *entry = fh->favoriteView.getValue<gpointer, FavoriteHubEntry*>(&iter, "Entry");
+		typedef Func2<FavoriteHubs, FavoriteHubEntry*, bool> F2;
+		F2 *func = new F2(fh, &FavoriteHubs::setConnect_client, entry, fixed);
+		WulforManager::get()->dispatchClientFunc(func);
+	}
 }
 
 gboolean FavoriteHubs::onButtonPressed(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
-	((FavoriteHubs*)data)->previous = event->type;
+	FavoriteHubs *fh = (FavoriteHubs*)data;
+	fh->previous = event->type;
 	return FALSE;
 }
 
 gboolean FavoriteHubs::onButtonReleased(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
 	FavoriteHubs *fh = (FavoriteHubs*)data;
-	GtkTreeIter iter;
 
-	if (!gtk_tree_selection_get_selected(fh->favoriteSelection, NULL, &iter))
+	if (!gtk_tree_selection_get_selected(fh->favoriteSelection, NULL, NULL))
 	{
 		gtk_widget_set_sensitive(fh->button["Properties"], FALSE);
 		gtk_widget_set_sensitive(fh->button["Remove"], FALSE);
 		gtk_widget_set_sensitive(fh->button["Connect"], FALSE);
 		return FALSE;
 	}
+	else
+	{
+		gtk_widget_set_sensitive(fh->button["Properties"], TRUE);
+		gtk_widget_set_sensitive(fh->button["Remove"], TRUE);
+		gtk_widget_set_sensitive(fh->button["Connect"], TRUE);
+	}
 
-	gtk_widget_set_sensitive(fh->button["Properties"], TRUE);
-	gtk_widget_set_sensitive(fh->button["Remove"], TRUE);
-	gtk_widget_set_sensitive(fh->button["Connect"], TRUE);	
-	
 	if (fh->previous == GDK_BUTTON_PRESS && event->button == 3)
-		fh->popupMenu_gui(event, data);
+		fh->popupMenu_gui();
 	else if (fh->previous == GDK_2BUTTON_PRESS && event->button == 1)
 		fh->connect(widget, data);
 
 	return FALSE;
 }
 
-gboolean FavoriteHubs::onPopupMenu(GtkWidget *widget, gpointer data)
+void FavoriteHubs::popupMenu_gui()
 {
-	((FavoriteHubs*)data)->popupMenu_gui(NULL, data);
-	return TRUE;
+	if (!gtk_tree_selection_get_selected(favoriteSelection, NULL, NULL))
+	{
+		gtk_widget_set_sensitive(menuItems["Properties"], FALSE);
+		gtk_widget_set_sensitive(menuItems["Remove"], FALSE);
+		gtk_widget_set_sensitive(menuItems["Connect"], FALSE);
+	}
+	else
+	{
+		gtk_widget_set_sensitive(menuItems["Properties"], TRUE);
+		gtk_widget_set_sensitive(menuItems["Remove"], TRUE);
+		gtk_widget_set_sensitive(menuItems["Connect"], TRUE);
+	}
+	gtk_menu_popup(menu, NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
 }
 
 gboolean FavoriteHubs::onKeyReleased(GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
+	FavoriteHubs *fh = (FavoriteHubs *)data;
+
 	if (event->keyval == GDK_Return || event->keyval == GDK_KP_Enter)
-		connect(widget, data);
+		fh->connect(widget, data);
 	else if (event->keyval == GDK_Delete || event->keyval == GDK_BackSpace)
-		removeEntry(widget, data);
+		fh->removeEntry(widget, data);
+	else if (event->keyval == GDK_Menu || (event->keyval == GDK_F10 && event->state & GDK_SHIFT_MASK))
+		fh->popupMenu_gui();
+
+	return FALSE;
 }
 
 void FavoriteHubs::addEntry(GtkWidget *widget, gpointer data)

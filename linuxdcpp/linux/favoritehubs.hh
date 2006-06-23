@@ -13,7 +13,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 #ifndef WULFOR_FAVORITE_HUBS_HH
@@ -46,25 +46,24 @@ class FavoriteHubs:
 		void addEntry_gui(const FavoriteHubEntry *entry);
 		void removeEntry_gui(const FavoriteHubEntry *entry);
 		void showErrorDialog_gui(std::string description);
-		void popupMenu_gui(GdkEventButton *event, gpointer data);
 		void connect_gui(GtkTreeIter iter);
-
-		// Client functions
-		void setConnect_client(FavoriteHubEntry *entry, bool active);
-		void addEntry_client(const FavoriteHubEntry entry);
-		void editEntry_client(FavoriteHubEntry *oldEntry, const FavoriteHubEntry newEntry);
-		void removeEntry_client(FavoriteHubEntry *entry);
+		void popupMenu_gui();
 
 		// GUI callbacks
 		static void connect(GtkWidget *widget, gpointer data);
 		static void onToggledClicked(GtkCellRendererToggle *cell, gchar *path, gpointer data);
 		static gboolean onButtonPressed(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onButtonReleased(GtkWidget *widget, GdkEventButton *event, gpointer data);
-	  	static gboolean onPopupMenu(GtkWidget *widget, gpointer data);
 		static gboolean onKeyReleased(GtkWidget *widget, GdkEventKey *event, gpointer data);
 		static void addEntry(GtkWidget *widget, gpointer data);
 		static void editEntry(GtkWidget *widget, gpointer data);
 		static void removeEntry(GtkWidget *widget, gpointer data);
+
+		// Client functions
+		void setConnect_client(FavoriteHubEntry *entry, bool active);
+		void addEntry_client(const FavoriteHubEntry entry);
+		void editEntry_client(FavoriteHubEntry *oldEntry, const FavoriteHubEntry newEntry);
+		void removeEntry_client(FavoriteHubEntry *entry);
 
 		// Client callbacks
 		virtual void on(FavoriteManagerListener::FavoriteAdded, const FavoriteHubEntry *entry) throw();

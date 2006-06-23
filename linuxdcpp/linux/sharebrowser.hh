@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -13,16 +13,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 #ifndef WULFOR_SHARE_BROWSER_HH
 #define WULFOR_SHARE_BROWSER_HH
 
-#include <sstream>
-
 #include "bookentry.hh"
-#include "callback.hh"
 #include "treeview.hh"
 #include "wulformanager.hh"
 
@@ -32,60 +29,57 @@
 #include <client/Text.h>
 #include <client/User.h>
 
-using namespace std;
-
 class ShareBrowser:
 	public BookEntry
 {
 	public:
-		//the constructor is to be called from the gui thread
 		ShareBrowser(User::Ptr user, std::string file);
 		~ShareBrowser();
-	
+
 		// From BookEntry
 		GtkWidget *getWidget();
 
-		//these functions should only be called from the client thread
-		void matchQueue_client();
-		void findNext_gui(bool firstFile);
-	
-		//these functions should only be called from the gui thread
-		void setStatus_gui(GtkStatusbar *status, std::string msg);
+		// GUI function
 		void setPosition_gui(std::string pos);
 
 	private:
-		//only call these from gui thread
-		static gboolean fileButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
-		static gboolean filePopupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
-		static gboolean dirButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
-		static gboolean dirButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
-		static gboolean dirPopupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
-		static void matchButtonClicked_gui(GtkWidget *widget, gpointer user_data);
+		// GUI functions
+		void buildDirs_gui(DirectoryListing::Directory::List dir, GtkTreeIter *iter);
+		void updateFiles_gui(DirectoryListing::Directory *dir);
+		void updateStatus_gui();
+		void setStatus_gui(GtkStatusbar *status, std::string msg);
+		void findNext_gui(bool firstFile);
+		void downloadSelectedFiles_gui(std::string target);
+		void downloadSelectedDirs_gui(std::string target);
+		void buildDirDownloadMenu_gui();
+		void buildFileDownloadMenu_gui();
+		void fileViewSelected_gui();
+
+		// GUI callbacks
+		static gboolean fileButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean buttonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean fileKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
+		static gboolean filePopupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean dirButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean dirKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
+		static gboolean dirPopupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static void matchButtonClicked_gui(GtkWidget *widget, gpointer data);
 		static void findButtonClicked_gui(GtkWidget *widget, gpointer);
 		static void nextButtonClicked_gui(GtkWidget *widget, gpointer);
-		static void downloadClicked_gui(GtkMenuItem *item, gpointer user_data);
-		static void downloadToClicked_gui(GtkMenuItem *item, gpointer user_data);
-		static void downloadFavoriteClicked_gui(GtkMenuItem *item, gpointer user_data);
-		static void downloadDirClicked_gui(GtkMenuItem *item, gpointer user_data);
-		static void downloadDirToClicked_gui(GtkMenuItem *item, gpointer user_data);
-		static void downloadFavoriteDirClicked_gui(GtkMenuItem *item, gpointer user_data);
-		static void searchAlternatesClicked_gui(GtkMenuItem *item, gpointer user_data);
+		static void downloadClicked_gui(GtkMenuItem *item, gpointer data);
+		static void downloadToClicked_gui(GtkMenuItem *item, gpointer data);
+		static void downloadFavoriteClicked_gui(GtkMenuItem *item, gpointer data);
+		static void downloadDirClicked_gui(GtkMenuItem *item, gpointer data);
+		static void downloadDirToClicked_gui(GtkMenuItem *item, gpointer data);
+		static void downloadFavoriteDirClicked_gui(GtkMenuItem *item, gpointer data);
+		static void searchAlternatesClicked_gui(GtkMenuItem *item, gpointer data);
 
-		void buildDirs_gui(DirectoryListing::Directory::List dir, GtkTreeIter *iter);
-		void updateFiles_gui(bool fromFind);
-		void updateStatus_gui();
-
-		//only call these from client thread
-		void downloadSelectedFiles_gui(std::string target);
+		// Client functions
 		void downloadFile_client(DirectoryListing::File *file, std::string target);
-		void downloadSelectedDirs_gui(std::string target);
+		void matchQueue_client();
 		void downloadDir_client(DirectoryListing::Directory *dir, std::string target);
 
-		void buildDownloadMenus_gui(int menu);
-
 		GdkEventType oldType;
-		guint oldButton;
-
 		DirectoryListing listing;
 		std::string lastDir;
 		int64_t shareSize;
@@ -96,7 +90,6 @@ class ShareBrowser:
 		GtkTreePath *posDir;
 		DirectoryListing::File::Iter posFile;
 		TreeView dirView, fileView;
-	
 		GtkStatusbar *mainStatus, *itemsStatus, *sizeStatus, *filesStatus, *totalStatus;
 		GtkListStore *fileStore;
 		GtkTreeStore *dirStore;
@@ -104,13 +97,9 @@ class ShareBrowser:
 		GtkWidget *box;
 		GtkButton *matchButton, *findButton, *nextButton;
 		GdkPixbuf *iconFile, *iconDirectory;
-		
 		GtkMenu *fileMenu, *dirMenu, *fileDownloadMenu, *dirDownloadMenu;
-		std::map<string, GtkWidget*> dirMenuItems;
-		std::map<string, GtkWidget*> fileMenuItems;
-		std::vector<GtkWidget*> fileDownloadItems, dirDownloadItems;
-		typedef pair<ShareBrowser*, string> userData;
-		std::vector<userData*> menuUserData;
+		hash_map<std::string, GtkWidget*> dirMenuItems;
+		hash_map<std::string, GtkWidget*> fileMenuItems;
 };
 
 #else

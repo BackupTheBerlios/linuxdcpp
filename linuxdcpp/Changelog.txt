@@ -1,3 +1,16 @@
+2006-06-23 - Steven Sheehy
+* Fixed HashData.dat from not being created on 64bit systems.
+* FileExceptions now show name of file with error (on stdout in debug mode).
+* Updated licensing information: FSF changed postal address.
+* Fixed another crash when adding shares.
+Sharebrowser changes:
+	* Huge cleanup of the code resulting in a noticeable speed increase when browsing folders.
+	* Fixed icons not showing up for non-Gnome users.
+	* Fixed a crash when loading a corrupt or incomplete filelist.
+	* Fixed a bug where the wrong column would show it was sorted.
+	* Fixed a number of memory leaks.
+	* Added keyboard events.
+
 2006-06-19 - Steven Sheehy
 * Added keyboard events to favorites & finished transfers.
 * Fixed possible gui freezes in favorites & finished transfers.
@@ -18,7 +31,7 @@
 
 2006-06-15 - Naga & Steven Sheehy
 * Upgraded the client core to version 0.691:
-	<WARNING> 
+	<WARNING>
 		* All sources to downloads will be lost (not the files) due to Queue.xml core changes.
 		* Some settings will have to be reconfigured (namely connection mode & speed).
 	</WARNING>
@@ -153,7 +166,7 @@
 2006-02-08 - paskharen
 * Made treeview columns reorderable (thanks Steven Sheehy)
 * Made treeview columns save their widths (thanks Steven Sheehy)
-* Made treeview a general treeview wrapper class. This is not complete and 
+* Made treeview a general treeview wrapper class. This is not complete and
   the settingsdialog isn't fully updated to use this.
 * Made it possible to have more than one search tab open.
 * Fixed an assertion failure when downloading a directory.
@@ -196,7 +209,7 @@
 2005-12-13 - paskharen
 * Fixed bug in sharebrowser when a file has no extension (thanks Vikram Aggarwal)
 * Added atomic code for mips and ia64 (thanks Romain Beauxis)
-* Changed behaivour when cpu type is not supported, it now disables atomic 
+* Changed behaivour when cpu type is not supported, it now disables atomic
   operations automatically.
 * Made finished ul and dl icons same size as the others.
 
@@ -235,7 +248,7 @@
 * Added menubar (thanks s4kk3)
 * Added a custom atomic.h (only x86 but that's easy to fix, just copy from qt =)
   (thanks Rikard Björklind)
-* Log messages are now shown in main statusbar 
+* Log messages are now shown in main statusbar
   (patch #000518, thanks clairvoyant)
 
 2005-08-04 - paskharen
@@ -311,7 +324,7 @@ were missing.
 * Added Changelog again :)
 * Added all the settings (except User Commands), though, we haven't added all the features that the settings have to offer yet.
 * The Hash progress is now working.
-* Added some settings: 
+* Added some settings:
 	* Confirm applicatioon exit
 	* Set Download Queue tab bold when an entry is added
 	* Confirm favorite hub removal
