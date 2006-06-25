@@ -43,17 +43,17 @@ class FinishedTransfers:
 		void updateStatus_gui();
 
 		// GUI callbacks
-		static gboolean popupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean onPopupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
-		static void removeItems_gui(GtkMenuItem *item, gpointer data);
-		static void removeAll_gui(GtkMenuItem *item, gpointer data);
-		static void openWith_gui(GtkMenuItem *item, gpointer data);
+		static void onRemoveItems_gui(GtkMenuItem *item, gpointer data);
+		static void onRemoveAll_gui(GtkMenuItem *item, gpointer data);
+		static void onOpenWith_gui(GtkMenuItem *item, gpointer data);
 
 		// Client callbacks
 		virtual void on(FinishedManagerListener::AddedDl, FinishedItem* entry) throw();
 		virtual void on(FinishedManagerListener::AddedUl, FinishedItem* entry) throw();
 
-		// For open with thread
+		// For open with thread. Not _gui or _client since it runs in its own thread.
 		static void *runCommand(void *command);
 
 		GtkWidget *mainBox;

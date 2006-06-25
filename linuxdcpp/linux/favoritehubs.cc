@@ -38,13 +38,13 @@ FavoriteHubs::FavoriteHubs():
 
 	// Initialize bottom toolbar
 	button["New"] = glade_xml_get_widget(xml, "buttonNew");
-	g_signal_connect(G_OBJECT(button["New"]), "clicked", G_CALLBACK(addEntry), (gpointer)this);
+	g_signal_connect(G_OBJECT(button["New"]), "clicked", G_CALLBACK(onAddEntry_gui), (gpointer)this);
 	button["Properties"] = glade_xml_get_widget(xml, "buttonProperties");
-	g_signal_connect(G_OBJECT(button["Properties"]), "clicked", G_CALLBACK(editEntry), (gpointer)this);
+	g_signal_connect(G_OBJECT(button["Properties"]), "clicked", G_CALLBACK(onEditEntry_gui), (gpointer)this);
 	button["Remove"] = glade_xml_get_widget(xml, "buttonRemove");
-	g_signal_connect(G_OBJECT(button["Remove"]), "clicked", G_CALLBACK(removeEntry), (gpointer)this);
+	g_signal_connect(G_OBJECT(button["Remove"]), "clicked", G_CALLBACK(onRemoveEntry_gui), (gpointer)this);
 	button["Connect"] = glade_xml_get_widget (xml, "buttonConnect");
-	g_signal_connect(G_OBJECT(button["Connect"]), "clicked", G_CALLBACK(connect), (gpointer)this);
+	g_signal_connect(G_OBJECT(button["Connect"]), "clicked", G_CALLBACK(onConnect_gui), (gpointer)this);
 
 	// Initialize favorite hubs dialog
 	dialog["Window"] = glade_xml_get_widget(xml, "favoriteHubsDialog");
@@ -62,16 +62,16 @@ FavoriteHubs::FavoriteHubs():
 	menu = GTK_MENU(gtk_menu_new());
 	menuItems["Connect"] = gtk_menu_item_new_with_label("Connect");
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuItems["Connect"]);
-	g_signal_connect(G_OBJECT(menuItems["Connect"]), "activate", G_CALLBACK(connect), (gpointer)this);
+	g_signal_connect(G_OBJECT(menuItems["Connect"]), "activate", G_CALLBACK(onConnect_gui), (gpointer)this);
 	menuItems["New"] = gtk_menu_item_new_with_label("New...");
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuItems["New"]);
-	g_signal_connect(G_OBJECT(menuItems["New"]), "activate", G_CALLBACK(addEntry), (gpointer)this);
+	g_signal_connect(G_OBJECT(menuItems["New"]), "activate", G_CALLBACK(onAddEntry_gui), (gpointer)this);
 	menuItems["Properties"] = gtk_menu_item_new_with_label("Properties");
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuItems["Properties"]);
-	g_signal_connect(G_OBJECT(menuItems["Properties"]), "activate", G_CALLBACK(editEntry), (gpointer)this);
+	g_signal_connect(G_OBJECT(menuItems["Properties"]), "activate", G_CALLBACK(onEditEntry_gui), (gpointer)this);
 	menuItems["Remove"] = gtk_menu_item_new_with_label("Remove");
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuItems["Remove"]);
-	g_signal_connect(G_OBJECT(menuItems["Remove"]), "activate", G_CALLBACK(removeEntry), (gpointer)this);
+	g_signal_connect(G_OBJECT(menuItems["Remove"]), "activate", G_CALLBACK(onRemoveEntry_gui), (gpointer)this);
 	gtk_widget_show_all(GTK_WIDGET(menu));
 
 	// Initialize favorite hub list treeview
@@ -96,10 +96,10 @@ FavoriteHubs::FavoriteHubs():
 	GtkCellRenderer *renderer = (GtkCellRenderer*)g_list_nth_data(list, 0);
 	g_list_free(list);
 
-	g_signal_connect(renderer, "toggled", G_CALLBACK(onToggledClicked), (gpointer)this);
-	g_signal_connect(G_OBJECT(favoriteView.get()), "button-press-event", G_CALLBACK(onButtonPressed), (gpointer)this);
-	g_signal_connect(G_OBJECT(favoriteView.get()), "button-release-event", G_CALLBACK(onButtonReleased), (gpointer)this);
-	g_signal_connect(G_OBJECT(favoriteView.get()), "key-release-event", G_CALLBACK(onKeyReleased), (gpointer)this);
+	g_signal_connect(renderer, "toggled", G_CALLBACK(onToggledClicked_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(favoriteView.get()), "button-press-event", G_CALLBACK(onButtonPressed_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(favoriteView.get()), "button-release-event", G_CALLBACK(onButtonReleased_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(favoriteView.get()), "key-release-event", G_CALLBACK(onKeyReleased_gui), (gpointer)this);
 
 	updateList_gui();
 }
@@ -203,7 +203,7 @@ void FavoriteHubs::removeEntry_client(FavoriteHubEntry *entry)
 	FavoriteManager::getInstance()->removeFavorite(entry);
 }
 
-void FavoriteHubs::connect(GtkWidget *widget, gpointer data)
+void FavoriteHubs::onConnect_gui(GtkWidget *widget, gpointer data)
 {
 	FavoriteHubs *fh = (FavoriteHubs*)data;
 	GtkTreeIter iter;
@@ -212,7 +212,7 @@ void FavoriteHubs::connect(GtkWidget *widget, gpointer data)
 		fh->connect_gui(iter);
 }
 
-void FavoriteHubs::onToggledClicked(GtkCellRendererToggle *cell, gchar *path, gpointer data)
+void FavoriteHubs::onToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data)
 {
 	FavoriteHubs *fh = (FavoriteHubs*)data;
   	GtkTreeIter iter;
@@ -232,14 +232,14 @@ void FavoriteHubs::onToggledClicked(GtkCellRendererToggle *cell, gchar *path, gp
 	}
 }
 
-gboolean FavoriteHubs::onButtonPressed(GtkWidget *widget, GdkEventButton *event, gpointer data)
+gboolean FavoriteHubs::onButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
 	FavoriteHubs *fh = (FavoriteHubs*)data;
 	fh->previous = event->type;
 	return FALSE;
 }
 
-gboolean FavoriteHubs::onButtonReleased(GtkWidget *widget, GdkEventButton *event, gpointer data)
+gboolean FavoriteHubs::onButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
 	FavoriteHubs *fh = (FavoriteHubs*)data;
 
@@ -260,7 +260,7 @@ gboolean FavoriteHubs::onButtonReleased(GtkWidget *widget, GdkEventButton *event
 	if (fh->previous == GDK_BUTTON_PRESS && event->button == 3)
 		fh->popupMenu_gui();
 	else if (fh->previous == GDK_2BUTTON_PRESS && event->button == 1)
-		fh->connect(widget, data);
+		fh->onConnect_gui(widget, data);
 
 	return FALSE;
 }
@@ -282,21 +282,21 @@ void FavoriteHubs::popupMenu_gui()
 	gtk_menu_popup(menu, NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
 }
 
-gboolean FavoriteHubs::onKeyReleased(GtkWidget *widget, GdkEventKey *event, gpointer data)
+gboolean FavoriteHubs::onKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
 	FavoriteHubs *fh = (FavoriteHubs *)data;
 
 	if (event->keyval == GDK_Return || event->keyval == GDK_KP_Enter)
-		fh->connect(widget, data);
+		fh->onConnect_gui(widget, data);
 	else if (event->keyval == GDK_Delete || event->keyval == GDK_BackSpace)
-		fh->removeEntry(widget, data);
+		fh->onRemoveEntry_gui(widget, data);
 	else if (event->keyval == GDK_Menu || (event->keyval == GDK_F10 && event->state & GDK_SHIFT_MASK))
 		fh->popupMenu_gui();
 
 	return FALSE;
 }
 
-void FavoriteHubs::addEntry(GtkWidget *widget, gpointer data)
+void FavoriteHubs::onAddEntry_gui(GtkWidget *widget, gpointer data)
 {
 	FavoriteHubs *fh = (FavoriteHubs *)data;
 	FavoriteHubEntry entry;
@@ -342,7 +342,7 @@ void FavoriteHubs::addEntry(GtkWidget *widget, gpointer data)
 	}
 }
 
-void FavoriteHubs::editEntry(GtkWidget *widget, gpointer data)
+void FavoriteHubs::onEditEntry_gui(GtkWidget *widget, gpointer data)
 {
 	FavoriteHubs *fh = (FavoriteHubs *)data;
 	GtkTreeIter iter;
@@ -407,7 +407,7 @@ void FavoriteHubs::editEntry(GtkWidget *widget, gpointer data)
 	}
 }
 
-void FavoriteHubs::removeEntry(GtkWidget *widget, gpointer data)
+void FavoriteHubs::onRemoveEntry_gui(GtkWidget *widget, gpointer data)
 {
 	FavoriteHubs *fh = (FavoriteHubs*)data;
 	GtkTreeIter iter;

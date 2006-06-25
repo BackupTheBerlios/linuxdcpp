@@ -43,10 +43,10 @@ class PrivateMessage:
 
 	private:
 		// GUI functions
-		void addLine(std::string line);
+		void addLine_gui(std::string line);
 
 		// GUI callbacks
-		static void sendMessage_gui(GtkEntry *entry, gpointer data);
+		static void onSendMessage_gui(GtkEntry *entry, gpointer data);
 		static gboolean onKeyPress_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
 
 		// Client functions
@@ -58,8 +58,8 @@ class PrivateMessage:
 		GtkTextView *text;
 		GtkTextBuffer *buffer;
 		GtkTextMark *mark;
-		static const int maxLines = 500;
-		static const int maxHistory = 20;
+		const int maxLines;
+		const int maxHistory;
 		std::vector<std::string> history;
 		int historyIndex;
 };

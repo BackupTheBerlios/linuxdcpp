@@ -23,7 +23,9 @@ using namespace std;
 
 PrivateMessage::PrivateMessage(User::Ptr user):
 	BookEntry("PM: " + WulforUtil::getNicks(user)),
-	user(user)
+	user(user),
+	maxLines(500),
+	maxHistory(20)
 {
 	GladeXML *xml = getGladeXML("privatemessage.glade");
 
@@ -52,12 +54,13 @@ PrivateMessage::PrivateMessage(User::Ptr user):
 	gtk_text_buffer_get_end_iter(buffer, &iter);
 	mark = gtk_text_buffer_create_mark(buffer, NULL, &iter, FALSE);
 
-	g_signal_connect(G_OBJECT(entry), "activate", G_CALLBACK(sendMessage_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(entry), "activate", G_CALLBACK(onSendMessage_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(entry), "key-press-event", G_CALLBACK(onKeyPress_gui), (gpointer)this);
 
 	gtk_widget_grab_focus(entry);
 
 	history.push_back("");
+	historyIndex = 0;
 }
 
 GtkWidget *PrivateMessage::getWidget()
@@ -85,7 +88,7 @@ void PrivateMessage::addMessage_gui(string message)
 		line = "[" + Util::getShortTimeString() + "] ";
 	line += message + "\n";
 
-	addLine(line);
+	addLine_gui(line);
 }
 
 void PrivateMessage::addStatusMessage_gui(string message)
@@ -96,10 +99,10 @@ void PrivateMessage::addStatusMessage_gui(string message)
 		line = "[" + Util::getShortTimeString() + "] ";
 	line += "*** " + message + "\n";
 
-	addLine(line);
+	addLine_gui(line);
 }
 
-void PrivateMessage::addLine(string line)
+void PrivateMessage::addLine_gui(string line)
 {
 	GtkTextIter iter;
 	GtkAdjustment *adj;
@@ -130,7 +133,7 @@ void PrivateMessage::addLine(string line)
 		setBold_gui();
 }
 
-void PrivateMessage::sendMessage_gui(GtkEntry *entry, gpointer data)
+void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
 {
 	PrivateMessage *pm = (PrivateMessage *)data;
 	string text = gtk_entry_get_text(entry);
@@ -144,7 +147,7 @@ void PrivateMessage::sendMessage_gui(GtkEntry *entry, gpointer data)
 		pm->history.push_back(text);
 		pm->history.push_back("");
 		pm->historyIndex = pm->history.size() - 1;
-		if (pm->history.size() > maxHistory + 1)
+		if (pm->history.size() > pm->maxHistory + 1)
 			pm->history.erase(pm->history.begin());
 
 		// Process special commands
@@ -208,23 +211,26 @@ gboolean PrivateMessage::onKeyPress_gui(GtkWidget *widget, GdkEventKey *event, g
 {
 	PrivateMessage *pm = (PrivateMessage *)data;
 	string text;
+	int index;
 
 	if (event->keyval == GDK_Up || event->keyval == GDK_KP_Up)
 	{
-		if (pm->historyIndex - 1 >= 0)
+		index = pm->historyIndex - 1;
+		if (index >= 0 && index < pm->history.size())
 		{
-			pm->historyIndex -= 1;
-			text = pm->history[pm->historyIndex];
+			text = pm->history[index];
+			pm->historyIndex = index;
 			gtk_entry_set_text(GTK_ENTRY(widget), text.c_str());
 		}
 		return TRUE;
 	}
 	else if (event->keyval == GDK_Down || event->keyval == GDK_KP_Down)
 	{
-		if (pm->historyIndex + 1 < pm->history.size())
+		index = pm->historyIndex + 1;
+		if (index >= 0 && index < pm->history.size())
 		{
-			pm->historyIndex += 1;
-			text = pm->history[pm->historyIndex];
+			text = pm->history[index];
+			pm->historyIndex = index;
 			gtk_entry_set_text(GTK_ENTRY(widget), text.c_str());
 		}
 		return TRUE;

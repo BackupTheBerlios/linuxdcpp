@@ -56,23 +56,23 @@ class ShareBrowser:
 		void fileViewSelected_gui();
 
 		// GUI callbacks
-		static gboolean fileButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
-		static gboolean buttonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
-		static gboolean fileKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
-		static gboolean filePopupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
-		static gboolean dirButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
-		static gboolean dirKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
-		static gboolean dirPopupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
-		static void matchButtonClicked_gui(GtkWidget *widget, gpointer data);
-		static void findButtonClicked_gui(GtkWidget *widget, gpointer);
-		static void nextButtonClicked_gui(GtkWidget *widget, gpointer);
-		static void downloadClicked_gui(GtkMenuItem *item, gpointer data);
-		static void downloadToClicked_gui(GtkMenuItem *item, gpointer data);
-		static void downloadFavoriteClicked_gui(GtkMenuItem *item, gpointer data);
-		static void downloadDirClicked_gui(GtkMenuItem *item, gpointer data);
-		static void downloadDirToClicked_gui(GtkMenuItem *item, gpointer data);
-		static void downloadFavoriteDirClicked_gui(GtkMenuItem *item, gpointer data);
-		static void searchAlternatesClicked_gui(GtkMenuItem *item, gpointer data);
+		static gboolean onFileButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean onButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean onFileKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
+		static gboolean onFilePopupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean onDirButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean onDirKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
+		static gboolean onDirPopupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static void onMatchButtonClicked_gui(GtkWidget *widget, gpointer data);
+		static void onFindButtonClicked_gui(GtkWidget *widget, gpointer);
+		static void onNextButtonClicked_gui(GtkWidget *widget, gpointer);
+		static void onDownloadClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onDownloadToClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onDownloadFavoriteClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onDownloadDirClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onDownloadDirToClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onDownloadFavoriteDirClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onSearchAlternatesClicked_gui(GtkMenuItem *item, gpointer data);
 
 		// Client functions
 		void downloadFile_client(DirectoryListing::File *file, std::string target);
