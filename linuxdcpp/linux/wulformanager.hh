@@ -68,6 +68,7 @@ class WulforManager
 		ShareBrowser *addShareBrowser_gui(User::Ptr user, std::string file);
 		FinishedTransfers *addFinishedTransfers_gui(std::string title);
 		void deleteAllBookEntries();
+		void deleteBookEntry_gui(BookEntry *entry);
 
 		// DialogEntry functions
 		Hash *openHashDialog_gui();
@@ -76,7 +77,6 @@ class WulforManager
 	private:
 		// BookEntry functions
 		void insertBookEntry_gui(BookEntry *entry);
-		void deleteBookEntry_gui(BookEntry *entry);
 
 		// DialogEntry functions
 		DialogEntry *getDialogEntry_gui(std::string id);

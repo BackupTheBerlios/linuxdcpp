@@ -63,7 +63,7 @@ class Hub:
 		void getPassword_gui();
 		void addMessage_gui(std::string msg);
 		void sendMessage_gui(GtkEntry *entry, gpointer data);
-		void addPrivateMessage_gui(User::Ptr tabUser, User::Ptr msgMuser, std::string msg);
+		void addPrivateMessage_gui(User::Ptr tabUser, std::string msg);
 
 		void popupNickMenu_gui(GtkWidget *, GdkEventButton *, gpointer);
 		void browseItemClicked_gui(GtkMenuItem *, gpointer);

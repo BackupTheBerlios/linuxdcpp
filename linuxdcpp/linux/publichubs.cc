@@ -75,7 +75,7 @@ PublicHubs::PublicHubs():
 
 	menu = GTK_MENU(gtk_menu_new()); 
 	conItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Connect"));
-	favItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Add to favourites"));
+	favItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Add to favorites"));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(conItem));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(favItem));
 

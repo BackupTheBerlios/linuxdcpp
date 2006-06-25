@@ -212,9 +212,10 @@ class MainWindow:
 		typedef pair<User::Ptr, bool> UserID;
 		struct HashPair
 		{
+			// User::Ptr hash is copied from client/User.h
 			size_t operator() (const UserID u) const
 			{
-				return u.first * 23 + u.second;
+				return ((size_t)(&(*(u.first))))/sizeof(User) * 23 + u.second;
 			}
 		};
 		hash_map<UserID, TransferItem *, HashPair> transferMap;

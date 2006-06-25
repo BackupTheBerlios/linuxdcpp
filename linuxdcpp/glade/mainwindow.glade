@@ -431,7 +431,7 @@
 	      <child>
 		<widget class="GtkToolButton" id="publicHubs">
 		  <property name="visible">True</property>
-		  <property name="label" translatable="yes">Public hubs</property>
+		  <property name="label" translatable="yes">Public Hubs</property>
 		  <property name="use_underline">True</property>
 		  <property name="stock_id">gtk-network</property>
 		  <property name="visible_horizontal">True</property>
@@ -543,7 +543,7 @@
 	      <child>
 		<widget class="GtkToolButton" id="favHubs">
 		  <property name="visible">True</property>
-		  <property name="label" translatable="yes">Favourite hubs</property>
+		  <property name="label" translatable="yes">Favorite Hubs</property>
 		  <property name="use_underline">True</property>
 		  <property name="stock_id">gtk-home</property>
 		  <property name="visible_horizontal">True</property>

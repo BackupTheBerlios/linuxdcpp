@@ -1366,8 +1366,9 @@ void MainWindow::onTrayIconClicked_gui(GtkWidget *widget, GdkEventButton *event,
 
 void MainWindow::onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data)
 {
-	GtkWindow *win = ((MainWindow *)data)->getWindow();
-	GtkPaned *pane = ((MainWindow *)data)->transferPane;
+	MainWindow *mw = (MainWindow *)data;
+	GtkWindow *win = mw->getWindow();
+	GtkPaned *pane = mw->transferPane;
 	static int x, y, panePos;
 	static bool isMaximized, isIconified;
 

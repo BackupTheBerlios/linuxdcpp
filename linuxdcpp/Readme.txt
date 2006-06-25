@@ -1,10 +1,7 @@
 Introduction
 ------------
-This is a mostly working port of DC++ to Linux (or Unix-likes in general, 
-but there might be issues. It's only tested on Linux anyway). The name
-is not really decided upon, Wulfor is kind of the development name (think
-"Longhorn" from Microsoft) until we come up with something better (Linux DC++
-or something like that is just too boring).
+This is a mostly working port of DC++ to Linux (or Unix-likes in general,
+but there might be issues. It's only tested on Linux anyway).
 
 Dependencies:
 -------------
@@ -22,8 +19,8 @@ Compiling:
 cd /path/to/linuxdcpp
 scons
 
-Scons will tell you if something's missing in a clear and human-readable way. 
-Hopefully. Fingers crossed. Knock on wood. Etc, etc. 
+Scons will tell you if something's missing in a clear and human-readable way.
+Hopefully. Fingers crossed. Knock on wood. Etc, etc.
 
 For compile options, look in the main SConstruct file.
 
@@ -43,18 +40,18 @@ location.
 
 Known problems/rants =):
 ------------------------
-Utf8 locales are currently very buggy/not supported. If for example a lot of name 
+Utf8 locales are currently very buggy/not supported. If for example a lot of name
 and description fields in the public hub list are empty you are suffering from this.
-A workaround is to specify a non-utf8 locale when running the program, assuming 
-you have a non-utf8 locale on your system. For example, I'm from Sweden so my 
-utf8 locale would be sv_SE.UTF8. Starting the program like this: 
+A workaround is to specify a non-utf8 locale when running the program, assuming
+you have a non-utf8 locale on your system. For example, I'm from Sweden so my
+utf8 locale would be sv_SE.UTF8. Starting the program like this:
 prompt# LANG=sv_SE.ISO-8859-1 ./ldcpp would run ldcpp with a non-utf8 locale.
 
-Most settings in the "Advanced" and "Appearance" tabs are not working. You can 
-change the settings however you like but it won't ever change anything in the 
+Most settings in the "Advanced" and "Appearance" tabs are not working. You can
+change the settings however you like but it won't ever change anything in the
 program.
 
-Codepage is a bit of a headache. Files with local chars in their filename are 
+Codepage is a bit of a headache. Files with local chars in their filename are
 sometimes rehashed on startup, messages in the hub and nicks in the wrong
 codepage may not be shown, lots of pango warnings, etc.
 

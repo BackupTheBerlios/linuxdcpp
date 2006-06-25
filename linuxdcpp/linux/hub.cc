@@ -351,10 +351,10 @@ void Hub::addMessage_gui(string msg) {
 		setBold_gui();
 }
 
-void Hub::addPrivateMessage_gui(User::Ptr tabUser, User::Ptr msgUser, std::string msg)
+void Hub::addPrivateMessage_gui(User::Ptr tabUser, std::string msg)
 {
 	::PrivateMessage *privMsg = WulforManager::get()->addPrivMsg_gui(tabUser); 
-	privMsg->addMessage_gui(msgUser, msg);
+	privMsg->addMessage_gui(msg);
 }
 
 void Hub::sendMessage_gui(GtkEntry *entry, gpointer data) {
@@ -609,9 +609,10 @@ void Hub::on(ClientListener::PrivateMessage,	Client *client, const OnlineUser &f
 	const OnlineUser& to, const OnlineUser& replyTo, const string &msg) throw()
 {
 	const User::Ptr& user = (replyTo.getUser() == ClientManager::getInstance()->getMe()) ? to.getUser() : replyTo.getUser();
+	string message = "<" + WulforUtil::getNicks(from) + "> " + msg;
 
-	typedef Func3<Hub, User::Ptr, User::Ptr, string> F3;
-	F3 *func = new F3(this, &Hub::addPrivateMessage_gui, user, from.getUser(), msg);
+	typedef Func2<Hub, User::Ptr, string> F2;
+	F2 *func = new F2(this, &Hub::addPrivateMessage_gui, user, message);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 

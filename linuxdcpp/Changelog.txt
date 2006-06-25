@@ -1,9 +1,19 @@
+2006-06-25 - Steven Sheehy
+* Changed naming of "Favourite" to "Favorite".
+* Private Message changes:
+	* Huge cleanup of the source code.
+	* Added ability to retrieve chat history by using the up and down arrows.
+	* Added these commands: /clear, /close, /favorite, /getlist, /grant, /help.
+	* Removed dependency on callback.hh.
+	* Set a limit on how many lines of text would be displayed at a time (500).
+	* Fixed a bug with multiple nicks where it always showed the first nick.
+
 2006-06-23 - Steven Sheehy
 * Fixed HashData.dat from not being created on 64bit systems.
 * FileExceptions now show name of file with error (on stdout in debug mode).
 * Updated licensing information: FSF changed postal address.
 * Fixed another crash when adding shares.
-Sharebrowser changes:
+* Sharebrowser changes:
 	* Huge cleanup of the code resulting in a noticeable speed increase when browsing folders.
 	* Fixed icons not showing up for non-Gnome users.
 	* Fixed a crash when loading a corrupt or incomplete filelist.

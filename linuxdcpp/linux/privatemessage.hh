@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,39 +23,45 @@
 #include <client/DCPlusPlus.h>
 #include <client/User.h>
 
-#include <string>
+#include <vector>
 
 #include "bookentry.hh"
-#include "callback.hh"
 
 class PrivateMessage:
 	public BookEntry
 {
 	public:
-		//constructor is only to be called from gui thread
 		PrivateMessage(User::Ptr user);
-		
+		~PrivateMessage() {}
+
+		// From BookEntry
 		GtkWidget *getWidget();
-		
-		//client thread functions
-		void sendMessage_client(std::string message);
-		
-		//gui thread functions
-		void addMessage_gui(User::Ptr from, std::string message);
+
+		// GUI functions
+		void addMessage_gui(std::string message);
 		void addStatusMessage_gui(std::string message);
-		void sendMessage_gui(GtkEntry *entry, gpointer data);
 
 	private:
-		Callback2<PrivateMessage, void, GtkEntry *> enterCallback;
-	
-		User::Ptr user;
+		// GUI functions
+		void addLine(std::string line);
 
+		// GUI callbacks
+		static void sendMessage_gui(GtkEntry *entry, gpointer data);
+		static gboolean onKeyPress_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
+
+		// Client functions
+		void sendMessage_client(std::string message);
+
+		User::Ptr user;
 		GtkWidget *box;
+		GtkScrolledWindow *scroll;
 		GtkTextView *text;
 		GtkTextBuffer *buffer;
-		GtkEntry *entry;
-		GtkScrolledWindow *scroll;
 		GtkTextMark *mark;
+		static const int maxLines = 500;
+		static const int maxHistory = 20;
+		std::vector<std::string> history;
+		int historyIndex;
 };
 
 #else
