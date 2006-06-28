@@ -250,7 +250,7 @@ public:
 		}
 		h = open(aFileName.c_str(), m, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 		if(h == -1)
-			throw FileException("Could not open file " + filename);
+			throw FileException("Could not open file", filename);
 	}	
 
 	u_int32_t getLastModified() {
@@ -289,7 +289,7 @@ public:
 	virtual size_t read(void* buf, size_t& len) throw(FileException) {
 		ssize_t x = ::read(h, buf, len);
 		if(x == -1)
-			throw FileException("Read error " + filename);
+			throw FileException("Read error", filename);
 		len = x;
 		return (size_t)x;
 	}
@@ -297,7 +297,7 @@ public:
 	virtual size_t write(const void* buf, size_t len) throw(FileException) {
 		ssize_t x = ::write(h, buf, len);
 		if(x == -1)
-			throw FileException("Write error " + filename);
+			throw FileException("Write error", filename);
 		if(x < (ssize_t)len)
 			throw FileException("Disk full(?)");
 		return x;
@@ -328,7 +328,7 @@ public:
 			ret = ftruncate(h,(off_t)pos);
 		lseek(h,(off_t)pos,SEEK_SET);
 		if (ret == -1)
-			throw FileException(Util::translateError(errno) + " " + filename);
+			throw FileException(Util::translateError(errno), filename);
 	}
 
 	virtual void setSize(int64_t newSize) throw(FileException) {
@@ -340,7 +340,7 @@ public:
 
 	virtual size_t flush() throw(Exception) {
 		if(fsync(h) == -1)
-			throw FileException(Util::translateError(errno) + " " + filename);
+			throw FileException(Util::translateError(errno), filename);
 		return 0;
 	}
 

@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,25 +18,14 @@
 
 #include "publichubs.hh"
 
+using namespace std;
+
 PublicHubs::PublicHubs():
 	BookEntry("Public Hubs"),
-	filterCallback(this, &PublicHubs::filterHubs_gui),
-	connectCallback(this, &PublicHubs::connect_gui),
-	refreshCallback(this, &PublicHubs::refresh_gui),
-	configureCallback(this, &PublicHubs::configure_gui),
-	upCallback(this, &PublicHubs::moveUp_gui),
-	downCallback(this, &PublicHubs::moveDown_gui),
-	addCallback(this, &PublicHubs::add_gui),
-	removeCallback(this, &PublicHubs::remove_gui),
-	editCallback(this, &PublicHubs::cellEdited_gui),
-	mouseButtonCallback(this, &PublicHubs::buttonEvent_gui),
-	addFavCallback(this, &PublicHubs::addFav_gui),
 	hubs(0),
 	filter("")
 {
 	FavoriteManager *hman = FavoriteManager::getInstance();
-	GObject *o;
-
 	hman->addListener(this);
 
 	GladeXML *xml = getGladeXML("publichubs.glade");
@@ -48,7 +37,7 @@ PublicHubs::PublicHubs():
 	gtk_widget_destroy(window);
 
 	filterEntry = GTK_ENTRY(glade_xml_get_widget(xml, "filterEntry"));
-	combo = GTK_COMBO_BOX(glade_xml_get_widget(xml, "hubListBox"));
+	comboBox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "hubListBox"));
 	configureDialog = GTK_DIALOG(glade_xml_get_widget(xml, "configureDialog"));
 	gtk_dialog_set_alternative_button_order(configureDialog, GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
@@ -69,35 +58,19 @@ PublicHubs::PublicHubs():
 	hubStore = gtk_list_store_newv(hubView.getColCount(), hubView.getGTypes());
 	gtk_tree_view_set_model(hubView.get(), GTK_TREE_MODEL(hubStore));
 	g_object_unref(hubStore);
+	hubSelection = gtk_tree_view_get_selection(hubView.get());
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(hubStore), hubView.col("Users"), GTK_SORT_DESCENDING);
 	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(hubView.get(), hubView.col("Users")), TRUE);
 	gtk_tree_view_set_fixed_height_mode(hubView.get(), TRUE);
 
-	menu = GTK_MENU(gtk_menu_new()); 
-	conItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Connect"));
-	favItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Add to favorites"));
+	// Create popup menu
+	menu = GTK_MENU(gtk_menu_new());
+	GtkMenuItem *conItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Connect"));
+	GtkMenuItem *favItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Add to favorites"));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(conItem));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(favItem));
 
-	//Fill the combo box with hub lists
-	comboStore = gtk_list_store_new(1, G_TYPE_STRING);
-	gtk_combo_box_set_model(combo, GTK_TREE_MODEL(comboStore));
-	g_object_unref(comboStore);
-	GtkCellRenderer *cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), cell, FALSE);
-	gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(combo), cell, "text", 0);
- 	StringList list = hman->getHubLists();
-	StringList::iterator it;
-	GtkTreeIter iter, current;
-	for (it = list.begin(); it != list.end(); it++) {
-		gtk_list_store_append(comboStore, &iter);
-		gtk_list_store_set(comboStore, &iter,
-			0, it->c_str(),
-			-1);
-	}
-	gtk_combo_box_set_active(combo, hman->getSelectedHubList());
-
-	// Initialize list of hub lists treeview
+	// Initialize list of public hub lists treeview
 	listsView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "listsView")));
 	listsView.insertColumn("List", G_TYPE_STRING, TreeView::EDIT_STRING, -1);
 	listsView.finalize();
@@ -105,67 +78,87 @@ PublicHubs::PublicHubs():
 	gtk_tree_view_set_model(listsView.get(), GTK_TREE_MODEL(listsStore));
 	g_object_unref(listsStore);
 	gtk_tree_view_set_headers_visible(listsView.get(), FALSE);
+	listsSelection = gtk_tree_view_get_selection(listsView.get());
+ 	StringList list = hman->getHubLists();
+	GtkTreeIter iter;
+	for (StringList::iterator it = list.begin(); it != list.end(); it++)
+	{
+		gtk_list_store_append(listsStore, &iter);
+		gtk_list_store_set(listsStore, &iter, 0, it->c_str(), -1);
+	}
 
+	// Fill the combo box with hub lists
+	gtk_combo_box_set_model(comboBox, GTK_TREE_MODEL(listsStore));
+	GtkCellRenderer *cell = gtk_cell_renderer_text_new();
+	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(comboBox), cell, FALSE);
+	gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(comboBox), cell, "text", 0);
+	gtk_combo_box_set_active(comboBox, hman->getSelectedHubList());
+
+	// Connect the callbacks
 	GtkTreeViewColumn *c = gtk_tree_view_get_column(listsView.get(), 0);
 	GList *l = gtk_tree_view_column_get_cell_renderers(c);
-	o = G_OBJECT(l->data);
-	editCallback.connect(o, "edited", NULL);
+	GObject *editRenderer = G_OBJECT(g_list_nth_data(l, 0));
 	g_list_free(l);
-			
-	o = G_OBJECT(glade_xml_get_widget(xml, "filterButton"));
-	filterCallback.connect(o, "clicked", NULL);
-	o = G_OBJECT(glade_xml_get_widget(xml, "connectButton"));
-	connectCallback.connect(o, "clicked", NULL);
-	o = G_OBJECT(glade_xml_get_widget(xml, "refreshButton"));
-	refreshCallback.connect(o, "clicked", NULL);
-	o = G_OBJECT(glade_xml_get_widget(xml, "configureButton"));
-	configureCallback.connect(o, "clicked", NULL);
+	GObject *connectButton = G_OBJECT(glade_xml_get_widget(xml, "connectButton"));
+	GObject *refreshButton = G_OBJECT(glade_xml_get_widget(xml, "refreshButton"));
+	GObject *configureButton = G_OBJECT(glade_xml_get_widget(xml, "configureButton"));
+	GObject *addButton = G_OBJECT(glade_xml_get_widget(xml, "addButton"));
+	GObject *upButton = G_OBJECT(glade_xml_get_widget(xml, "upButton"));
+	GObject *downButton = G_OBJECT(glade_xml_get_widget(xml, "downButton"));
+	GObject *removeButton = G_OBJECT(glade_xml_get_widget(xml, "removeButton"));
 
-	o = G_OBJECT(glade_xml_get_widget(xml, "addButton"));
-	addCallback.connect(o, "clicked", NULL);
-	o = G_OBJECT(glade_xml_get_widget(xml, "upButton"));
-	upCallback.connect(o, "clicked", NULL);
-	o = G_OBJECT(glade_xml_get_widget(xml, "downButton"));
-	downCallback.connect(o, "clicked", NULL);
-	o = G_OBJECT(glade_xml_get_widget(xml, "removeButton"));
-	removeCallback.connect(o, "clicked", NULL);
-
-	addFavCallback.connect(G_OBJECT(favItem), "activate", NULL);
-	connectCallback.connect(G_OBJECT(conItem), "activate", NULL);
-	mouseButtonCallback.connect(G_OBJECT(hubView.get()), "button-press-event", NULL);
-	mouseButtonCallback.connect(G_OBJECT(hubView.get()), "button-release-event", NULL);
-
-	filterCallback.connect(G_OBJECT(filterEntry), "activate", NULL);
-	refreshCallback.connect(G_OBJECT(combo), "changed", NULL);
+	g_signal_connect(filterEntry, "key-release-event", G_CALLBACK(onFilterHubs_gui), (gpointer)this);
+	g_signal_connect(connectButton, "clicked", G_CALLBACK(onConnect_gui), (gpointer)this);
+	g_signal_connect(conItem, "activate", G_CALLBACK(onConnect_gui), (gpointer)this);
+	g_signal_connect(refreshButton, "clicked", G_CALLBACK(onRefresh_gui), (gpointer)this);
+	g_signal_connect(comboBox, "changed", G_CALLBACK(onRefresh_gui), (gpointer)this);
+	g_signal_connect(configureButton, "clicked", G_CALLBACK(onConfigure_gui), (gpointer)this);
+	g_signal_connect(upButton, "clicked", G_CALLBACK(onMoveUp_gui), (gpointer)this);
+	g_signal_connect(downButton, "clicked", G_CALLBACK(onMoveDown_gui), (gpointer)this);
+	g_signal_connect(addButton, "clicked", G_CALLBACK(onAdd_gui), (gpointer)this);
+	g_signal_connect(removeButton, "clicked", G_CALLBACK(onRemove_gui), (gpointer)this);
+	g_signal_connect(editRenderer, "edited", G_CALLBACK(onCellEdited_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(hubView.get()), "button-press-event", G_CALLBACK(onButtonPress_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(hubView.get()), "button-release-event", G_CALLBACK(onButtonRelease_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(hubView.get()), "key-release-event", G_CALLBACK(onKeyRelease_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(favItem), "activate", G_CALLBACK(onAddFav_gui), (gpointer)this);
 
 	pthread_mutex_init(&hubLock, NULL);
 }
 
-PublicHubs::~PublicHubs() {
+PublicHubs::~PublicHubs()
+{
 	FavoriteManager::getInstance()->removeListener(this);
 	pthread_mutex_destroy(&hubLock);
 	gtk_widget_destroy(GTK_WIDGET(configureDialog));
 }
 
-void PublicHubs::downloadList_client() {
-	FavoriteManager *man = FavoriteManager::getInstance();
-	
+GtkWidget *PublicHubs::getWidget()
+{
+	return mainBox;
+}
+
+void PublicHubs::downloadList_client()
+{
 	pthread_mutex_lock(&hubLock);
-	hubs = man->getPublicHubs();
+	hubs = FavoriteManager::getInstance()->getPublicHubs();
 	pthread_mutex_unlock(&hubLock);
-	
-	if (hubs.empty()) man->refresh();
-	man->save();
+
+	if (hubs.empty())
+		FavoriteManager::getInstance()->refresh();
+
+	FavoriteManager::getInstance()->save();
 
 	Func0<PublicHubs> *func = new Func0<PublicHubs>(this, &PublicHubs::updateList_gui);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
-void PublicHubs::updateList_gui() {
+void PublicHubs::updateList_gui()
+{
 	HubEntry::List::const_iterator i;
 	GtkTreeIter iter;
-	ostringstream hubStream, userStream;
-	int numHubs = 0, numUsers = 0;
+	int numHubs = 0;
+	int numUsers = 0;
 	gint sortColumn;
 	GtkSortType sortType;
 
@@ -175,20 +168,19 @@ void PublicHubs::updateList_gui() {
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(hubStore), GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID, sortType);
 
 	pthread_mutex_lock(&hubLock);
-	for (i = hubs.begin(); i != hubs.end(); i++) {
-		if( filter.getPattern().empty() ||
-			filter.match(i->getName()) ||
-			filter.match(i->getDescription()) ||
-			filter.match(i->getServer()) )
+	for (i = hubs.begin(); i != hubs.end(); i++)
+	{
+		if (filter.getPattern().empty() || filter.match(i->getName()) ||
+			filter.match(i->getDescription()) || filter.match(i->getServer()))
 		{
 			gtk_list_store_append(hubStore, &iter);
-			gtk_list_store_set(hubStore, &iter, 
+			gtk_list_store_set(hubStore, &iter,
 				hubView.col("Name"), i->getName().c_str(),
 				hubView.col("Description"), i->getDescription().c_str(),
 				hubView.col("Users"), i->getUsers(),
 				hubView.col("Address"), i->getServer().c_str(),
 				-1);
-				
+
 			numUsers += i->getUsers();
 			numHubs++;
 		}
@@ -197,228 +189,258 @@ void PublicHubs::updateList_gui() {
 
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(hubStore), sortColumn, sortType);
 
-	hubStream << "Hubs: " << numHubs;
-	userStream << "Users: " << numUsers;
-	setStatus_gui(statusHubs, hubStream.str());
-	setStatus_gui(statusUsers, userStream.str());
+	setStatus_gui(statusHubs, "Hubs: " + Util::toString(numHubs));
+	setStatus_gui(statusUsers, "Users: " + Util::toString(numUsers));
 }
 
-GtkWidget *PublicHubs::getWidget() {
-	return mainBox;
-}
-
-gboolean PublicHubs::buttonEvent_gui(
-	GtkWidget *widget, GdkEventButton *event, gpointer)
+void PublicHubs::setStatus_gui(GtkStatusbar *status, string text)
 {
-	static int oldButton, oldType;
-	GtkTreeSelection *sel;
-	
-	if (event->type == GDK_BUTTON_PRESS || event->type == GDK_2BUTTON_PRESS) {
-		oldType = event->type;
-		oldButton = event->button;
-		return FALSE;	
-	}
-	
-	if (oldButton != event->button) return FALSE;
+	gtk_statusbar_pop(status, 0);
+	gtk_statusbar_push(status, 0, text.c_str());
+}
 
-	sel = gtk_tree_view_get_selection(hubView.get());
-	if (!gtk_tree_selection_get_selected(sel, NULL, NULL)) return FALSE;
+gboolean PublicHubs::onButtonPress_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+	PublicHubs *ph = (PublicHubs *)data;
 
-	//single click right button
-	if (event->button == 3 && oldType == GDK_BUTTON_PRESS) {
-		gtk_menu_popup(menu, NULL, NULL, NULL, NULL, 3, event->time);
-		gtk_widget_show_all(GTK_WIDGET(menu));
-	}
-
-	//double click left button
-	if (event->button == 1 && oldType == GDK_2BUTTON_PRESS) {
-		connect_gui(NULL, NULL);	
+	if (event->type == GDK_BUTTON_PRESS || event->type == GDK_2BUTTON_PRESS)
+	{
+		ph->oldType = event->type;
+		ph->oldButton = event->button;
 	}
 
 	return FALSE;
 }
 
-void PublicHubs::addFav_gui(GtkMenuItem *i, gpointer d) {
-	FavoriteHubEntry entry;
-	string name, address, description;
-	GtkTreeSelection *selection;
+gboolean PublicHubs::onButtonRelease_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+	PublicHubs *ph = (PublicHubs *)data;
+
+	if (ph->oldButton == event->button && gtk_tree_selection_get_selected(ph->hubSelection, NULL, NULL))
+	{
+		if (event->button == 3 && ph->oldType == GDK_BUTTON_PRESS)
+		{
+			gtk_menu_popup(ph->menu, NULL, NULL, NULL, NULL, 0, event->time);
+			gtk_widget_show_all(GTK_WIDGET(ph->menu));
+		}
+		else if (event->button == 1 && ph->oldType == GDK_2BUTTON_PRESS)
+		{
+			ph->onConnect_gui(NULL, data);
+		}
+	}
+
+	return FALSE;
+}
+
+gboolean PublicHubs::onKeyRelease_gui(GtkWidget *widget, GdkEventKey *event, gpointer data)
+{
+	PublicHubs *ph = (PublicHubs *)data;
+
+	if (gtk_tree_selection_get_selected(ph->hubSelection, NULL, NULL))
+	{
+		if (event->keyval == GDK_Menu || (event->keyval == GDK_F10 && event->state & GDK_SHIFT_MASK))
+		{
+			gtk_menu_popup(ph->menu, NULL, NULL, NULL, NULL, 0, event->time);
+			gtk_widget_show_all(GTK_WIDGET(ph->menu));
+		}
+		else if (event->keyval == GDK_Return || event->keyval == GDK_KP_Enter)
+		{
+			ph->onConnect_gui(NULL, data);
+		}
+	}
+
+	return FALSE;
+}
+
+gboolean PublicHubs::onFilterHubs_gui(GtkWidget *widget, GdkEventKey *event, gpointer data)
+{
+	PublicHubs *ph = (PublicHubs *)data;
+	StringSearch pattern(gtk_entry_get_text(ph->filterEntry));
+
+	if (!(pattern == ph->filter))
+	{
+		ph->filter = pattern;
+		ph->updateList_gui();
+	}
+
+	return FALSE;
+}
+
+void PublicHubs::onConnect_gui(GtkWidget *widget, gpointer data)
+{
+	PublicHubs *ph = (PublicHubs *)data;
 	GtkTreeIter iter;
 
-	selection = gtk_tree_view_get_selection(hubView.get());
-	if (!gtk_tree_selection_get_selected(selection, NULL, &iter)) return;
-
-	name = hubView.getString(&iter, "Name");
-	description = hubView.getString(&iter, "Description");
-	address = hubView.getString(&iter, "Address");
-
-	entry.setName(name);
-	entry.setServer(address);
-	entry.setDescription(description);
-	entry.setNick(SETTING(NICK));
-	entry.setPassword("");
-	entry.setUserDescription(SETTING(DESCRIPTION));
-
-	typedef Func1<PublicHubs, FavoriteHubEntry> F1;
-	F1 *func = new F1(this, &PublicHubs::addFav_client, entry);
-	WulforManager::get()->dispatchClientFunc(func);
-}
-
-void PublicHubs::addFav_client(FavoriteHubEntry entry) {
-	FavoriteManager::getInstance()->addFavorite(entry);
-}
-
-void PublicHubs::filterHubs_gui(GtkWidget *w, gpointer d) {
-	filter = gtk_entry_get_text(filterEntry);
-	updateList_gui();
-}
-
-void PublicHubs::connect_gui(GtkWidget *w, gpointer d) {
-	string address;
-	GtkTreeIter iter;
-	GtkTreeSelection *selection;
-	
-	selection = gtk_tree_view_get_selection(hubView.get());
-	if (gtk_tree_selection_get_selected(selection, NULL, &iter)) {
-		address = hubView.getString(&iter, "Address");
+	if (gtk_tree_selection_get_selected(ph->hubSelection, NULL, &iter))
+	{
+		string address = ph->hubView.getString(&iter, "Address");
 		WulforManager::get()->addHub_gui(address);
 	}
 }
 
-void PublicHubs::refresh_gui(GtkWidget *widget, gpointer data) {
-	int pos = gtk_combo_box_get_active(combo);
+void PublicHubs::onRefresh_gui(GtkWidget *widget, gpointer data)
+{
+	PublicHubs *ph = (PublicHubs *)data;
+	int pos = gtk_combo_box_get_active(ph->comboBox);
 	FavoriteManager::getInstance()->setHubList(pos);
-	Func0<PublicHubs> *f = new Func0<PublicHubs>(this, &PublicHubs::refresh_client);
+	Func0<PublicHubs> *f = new Func0<PublicHubs>(ph, &PublicHubs::refresh_client);
 	WulforManager::get()->dispatchClientFunc(f);
 }
 
-void PublicHubs::configure_gui(GtkWidget *widget, gpointer data) {
-	int ret;
-	GtkTreeIter it1, it2;
-	gchar *tmp;
-	string tmp2;
-	GtkTreeModel *m = GTK_TREE_MODEL(comboStore);
+void PublicHubs::onAddFav_gui(GtkMenuItem *item, gpointer data)
+{
+	PublicHubs *ph = (PublicHubs *)data;
+	FavoriteHubEntry entry;
+	string name, address, description;
+	GtkTreeIter iter;
 
-	gtk_list_store_clear(listsStore);
-	gboolean valid = gtk_tree_model_get_iter_first(m, &it1);
-	while (valid)
+	if (gtk_tree_selection_get_selected(ph->hubSelection, NULL, &iter))
 	{
-		gtk_tree_model_get(m, &it1, 0, &tmp, -1);
-		valid = gtk_tree_model_iter_next(m, &it1);
-		gtk_list_store_append(listsStore, &it2);
-		gtk_list_store_set(listsStore, &it2, listsView.col("List"), tmp, -1);
-		g_free(tmp);
+		name = ph->hubView.getString(&iter, "Name");
+		description = ph->hubView.getString(&iter, "Description");
+		address = ph->hubView.getString(&iter, "Address");
+
+		entry.setName(name);
+		entry.setServer(address);
+		entry.setDescription(description);
+		entry.setNick(SETTING(NICK));
+		entry.setPassword("");
+		entry.setUserDescription(SETTING(DESCRIPTION));
+
+		typedef Func1<PublicHubs, FavoriteHubEntry> F1;
+		F1 *func = new F1(ph, &PublicHubs::addFav_client, entry);
+		WulforManager::get()->dispatchClientFunc(func);
 	}
-	
-	gtk_widget_show_all(GTK_WIDGET(configureDialog));
-	ret = gtk_dialog_run(configureDialog);
-	gtk_widget_hide(GTK_WIDGET(configureDialog));
+}
 
-	if (ret == GTK_RESPONSE_OK) {
-		string lists;
-		int pos = FavoriteManager::getInstance()->getSelectedHubList();
+void PublicHubs::onConfigure_gui(GtkWidget *widget, gpointer data)
+{
+	PublicHubs *ph = (PublicHubs *)data;
 
-		gtk_list_store_clear(comboStore);
-		m = GTK_TREE_MODEL(listsStore);
-		valid = gtk_tree_model_get_iter_first(m, &it1);
+	// Have to get active here since temp could be NULL after dialog is closed
+	gchar *temp = gtk_combo_box_get_active_text(ph->comboBox);
+	string active = string(temp);
+	g_free(temp);
+
+	gtk_widget_show_all(GTK_WIDGET(ph->configureDialog));
+	gint ret = gtk_dialog_run(ph->configureDialog);
+	gtk_widget_hide(GTK_WIDGET(ph->configureDialog));
+
+	if (ret == GTK_RESPONSE_OK)
+	{
+		string lists, url;
+		GtkTreeIter iter;
+
+		GtkTreeModel *m = GTK_TREE_MODEL(ph->listsStore);
+		gboolean valid = gtk_tree_model_get_iter_first(m, &iter);
 		while (valid)
 		{
-			tmp2 = listsView.getString(&it1, "List");
-			valid = gtk_tree_model_iter_next(m, &it1);
-			gtk_list_store_append(comboStore, &it2);
-			gtk_list_store_set(comboStore, &it2, 0, tmp2.c_str(), -1);
-
-			lists += tmp2 + ";";
+			url = ph->listsView.getString(&iter, "List");
+			lists += url + ";";
+			if (url == active)
+				gtk_combo_box_set_active_iter(ph->comboBox, &iter);
+			valid = gtk_tree_model_iter_next(m, &iter);
 		}
 
-		if (!lists.empty()) lists.erase(lists.size() - 1);
+		if (gtk_combo_box_get_active(ph->comboBox) < 0)
+			gtk_combo_box_set_active(ph->comboBox, 0);
+
+		if (!lists.empty())
+			lists.erase(lists.size() - 1);
+
 		SettingsManager::getInstance()->set(SettingsManager::HUBLIST_SERVERS, lists);
-		gtk_combo_box_set_active(combo, pos);
 	}
 }
 
-void PublicHubs::add_gui(GtkWidget *widget, gpointer data) {
-	GtkTreeIter it;
-	GtkTreePath *p;
-	char *s;
-		
-	gtk_list_store_append(listsStore, &it);
-	gtk_list_store_set(listsStore, &it, listsView.col("List"), "New list", -1);
-	s = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(listsStore), &it);
-	p = gtk_tree_path_new_from_string(s);
-	gtk_tree_view_set_cursor(listsView.get(), p, 
-		gtk_tree_view_get_column(listsView.get(), 0), TRUE);
-	
-	g_free(s);
-	gtk_tree_path_free(p);
+void PublicHubs::onAdd_gui(GtkWidget *widget, gpointer data)
+{
+	PublicHubs *ph = (PublicHubs *)data;
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	GtkTreeViewColumn *col;
+
+	gtk_list_store_append(ph->listsStore, &iter);
+	gtk_list_store_set(ph->listsStore, &iter, ph->listsView.col("List"), "New list", -1);
+	path = gtk_tree_model_get_path(GTK_TREE_MODEL(ph->listsStore), &iter);
+	col = gtk_tree_view_get_column(ph->listsView.get(), 0);
+	gtk_tree_view_set_cursor(ph->listsView.get(), path, col, TRUE);
+	gtk_tree_path_free(path);
 }
 
-void PublicHubs::moveUp_gui(GtkWidget *widget, gpointer data) {
-	GtkTreeSelection *sel = gtk_tree_view_get_selection(listsView.get());
-	GtkTreeIter cur, prev, next;
-	
-	if (!gtk_tree_selection_get_selected(sel, NULL, &cur)) return;
+void PublicHubs::onMoveUp_gui(GtkWidget *widget, gpointer data)
+{
+	PublicHubs *ph = (PublicHubs *)data;
+	GtkTreeIter prev, current, next;
+	GtkTreeModel *m = GTK_TREE_MODEL(ph->listsStore);
+	gboolean valid;
 
-	gtk_tree_model_get_iter_first(GTK_TREE_MODEL(listsStore), &next);
-	while (gtk_list_store_iter_is_valid(listsStore, &next)) {
+	if (!gtk_tree_selection_get_selected(ph->listsSelection, NULL, &current)) return;
+
+	valid = gtk_tree_model_get_iter_first(m, &next);
+	while (valid)
+	{
 		prev = next;
-		gtk_tree_model_iter_next(GTK_TREE_MODEL(listsStore), &next);
-		
-		if (next.stamp == cur.stamp &&
-			next.user_data == cur.user_data &&
-			next.user_data2 == cur.user_data2 &&
-			next.user_data3 == cur.user_data3)
+		valid = gtk_tree_model_iter_next(m, &next);
+
+		if (next.stamp == current.stamp && next.user_data == current.user_data &&
+			next.user_data2 == current.user_data2 && next.user_data3 == current.user_data3)
 		{
-			gtk_list_store_swap(listsStore, &cur, &prev);
+			gtk_list_store_swap(ph->listsStore, &current, &prev);
 			return;
 		}
 	}
 }
 
-void PublicHubs::moveDown_gui(GtkWidget *widget, gpointer data) {
-	GtkTreeSelection *sel = gtk_tree_view_get_selection(listsView.get());
-	GtkTreeIter it, next;
-
-	if (!gtk_tree_selection_get_selected(sel, NULL, &next)) return;
-	it = next;
-	if (!gtk_tree_model_iter_next(GTK_TREE_MODEL(listsStore), &next)) return;
-	gtk_list_store_swap(listsStore, &it, &next);
-}
-
-void PublicHubs::remove_gui(GtkWidget *widget, gpointer data) {
-	GtkTreeSelection *sel = gtk_tree_view_get_selection(listsView.get());
-	GtkTreeIter cur;
-	if (!gtk_tree_selection_get_selected(sel, NULL, &cur)) return;
-	gtk_list_store_remove(listsStore, &cur);
-}
-
-void PublicHubs::cellEdited_gui(GtkCellRendererText *cell, 
-	char *path, char *text, gpointer data)
+void PublicHubs::onMoveDown_gui(GtkWidget *widget, gpointer data)
 {
+	PublicHubs *ph = (PublicHubs *)data;
+	GtkTreeIter current, next;
+
+	if (gtk_tree_selection_get_selected(ph->listsSelection, NULL, &current))
+	{
+		next = current;
+		if (gtk_tree_model_iter_next(GTK_TREE_MODEL(ph->listsStore), &next))
+			gtk_list_store_swap(ph->listsStore, &current, &next);
+	}
+}
+
+void PublicHubs::onRemove_gui(GtkWidget *widget, gpointer data)
+{
+	PublicHubs *ph = (PublicHubs *)data;
+	GtkTreeIter current;
+
+	if (gtk_tree_selection_get_selected(ph->listsSelection, NULL, &current))
+		gtk_list_store_remove(ph->listsStore, &current);
+}
+
+void PublicHubs::onCellEdited_gui(GtkCellRendererText *cell, char *path, char *text, gpointer data)
+{
+	PublicHubs *ph = (PublicHubs *)data;
 	GtkTreeIter it;
-	gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(listsStore), &it, path);
-	gtk_list_store_set(listsStore, &it, listsView.col("List"), text, -1);
+
+	gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(ph->listsStore), &it, path);
+	gtk_list_store_set(ph->listsStore, &it, ph->listsView.col("List"), text, -1);
 }
 
-void PublicHubs::setStatus_gui(GtkStatusbar *status, string text) {
-	gtk_statusbar_pop(status, 0);
-	gtk_statusbar_push(status, 0, text.c_str());
-}
-
-void PublicHubs::refresh_client() {
+void PublicHubs::refresh_client()
+{
 	FavoriteManager::getInstance()->refresh();
 }
 
-void PublicHubs::on(FavoriteManagerListener::DownloadStarting, 
-	const string &file) throw()
+void PublicHubs::addFav_client(FavoriteHubEntry entry)
+{
+	FavoriteManager::getInstance()->addFavorite(entry);
+}
+
+void PublicHubs::on(FavoriteManagerListener::DownloadStarting, const string &file) throw()
 {
 	string msg = "Download starting: " + file;
 	typedef Func2<PublicHubs, GtkStatusbar*, string> Func;
 	Func *func = new Func(this, &PublicHubs::setStatus_gui, statusMain, msg);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
-	
-void PublicHubs::on(FavoriteManagerListener::DownloadFailed, 
-	const string &file) throw()
+
+void PublicHubs::on(FavoriteManagerListener::DownloadFailed, const string &file) throw()
 {
 	string msg = "Download failed: " + file;
 	typedef Func2<PublicHubs, GtkStatusbar*, string> Func;
@@ -426,8 +448,7 @@ void PublicHubs::on(FavoriteManagerListener::DownloadFailed,
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
-void PublicHubs::on(FavoriteManagerListener::DownloadFinished, 
-	const string &file) throw()
+void PublicHubs::on(FavoriteManagerListener::DownloadFinished, const string &file) throw()
 {
 	string msg = "Download finished: " + file;
 	typedef Func2<PublicHubs, GtkStatusbar*, string> Func;

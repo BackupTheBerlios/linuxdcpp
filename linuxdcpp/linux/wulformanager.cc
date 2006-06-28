@@ -97,24 +97,21 @@ void WulforManager::processGuiQueue()
 	{
 		sem_wait(&guiSem);
 
-		//this must be taken before the queuelock to avoid deadlock
+		// This must be taken before the queuelock to avoid deadlock.
 		gdk_threads_enter();
 
 		pthread_mutex_lock(&guiQueueLock);
-		if (guiFuncs.size() == 0)
+		if (guiFuncs.size() > 0)
 		{
+			func = guiFuncs.front();
 			pthread_mutex_unlock(&guiQueueLock);
-			gdk_threads_leave();
-			continue;
+
+			func->call();
+
+			pthread_mutex_lock(&guiQueueLock);
+			delete func;
+			guiFuncs.erase(guiFuncs.begin());
 		}
-		func = guiFuncs.front();
-		pthread_mutex_unlock(&guiQueueLock);
-
-		func->call();
-
-		pthread_mutex_lock(&guiQueueLock);
-		delete func;
-		guiFuncs.erase(guiFuncs.begin());
 		pthread_mutex_unlock(&guiQueueLock);
 
 		gdk_threads_leave();
@@ -131,20 +128,17 @@ void WulforManager::processClientQueue()
 
 		pthread_mutex_lock(&clientCallLock);
 		pthread_mutex_lock(&clientQueueLock);
-		if (clientFuncs.size() == 0)
+		if (clientFuncs.size() > 0)
 		{
-			pthread_mutex_unlock(&clientCallLock);
+			func = clientFuncs.front();
 			pthread_mutex_unlock(&clientQueueLock);
-			continue;
+
+			func->call();
+
+			pthread_mutex_lock(&clientQueueLock);
+			delete func;
+			clientFuncs.erase(clientFuncs.begin());
 		}
-		func = clientFuncs.front();
-		pthread_mutex_unlock(&clientQueueLock);
-
-		func->call();
-
-		pthread_mutex_lock(&clientQueueLock);
-		delete func;
-		clientFuncs.erase(clientFuncs.begin());
 		pthread_mutex_unlock(&clientQueueLock);
 		pthread_mutex_unlock(&clientCallLock);
 	}
@@ -207,8 +201,8 @@ MainWindow *WulforManager::createMainWindow()
 	dcassert(!mainWin);
 	mainWin = new MainWindow();
 
-	//Autoconnect and autoopen calls stuff in wulformanager that needs to know
-	//what mainWin is, so these cannot be called by the mainwindow constructor.
+	// Autoconnect and autoopen calls stuff in wulformanager that needs to know
+	// what mainWin is, so these cannot be called by the mainwindow constructor.
 	typedef Func0<MainWindow> F0;
 	F0 *f0 = new F0(mainWin, &MainWindow::autoConnect_client);
 	WulforManager::get()->dispatchClientFunc(f0);
@@ -237,7 +231,7 @@ void WulforManager::closeDialogEntry_callback(GtkDialog *dialog, gint response, 
 string WulforManager::getPath()
 {
 #ifdef _DATADIR
-	string ret = string(_DATADIR) + PATH_SEPARATOR + "ldcpp";
+	string ret = string(_DATADIR) + PATH_SEPARATOR_STR + "ldcpp";
 #else
 	char *temp = br_extract_dir(SELFPATH);
 	string ret = string(temp);
@@ -268,7 +262,6 @@ void WulforManager::insertBookEntry_gui(BookEntry *entry)
 	entry->applyCallback(G_CALLBACK(closeBookEntry_callback));
 	mainWin->addPage_gui(entry->getWidget(), entry->getTitle());
 	gtk_widget_unref(entry->getWidget());
-
 
 	pthread_mutex_lock(&bookEntryLock);
 	bookEntries[entry->getID()] = entry;

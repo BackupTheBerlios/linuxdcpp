@@ -98,7 +98,7 @@ class Hub:
 			Client *client, const string &reason) throw();
 		void on(ClientListener::GetPassword, Client *client) throw();
 		void on(ClientListener::HubUpdated, Client *client) throw();
-		void on(ClientListener::Message, const OnlineUser&, const string &msg) throw();
+		void on(ClientListener::Message, Client* client, const OnlineUser&, const string &msg) throw();
 		void on(ClientListener::StatusMessage, Client* client, const string &msg) throw();
 		void on(ClientListener::PrivateMessage,
 		        Client *client, const OnlineUser &from, const OnlineUser& to,

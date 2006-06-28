@@ -52,16 +52,16 @@ class PrivateMessage:
 		// Client functions
 		void sendMessage_client(std::string message);
 
-		User::Ptr user;
 		GtkWidget *box;
 		GtkScrolledWindow *scroll;
 		GtkTextView *text;
 		GtkTextBuffer *buffer;
 		GtkTextMark *mark;
-		const int maxLines;
-		const int maxHistory;
+		User::Ptr user;
 		std::vector<std::string> history;
 		int historyIndex;
+		const int maxLines;
+		const int maxHistory;
 };
 
 #else

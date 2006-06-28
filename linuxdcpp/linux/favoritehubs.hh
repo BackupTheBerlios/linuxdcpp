@@ -65,9 +65,9 @@ class FavoriteHubs:
 		void editEntry_client(FavoriteHubEntry *oldEntry, const FavoriteHubEntry newEntry);
 		void removeEntry_client(FavoriteHubEntry *entry);
 
-		// Client callbacks
-		virtual void on(FavoriteManagerListener::FavoriteAdded, const FavoriteHubEntry *entry) throw();
-		virtual void on(FavoriteManagerListener::FavoriteRemoved, const FavoriteHubEntry *entry) throw();
+		// Client callbacks from FavoriteManagerListener
+		void on(FavoriteManagerListener::FavoriteAdded, const FavoriteHubEntry *entry) throw();
+		void on(FavoriteManagerListener::FavoriteRemoved, const FavoriteHubEntry *entry) throw();
 
 		GtkWidget *mainBox;
 		GtkDialog *deleteDialog;

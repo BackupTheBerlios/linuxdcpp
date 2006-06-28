@@ -598,7 +598,7 @@ void Hub::on(ClientListener::StatusMessage, Client* client, const string &msg) t
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
-void Hub::on(ClientListener::Message, const OnlineUser& from, const string &msg) throw()
+void Hub::on(ClientListener::Message, Client* client, const OnlineUser& from, const string &msg) throw()
 {
 	string line = "<" + from.getIdentity().getNick() + "> " + msg;
 	Func1<Hub, string> *func = new Func1<Hub, string>(this, &Hub::addMessage_gui, line);

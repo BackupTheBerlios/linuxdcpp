@@ -12,7 +12,7 @@ pthread
 zlib
 libbz2
 scons
-g++ >= 3.4 (Yes, this is REQUIRED for succesfull compilation!)
+g++ >= 3.4 (Yes, this is REQUIRED for successful compilation!)
 
 Compiling:
 ----------

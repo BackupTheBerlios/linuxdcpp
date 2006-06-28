@@ -126,31 +126,32 @@ class MainWindow:
 		static void onTrayIconClicked_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static void onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data);
 
-		// From Timer manager
-		virtual void on(TimerManagerListener::Second, u_int32_t ticks) throw();
+		// Client callbacks
+		// From TimerManagerListener
+		void on(TimerManagerListener::Second, u_int32_t ticks) throw();
 
-		// From Queue Manager
-		virtual void on(QueueManagerListener::Finished, QueueItem *item, int64_t avSpeed) throw();
+		// From QueueManagerListener
+		void on(QueueManagerListener::Finished, QueueItem *item, int64_t avSpeed) throw();
 
-		// From Connection manager
-		virtual void on(ConnectionManagerListener::Added, ConnectionQueueItem *item) throw();
-		virtual void on(ConnectionManagerListener::Removed, ConnectionQueueItem *item) throw();
-		virtual void on(ConnectionManagerListener::Failed, ConnectionQueueItem *item, const string &reason) throw();
-		virtual void on(ConnectionManagerListener::StatusChanged, ConnectionQueueItem *item) throw();
+		// From ConnectionManagerListener
+		void on(ConnectionManagerListener::Added, ConnectionQueueItem *item) throw();
+		void on(ConnectionManagerListener::Removed, ConnectionQueueItem *item) throw();
+		void on(ConnectionManagerListener::Failed, ConnectionQueueItem *item, const string &reason) throw();
+		void on(ConnectionManagerListener::StatusChanged, ConnectionQueueItem *item) throw();
 
-		// From Download manager
-		virtual void on(DownloadManagerListener::Starting, Download *dl) throw();
-		virtual void on(DownloadManagerListener::Tick, const Download::List &list) throw();
-		virtual void on(DownloadManagerListener::Complete, Download *dl) throw();
-		virtual void on(DownloadManagerListener::Failed, Download *dl, const string &reason) throw();
+		// From DownloadManagerListener
+		void on(DownloadManagerListener::Starting, Download *dl) throw();
+		void on(DownloadManagerListener::Tick, const Download::List &list) throw();
+		void on(DownloadManagerListener::Complete, Download *dl) throw();
+		void on(DownloadManagerListener::Failed, Download *dl, const string &reason) throw();
 
-		// From Upload manager
-		virtual void on(UploadManagerListener::Starting, Upload *ul) throw();
-		virtual void on(UploadManagerListener::Tick, const Upload::List &list) throw();
-		virtual void on(UploadManagerListener::Complete, Upload *ul) throw();
+		// From UploadManagerListener
+		void on(UploadManagerListener::Starting, Upload *ul) throw();
+		void on(UploadManagerListener::Tick, const Upload::List &list) throw();
+		void on(UploadManagerListener::Complete, Upload *ul) throw();
 
-		//From Log manager
-		virtual void on(LogManagerListener::Message, time_t t, const string& m) throw();
+		//From LogManagerListener
+		void on(LogManagerListener::Message, time_t t, const string& m) throw();
 
 		class TransferItem
 		{

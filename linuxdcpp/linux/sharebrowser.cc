@@ -702,7 +702,9 @@ void ShareBrowser::downloadSelectedFiles_gui(string target)
 	for (int i = 0; i < count; i++)
 	{
 		path = (GtkTreePath *)g_list_nth_data(list, i);
-		gtk_tree_model_get_iter(m, &iter, path);
+		if (!gtk_tree_model_get_iter(m, &iter, path))
+			continue;
+
 		ptr = fileView.getValue<gpointer>(&iter, "DL File");
 		fileOrder = fileView.getString(&iter, "File Order");
 
@@ -779,7 +781,9 @@ void ShareBrowser::onSearchAlternatesClicked_gui(GtkMenuItem *item, gpointer dat
 	for (int i = 0; i < count; i++)
 	{
 		path = (GtkTreePath *)g_list_nth_data(list, i);
-		gtk_tree_model_get_iter(m, &iter, path);
+		if (!gtk_tree_model_get_iter(m, &iter, path))
+			continue;
+
 		ptr = sb->fileView.getValue<gpointer>(&iter, "DL File");
 		fileOrder = sb->fileView.getString(&iter, "File Order");
 

@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,12 +19,9 @@
 #ifndef WULFOR_PUBLIC_HUBS_HH
 #define WULFOR_PUBLIC_HUBS_HH
 
-#include <iostream>
 #include <pthread.h>
-#include <sstream>
 
 #include "bookentry.hh"
-#include "callback.hh"
 #include "treeview.hh"
 #include "wulformanager.hh"
 
@@ -33,79 +30,62 @@
 #include <client/FavoriteManager.h>
 #include <client/StringSearch.h>
 
-using namespace std;
-
-class PublicHubs: 
+class PublicHubs:
 	public BookEntry,
 	public FavoriteManagerListener
 {
 	public:
-		//constructor must be called from gui thread
 		PublicHubs();
 		~PublicHubs();
 
 		// From BookEntry
 		GtkWidget *getWidget();
 
-		//only to be called from client thread
+		// Client functions
 		void downloadList_client();
-		void refresh_client();
-		void addFav_client(FavoriteHubEntry entry);
 
-		//only to be called from the gui thread
-		void filterHubs_gui(GtkWidget *widget, gpointer data);
-		void connect_gui(GtkWidget *widget, gpointer data);
-		void refresh_gui(GtkWidget *widget, gpointer data);
-		void configure_gui(GtkWidget *widget, gpointer data);
-
-		void moveUp_gui(GtkWidget *widget, gpointer data);
-		void moveDown_gui(GtkWidget *widget, gpointer data);
-		void add_gui(GtkWidget *widget, gpointer data);
-		void remove_gui(GtkWidget *widget, gpointer data);
-
-		void cellEdited_gui(GtkCellRendererText *cell, 
-			char *path, char *text, gpointer data);
-		gboolean buttonEvent_gui(
-			GtkWidget *widget, GdkEventButton *event, gpointer);
-		void addFav_gui(GtkMenuItem *i, gpointer d);
-
+	private:
+		// GUI functions
 		void updateList_gui();
 		void setStatus_gui(GtkStatusbar *status, std::string text);
 
-		//from FavoriteManagerListener
-		void on(FavoriteManagerListener::DownloadStarting, 
-			const string &file) throw();
-		void on(FavoriteManagerListener::DownloadFailed, 
-			const string &file) throw();
-		void on(FavoriteManagerListener::DownloadFinished, 
-			const string &file) throw();
+		// GUI callbacks
+		static gboolean onButtonPress_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean onButtonRelease_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean onKeyRelease_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
+		static gboolean onFilterHubs_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
+		static void onConnect_gui(GtkWidget *widget, gpointer data);
+		static void onRefresh_gui(GtkWidget *widget, gpointer data);
+		static void onAddFav_gui(GtkMenuItem *item, gpointer data);
+		static void onConfigure_gui(GtkWidget *widget, gpointer data);
+		static void onAdd_gui(GtkWidget *widget, gpointer data);
+		static void onMoveUp_gui(GtkWidget *widget, gpointer data);
+		static void onMoveDown_gui(GtkWidget *widget, gpointer data);
+		static void onRemove_gui(GtkWidget *widget, gpointer data);
+		static void onCellEdited_gui(GtkCellRendererText *cell, char *path, char *text, gpointer data);
 
-	private:
-		Callback2<PublicHubs, void, GtkWidget *> 
-			filterCallback, connectCallback, refreshCallback, configureCallback;
-		Callback2<PublicHubs, void, GtkWidget *> 
-			upCallback, downCallback, addCallback, removeCallback;
-		Callback4<PublicHubs, void, GtkCellRendererText *, char *, char *>
-			editCallback;
-		Callback3<PublicHubs, gboolean, GtkWidget *, GdkEventButton *> 
-			mouseButtonCallback;
-		Callback2<PublicHubs, void, GtkMenuItem *> addFavCallback;
-		
+		// Client functions
+		void refresh_client();
+		void addFav_client(FavoriteHubEntry entry);
+
+		// Client callbacks from FavoriteManagerListener
+		void on(FavoriteManagerListener::DownloadStarting, const std::string &file) throw();
+		void on(FavoriteManagerListener::DownloadFailed, const std::string &file) throw();
+		void on(FavoriteManagerListener::DownloadFinished, const std::string &file) throw();
+
 		pthread_mutex_t hubLock;
-
 		HubEntry::List hubs;
 		StringSearch filter;
-
 		GtkDialog *configureDialog;
-		GtkComboBox *combo;
+		GtkComboBox *comboBox;
 		GtkWidget *mainBox;
 		GtkEntry *filterEntry;
 		TreeView listsView, hubView;
-		GtkListStore *hubStore, *comboStore, *listsStore;
+		GtkTreeSelection *hubSelection, *listsSelection;
+		GtkListStore *hubStore, *listsStore;
 		GtkStatusbar *statusMain, *statusHubs, *statusUsers;
-		
 		GtkMenu *menu;
-		GtkMenuItem *conItem, *favItem;
+		gint oldButton, oldType;
 };
 
 #else

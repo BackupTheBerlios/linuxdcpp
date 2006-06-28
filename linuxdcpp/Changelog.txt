@@ -1,3 +1,11 @@
+2006-06-27 - Steven Sheehy
+* Fixed chat not displaying for ADC hubs (thanks Fredrik Ullner).
+* Public Hub changes:
+	* Cleaned up the source.
+	* Added keyboard events.
+	* Removed dependency on callback.hh.
+	* Filter now finds as you type.
+
 2006-06-25 - Steven Sheehy
 * Changed naming of "Favourite" to "Favorite".
 * Finally settled upon a common gui callback naming scheme (see wiki for details).

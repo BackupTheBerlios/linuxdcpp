@@ -22,6 +22,7 @@ Matthew Ziegelbaum
 Tobias Nygren
 Johannes Sjölund
 Pavlov Konstantin
+Fredrik Ullner
 
 DC++:
 -----
@@ -29,9 +30,9 @@ Jacek Sieka
 Per Lindén
 
 geoff, carxor, luca rota, dan kline, mike, anton, zc, sarf, farcry, kyrre aalerud, opera,
-patbateman, xeroc, fusbar, vladimir marko, kenneth skovhede, ondrea, todd pederzani, who, 
-sedulus, sandos, henrik engström, dwomac, robert777, saurod, atomicjo, bzbetty, orkblutt, 
-distiller, citruz, dan fulger, cologic, christer palm, twink, ilkka seppälä, johnny, ciber, 
-theparanoidone, gadget, naga, tremor, joakim tosteberg, pofis, psf8500, lauris ievins, 
-defr, ullner, fleetcommand, liny, xan, olle svensson, mark gillespie, jeremy huddleston, 
+patbateman, xeroc, fusbar, vladimir marko, kenneth skovhede, ondrea, todd pederzani, who,
+sedulus, sandos, henrik engström, dwomac, robert777, saurod, atomicjo, bzbetty, orkblutt,
+distiller, citruz, dan fulger, cologic, christer palm, twink, ilkka seppälä, johnny, ciber,
+theparanoidone, gadget, naga, tremor, joakim tosteberg, pofis, psf8500, lauris ievins,
+defr, ullner, fleetcommand, liny, xan, olle svensson, mark gillespie, jeremy huddleston,
 bsod, sulan, jonathan stone, tim burton, izzzo, guitarm, paka, nils maier

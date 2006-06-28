@@ -40,6 +40,7 @@ protected:
 public:\
 	name() throw() : Exception(#name) { } \
 	name(const string& aError) throw() : Exception(#name ": " + aError) { } \
+	name(const string& aError, const string& filename) throw() : Exception(#name ": " + aError + " " + filename) { } \
 	virtual ~name() throw() { } \
 }
 
@@ -49,6 +50,7 @@ public:\
 public:\
 	name() throw() : Exception() { } \
 	name(const string& aError) throw() : Exception(aError) { } \
+	name(const string& aError, const string& filename) throw() : Exception(aError) { } \
 	virtual ~name() throw() { } \
 }
 #endif

@@ -49,9 +49,9 @@ class FinishedTransfers:
 		static void onRemoveAll_gui(GtkMenuItem *item, gpointer data);
 		static void onOpenWith_gui(GtkMenuItem *item, gpointer data);
 
-		// Client callbacks
-		virtual void on(FinishedManagerListener::AddedDl, FinishedItem* entry) throw();
-		virtual void on(FinishedManagerListener::AddedUl, FinishedItem* entry) throw();
+		// Client callbacks from FinishedManagerListener
+		void on(FinishedManagerListener::AddedDl, FinishedItem* entry) throw();
+		void on(FinishedManagerListener::AddedUl, FinishedItem* entry) throw();
 
 		// For open with thread. Not _gui or _client since it runs in its own thread.
 		static void *runCommand(void *command);
