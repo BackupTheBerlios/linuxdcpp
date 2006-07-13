@@ -1016,82 +1016,105 @@ void Settings::initSharing_gui()
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(shareItems["Upload"]), (double)SETTING(SLOTS));
 }
 
-void Settings::modifyShare_client(bool add, string path, string name)
-{
-	if (add)
-		ShareManager::getInstance()->addDirectory(path, name);
-	else
-		ShareManager::getInstance()->removeDirectory(path);
-}
-
 void Settings::onAddShare_gui(GtkWidget *widget, gpointer data)
 {
-	Settings *s = (Settings*)data;
+	Settings *s = (Settings *)data;
 
 	if (!s->lastdir.empty())
 		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(s->dirChooser), s->lastdir.c_str());
- 	gint response = gtk_dialog_run(GTK_DIALOG (s->dirChooser));
+
+ 	gint response = gtk_dialog_run(GTK_DIALOG(s->dirChooser));
 	gtk_widget_hide(s->dirChooser);
 
 	if (response == GTK_RESPONSE_OK)
 	{
-		string path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->dirChooser));
+		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->dirChooser));
+		string path = temp;
+		g_free(temp);
 		s->lastdir = path;
 
 		gtk_entry_set_text(GTK_ENTRY(s->shareItems["Virtual"]), "");
-		response = gtk_dialog_run (GTK_DIALOG (s->virtualName));
+		response = gtk_dialog_run(GTK_DIALOG(s->virtualName));
 		gtk_widget_hide(s->virtualName);
-		string name = string(gtk_entry_get_text(GTK_ENTRY(s->shareItems["Virtual"])));
 
-		if (response == GTK_RESPONSE_OK && !name.empty())
+		if (response == GTK_RESPONSE_OK)
 		{
-			try
-			{
-				name = ShareManager::getInstance()->validateVirtual(name);
-				if (path[path.length ()-1] != PATH_SEPARATOR)
-					path += PATH_SEPARATOR;
-
-				typedef Func3<Settings, bool, string, string> F3;
-				F3 *f3 = new F3(s, &Settings::modifyShare_client, TRUE, path, name);
-				WulforManager::get()->dispatchClientFunc(f3);
-
-				GtkTreeIter iter;
-				gtk_list_store_append(s->shareStore, &iter);
-				gtk_list_store_set(s->shareStore, &iter,
-					s->shareView.col("Virtual Name"), name.c_str(),
-					s->shareView.col("Directory"), path.c_str(),
-					s->shareView.col("Size"), Util::formatBytes(0).c_str(),
-					s->shareView.col("Real Size"), (int64_t)0,
-					-1);
-			}
-			catch (const ShareException& e)
-			{
-				GtkWidget *d = gtk_message_dialog_new(WulforManager::get()->getMainWindow()->getWindow(),
-											GTK_DIALOG_MODAL,
-											GTK_MESSAGE_ERROR,
-											GTK_BUTTONS_OK,
-											string(e.getError()).c_str(),
-											NULL);
-				gtk_dialog_run (GTK_DIALOG (d));
-				gtk_widget_hide (d);
-			}
+			string name = gtk_entry_get_text(GTK_ENTRY(s->shareItems["Virtual"]));
+			typedef Func3<Settings, bool, string, string> F3;
+			F3 *f3 = new F3(s, &Settings::modifyShare_client, TRUE, path, name);
+			WulforManager::get()->dispatchClientFunc(f3);
 		}
 	}
 }
 
 void Settings::onRemoveShare_gui(GtkWidget *widget, gpointer data)
 {
-	Settings *s = (Settings*)data;
+	Settings *s = (Settings *)data;
 	GtkTreeIter iter;
-	GtkTreeModel *m = GTK_TREE_MODEL(s->shareStore);
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->shareView.get());
 
-	if (!gtk_tree_selection_get_selected(selection, &m, &iter))
-		return;
+	if (gtk_tree_selection_get_selected(selection, NULL, &iter))
+	{
+		string path = s->shareView.getString(&iter, "Directory");
+		gtk_list_store_remove(s->shareStore, &iter);
+		gtk_widget_set_sensitive(s->shareItems["Remove"], FALSE);
 
-	s->modifyShare_client(false, s->shareView.getString(&iter, "Directory"), "");
-	gtk_list_store_remove(s->shareStore, &iter);
-	gtk_widget_set_sensitive(s->shareItems["Remove"], FALSE);
+		typedef Func3<Settings, bool, string, string> F3;
+		F3 *f3 = new F3(s, &Settings::modifyShare_client, FALSE, path, "");
+		WulforManager::get()->dispatchClientFunc(f3);
+	}
+}
+
+void Settings::modifyShare_client(bool add, string path, string name)
+{
+	name = ShareManager::getInstance()->validateVirtual(name);
+	if (path[path.length() - 1] != PATH_SEPARATOR)
+		path += PATH_SEPARATOR;
+
+	if (add)
+	{
+		string error;
+		try
+		{
+			ShareManager::getInstance()->addDirectory(path, name);
+		}
+		catch (const ShareException &e)
+		{
+			error = e.getError();
+		}
+
+		typedef Func3<Settings, string, string, string> F3;
+		F3 *func = new F3(this, &Settings::modifyShare_gui, path, name, error);
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
+	else
+	{
+		ShareManager::getInstance()->removeDirectory(path);
+	}
+}
+
+void Settings::modifyShare_gui(string path, string name, string error)
+{
+	if (error.empty())
+	{
+		GtkTreeIter iter;
+		int64_t size = ShareManager::getInstance()->getShareSize(path);
+
+		gtk_list_store_append(shareStore, &iter);
+		gtk_list_store_set(shareStore, &iter,
+			shareView.col("Virtual Name"), name.c_str(),
+			shareView.col("Directory"), path.c_str(),
+			shareView.col("Size"), Util::formatBytes(size).c_str(),
+			shareView.col("Real Size"), size,
+			-1);
+	}
+	else
+	{
+		GtkWidget *d = gtk_message_dialog_new(GTK_WINDOW(dialog),
+			GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, error.c_str());
+		gtk_dialog_run(GTK_DIALOG(d));
+		gtk_widget_destroy(d);
+	}
 }
 
 gboolean Settings::onShareButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
@@ -1165,6 +1188,7 @@ void Settings::initAppearance_gui()
 		//addOption(appearanceStore, appearanceView, "User alternative sorting order for transfers", SettingsManager::ALT_SORT_ORDER);
 		addOption(appearanceStore, appearanceView, "Filter kick and NMDC debug messages", SettingsManager::FILTER_MESSAGES);
 		//addOption(appearanceStore, appearanceView, "Minimize to tray", SettingsManager::MINIMIZE_TRAY);
+		addOption(appearanceStore, appearanceView, "Show tray icon", SettingsManager::MINIMIZE_TRAY);
 		addOption(appearanceStore, appearanceView, "Show timestamps in chat by default", SettingsManager::TIME_STAMPS);
 		addOption(appearanceStore, appearanceView, "View status messages in main chat", SettingsManager::STATUS_IN_CHAT);
 		addOption(appearanceStore, appearanceView, "Show joins / parts in chat by default", SettingsManager::SHOW_JOINS);
@@ -1172,7 +1196,7 @@ void Settings::initAppearance_gui()
 		//addOption(appearanceStore, appearanceView, "Use system icons when browsing files (slows browsing a bit)", SettingsManager::USE_SYSTEM_ICONS);
 		addOption(appearanceStore, appearanceView, "Use OEM monospaced font for viewing text files", SettingsManager::USE_OEM_MONOFONT);
 		//addOption(appearanceStore, appearanceView, "Guess user country from IP", SettingsManager::GET_USER_COUNTRY);
-		///@todo: uncomment when the save problem is solved.
+		///@todo: uncomment when the save problem is solved. Using MINIMIZE_TRAY until then.
 		//addOption(appearanceStore, appearanceView, "Show tray icon", WGETI("show-tray-icon"));
 
 		gtk_entry_set_text(GTK_ENTRY(appearanceItems["Away"]), SETTING(DEFAULT_AWAY_MESSAGE).c_str());
@@ -1257,10 +1281,10 @@ void Settings::initAppearance_gui()
 
 			//addOption(windowStore2, windowView2, "Open private messages in their own window", SettingsManager::POPUP_PMS);
 			//addOption(windowStore2, windowView2, "Open private messages from offline users in their own window", SettingsManager::POPUP_OFFLINE);
-			//addOption(windowStore2, windowView2, "Open file list window in the background", SettingsManager::POPUNDER_FILELIST);
-			//addOption(windowStore2, windowView2, "Open new private message windows in the background", SettingsManager::POPUNDER_PM);
-			//addOption(windowStore2, windowView2, "Open new window when using /join", SettingsManager::JOIN_OPEN_NEW_WINDOW);
-			//addOption(windowStore2, windowView2, "Ignore private messages from offline users", SettingsManager::IGNORE_OFFLINE);
+			addOption(windowStore2, windowView2, "Open file list window in the background", SettingsManager::POPUNDER_FILELIST);
+			addOption(windowStore2, windowView2, "Open new private message windows in the background", SettingsManager::POPUNDER_PM);
+			addOption(windowStore2, windowView2, "Open new window when using /join", SettingsManager::JOIN_OPEN_NEW_WINDOW);
+			addOption(windowStore2, windowView2, "Ignore private messages from offline users", SettingsManager::IGNORE_OFFLINE);
 			//addOption(windowStore2, windowView2, "Toggle window when selecting an active tab", SettingsManager::TOGGLE_ACTIVE_WINDOW);
 		}
 		{ // Confirmation dialog
@@ -1437,7 +1461,7 @@ void Settings::initAdvanced_gui()
 	//addOption(advancedStore, advancedView, "Break on first ADLSearch match", SettingsManager::ADLS_BREAK_ON_FIRST);
 	addOption(advancedStore, advancedView, "Enable safe and compressed transfers", SettingsManager::COMPRESS_TRANSFERS);
 	addOption(advancedStore, advancedView, "Accept custom user commands from hub", SettingsManager::HUB_USER_COMMANDS);
-	//addOption(advancedStore, advancedView, "Send unknown /commands to the hub", SettingsManager::SEND_UNKNOWN_COMMANDS);
+	addOption(advancedStore, advancedView, "Send unknown /commands to the hub", SettingsManager::SEND_UNKNOWN_COMMANDS);
 	addOption(advancedStore, advancedView, "Add finished files to share instantly (if shared)", SettingsManager::ADD_FINISHED_INSTANTLY);
 	//addOption(advancedStore, advancedView, "Use CTRL for line history", SettingsManager::USE_CTRL_FOR_LINE_HISTORY);
 	//addOption(advancedStore, advancedView, "Use SSL when remote client supports it", SettingsManager::USE_SSL);

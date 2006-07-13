@@ -60,8 +60,8 @@ class PrivateMessage:
 		User::Ptr user;
 		std::vector<std::string> history;
 		int historyIndex;
-		const int maxLines;
-		const int maxHistory;
+		static const int maxLines = 500;
+		static const int maxHistory = 20;
 };
 
 #else

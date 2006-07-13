@@ -1,3 +1,33 @@
+2006-07-12 - Steven Sheehy
+* Removed the last vestiges of Wulfor name in the GUI (thanks Pavlov Konstantin).
+* Fixed some memory leaks.
+* callback.hh was finally removed.
+* Re-added show tray icon setting.
+* Fixed a crash when adding the same share twice (thanks Mikael Eman).
+* Fixed a crash when downloading a dir from search in debug mode (regression).
+* Hub changes:
+	* Cleaned up the source.
+	* Added keyboard events.
+	* Added ability to retrieve chat history by using the up and down arrows.
+	* Fixed problem with not having userlist sorted when joining a hub.
+	* Turned off "rules-hint" (AKA striped lines) in nick treeview to speed things up.
+	* Replaced nick completion code with the much simpler GtkEntryCompletion (5 lines of code vs 100).
+	* Implemented these options:
+		* Filter kick messages
+		* Log status messages
+		* Automatically follow redirects
+		* Show timestamps in chat by default
+		* View status messages in main chat
+		* Show joins / parts in chat by default
+		* Only show joins / parts for favorite users
+		* Send unknown /commands to the hub
+		* Open new window when using /join
+		* Ignore private messages from offline users
+		* Open new private message windows in the background
+		* Open file list window in the background
+	* Added these commands: /away, /back, /clear, /close, /favorite, /getlist,
+	  /grant, /help, /join, /pm, /rebuild, /userlist
+
 2006-06-27 - Steven Sheehy
 * Fixed chat not displaying for ADC hubs (thanks Fredrik Ullner).
 * Public Hub changes:
@@ -251,7 +281,7 @@
 * Improvements to hub and sharebrowser (thanks John Armstrong)
 
 2005-09-15 - paskharen
-* Fixed? renaming files across partitions (patch from unknown)
+* Fixed renaming files across partitions (patch from unknown)
 
 2005-09-14 - paskharen
 * Removed the dispatcher.
@@ -313,7 +343,7 @@
 * Fixed some problems with active mode port selection (MainWindow::startSocket)
 
 2005-04-06 - paskharen
-* Added tab compleation for nicks (thanks s4kk3)
+* Added tab completion for nicks (thanks s4kk3)
 * Fixed unicode conversion when downloading to a directory in sharbrowser (also from s4kk3)
 * Fixed a segfault when the hub asks for a password (thanks Trent Lloyd)
 
@@ -344,7 +374,7 @@ were missing.
 * Added all the settings (except User Commands), though, we haven't added all the features that the settings have to offer yet.
 * The Hash progress is now working.
 * Added some settings:
-	* Confirm applicatioon exit
+	* Confirm application exit
 	* Set Download Queue tab bold when an entry is added
 	* Confirm favorite hub removal
 	* Clear search box after each search

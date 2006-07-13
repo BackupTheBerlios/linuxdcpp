@@ -70,6 +70,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file):
 	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(fileView.get()), GTK_SELECTION_MULTIPLE);
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(fileStore), fileView.col("File Order"), GTK_SORT_ASCENDING);
 	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(fileView.get(), fileView.col("Filename")), TRUE);
+	gtk_tree_view_set_fixed_height_mode(fileView.get(), TRUE);
 	fileView.setSortColumn_gui("Filename", "File Order");
 	fileView.setSortColumn_gui("Size", "Size Order");
 	fileView.setSortColumn_gui("Exact Size", "Size Order");
@@ -94,7 +95,6 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file):
 	// Create the popup menus
 	dirMenu = GTK_MENU(gtk_menu_new());
 	dirDownloadMenu = GTK_MENU(gtk_menu_new());
-
 	dirMenuItems["Download"] = gtk_menu_item_new_with_label("Download");
 	gtk_menu_shell_append(GTK_MENU_SHELL(dirMenu), dirMenuItems["Download"]);
 	g_signal_connect(G_OBJECT(dirMenuItems["Download"]), "activate", G_CALLBACK(onDownloadDirClicked_gui), (gpointer)this);
@@ -104,7 +104,6 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file):
 
 	fileMenu = GTK_MENU(gtk_menu_new());
 	fileDownloadMenu = GTK_MENU(gtk_menu_new());
-
 	fileMenuItems["Download"] = gtk_menu_item_new_with_label("Download");
 	gtk_menu_shell_append(GTK_MENU_SHELL(fileMenu), fileMenuItems["Download"]);
 	g_signal_connect(G_OBJECT(fileMenuItems["Download"]), "activate", G_CALLBACK(onDownloadClicked_gui), (gpointer)this);
@@ -428,6 +427,7 @@ void ShareBrowser::fileViewSelected_gui()
 	}
 	else
 		downloadSelectedFiles_gui(Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY)));
+
 	g_list_free(list);
 }
 
@@ -583,8 +583,10 @@ void ShareBrowser::onFindButtonClicked_gui(GtkWidget *widget, gpointer data)
 	sb->findNext_gui(true);
 }
 
-void ShareBrowser::onNextButtonClicked_gui(GtkWidget *widget, gpointer user_data) {
-	((ShareBrowser*)user_data)->findNext_gui(false);
+void ShareBrowser::onNextButtonClicked_gui(GtkWidget *widget, gpointer data)
+{
+	ShareBrowser *sb = (ShareBrowser *)data;
+	sb->findNext_gui(FALSE);
 }
 
 void ShareBrowser::onDownloadClicked_gui(GtkMenuItem *item, gpointer data)

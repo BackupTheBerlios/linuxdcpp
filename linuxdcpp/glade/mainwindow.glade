@@ -45,7 +45,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="open_file_list_1">
 		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">Open file list ...</property>
+		      <property name="label" translatable="yes">Open file list</property>
 		      <property name="use_underline">True</property>
 		      <accelerator key="L" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
@@ -168,7 +168,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="exit1">
 		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">Exit</property>
+		      <property name="label" translatable="yes">Quit</property>
 		      <property name="use_underline">True</property>
 
 		      <child internal-child="image">
@@ -795,7 +795,7 @@
 </widget>
 
 <widget class="GtkDialog" id="exitDialog">
-  <property name="title" translatable="yes">Exit Wulfor?</property>
+  <property name="title" translatable="yes">Exit LinuxDC++?</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
   <property name="modal">False</property>
@@ -1130,6 +1130,7 @@ Contributors:
   Tobias Nygren
   Pavlov Konstantin
   Fredrik Ullner
+  Mikael Eman
 </property>
   <property name="artists">Johannes Sjölund</property>
 </widget>

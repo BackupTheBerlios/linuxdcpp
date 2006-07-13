@@ -60,12 +60,12 @@ class WulforManager
 		BookEntry *getBookEntry_gui(std::string id, bool raise = TRUE);
 		PublicHubs *addPublicHubs_gui();
 		Hub *addHub_gui(std::string address, std::string nick="", std::string desc="", std::string password="");
-		PrivateMessage *addPrivMsg_gui(User::Ptr user);
+		PrivateMessage *addPrivMsg_gui(User::Ptr user, bool raise = TRUE);
 		DownloadQueue *addDownloadQueue_gui();
 		FavoriteHubs *addFavoriteHubs_gui();
 		Settings *openSettingsDialog_gui();
 		Search *addSearch_gui();
-		ShareBrowser *addShareBrowser_gui(User::Ptr user, std::string file);
+		ShareBrowser *addShareBrowser_gui(User::Ptr user, std::string file, bool raise = TRUE);
 		FinishedTransfers *addFinishedTransfers_gui(std::string title);
 		void deleteAllBookEntries();
 		void deleteBookEntry_gui(BookEntry *entry);
@@ -76,7 +76,7 @@ class WulforManager
 
 	private:
 		// BookEntry functions
-		void insertBookEntry_gui(BookEntry *entry);
+		void insertBookEntry_gui(BookEntry *entry, bool raise = TRUE);
 
 		// DialogEntry functions
 		DialogEntry *getDialogEntry_gui(std::string id);

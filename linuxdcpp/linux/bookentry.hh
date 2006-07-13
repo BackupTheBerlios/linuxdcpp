@@ -21,6 +21,7 @@
 
 #include <gtk/gtk.h>
 #include <glade/glade.h>
+#include <gdk/gdkkeysyms.h>
 #include <string>
 
 class BookEntry

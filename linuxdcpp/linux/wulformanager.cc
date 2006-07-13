@@ -146,11 +146,11 @@ void WulforManager::processClientQueue()
 
 void WulforManager::dispatchGuiFunc(FuncBase *func)
 {
-	string id = func->getID();
-
 	pthread_mutex_lock(&guiQueueLock);
 	pthread_mutex_lock(&bookEntryLock);
 	pthread_mutex_lock(&dialogEntryLock);
+
+	string id = func->getID();
 
 	// Make sure we're not adding functions to deleted objects.
 	if (id == "Main Window" || id == "Settings" ||
@@ -172,11 +172,11 @@ void WulforManager::dispatchGuiFunc(FuncBase *func)
 
 void WulforManager::dispatchClientFunc(FuncBase *func)
 {
-	string id = func->getID();
-
 	pthread_mutex_lock(&clientQueueLock);
 	pthread_mutex_lock(&bookEntryLock);
 	pthread_mutex_lock(&dialogEntryLock);
+
+	string id = func->getID();
 
 	// Make sure we're not adding functions to deleted objects.
 	if (id == "Main Window" || id == "Settings" ||
@@ -254,13 +254,13 @@ BookEntry *WulforManager::getBookEntry_gui(string id, bool raise)
 	return ret;
 }
 
-void WulforManager::insertBookEntry_gui(BookEntry *entry)
+void WulforManager::insertBookEntry_gui(BookEntry *entry, bool raise)
 {
 	// Associates id string to the widget for later retrieval in MainWindow::switchPage_gui()
 	g_object_set_data_full(G_OBJECT(entry->getWidget()), "id", g_strdup(entry->getID().c_str()), g_free);
 
 	entry->applyCallback(G_CALLBACK(closeBookEntry_callback));
-	mainWin->addPage_gui(entry->getWidget(), entry->getTitle());
+	mainWin->addPage_gui(entry->getWidget(), entry->getTitle(), raise);
 	gtk_widget_unref(entry->getWidget());
 
 	pthread_mutex_lock(&bookEntryLock);
@@ -462,25 +462,25 @@ Hub *WulforManager::addHub_gui(string address, string nick, string desc, string 
 	return hub;
 }
 
-PrivateMessage *WulforManager::addPrivMsg_gui(User::Ptr user)
+PrivateMessage *WulforManager::addPrivMsg_gui(User::Ptr user, bool raise)
 {
 	BookEntry *entry = getBookEntry_gui("PM: " + WulforUtil::getNicks(user), FALSE);
 	if (entry) return dynamic_cast<PrivateMessage *>(entry);
 
 	PrivateMessage *privMsg = new PrivateMessage(user);
 	mainWin->appendWindowItem(privMsg->getWidget(), privMsg->getID());
-	insertBookEntry_gui(privMsg);
+	insertBookEntry_gui(privMsg, raise);
 
 	return privMsg;
 }
 
-ShareBrowser *WulforManager::addShareBrowser_gui(User::Ptr user, string file)
+ShareBrowser *WulforManager::addShareBrowser_gui(User::Ptr user, string file, bool raise)
 {
 	BookEntry *entry = getBookEntry_gui("List: " + WulforUtil::getNicks(user));
 	if (entry) return dynamic_cast<ShareBrowser *>(entry);
 
 	ShareBrowser *browser = new ShareBrowser(user, file);
-	insertBookEntry_gui(browser);
+	insertBookEntry_gui(browser, raise);
 
 	return browser;
 }

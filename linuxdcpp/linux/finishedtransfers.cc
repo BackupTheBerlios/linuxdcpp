@@ -55,6 +55,7 @@ FinishedTransfers::FinishedTransfers(std::string title):
 	g_object_unref(transferStore);
 	transferSelection = gtk_tree_view_get_selection(transferView.get());
 	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(transferView.get(), transferView.col("Time")), TRUE);
+	gtk_tree_view_set_fixed_height_mode(transferView.get(), TRUE);
 
 	finishedTransfersMenu = GTK_MENU(gtk_menu_new());
 	openWith = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Open with"));
@@ -209,15 +210,9 @@ void FinishedTransfers::onOpenWith_gui(GtkMenuItem *item, gpointer data)
 		if (!command.empty() && !target.empty())
 		{
 			command += Text::utf8ToAcp(" \"" + target + "\"");
-			pthread_create(&ft->openWithThread, NULL, &FinishedTransfers::runCommand, (void *)command.c_str());
+			g_spawn_command_line_async(command.c_str(), NULL);
 		}
 	}
-}
-
-void* FinishedTransfers::runCommand(void *command)
-{
-	system((char *)command);
-	pthread_exit(NULL);
 }
 
 void FinishedTransfers::on(FinishedManagerListener::AddedDl, FinishedItem *entry) throw()

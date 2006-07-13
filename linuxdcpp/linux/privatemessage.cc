@@ -19,13 +19,13 @@
 #include "privatemessage.hh"
 #include "wulformanager.hh"
 
+#include <algorithm>
+
 using namespace std;
 
 PrivateMessage::PrivateMessage(User::Ptr user):
 	BookEntry("PM: " + WulforUtil::getNicks(user)),
-	user(user),
-	maxLines(500),
-	maxHistory(20)
+	user(user)
 {
 	GladeXML *xml = getGladeXML("privatemessage.glade");
 
@@ -70,8 +70,6 @@ GtkWidget *PrivateMessage::getWidget()
 
 void PrivateMessage::addMessage_gui(string message)
 {
-	string line = "";
-
 	if (BOOLSETTING(LOG_PRIVATE_CHAT))
 	{
 		StringMap params;
@@ -84,32 +82,27 @@ void PrivateMessage::addMessage_gui(string message)
 		LOG(LogManager::PM, params);
 	}
 
-	if (BOOLSETTING(TIME_STAMPS))
-		line = "[" + Util::getShortTimeString() + "] ";
-	line += message + "\n";
-
-	addLine_gui(line);
+	addLine_gui(message);
 }
 
 void PrivateMessage::addStatusMessage_gui(string message)
 {
-	string line = "";
-
-	if (BOOLSETTING(TIME_STAMPS))
-		line = "[" + Util::getShortTimeString() + "] ";
-	line += "*** " + message + "\n";
-
-	addLine_gui(line);
+	addLine_gui("*** " + message);
 }
 
-void PrivateMessage::addLine_gui(string line)
+void PrivateMessage::addLine_gui(string message)
 {
 	GtkTextIter iter;
 	GtkAdjustment *adj;
 	bool setBottom;
+	string line = "";
 
 	adj = gtk_scrolled_window_get_vadjustment(scroll);
 	setBottom = gtk_adjustment_get_value(adj) >= (adj->upper - adj->page_size);
+
+	if (BOOLSETTING(TIME_STAMPS))
+		line = "[" + Util::getShortTimeString() + "] ";
+	line += message + "\n";
 
 	gtk_text_buffer_get_end_iter(buffer, &iter);
 	gtk_text_buffer_insert(buffer, &iter, line.c_str(), line.size());
@@ -147,29 +140,32 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
 		pm->history.push_back(text);
 		pm->history.push_back("");
 		pm->historyIndex = pm->history.size() - 1;
-		if (pm->history.size() > pm->maxHistory + 1)
+		if (pm->history.size() > maxHistory + 1)
 			pm->history.erase(pm->history.begin());
 
 		// Process special commands
 		if (text[0] == '/')
 		{
-			if (text == "/clear")
+			string command;
+			std::transform(text.begin(), text.end(), command.begin(), (int(*)(int))tolower);
+
+			if (command == "/clear")
 			{
 				GtkTextIter startIter, endIter;
 				gtk_text_buffer_get_start_iter(pm->buffer, &startIter);
 				gtk_text_buffer_get_end_iter(pm->buffer, &endIter);
 				gtk_text_buffer_delete(pm->buffer, &startIter, &endIter);
 			}
-			else if (text == "/close")
+			else if (command == "/close")
 			{
 				WulforManager::get()->deleteBookEntry_gui((BookEntry *)pm);
 			}
-			else if (text == "/favorite" || text == "/fav")
+			else if (command == "/favorite" || command == "/fav")
 			{
 				FavoriteManager::getInstance()->addFavoriteUser(pm->user);
 				pm->addStatusMessage_gui("Added user to favorites list");
 			}
-			else if (text == "/getlist")
+			else if (command == "/getlist")
 			{
 				try
 				{
@@ -180,12 +176,12 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
 					pm->addStatusMessage_gui(Text::acpToUtf8(e.getError()));
 				}
 			}
-			else if (text == "/grant")
+			else if (command == "/grant")
 			{
 				UploadManager::getInstance()->reserveSlot(pm->user);
 				pm->addStatusMessage_gui("Slot granted");
 			}
-			else if (text == "/help")
+			else if (command == "/help")
 			{
 				pm->addStatusMessage_gui("Available commands: /clear, /close, /favorite, /getlist, /grant, /help");
 			}

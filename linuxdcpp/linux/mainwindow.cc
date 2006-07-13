@@ -372,7 +372,7 @@ void MainWindow::createTrayIcon_gui()
 	g_signal_connect(G_OBJECT(toggleWindowItem), "activate", G_CALLBACK(onToggleWindowVisibility_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(trayIcon), "button-press-event", G_CALLBACK(onTrayIconClicked_gui), (gpointer)this);
 
-	if (WGETI("show-tray-icon"))
+	if (BOOLSETTING(MINIMIZE_TRAY))
 		gtk_widget_show_all(trayIcon);
 }
 
@@ -449,7 +449,6 @@ void MainWindow::popup_gui(GtkWidget *menu, GdkEventButton *event)
 
 User::Ptr MainWindow::getSelectedTransfer_gui()
 {
-	GtkTreeSelection *selection;
 	GtkTreeModel *m = GTK_TREE_MODEL(transferStore);
 	GList *list = gtk_tree_selection_get_selected_rows(transferSel, &m);
 	GtkTreePath *path = (GtkTreePath*)g_list_nth_data(list, 0);
@@ -661,7 +660,7 @@ void MainWindow::settingsClicked_gui(GtkWidget *widget, gpointer data)
 			gtk_tree_view_column_set_attributes(col, renderer, "text", mw->transferView.col("Status"), NULL);
 		}
 
-		if (WGETI("show-tray-icon"))
+		if (BOOLSETTING(MINIMIZE_TRAY))
 			gtk_widget_show_all(mw->trayIcon);
 		else
 			gtk_widget_hide_all(mw->trayIcon);
@@ -829,7 +828,7 @@ void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw()
 	func_t *func = new func_t(this, &MainWindow::setStats_gui, status1, status2, status3, status4, status5, status6);
 	WulforManager::get()->dispatchGuiFunc(func);
 
-	if (WGETI("show-tray-icon"))
+	if (BOOLSETTING(MINIMIZE_TRAY))
 	{
 		string toolTip = status5 + status6;
 		typedef Func1<MainWindow, string> F1;
@@ -860,7 +859,7 @@ void MainWindow::on(QueueManagerListener::Finished, QueueItem *item, int64_t avS
 void MainWindow::addShareBrowser_gui(User::Ptr user, string searchString, string listName)
 {
 	ShareBrowser *browser;
-	browser = WulforManager::get()->addShareBrowser_gui(user, listName);
+	browser = WulforManager::get()->addShareBrowser_gui(user, listName, !BOOLSETTING(POPUNDER_FILELIST));
 	///@todo: figure out how to set ShareBrowser to open at a specific path
 	//browser->setPosition_gui(searchString);
 }
@@ -1001,8 +1000,14 @@ void MainWindow::refreshFileList_gui(GtkWidget *widget, gpointer data)
 
 void MainWindow::refreshFileList_client()
 {
-	ShareManager::getInstance()->setDirty();
-	ShareManager::getInstance()->refresh(true, true, false);
+	try
+	{
+		ShareManager::getInstance()->setDirty();
+		ShareManager::getInstance()->refresh(true, true, false);
+	}
+	catch (const ShareException& e)
+	{
+	}
 }
 
 void MainWindow::updateTransfer_gui(TransferItem *item)

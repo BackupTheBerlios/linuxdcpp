@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,43 +18,45 @@
 
 #include "hub.hh"
 
-Hub::Hub(std::string address):
-	BookEntry("Hub: " + address),
-	enterCallback(this, &Hub::sendMessage_gui),
-	nickListCallback(this, &Hub::popupNickMenu_gui),
-	browseCallback(this, &Hub::browseItemClicked_gui),
-	msgCallback(this, &Hub::msgItemClicked_gui),
-	grantCallback(this, &Hub::grantItemClicked_gui),
-	completionCallback(this, &Hub::completion_gui),
-	setFocusCallback(this, &Hub::setChatEntryFocus),
-	lastUpdate(0)
+using namespace std;
+
+Hub::Hub(string address):
+	BookEntry("Hub: " + address)
 {
+	TimerManager::getInstance()->addListener(this);
+
 	GladeXML *xml = getGladeXML("hub.glade");
 
+	// Initialize mainbox
 	GtkWidget *window = glade_xml_get_widget(xml, "hubWindow");
 	mainBox = glade_xml_get_widget(xml, "hubBox");
 	gtk_widget_ref(mainBox);
 	gtk_container_remove(GTK_CONTAINER(window), mainBox);
 	gtk_widget_destroy(window);
 
+	// Get widgets from glade xml.
 	chatText = GTK_TEXT_VIEW(glade_xml_get_widget(xml, "chatText"));
-	if (SETTING(USE_OEM_MONOFONT))
-	{
-		PangoFontDescription *font_desc;
-		font_desc = pango_font_description_from_string("Mono 10");
-		gtk_widget_modify_font(GTK_WIDGET(chatText), font_desc);
-		pango_font_description_free(font_desc);
-	}
-
 	nickPane = GTK_PANED(glade_xml_get_widget(xml, "pane"));
-	passwordDialog = GTK_DIALOG (glade_xml_get_widget(xml, "passwordDialog"));
-	passwordEntry = GTK_ENTRY (glade_xml_get_widget(xml, "entryPassword"));
+	passwordDialog = GTK_DIALOG(glade_xml_get_widget(xml, "passwordDialog"));
+	passwordEntry = GTK_ENTRY(glade_xml_get_widget(xml, "passwordEntry"));
 	chatEntry = GTK_ENTRY(glade_xml_get_widget(xml, "chatEntry"));
 	chatText = GTK_TEXT_VIEW(glade_xml_get_widget(xml, "chatText"));
 	chatScroll = GTK_SCROLLED_WINDOW(glade_xml_get_widget(xml, "chatScroll"));
 	mainStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusMain"));
 	usersStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusUsers"));
 	sharedStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusShared"));
+	scrolledwindow2 = glade_xml_get_widget(xml, "scrolledwindow2");
+
+	gtk_dialog_set_alternative_button_order(passwordDialog, GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	if (BOOLSETTING(USE_OEM_MONOFONT))
+	{
+		PangoFontDescription *font_desc;
+		font_desc = pango_font_description_from_string("Mono 10");
+		gtk_widget_modify_font(GTK_WIDGET(chatText), font_desc);
+		pango_font_description_free(font_desc);
+	}
+	int nickPanePosition = WulforSettingsManager::get()->getInt("nick-pane-position");
+	gtk_paned_set_position(nickPane, nickPanePosition);
 
 	// Initialize nick treeview
 	nickView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "nickView")), true, "hub");
@@ -74,63 +76,81 @@ Hub::Hub(std::string address):
 	nickSelection = gtk_tree_view_get_selection(nickView.get());
 	nickView.setSortColumn_gui("Nick", "Nick Order");
 	nickView.setSortColumn_gui("Shared", "Shared Bytes");
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(nickStore), GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID, GTK_SORT_ASCENDING);
+	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(nickView.get(), nickView.col("Nick")), TRUE);
+	gtk_tree_view_set_fixed_height_mode(nickView.get(), TRUE);
+	sorted = FALSE;
 
+	// Initialize chat
 	chatBuffer = gtk_text_buffer_new(NULL);
 	gtk_text_view_set_buffer(chatText, chatBuffer);
 	GtkTextIter iter;
 	gtk_text_buffer_get_end_iter(chatBuffer, &iter);
 	chatMark = gtk_text_buffer_create_mark(chatBuffer, NULL, &iter, FALSE);
- 	
+
+	// Initialize nick completion
+	completion = gtk_entry_completion_new();
+	gtk_entry_completion_set_inline_completion(completion, FALSE);
+	gtk_entry_completion_set_popup_single_match(completion, TRUE);
+	gtk_entry_set_completion(chatEntry, completion);
+	g_object_unref(completion);
+	gtk_entry_completion_set_model(completion, GTK_TREE_MODEL(nickStore));
+	gtk_entry_completion_set_text_column(completion, nickView.col("Nick"));
+
+	// Create menu
 	nickMenu = GTK_MENU(gtk_menu_new());
-	browseItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Browse files"));
-	msgItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Private message"));
-	grantItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Grant slot"));
-	gtk_menu_shell_append(GTK_MENU_SHELL(nickMenu), GTK_WIDGET(browseItem));
-	gtk_menu_shell_append(GTK_MENU_SHELL(nickMenu), GTK_WIDGET(msgItem));
-	gtk_menu_shell_append(GTK_MENU_SHELL(nickMenu), GTK_WIDGET(grantItem));
+	GtkWidget *browseItem = GTK_WIDGET(gtk_menu_item_new_with_label("Browse files"));
+	GtkWidget *msgItem = GTK_WIDGET(gtk_menu_item_new_with_label("Private message"));
+	GtkWidget *grantItem = GTK_WIDGET(gtk_menu_item_new_with_label("Grant slot"));
+	gtk_menu_shell_append(GTK_MENU_SHELL(nickMenu), browseItem);
+	gtk_menu_shell_append(GTK_MENU_SHELL(nickMenu), msgItem);
+	gtk_menu_shell_append(GTK_MENU_SHELL(nickMenu), grantItem);
 
-	pthread_mutex_init(&clientLock, NULL);
+	// Load icons for the nick list
+	string icon, path = WulforManager::get()->getPath() + "/pixmaps/";
+	icon = path + "normal.png";
+	userIcons["normal"] = gdk_pixbuf_new_from_file(icon.c_str(), NULL);
+	icon = path + "normal-op.png";
+	userIcons["normal-op"] = gdk_pixbuf_new_from_file(icon.c_str(), NULL);
+	icon = path + "normal-fw.png";
+	userIcons["normal-fw"] = gdk_pixbuf_new_from_file(icon.c_str(), NULL);
+	icon = path + "normal-fw-op.png";
+	userIcons["normal-fw-op"] = gdk_pixbuf_new_from_file(icon.c_str(), NULL);
+	icon = path + "dc++.png";
+	userIcons["dc++"] = gdk_pixbuf_new_from_file(icon.c_str(), NULL);
+	icon = path + "dc++-op.png";
+	userIcons["dc++-op"] = gdk_pixbuf_new_from_file(icon.c_str(), NULL);
+	icon = path + "dc++-fw.png";
+	userIcons["dc++-fw"] = gdk_pixbuf_new_from_file(icon.c_str(), NULL);
+	icon = path + "dc++-fw-op.png";
+	userIcons["dc++-fw-op"] = gdk_pixbuf_new_from_file(icon.c_str(), NULL);
+
+	// Connect callbacks
+	g_signal_connect(chatEntry, "activate", G_CALLBACK(onSendMessage_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(nickView.get()), "button-press-event", G_CALLBACK(onNickListButtonPress_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(nickView.get()), "button-release-event", G_CALLBACK(onNickListButtonRelease_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(nickView.get()), "key-release-event", G_CALLBACK(onNickListKeyRelease_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(browseItem), "activate", G_CALLBACK(onBrowseItemClicked_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(msgItem), "activate", G_CALLBACK(onMsgItemClicked_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(grantItem), "activate", G_CALLBACK(onGrantItemClicked_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(chatEntry), "key-press-event", G_CALLBACK(onEntryKeyPress_gui), (gpointer)this);
+
+	gtk_widget_grab_focus(GTK_WIDGET(chatEntry));
+
 	client = NULL;
-
-	//Loading icons for the nick list
-	string tmp, path = WulforManager::get()->getPath() + "/pixmaps/";
-	tmp = path + "normal.png";
-	userIcons["normal"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
-	tmp = path + "normal-op.png";
-	userIcons["normal-op"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
-	tmp = path + "normal-fw.png";
-	userIcons["normal-fw"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
-	tmp = path + "normal-fw-op.png";
-	userIcons["normal-fw-op"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
-	tmp = path + "dc++.png";
-	userIcons["dc++"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
-	tmp = path + "dc++-op.png";
-	userIcons["dc++-op"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
-	tmp = path + "dc++-fw.png";
-	userIcons["dc++-fw"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
-	tmp = path + "dc++-fw-op.png";
-	userIcons["dc++-fw-op"] = gdk_pixbuf_new_from_file(tmp.c_str(), NULL);
-	
-	enterCallback.connect(G_OBJECT(chatEntry), "activate", NULL);
-	nickListCallback.connect_after(G_OBJECT(nickView.get()), "button-release-event", NULL);
-	browseCallback.connect(G_OBJECT(browseItem), "activate", NULL);
-	msgCallback.connect(G_OBJECT(msgItem), "activate", NULL);
-	grantCallback.connect(G_OBJECT(grantItem), "activate", NULL);
-	completionCallback.connect_after(G_OBJECT(chatEntry), "key-press-event", NULL);
-	setFocusCallback.connect_after(G_OBJECT(chatEntry), "key-press-event", NULL);
-
-	int nickPanePosition = WulforSettingsManager::get()->getInt("nick-pane-position");
-	gtk_paned_set_position(nickPane, nickPanePosition);
+	history.push_back("");
+	historyIndex = 0;
 }
 
 Hub::~Hub()
 {
+	TimerManager::getInstance()->removeListener(this);
+
 	if (client)
 	{
 		client->removeListener(this);
 		ClientManager::getInstance()->putClient(client);
 	}
-	pthread_mutex_destroy(&clientLock);
 
 	hash_map<string, GdkPixbuf *>::iterator it;
 	for (it = userIcons.begin(); it != userIcons.end(); it++)
@@ -138,6 +158,8 @@ Hub::~Hub()
 
 	int nickPanePosition = gtk_paned_get_position(nickPane);
 	WulforSettingsManager::get()->set("nick-pane-position", nickPanePosition);
+
+	gtk_widget_destroy(GTK_WIDGET(passwordDialog));
 }
 
 GtkWidget *Hub::getWidget()
@@ -145,67 +167,18 @@ GtkWidget *Hub::getWidget()
 	return mainBox;
 }
 
-void Hub::onRedirect_gui(Client* cl, string address)
+void Hub::setStatus_gui(GtkStatusbar *status, string text)
 {
-	dcassert(cl);
-        // the client is dead, long live the client!
-	pthread_mutex_lock(&clientLock);
-	client->removeListener(this);
-	ClientManager::getInstance()->putClient(client);
-	clearNickList_gui();
-	client = ClientManager::getInstance()->getClient(address);
-	client->addListener(this);
-	
-	client->connect();
-	pthread_mutex_unlock(&clientLock);
-}
-
-void Hub::connectClient_client(string address, string nick, string desc, string password) {
-	pthread_mutex_lock(&clientLock);
-	client = ClientManager::getInstance()->getClient(address);
-
-	if (nick.empty()) client->getMyIdentity().setNick(SETTING(NICK));
-	else client->getMyIdentity().setNick(nick);
-	if (!desc.empty()) client->getMyIdentity().setDescription(desc);
-
-	client->addListener(this);
-	client->setPassword(password);
-	client->connect();
-	pthread_mutex_unlock(&clientLock);
-}
-
-void Hub::updateUser_client(const OnlineUser& user) {
-	Identity id = user.getIdentity();
-	string icon, nick = id.getNick();
-	int64_t shared = id.getBytesShared();
-
-	if (user.getUser()->isSet(User::DCPLUSPLUS)) icon += "dc++";
-	else icon += "normal";
-	if (user.getUser()->isSet(User::PASSIVE)) icon += "-fw";
-
-	bool op = id.isOp();
-	if (op) icon += "-op";
-
-	string description = id.getDescription();
-	string tag = id.getTag();
-	string connection = id.getConnection();
-	string email = id.getEmail();
-
-	typedef Func9<Hub, string, int64_t, string, string, string, string, string, Identity, bool> F9;
-	F9 * func = new F9(this, &Hub::updateUser_gui, nick, shared, icon, description, tag, connection, email, id, op);
-	WulforManager::get()->dispatchGuiFunc(func);
-}
-
-void Hub::setStatus_gui(GtkStatusbar *status, std::string text) {
-	gtk_statusbar_pop(status, 0);
-	gtk_statusbar_push(status, 0, text.c_str());
-}
-
-void Hub::findUser_gui(string nick, GtkTreeIter *iter) {
-	if (nicks.find(nick) == nicks.end()) {
-		iter = NULL;
-		return;
+	if (!text.empty())
+	{
+		gtk_statusbar_pop(status, 0);
+		gtk_statusbar_push(status, 0, text.c_str());
 	}
+}
+
+void Hub::findUser_gui(string nick, GtkTreeIter *iter)
+{
+	dcassert(idMap.find(nick) != idMap.end());
 
 	GtkTreeModel *m = GTK_TREE_MODEL(nickStore);
 	gboolean valid = gtk_tree_model_get_iter_first(m, iter);
@@ -213,38 +186,58 @@ void Hub::findUser_gui(string nick, GtkTreeIter *iter) {
 	while (valid)
 	{
 		if (nick == nickView.getString(iter, "Nick"))
-			return;
-		valid = gtk_tree_model_iter_next(m, iter);
+			valid = FALSE;
+		else
+			valid = gtk_tree_model_iter_next(m, iter);
 	}
 }
 
-Identity Hub::getUserID(std::string nick)
+
+void Hub::updateUser_gui(Identity id)
 {
-	dcassert(idMap.find(nick) != idMap.end());
-	return idMap[nick];
-}
-
-void Hub::updateUser_gui(string nick, int64_t shared, string iconFile,
-		string description, string tag, string connection, string email, Identity id, bool opstatus) {
-
 	GtkTreeIter iter;
-	GdkPixbuf *icon;
-	string file, nick_order = (opstatus ? "o" : "u") + nick;
-	string users;
+	string nickOrder, icon;
 
-	findUser_gui(nick, &iter);
+	string nick = id.getNick();
+	int64_t shared = id.getBytesShared();
+	string description = id.getDescription();
+	string tag = id.getTag();
+	string connection = id.getConnection();
+	string email = id.getEmail();
 
-	NicksMapIter curNick;
-	curNick = nicks.find(nick);
 
-	if(curNick == nicks.end()) {
+	if (idMap.find(nick) != idMap.end())
+	{
+		findUser_gui(nick, &iter);
+	}
+	else
+	{
 		gtk_list_store_append(nickStore, &iter);
-		nicks[nick] = nick;
 		idMap[nick] = id;
+
+		if (BOOLSETTING(SHOW_JOINS) || (BOOLSETTING(FAV_SHOW_JOINS) &&
+			FavoriteManager::getInstance()->isFavoriteUser(id.getUser())))
+		{
+			addStatusMessage_gui(nick + " has joined");
+		}
 	}
 
-	icon = userIcons[iconFile];
-	gtk_list_store_set(nickStore, &iter, 
+	if (id.getUser()->isSet(User::DCPLUSPLUS))
+		icon = "dc++";
+	else
+		icon = "normal";
+	if (id.getUser()->isSet(User::PASSIVE))
+		icon += "-fw";
+
+	if (id.isOp())
+	{
+		icon += "-op";
+		nickOrder = "o" + nick;
+	}
+	else
+		nickOrder = "u" + nick;
+
+	gtk_list_store_set(nickStore, &iter,
 		nickView.col("Nick"), nick.c_str(),
 		nickView.col("Shared"), Util::formatBytes(shared).c_str(),
 		nickView.col("Description"), description.c_str(),
@@ -252,330 +245,640 @@ void Hub::updateUser_gui(string nick, int64_t shared, string iconFile,
 		nickView.col("Connection"), connection.c_str(),
 		nickView.col("eMail"), email.c_str(),
 		nickView.col("Shared Bytes"), shared,
-		nickView.col("Icon"), icon,
-		nickView.col("Nick Order"), nick_order.c_str(),
+		nickView.col("Icon"), userIcons[icon],
+		nickView.col("Nick Order"), nickOrder.c_str(),
 		-1);
 
-	u_int32_t ticks = GET_TICK();	
-	if (client && ticks > lastUpdate + 1000) {
-		lastUpdate = ticks;
-
-		pthread_mutex_lock(&clientLock);
-		{
-			users = Util::toString(client->getUserCount()) + " User(s)";
-			setStatus_gui(usersStatus, users);
-			setStatus_gui(sharedStatus, Util::formatBytes(client->getAvailable()));
-		}
-		pthread_mutex_unlock(&clientLock);
-	}
+	usersUpdated = TRUE;
 }
 
-void Hub::removeUser_gui(string nick) {
-	GtkTreeIter iter;
-	
-	findUser_gui(nick, &iter);
-	if (gtk_list_store_iter_is_valid(nickStore, &iter)) {
+void Hub::removeUser_gui(string nick)
+{
+	if (idMap.find(nick) != idMap.end())
+	{
+		GtkTreeIter iter;
+		findUser_gui(nick, &iter);
 		gtk_list_store_remove(nickStore, &iter);
-		nicks.erase(nick);
 		idMap.erase(nick);
 	}
 }
 
-void Hub::clearNickList_gui() {
+void Hub::clearNickList_gui()
+{
 	gtk_list_store_clear(nickStore);
-	nicks.clear();
 	idMap.clear();
 }
 
-void Hub::getPassword_gui() {
-	MainWindow *mainWin = WulforManager::get()->getMainWindow();
-	GtkWidget *entry;
-	string password;
-	int ret;
+void Hub::getPassword_gui()
+{
+	gint ret;
 
-	GtkWidget *dialog = gtk_dialog_new_with_buttons ("Enter password",
-		mainWin->getWindow(),
-		(GtkDialogFlags)(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
-		GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
-		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-		NULL);
-	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	gtk_widget_show_all(GTK_WIDGET(passwordDialog));
+	ret = gtk_dialog_run(passwordDialog);
+	gtk_widget_hide(GTK_WIDGET(passwordDialog));
 
-	entry = gtk_entry_new();
-	gtk_entry_set_visibility(GTK_ENTRY(entry), FALSE);
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), entry, TRUE, TRUE, 5);
-	gtk_widget_show_all(dialog);
-
-	ret = gtk_dialog_run(GTK_DIALOG(dialog));
-	password = gtk_entry_get_text(GTK_ENTRY(entry));
-	gtk_widget_destroy(dialog);
-	if (ret != GTK_RESPONSE_ACCEPT) return;
-
-	typedef Func1<Hub, string> F1;
-	F1 *func = new F1(this, &Hub::setPassword_client, password);
-	WulforManager::get()->dispatchClientFunc(func);
+	if (ret == GTK_RESPONSE_OK)
+	{
+		string password = gtk_entry_get_text(passwordEntry);
+		typedef Func1<Hub, string> F1;
+		F1 *func = new F1(this, &Hub::setPassword_client, password);
+		WulforManager::get()->dispatchClientFunc(func);
+	}
 }
 
-void Hub::addMessage_gui(string msg) {
+void Hub::addStatusMessage_gui(string message)
+{
+	if (!message.empty())
+	{
+		setStatus_gui(mainStatus, message);
+
+		if (BOOLSETTING(STATUS_IN_CHAT))
+		{
+			string line = "*** " + message;
+			addMessage_gui(line);
+		}
+	}
+}
+
+void Hub::addMessage_gui(string message)
+{
+	if (message.empty())
+		return;
+
 	GtkTextIter iter;
-	
-	//this function is sometimes triggered with an empty msg
-	if (msg.empty()) return;
-	
-	string text = "[" + Util::getShortTimeString() + "] " + msg + "\n";
 	GtkAdjustment *adj;
 	bool setBottom;
+	string line = "";
+
+	if (BOOLSETTING(TIME_STAMPS))
+		line = "[" + Util::getShortTimeString() + "] ";
+	line += message + "\n";
 
 	adj = gtk_scrolled_window_get_vadjustment(chatScroll);
 	setBottom = gtk_adjustment_get_value(adj) >= (adj->upper - adj->page_size);
-	
-	gtk_text_buffer_get_end_iter(chatBuffer, &iter);
-	gtk_text_buffer_insert(chatBuffer, &iter, text.c_str(), text.size());
 
-	if (setBottom) {
+	gtk_text_buffer_get_end_iter(chatBuffer, &iter);
+	gtk_text_buffer_insert(chatBuffer, &iter, line.c_str(), line.size());
+
+	if (gtk_text_buffer_get_line_count(chatBuffer) > maxLines)
+	{
+		GtkTextIter next;
+		gtk_text_buffer_get_start_iter(chatBuffer, &iter);
+		gtk_text_buffer_get_iter_at_line(chatBuffer, &next, 1);
+		gtk_text_buffer_delete(chatBuffer, &iter, &next);
+	}
+
+	if (setBottom)
+	{
 		gtk_text_buffer_get_end_iter(chatBuffer, &iter);
 		gtk_text_buffer_move_mark(chatBuffer, chatMark, &iter);
 		gtk_text_view_scroll_to_mark(chatText, chatMark, 0, FALSE, 0, 0);
-	}
-
-	if (BOOLSETTING(LOG_MAIN_CHAT)) {
-		StringMap params;
-		params["message"] = Text::acpToUtf8(text);
-		client->getHubIdentity().getParams(params, "hub", false);
-		params["hubURL"] = client->getHubUrl();
-		client->getMyIdentity().getParams(params, "my", true);
-		LOG(LogManager::CHAT, params);
 	}
 
 	if (BOOLSETTING(BOLD_HUB))
 		setBold_gui();
 }
 
-void Hub::addPrivateMessage_gui(User::Ptr tabUser, std::string msg)
+void Hub::addPrivateMessage_gui(Identity id, string msg)
 {
-	::PrivateMessage *privMsg = WulforManager::get()->addPrivMsg_gui(tabUser); 
-	privMsg->addMessage_gui(msg);
+	string nick = id.getNick();
+
+	if (id.getUser()->isOnline())
+	{
+		WulforManager::get()->addPrivMsg_gui(id.getUser(), !BOOLSETTING(POPUNDER_PM))->addMessage_gui(msg);
+	}
+	else
+	{
+		if (BOOLSETTING(IGNORE_OFFLINE))
+			addStatusMessage_gui("Ignored private message from " + nick);
+		else
+			WulforManager::get()->addPrivMsg_gui(id.getUser(), !BOOLSETTING(POPUNDER_PM))->addMessage_gui(msg);
+	}
 }
 
-void Hub::sendMessage_gui(GtkEntry *entry, gpointer data) {
-	string text = gtk_entry_get_text(chatEntry);
+void Hub::sortList_gui()
+{
+	gint sortColumn;
+	GtkSortType sortType;
+
+	gtk_tree_sortable_get_sort_column_id(GTK_TREE_SORTABLE(nickStore), &sortColumn, &sortType);
+
+	if (sortColumn == GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID)
+		gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(nickStore), nickView.col("Nick Order"), sortType);
+}
+
+void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
+{
+	string text = gtk_entry_get_text(entry);
+	if (text.empty())
+		return;
+
+	gtk_entry_set_text(entry, "");
+	Hub *hub = (Hub *)data;
 	typedef Func1<Hub, string> F1;
 	F1 *func;
-	
-	if (!text.empty()) {
-		gtk_entry_set_text(chatEntry, "");
-		func = new F1(this, &Hub::sendMessage_client, text);
-		WulforManager::get()->dispatchClientFunc(func);		
-	}
-}
 
-void Hub::popupNickMenu_gui(GtkWidget *, GdkEventButton *button, gpointer) {
-	//only for right mouse button
-	if (button->button != 3) return;
-	//return if no nick is selected
-	if (!gtk_tree_selection_get_selected(nickSelection, NULL, NULL)) return;
+	// Store line in chat history
+	hub->history.pop_back();
+	hub->history.push_back(text);
+	hub->history.push_back("");
+	hub->historyIndex = hub->history.size() - 1;
+	if (hub->history.size() > maxHistory + 1)
+		hub->history.erase(hub->history.begin());
 
-	gtk_menu_popup(nickMenu, NULL, NULL, NULL, NULL, 3, button->time);
-	gtk_widget_show_all(GTK_WIDGET(nickMenu));
-}
+	// Process special commands
+	if (text[0] == '/')
+	{
+		string command, param;
+		string::size_type separator = text.find_first_of(' ');
+		if (separator != string::npos && text.size() > separator + 1)
+		{
+			command = text.substr(1, separator - 1);
+			param = text.substr(separator + 1);
+		}
+		else
+		{
+			command = text.substr(1);
+		}
+		std::transform(command.begin(), command.end(), command.begin(), (int(*)(int))tolower);
 
-void Hub::browseItemClicked_gui(GtkMenuItem *, gpointer data) {
-	GtkTreeIter iter;
-	string nick;
-	gtk_tree_selection_get_selected(nickSelection, NULL, &iter);
-	nick = nickView.getString(&iter, "Nick");
-
-	typedef Func1<Hub, string> F1;
-	F1 *func = new F1(this, &Hub::getFileList_client, nick);
-	WulforManager::get()->dispatchClientFunc(func);
-}
-
-void Hub::msgItemClicked_gui(GtkMenuItem *, gpointer data) {
-	GtkTreeIter iter;
-	string nick;
-	gtk_tree_selection_get_selected(nickSelection, NULL, &iter);
-	nick = nickView.getString(&iter, "Nick");
-
-	pthread_mutex_lock(&clientLock);
-	if (client) {
-		string addr = client->getAddress();
-		if (client->getPort() != 411)
-			addr += ":" + Util::toString(client->getPort());
-		User::Ptr user = idMap[nick].getUser();
-		WulforManager::get()->addPrivMsg_gui(user);
-	}
-	pthread_mutex_unlock(&clientLock);
-}
-
-void Hub::grantItemClicked_gui(GtkMenuItem *, gpointer data) {
-	GtkTreeIter iter;
-	string nick;
-	gtk_tree_selection_get_selected(nickSelection, NULL, &iter);
-	nick = nickView.getString(&iter, "Nick");
-
-	typedef Func1<Hub, string> F1;
-	F1 *func = new F1(this, &Hub::grantSlot_client, nick);
-	WulforManager::get()->dispatchClientFunc(func);
-}
-
-void Hub::grantSlot_client(string userName) {
-	pthread_mutex_lock(&clientLock);
-	if (client) {
-		User::Ptr user = idMap[userName].getUser();
-		if (user) UploadManager::getInstance()->reserveSlot(user);
-	}
-	pthread_mutex_unlock(&clientLock);
-}
-
-void Hub::getFileList_client(string nick) {
-	User::Ptr user = NULL;
-
-	pthread_mutex_lock(&clientLock);
-	if (client) {
-		string addr = client->getAddress();
-		if (client->getPort() != 411)
-			addr += ":" + Util::toString(client->getPort());
-		user = idMap[nick].getUser();
-	}
-	pthread_mutex_unlock(&clientLock);
-
-	if (!user) return;
-
-	try	{
-		QueueManager::getInstance()->addList(user, QueueItem::FLAG_CLIENT_VIEW);
-	} catch (...) {
-		string text = "Couldn't get filelist from: " + nick;
-		typedef Func2<Hub, GtkStatusbar *, string> F2;
-		F2 *func = new F2(this, &Hub::setStatus_gui, mainStatus, text);
-		WulforManager::get()->dispatchGuiFunc(func);
-	}
-}
-
-void Hub::sendMessage_client(string message) {
-	pthread_mutex_lock(&clientLock);
-	if (client) {
-		client->hubMessage(message);
-	}
-	pthread_mutex_unlock(&clientLock);
-}
-
-void Hub::setPassword_client(string password) {
-	pthread_mutex_lock(&clientLock);
-	if (client) {
-		client->setPassword(password);
-		client->password(client->getPassword());
-	}
-	pthread_mutex_unlock(&clientLock);
-}
-
-void Hub::on(ClientListener::Connecting, Client *client) throw() {
-	typedef Func2<Hub, GtkStatusbar*, string> F2;
-	F2 *func;
-
-	func = new F2(this, &Hub::setStatus_gui, mainStatus, "Connecting");
-	WulforManager::get()->dispatchGuiFunc(func);
-	func = new F2(this, &Hub::setStatus_gui, usersStatus, "0 Users");
-	WulforManager::get()->dispatchGuiFunc(func);
-	func = new F2(this, &Hub::setStatus_gui, sharedStatus, "0 B");
-	WulforManager::get()->dispatchGuiFunc(func);
-}
-
-void Hub::on(ClientListener::Connected, Client *client) throw() {
-	Func2<Hub, GtkStatusbar*, string> *func = new Func2<Hub, GtkStatusbar*, string>
-		(this, &Hub::setStatus_gui, mainStatus, "Connected");
-	WulforManager::get()->dispatchGuiFunc(func);
-}
-
-void Hub::on(ClientListener::BadPassword, Client *cl) throw() {
-	Func2<Hub, GtkStatusbar*, string> *func = new Func2<Hub, GtkStatusbar*, string>
-		(this, &Hub::setStatus_gui, mainStatus, "Sorry, wrong password");
-	WulforManager::get()->dispatchGuiFunc(func);
-
-	pthread_mutex_lock(&clientLock);
-	client->setPassword("");
-	pthread_mutex_unlock(&clientLock);
-}
-
-void Hub::on(ClientListener::UserUpdated, Client *client, const OnlineUser& user) throw()
-{
-	if (!user.getIdentity().isHidden()) {
-		updateUser_client(user);
-	}
-}
-
-void Hub::on(ClientListener::UsersUpdated,
-             Client *client, const OnlineUser::List &list) throw()
-{
-	OnlineUser::List::const_iterator it;
-	for (it = list.begin(); it != list.end(); it++)	{
-		if (!(*it)->getIdentity().isHidden()) {
-			updateUser_client(*(*it));
+		if (command == "away")
+		{
+			if (Util::getAway())
+			{
+				Util::setAway(FALSE);
+				Util::setManualAway(FALSE);
+				hub->addStatusMessage_gui("Away mode off");
+			}
+			else
+			{
+				Util::setAway(TRUE);
+				Util::setManualAway(TRUE);
+				if (!param.empty())
+					Util::setAwayMessage(param);
+				hub->addStatusMessage_gui("Away mode on: " + Util::getAwayMessage());
+			}
+		}
+		else if (command == "back")
+		{
+			Util::setAway(FALSE);
+			hub->addStatusMessage_gui("Away mode off");
+		}
+		else if (command == "clear")
+		{
+			GtkTextIter startIter, endIter;
+			gtk_text_buffer_get_start_iter(hub->chatBuffer, &startIter);
+			gtk_text_buffer_get_end_iter(hub->chatBuffer, &endIter);
+			gtk_text_buffer_delete(hub->chatBuffer, &startIter, &endIter);
+		}
+		else if (command == "close")
+		{
+			/// @todo: figure out why this sometimes closes and reopens the tab
+			WulforManager::get()->deleteBookEntry_gui((BookEntry *)hub);
+		}
+		else if (command == "favorite" || command == "fav")
+		{
+			WulforManager::get()->dispatchClientFunc(new Func0<Hub>(hub, &Hub::addAsFavorite_client));
+		}
+		else if (command == "getlist")
+		{
+			func = new F1(hub, &Hub::getFileList_client, param);
+			WulforManager::get()->dispatchClientFunc(func);
+		}
+		else if (command == "grant")
+		{
+			func = new F1(hub, &Hub::grantSlot_client, param);
+			WulforManager::get()->dispatchClientFunc(func);
+		}
+		else if (command == "help")
+		{
+			hub->addStatusMessage_gui("Available commands: /away <message>, /back, /clear, /close, /favorite, " \
+				 "/getlist <nick>, /grant <nick>, /help, /join <address>, /pm <nick>, /rebuild, /userlist");
+		}
+		else if (command == "join" && !param.empty())
+		{
+			if (BOOLSETTING(JOIN_OPEN_NEW_WINDOW))
+			{
+				WulforManager::get()->addHub_gui(param);
+			}
+			else
+			{
+				func = new F1(hub, &Hub::redirect_client, param);
+				WulforManager::get()->dispatchClientFunc(func);
+			}
+		}
+		else if (command == "pm")
+		{
+			if (hub->idMap.find(param) != hub->idMap.end())
+				WulforManager::get()->addPrivMsg_gui(hub->idMap[param].getUser());
+			else
+				hub->addStatusMessage_gui("User not found");
+		}
+		else if (command == "rebuild")
+		{
+			WulforManager::get()->dispatchClientFunc(new Func0<Hub>(hub, &Hub::rebuildHashData_client));
+		}
+		else if (command == "userlist")
+		{
+			if (GTK_WIDGET_VISIBLE(hub->scrolledwindow2))
+				gtk_widget_hide(hub->scrolledwindow2);
+			else
+				gtk_widget_show_all(hub->scrolledwindow2);
+		}
+		else if (BOOLSETTING(SEND_UNKNOWN_COMMANDS))
+		{
+			func = new F1(hub, &Hub::sendMessage_client, text);
+			WulforManager::get()->dispatchClientFunc(func);
+		}
+		else
+		{
+			hub->addStatusMessage_gui("Unknown command '" + text + "': type /help for a list of valid commands");
 		}
 	}
+	else
+	{
+		func = new F1(hub, &Hub::sendMessage_client, text);
+		WulforManager::get()->dispatchClientFunc(func);
+	}
 }
 
-void Hub::on(ClientListener::UserRemoved, Client *cl, const OnlineUser &user) throw()
+gboolean Hub::onNickListButtonPress_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
-	pthread_mutex_lock(&clientLock);
-	size_t userCount = cl->getUserCount();
-	int64_t available = cl->getAvailable();
-	pthread_mutex_unlock(&clientLock);
+	Hub *hub = (Hub *)data;
 
-	typedef Func3<Hub, string, size_t, int64_t> F3;
-	F3 *f3 = new F3(this, &Hub::onUserRemoved_gui, user.getIdentity().getNick(), userCount, available);
-	WulforManager::get()->dispatchGuiFunc(f3);
+	if (event->type == GDK_BUTTON_PRESS || event->type == GDK_2BUTTON_PRESS)
+		hub->oldType = event->type;
+
+	return FALSE;
 }
 
-void Hub::onUserRemoved_gui(string nick, size_t userCount, int64_t available)
+gboolean Hub::onNickListButtonRelease_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
-	string count = userCount + " User(s)";
-	removeUser_gui(nick);
+	Hub *hub = (Hub *)data;
+	GtkTreeIter iter;
 
-	setStatus_gui(usersStatus, count);
-	setStatus_gui(sharedStatus, Util::formatBytes(available));
+	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
+	{
+		if (event->button == 1 && hub->oldType == GDK_2BUTTON_PRESS)
+		{
+			string nick = hub->nickView.getString(&iter, "Nick");
+
+			typedef Func1<Hub, string> F1;
+			F1 *func = new F1(hub, &Hub::getFileList_client, nick);
+			WulforManager::get()->dispatchClientFunc(func);
+		}
+		else if (event->button == 2 && event->type == GDK_BUTTON_RELEASE)
+		{
+			string nick = hub->nickView.getString(&iter, "Nick");
+			WulforManager::get()->addPrivMsg_gui(hub->idMap[nick].getUser());
+		}
+		else if (event->button == 3 && event->type == GDK_BUTTON_RELEASE)
+		{
+			gtk_menu_popup(hub->nickMenu, NULL, NULL, NULL, NULL, 0, event->time);
+			gtk_widget_show_all(GTK_WIDGET(hub->nickMenu));
+		}
+	}
+
+	return FALSE;
 }
 
-void Hub::on(ClientListener::Redirect, 
-	Client *cl, const string &address) throw()
+gboolean Hub::onNickListKeyRelease_gui(GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
-	dcassert(cl);
-	///@todo implement AUTO_FOLLOW
-	if (!address.empty()) {
-		if (ClientManager::getInstance()->isConnected(address)) {
-			Func2<Hub, GtkStatusbar*, string> *func = new Func2<Hub, GtkStatusbar*, string> (
-				this, &Hub::setStatus_gui, mainStatus, "Redirecting to already connected hub");
-			WulforManager::get()->dispatchGuiFunc(func);
+	Hub *hub = (Hub *)data;
+	GtkTreeIter iter;
+
+	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
+	{
+		if (event->keyval == GDK_Menu || (event->keyval == GDK_F10 && event->state & GDK_SHIFT_MASK))
+		{
+			gtk_menu_popup(hub->nickMenu, NULL, NULL, NULL, NULL, 0, event->time);
+			gtk_widget_show_all(GTK_WIDGET(hub->nickMenu));
+		}
+		else if (event->keyval == GDK_Return || event->keyval == GDK_KP_Enter)
+		{
+			string nick = hub->nickView.getString(&iter, "Nick");
+
+			typedef Func1<Hub, string> F1;
+			F1 *func = new F1(hub, &Hub::getFileList_client, nick);
+			WulforManager::get()->dispatchClientFunc(func);
+		}
+	}
+
+	return FALSE;
+}
+
+gboolean Hub::onEntryKeyPress_gui(GtkWidget *widget, GdkEventKey *event, gpointer data)
+{
+	Hub *hub = (Hub *)data;
+	GtkEntry *chatEntry = GTK_ENTRY(widget);
+	string text;
+	int index;
+
+	if (event->keyval == GDK_Up || event->keyval == GDK_KP_Up)
+	{
+		index = hub->historyIndex - 1;
+		if (index >= 0 && index < hub->history.size())
+		{
+			text = hub->history[index];
+			hub->historyIndex = index;
+			gtk_entry_set_text(chatEntry, text.c_str());
+		}
+		return TRUE;
+	}
+	else if (event->keyval == GDK_Down || event->keyval == GDK_KP_Down)
+	{
+		index = hub->historyIndex + 1;
+		if (index >= 0 && index < hub->history.size())
+		{
+			text = hub->history[index];
+			hub->historyIndex = index;
+			gtk_entry_set_text(chatEntry, text.c_str());
+		}
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+void Hub::onBrowseItemClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Hub *hub = (Hub *)data;
+	GtkTreeIter iter;
+	string nick;
+
+	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
+	{
+		string nick = hub->nickView.getString(&iter, "Nick");
+
+		typedef Func1<Hub, string> F1;
+		F1 *func = new F1(hub, &Hub::getFileList_client, nick);
+		WulforManager::get()->dispatchClientFunc(func);
+	}
+}
+
+void Hub::onMsgItemClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Hub *hub = (Hub *)data;
+	GtkTreeIter iter;
+
+	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
+	{
+		string nick = hub->nickView.getString(&iter, "Nick");
+		WulforManager::get()->addPrivMsg_gui(hub->idMap[nick].getUser());
+	}
+}
+
+void Hub::onGrantItemClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Hub *hub = (Hub *)data;
+	GtkTreeIter iter;
+	string nick;
+
+	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
+	{
+		string nick = hub->nickView.getString(&iter, "Nick");
+
+		typedef Func1<Hub, string> F1;
+		F1 *func = new F1(hub, &Hub::grantSlot_client, nick);
+		WulforManager::get()->dispatchClientFunc(func);
+	}
+}
+
+void Hub::connectClient_client(string address, string nick, string desc, string password)
+{
+	dcassert(client == NULL);
+	client = ClientManager::getInstance()->getClient(address);
+
+	if (nick.empty())
+		client->getMyIdentity().setNick(SETTING(NICK));
+	else
+		client->getMyIdentity().setNick(nick);
+
+	if (!desc.empty())
+		client->getMyIdentity().setDescription(desc);
+
+	client->addListener(this);
+	client->setPassword(password);
+	client->connect();
+}
+
+void Hub::setPassword_client(string password)
+{
+	if (client)
+	{
+		client->setPassword(password);
+		client->password(password);
+	}
+}
+
+void Hub::sendMessage_client(string message)
+{
+	if (client)
+		client->hubMessage(message);
+}
+
+void Hub::getFileList_client(string nick)
+{
+	string message;
+
+	if (idMap.find(nick) != idMap.end())
+	{
+		try
+		{
+			QueueManager::getInstance()->addList(idMap[nick].getUser(), QueueItem::FLAG_CLIENT_VIEW);
+		}
+		catch (const Exception& e)
+		{
+			message = e.getError();
+		}
+	}
+	else
+	{
+		message = "User not found";
+	}
+
+	typedef Func1<Hub, string> F1;
+	F1 *func = new F1(this, &Hub::addStatusMessage_gui, message);
+	WulforManager::get()->dispatchGuiFunc(func);
+}
+
+void Hub::grantSlot_client(string nick)
+{
+	string message;
+
+	if (idMap.find(nick) != idMap.end())
+	{
+		UploadManager::getInstance()->reserveSlot(idMap[nick].getUser());
+		message = "Slot granted to " + nick;
+	}
+	else
+	{
+		message = "User not found";
+	}
+
+	typedef Func1<Hub, string> F1;
+	F1 *func = new F1(this, &Hub::addStatusMessage_gui, message);
+	WulforManager::get()->dispatchGuiFunc(func);
+}
+
+void Hub::redirect_client(string address)
+{
+	if (!address.empty())
+	{
+		if (ClientManager::getInstance()->isConnected(address))
+		{
+			string error = "Unable to connect: already connected to the requested hub";
+			typedef Func1<Hub, string> F1;
+			F1 *f1 = new F1(this, &Hub::addStatusMessage_gui, error);
+			WulforManager::get()->dispatchGuiFunc(f1);
 			return;
 		}
 
-		typedef Func2<Hub, Client*, string> F2;
-		F2 *func = new F2(this, &Hub::onRedirect_gui, cl, address);
-		WulforManager::get()->dispatchGuiFunc(func);
-		client = ClientManager::getInstance()->getClient(Text::fromT(address));
-		client->addListener(this);
-		client->connect();
-		pthread_mutex_unlock(&clientLock);
+		if (BOOLSETTING(AUTO_FOLLOW))
+		{
+			// the client is dead, long live the client!
+			client->removeListener(this);
+			ClientManager::getInstance()->putClient(client);
+
+			Func0<Hub> *func = new Func0<Hub>(this, &Hub::clearNickList_gui);
+			WulforManager::get()->dispatchGuiFunc(func);
+
+			client = ClientManager::getInstance()->getClient(address);
+			client->addListener(this);
+			client->connect();
+		}
 	}
 }
 
-void Hub::on(ClientListener::Failed, 
-	Client *client, const string &reason) throw()
+void Hub::rebuildHashData_client()
 {
-	typedef Func2<Hub, GtkStatusbar*, string> F2;
-	F2 *func = new F2(this, &Hub::setStatus_gui, mainStatus, "Connect failed: " + reason);
+	HashManager::getInstance()->rebuild();
+}
+
+void Hub::addAsFavorite_client()
+{
+	typedef Func1<Hub, string> F1;
+	F1 *func;
+
+	FavoriteHubEntry *existingHub = FavoriteManager::getInstance()->getFavoriteHubEntry(client->getHubUrl());
+
+	if (!existingHub)
+	{
+		FavoriteHubEntry aEntry;
+		aEntry.setServer(client->getHubUrl());
+		aEntry.setName(client->getHubName());
+		aEntry.setDescription(client->getHubDescription());
+		aEntry.setConnect(FALSE);
+		aEntry.setNick(client->getMyNick());
+		FavoriteManager::getInstance()->addFavorite(aEntry);
+		func = new F1(this, &Hub::addStatusMessage_gui, "Favorite hub added");
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
+	else
+	{
+		func = new F1(this, &Hub::addStatusMessage_gui, "Favorite hub already exists");
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
+}
+
+void Hub::on(ClientListener::Connecting, Client *) throw()
+{
+	typedef Func1<Hub, string> F1;
+	F1 *f1 = new F1(this, &Hub::addStatusMessage_gui, "Connecting");
+	WulforManager::get()->dispatchGuiFunc(f1);
+}
+
+void Hub::on(ClientListener::Connected, Client *) throw()
+{
+	typedef Func1<Hub, string> F1;
+	F1 *func = new F1(this, &Hub::addStatusMessage_gui, "Connected");
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
-void Hub::on(ClientListener::GetPassword, Client *client) throw() {
-	if (!client->getPassword().empty()) {
+void Hub::on(ClientListener::BadPassword, Client *) throw()
+{
+	typedef Func1<Hub, string> F1;
+	F1 *func = new F1(this, &Hub::addStatusMessage_gui, "Invalid password");
+	WulforManager::get()->dispatchGuiFunc(func);
+
+	client->setPassword("");
+}
+
+void Hub::on(ClientListener::UserUpdated, Client *, const OnlineUser &user) throw()
+{
+	Identity id = user.getIdentity();
+
+	if (!id.isHidden())
+	{
+		Func1<Hub, Identity> *func = new Func1<Hub, Identity>(this, &Hub::updateUser_gui, id);
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
+}
+
+void Hub::on(ClientListener::UsersUpdated, Client *, const OnlineUser::List &list) throw()
+{
+	Identity id;
+	typedef Func1<Hub, Identity> F1;
+	F1 *func;
+
+	for (OnlineUser::List::const_iterator it = list.begin(); it != list.end(); it++)
+	{
+		id = (*it)->getIdentity();
+		if (!id.isHidden())
+		{
+			func = new F1(this, &Hub::updateUser_gui, id);
+			WulforManager::get()->dispatchGuiFunc(func);
+		}
+	}
+}
+
+void Hub::on(ClientListener::UserRemoved, Client *, const OnlineUser &user) throw()
+{
+	string nick = user.getIdentity().getNick();
+	typedef Func1<Hub, string> F1;
+	F1 *func;
+
+	if (BOOLSETTING(SHOW_JOINS) || (BOOLSETTING(FAV_SHOW_JOINS) &&
+		FavoriteManager::getInstance()->isFavoriteUser(user.getUser())))
+	{
+		func = new F1(this, &Hub::addStatusMessage_gui, nick + " has quit");
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
+
+	func = new F1(this, &Hub::removeUser_gui, nick);
+	WulforManager::get()->dispatchGuiFunc(func);
+}
+
+void Hub::on(ClientListener::Redirect, Client *, const string &address) throw()
+{
+	// redirect_client() crashes unless I put it into the dispatcher (why?)
+	Func1<Hub, string> *func = new Func1<Hub, string>(this, &Hub::redirect_client, address);
+	WulforManager::get()->dispatchClientFunc(func);
+}
+
+void Hub::on(ClientListener::Failed, Client *, const string &reason) throw()
+{
+	Func0<Hub> *f0 = new Func0<Hub>(this, &Hub::clearNickList_gui);
+	WulforManager::get()->dispatchGuiFunc(f0);
+
+	typedef Func1<Hub, string> F1;
+	F1 *f1 = new F1(this, &Hub::addStatusMessage_gui, "Connect failed: " + reason);
+	WulforManager::get()->dispatchGuiFunc(f1);
+}
+
+void Hub::on(ClientListener::GetPassword, Client *) throw()
+{
+	if (!client->getPassword().empty())
 		client->password(client->getPassword());
-	} else {
+	else
+	{
 		Func0<Hub> *func = new Func0<Hub>(this, &Hub::getPassword_gui);
 		WulforManager::get()->dispatchGuiFunc(func);
 	}
 }
 
-void Hub::on(ClientListener::HubUpdated, Client *client) throw() {
+void Hub::on(ClientListener::HubUpdated, Client *) throw()
+{
 	typedef Func1<Hub, string> F1;
 	typedef Func2<MainWindow, GtkWidget *, string> F2;
 	string hubName = "Hub: ";
@@ -592,148 +895,115 @@ void Hub::on(ClientListener::HubUpdated, Client *client) throw() {
 	WulforManager::get()->dispatchGuiFunc(func2);
 }
 
-void Hub::on(ClientListener::StatusMessage, Client* client, const string &msg) throw()
+void Hub::on(ClientListener::Message, Client *, const OnlineUser &from, const string &message) throw()
 {
-	Func1<Hub, string> *func = new Func1<Hub, string> (this, &Hub::addMessage_gui, msg);
-	WulforManager::get()->dispatchGuiFunc(func);
+	if (!message.empty())
+	{
+		string line = "<" + from.getIdentity().getNick() + "> " + message;
+
+		if (BOOLSETTING(LOG_MAIN_CHAT))
+		{
+			StringMap params;
+			params["message"] = message;
+			client->getHubIdentity().getParams(params, "hub", false);
+			params["hubURL"] = client->getHubUrl();
+			client->getMyIdentity().getParams(params, "my", true);
+			LOG(LogManager::CHAT, params);
+		}
+
+		typedef Func1<Hub, string> F1;
+		F1 *func = new F1(this, &Hub::addMessage_gui, line);
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
 }
 
-void Hub::on(ClientListener::Message, Client* client, const OnlineUser& from, const string &msg) throw()
+void Hub::on(ClientListener::StatusMessage, Client *, const string &message) throw()
 {
-	string line = "<" + from.getIdentity().getNick() + "> " + msg;
-	Func1<Hub, string> *func = new Func1<Hub, string>(this, &Hub::addMessage_gui, line);
-	WulforManager::get()->dispatchGuiFunc(func);
+	if (!message.empty())
+	{
+		if (BOOLSETTING(FILTER_MESSAGES))
+		{
+			if ((message.find("Hub-Security") != string::npos && message.find("was kicked by") != string::npos) ||
+				(message.find("is kicking") != string::npos && message.find("because:") != string::npos))
+			{
+				return;
+			}
+		}
+
+		if (BOOLSETTING(LOG_STATUS_MESSAGES))
+		{
+			StringMap params;
+			client->getHubIdentity().getParams(params, "hub", FALSE);
+			params["hubURL"] = client->getHubUrl();
+			client->getMyIdentity().getParams(params, "my", TRUE);
+			params["message"] = message;
+			LOG(LogManager::STATUS, params);
+		}
+
+		typedef Func1<Hub, string> F1;
+		F1 *func = new F1(this, &Hub::addMessage_gui, message);
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
 }
 
-void Hub::on(ClientListener::PrivateMessage,	Client *client, const OnlineUser &from,
+void Hub::on(ClientListener::PrivateMessage,	Client *, const OnlineUser &from,
 	const OnlineUser& to, const OnlineUser& replyTo, const string &msg) throw()
 {
-	const User::Ptr& user = (replyTo.getUser() == ClientManager::getInstance()->getMe()) ? to.getUser() : replyTo.getUser();
-	string message = "<" + WulforUtil::getNicks(from) + "> " + msg;
+	const OnlineUser& user = (replyTo.getUser() == ClientManager::getInstance()->getMe()) ? to : replyTo;
+	string line = "<" + from.getIdentity().getNick() + "> " + msg;
 
-	typedef Func2<Hub, User::Ptr, string> F2;
-	F2 *func = new F2(this, &Hub::addPrivateMessage_gui, user, message);
+	typedef Func2<Hub, Identity, string> F2;
+	F2 *func = new F2(this, &Hub::addPrivateMessage_gui, user.getIdentity(), line);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
-void Hub::on(ClientListener::UserCommand, Client *client,
-	int int1, int int2, const string& string1, const string& string2) throw()
+void Hub::on(ClientListener::NickTaken, Client *) throw()
 {
-	///@todo figure out what this is supposed to do =)
-}
-
-void Hub::on(ClientListener::HubFull, Client *client) throw() {
-	typedef Func2<Hub, GtkStatusbar*, string> F2;
-	F2 *func = new F2(this, &Hub::setStatus_gui, mainStatus, "Sorry, hub full");
+	typedef Func1<Hub, string> F1;
+	F1 *func = new F1(this, &Hub::addStatusMessage_gui, "Nick already taken");
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
-void Hub::on(ClientListener::NickTaken, Client *cl) throw() {
-	pthread_mutex_lock(&clientLock);
-	client->removeListener(this);
-	client->disconnect(false);
-	client = NULL;
-	pthread_mutex_unlock(&clientLock);
-
-	typedef Func2<Hub, GtkStatusbar*, string> F2;
-	F2 *func = new F2(this, &Hub::setStatus_gui, mainStatus, "Nick already taken");
+void Hub::on(ClientListener::SearchFlood, Client *, const string &msg) throw()
+{
+	typedef Func1<Hub, string> F1;
+	F1 *func = new F1(this, &Hub::addStatusMessage_gui, "Search spam from " + msg);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
-void Hub::on(ClientListener::SearchFlood, Client *client,
-	const string &msg) throw()
+void Hub::on(TimerManagerListener::Second, u_int32_t tics) throw()
 {
-	typedef Func2<Hub, GtkStatusbar*, string> F2;
-	F2 *func = new F2(this, &Hub::setStatus_gui, mainStatus, "Search spam from " + msg);
-	WulforManager::get()->dispatchGuiFunc(func);
-}
+	if (usersUpdated)
+	{
+		string users = Util::toString(idMap.size()) + " Users";
 
-void Hub::on(ClientListener::NmdcSearch, Client *client, const string&,
-	int, int64_t, int, const string&) throw()
-{
-	///@todo figure out what to do here...
-}
+		typedef Func2<Hub, GtkStatusbar *, string> F2;
+		F2 *f2 = new F2(this, &Hub::setStatus_gui, usersStatus, users);
+		WulforManager::get()->dispatchGuiFunc(f2);
 
-void Hub::completion_gui(GtkWidget *, GdkEventKey *key, gpointer) {
-	if (key->keyval != GDK_Tab) return;
-	
-	string nick;
-	int countMatches;
-	string command;
- 
-	nick = gtk_entry_get_text(chatEntry);
+		int64_t totalShared = 0;
+		hash_map<string, Identity>::const_iterator iter;
+		for (iter = idMap.begin(); iter != idMap.end(); iter++)
+			totalShared += iter->second.getBytesShared();
 
-	//this is needed if we want to use tab completion with user commands
-	if (g_strrstr(nick.c_str(), " ")) {
-		string::size_type len = nick.length();
-		string::size_type pos = nick.find_last_of(" ", len);
-		command = nick.substr(0, pos+1);
-		nick = nick.erase(0, pos+1);
-	}
-	else command = "";
+		f2 = new F2(this, &Hub::setStatus_gui, sharedStatus, Util::formatBytes(totalShared));
+		WulforManager::get()->dispatchGuiFunc(f2);
 
-	//check if nick is same as previous time.. so we can continue from it
-	if (nick == prev_nick) {
-		gtk_tree_model_iter_next(GTK_TREE_MODEL(nickStore), &completion_iter);
-	}
-	//if it's different then start from beginning
-	else {
-		string::size_type length = nick.length();
-		nick_completion = g_utf8_strdown(nick.c_str(), length);
-		gtk_tree_model_get_iter_first(GTK_TREE_MODEL(nickStore), &completion_iter);
-		countMatches = 0; //reset match counter
-	}
-	while (gtk_list_store_iter_is_valid(nickStore, &completion_iter)) {
-		string t = nickView.getString(&completion_iter, "Nick");
-
-		int length = t.size(); //length is needed for few things
-		string name = g_utf8_strdown(t.c_str(), length);
-
-		//check for [ or ( prefix and remove [] or () with text inside them
-		while (g_str_has_prefix(name.c_str(), "[") || g_str_has_prefix(name.c_str(), "(")) {
-			if (g_str_has_prefix(name.c_str(), "[")) {
-				string::size_type start = name.find_first_of("[", 0);
-				string::size_type end = name.find_first_of("]", start);
-				if (end == string::npos) end = start; //if end == string::npos it looks like there isn't closing bracket so we can safely remove [ and continue completion.. or can we???
-				name = name.erase(start, end+1);
-			}
-			else {
-				string::size_type start = name.find_first_of("(", 0);
-				string::size_type end = name.find_first_of(")", start);
-				if (end == string::npos) end = start; //same as previous
-				name = name.erase(start, end+1);
-			}
-		}
-
-		//if we found a match let's show it
-		if (g_str_has_prefix(name.c_str(), nick_completion.c_str())) {
-			gtk_entry_set_text(chatEntry, t.c_str());
-			gtk_entry_set_position(chatEntry, -1);
-			//if we used some commands or words before tab-completion let's prepend them
-			gtk_entry_prepend_text(chatEntry, command.c_str());
-			prev_nick = t; //store nick for later use (see beginning of this void)
-			countMatches++;
-			return;
-		}
-		
-		gtk_tree_model_iter_next(GTK_TREE_MODEL(nickStore), &completion_iter);
-
-		if (!gtk_list_store_iter_is_valid(nickStore, &completion_iter)) {
-			//if no matches found, don't continue, if we don't do this, client will enter to endless loop
-			if(countMatches == 0) return;
-			gtk_tree_model_get_iter_first(GTK_TREE_MODEL(nickStore), &completion_iter);
-			&Hub::completion_gui; //if there were matches, we can safely start from beginning
-		}	
+		usersUpdated = FALSE;
 	}
 }
 
-void Hub::setChatEntryFocus(GtkWidget *, GdkEventKey *key, gpointer)
+/*
+ * Sets the userlist to sorted at the first minute marker. Can't have it sorted when
+ * first joining since GTK+ is very slow when inserting many rows into a sorted GtkTreeView.
+ */
+void Hub::on(TimerManagerListener::Minute, u_int32_t tics) throw()
 {
-	if (key->keyval != GDK_Tab) return;
-	gtk_widget_grab_focus(GTK_WIDGET(chatEntry));
-	//set "cursor" (the blinking thing) at the end of text. this is because of few things
-	//1. "cursor" will be at the beginning of text
-	//2. whole text in entry is painted
-	gtk_entry_set_position(chatEntry, strlen(gtk_entry_get_text(chatEntry)));
-	return;
+	if (!sorted)
+	{
+		Func0<Hub> *f = new Func0<Hub>(this, &Hub::sortList_gui);
+		WulforManager::get()->dispatchGuiFunc(f);
+
+		sorted = TRUE;
+	}
 }

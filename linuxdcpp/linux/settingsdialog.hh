@@ -109,6 +109,7 @@ private:
 	static gboolean onShareHiddenPressed_gui(GtkToggleButton *togglebutton, gpointer data);
 	void shareHidden_client(bool show);
 	void modifyShare_client(bool add, string path, string name);
+	void modifyShare_gui(std::string path, std::string name, std::string error);
 
 	// Appearance
 	TreeView appearanceView;

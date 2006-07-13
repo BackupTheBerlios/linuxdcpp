@@ -53,9 +53,6 @@ class FinishedTransfers:
 		void on(FinishedManagerListener::AddedDl, FinishedItem* entry) throw();
 		void on(FinishedManagerListener::AddedUl, FinishedItem* entry) throw();
 
-		// For open with thread. Not _gui or _client since it runs in its own thread.
-		static void *runCommand(void *command);
-
 		GtkWidget *mainBox;
 		GtkListStore *transferStore;
 		TreeView transferView;
@@ -63,7 +60,6 @@ class FinishedTransfers:
 		GtkStatusbar *totalItems, *totalSize, *averageSpeed;
 		GtkDialog *openWithDialog;
 		GtkEntry *openWithEntry;
-		pthread_t openWithThread;
 		bool isUpload;
 		int items;
 		int64_t totalBytes, totalTime;
