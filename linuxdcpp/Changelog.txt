@@ -1,4 +1,4 @@
-2006-07-12 - Steven Sheehy
+2006-07-13 - Steven Sheehy
 * Removed the last vestiges of Wulfor name in the GUI (thanks Pavlov Konstantin).
 * Fixed some memory leaks.
 * callback.hh was finally removed.
