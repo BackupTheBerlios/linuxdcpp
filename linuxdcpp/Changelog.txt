@@ -1,3 +1,14 @@
+2006-07-14 - Steven Sheehy
+* SCons/build process changes:
+	* NOTE: I recommend you checkout a fresh CVS due to all these scons changes.
+	* Removed sys/poll.h as a required dependency since it's not included anywhere.
+	* Cleaned up scons temp files by moving creation of config.log and .sconsign
+	  files to .sconf_temp/ (less cruftage!).
+	* Also, moved .sconf_temp/ to be under build/ directory.
+	* Separated cxxflags of client and gui so that client is not compiled with gtk flags.
+	* Cleaned up the SConstruct files, added comments, etc.
+* Removed a GTK+ function that required 2.8.
+
 2006-07-13 - Steven Sheehy
 * Removed the last vestiges of Wulfor name in the GUI (thanks Pavlov Konstantin).
 * Fixed some memory leaks.

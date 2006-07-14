@@ -1,18 +1,53 @@
-client_files = ['ADLSearch.cpp',	'FinishedManager.cpp',		'Socket.cpp',
-	'AdcCommand.cpp',		'HashManager.cpp',		'StringDefs.cpp',
-	'AdcHub.cpp',			'HttpConnection.cpp',	'StringTokenizer.cpp',
-	'BZUtils.cpp',			'FavoriteManager.cpp',		'Text.cpp',
-	'BufferedSocket.cpp',	'LogManager.cpp',		'Thread.cpp',
-	'Client.cpp',			'NmdcHub.cpp',			'TigerHash.cpp',
-	'ClientManager.cpp',	'QueueManager.cpp',		'TimerManager.cpp',
-	'ConnectionManager.cpp','ResourceManager.cpp',	'UploadManager.cpp',
-	'CryptoManager.cpp',	'SFVReader.cpp',		'User.cpp',
-	'DCPlusPlus.cpp',		'SearchManager.cpp',	'UserConnection.cpp',
-	'DirectoryListing.cpp',	'ServerSocket.cpp',		'Util.cpp',
-	'DownloadManager.cpp',	'SettingsManager.cpp',	'ZUtils.cpp',
-	'Encoder.cpp',			'ShareManager.cpp',		'stdinc.cpp',
-	'Exception.cpp',		'SimpleXML.cpp']
+client_files = [
+	'AdcCommand.cpp',
+	'AdcHub.cpp',
+	'ADLSearch.cpp',
+	'BufferedSocket.cpp',
+	'BZUtils.cpp',
+	'Client.cpp',
+	'ClientManager.cpp',
+	'ConnectionManager.cpp',
+	'CryptoManager.cpp',
+	'DCPlusPlus.cpp',
+	'DirectoryListing.cpp',
+	'DownloadManager.cpp',
+	'Encoder.cpp',
+	'Exception.cpp',
+	'FavoriteManager.cpp',
+	'FinishedManager.cpp',
+	'HashManager.cpp',
+	'HttpConnection.cpp',
+	'LogManager.cpp',
+	'NmdcHub.cpp',
+	'QueueManager.cpp',
+	'ResourceManager.cpp',
+	'SearchManager.cpp',
+	'ServerSocket.cpp',
+	'SettingsManager.cpp',
+	'SFVReader.cpp',
+	'ShareManager.cpp',
+	'SimpleXML.cpp',
+	'Socket.cpp',
+	'stdinc.cpp',
+	'StringDefs.cpp',
+	'StringTokenizer.cpp',
+	'Thread.cpp',
+	'TigerHash.cpp',
+	'TimerManager.cpp',
+	'UploadManager.cpp',
+	'User.cpp',
+	'UserConnection.cpp',
+	'Util.cpp',
+	'ZUtils.cpp']
 
 Import('env')
+
+# Build the client_files
 clientObjs = env.Object(client_files)
+
+# Special case: Text.cpp uses glib utf8 functions, so it needs extra cxxflags
+env_client = env.Copy()
+env_client.ParseConfig('pkg-config --cflags libglade-2.0')
+clientObjs.append(env_client.Object('Text.cpp'))
+
 Return('clientObjs')

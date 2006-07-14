@@ -1,14 +1,33 @@
-gui_files = [	'wulfor.cc',				'wulformanager.cc',
-			'bookentry.cc',			'mainwindow.cc',
-			'dialogentry.cc', 			'prefix.cc',
-			'publichubs.cc',			'treeview.cc',
-			'hub.cc',					'privatemessage.cc',
-			'downloadqueue.cc',			'favoritehubs.cc',
-			'settingsdialog.cc',		'sharebrowser.cc',
-			'search.cc',				'hashdialog.cc',
-			'finishedtransfers.cc',		'settingsmanager.cc',
-			'WulforUtil.cc', 			'eggtrayicon.c']
+gui_files = [
+	'bookentry.cc',
+	'dialogentry.cc',
+	'downloadqueue.cc',
+	'eggtrayicon.c',
+	'favoritehubs.cc',
+	'finishedtransfers.cc',
+	'hashdialog.cc',
+	'hub.cc',
+	'mainwindow.cc',
+	'prefix.cc',
+	'privatemessage.cc',
+	'publichubs.cc',
+	'search.cc',
+	'settingsdialog.cc',
+	'settingsmanager.cc',
+	'sharebrowser.cc',
+	'treeview.cc',
+	'wulfor.cc',
+	'wulformanager.cc',
+	'WulforUtil.cc']
 
 Import('env')
-guiObjs = env.Object(gui_files)
+
+# Get the cflags. We copy the env since so we don't want to add these flags globally.
+env_gui = env.Copy()
+env_gui.ParseConfig('pkg-config --cflags libglade-2.0')
+env_gui.ParseConfig('pkg-config --cflags gthread-2.0')
+
+# Build the gui_files
+guiObjs = env_gui.Object(gui_files)
+
 Return('guiObjs')

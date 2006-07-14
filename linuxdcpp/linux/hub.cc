@@ -91,7 +91,6 @@ Hub::Hub(string address):
 	// Initialize nick completion
 	completion = gtk_entry_completion_new();
 	gtk_entry_completion_set_inline_completion(completion, FALSE);
-	gtk_entry_completion_set_popup_single_match(completion, TRUE);
 	gtk_entry_set_completion(chatEntry, completion);
 	g_object_unref(completion);
 	gtk_entry_completion_set_model(completion, GTK_TREE_MODEL(nickStore));

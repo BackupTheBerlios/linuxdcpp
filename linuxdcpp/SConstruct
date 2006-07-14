@@ -1,5 +1,5 @@
 ###########################################################################
-# 
+#
 #	This is the ldcpp construction file. To use it type scons
 #	Specify arguments with scons arg=value. Argumens:
 #
@@ -24,32 +24,19 @@
 
 import os, commands, string
 
-def CheckPKGConfig(context): 
-     context.Message('Checking for pkg-config... ') 
-     ret = context.TryAction('pkg-config --version')[0] 
-     context.Result(ret)
-     return ret 
- 
-def CheckPKG(context, name): 
-     context.Message('Checking for %s... ' % name) 
-     ret = context.TryAction('pkg-config --exists \'%s\'' % name)[0] 
-     context.Result(ret) 
-     return ret 
+# Define the functions that check for dependencies.
 
-def CheckDefine(context, symbol, header, library):
-	testProg = """
-		#include<%s>
-		#ifndef %s
-			#error
-		#endif
-		int main() {
-			return 0;
-		}
-		""" % (header, symbol)
-	context.Message('Checking for %s in %s... ' % (symbol, header))
-	result = context.TryCompile(testProg, '.cc')
-	context.Result(result)
-	return result
+def CheckPKGConfig(context):
+     context.Message('Checking for pkg-config... ')
+     ret = context.TryAction('pkg-config --version')[0]
+     context.Result(ret)
+     return ret
+
+def CheckPKG(context, name):
+     context.Message('Checking for %s... ' % name)
+     ret = context.TryAction('pkg-config --exists \'%s\'' % name)[0]
+     context.Result(ret)
+     return ret
 
 def CheckCXXVersion(context, name, major, minor):
 	context.Message('Checking for %s >= %d.%d...' % (name, major, minor))
@@ -57,23 +44,29 @@ def CheckCXXVersion(context, name, major, minor):
 
 	retval = 0
 	try:
-		if ((string.atoi(ret[0]) == major and string.atoi(ret[2]) >= minor) 
+		if ((string.atoi(ret[0]) == major and string.atoi(ret[2]) >= minor)
 		or (string.atoi(ret[0]) > major)):
 			retval = 1
 	except ValueError:
 		print "Oops! No C++ compiler found!"
-                
+
 	context.Result(retval)
 	return retval
 
-# import enviroment variables from os
-# this is to find headers and librarys and such
-env = Environment(ENV=os.environ)
 
-conf = Configure(env, custom_tests = {'CheckPKGConfig' : CheckPKGConfig, 
-	'CheckDefine' : CheckDefine,
-	'CheckPKG' : CheckPKG,
-	'CheckCXXVersion' : CheckCXXVersion}) 
+# Initialize the environment and configure variables
+
+env = Environment(ENV = os.environ)
+
+conf = Configure(env,
+	custom_tests = {'CheckPKGConfig' : CheckPKGConfig, 'CheckPKG' : CheckPKG, 'CheckCXXVersion' : CheckCXXVersion},
+	conf_dir = 'build/sconf',
+	log_file = 'build/sconf/config.log')
+
+conf.env.SConsignFile('build/sconf/.sconsign')
+
+
+# Check for dependencies
 
 # This looks up the CXX enviroment variable so that people can specify
 # what g++ to use on the command line (eg. prompt:> CXX=foo scons)
@@ -93,23 +86,24 @@ if os.popen('distcc 2> /dev/null').read():
 if os.popen('ccache 2> /dev/null').read():
 	cxx = 'ccache ' + cxx
 	print 'Enabling ccache...'
+
 conf.env.Replace(CXX = cxx)
 
-if not conf.CheckPKGConfig(): 
-     print 'pkg-config not found.' 
-     Exit(1) 
- 
-if not conf.CheckPKG('gtk+-2.0 >= 2.6'): 
-     print 'gtk+ >= 2.6 not found.' 
-     Exit(1) 
+if not conf.CheckPKGConfig():
+     print 'pkg-config not found.'
+     Exit(1)
 
-if not conf.CheckPKG('gthread-2.0 >= 2.4'): 
-     print 'gthread >= 2.4 not found.' 
-     Exit(1) 
+if not conf.CheckPKG('gtk+-2.0 >= 2.6'):
+     print 'gtk+ >= 2.6 not found.'
+     Exit(1)
 
-if not conf.CheckPKG('libglade-2.0 >= 2.4'): 
-     print 'libglade >= 2.4 not found.' 
-     Exit(1) 
+if not conf.CheckPKG('gthread-2.0 >= 2.4'):
+     print 'gthread >= 2.4 not found.'
+     Exit(1)
+
+if not conf.CheckPKG('libglade-2.0 >= 2.4'):
+     print 'libglade >= 2.4 not found.'
+     Exit(1)
 
 if not conf.CheckHeader('time.h'):
 	print 'Did not find the header time.h'
@@ -123,11 +117,6 @@ if not conf.CheckHeader('signal.h'):
 
 if not conf.CheckHeader('unistd.h'):
 	print 'Did not find the header unistd.h'
-	print 'Can\'t live without it, sorry'
-	Exit(1)
-	
-if not conf.CheckHeader('sys/poll.h'):
-	print 'Did not find the header sys/poll.h'
 	print 'Can\'t live without it, sorry'
 	Exit(1)
 
@@ -148,12 +137,11 @@ if not conf.CheckLibWithHeader('bz2', 'bzlib.h', 'c'):
 	print 'Note: You might have the lib but not the headers'
 	Exit(1)
 
-conf.env.Append(CXXFLAGS = '-D_GNU_SOURCE')
-
 env = conf.Finish()
-env.ParseConfig('pkg-config --cflags --libs libglade-2.0') 
-env.ParseConfig('pkg-config --cflags --libs gthread-2.0') 
-env.Append(CXXFLAGS = ['-I.', '-DENABLE_BINRELOC', '-D_FILE_OFFSET_BITS=64'])
+env.Append(CXXFLAGS = ['-I.', '-D_GNU_SOURCE', '-DENABLE_BINRELOC', '-D_FILE_OFFSET_BITS=64'])
+
+
+# Parse command line parameters
 
 debug = ARGUMENTS.get('debug', 0)
 if int(debug):
@@ -171,7 +159,6 @@ if int(profile):
 
 prefix = ARGUMENTS.get('PREFIX','')
 root = ARGUMENTS.get('FAKE_ROOT','')
-_dir = ''
 bindir = ARGUMENTS.get('BINDIR', prefix + '/bin')
 datadir = ARGUMENTS.get('DATADIR', prefix + '/share')
 docdir = ARGUMENTS.get('DOCDIR', prefix + '/share/doc')
@@ -180,28 +167,58 @@ if str(prefix):
 	env.Append(CXXFLAGS = '-D_DATADIR=\'\"' + datadir + '\"\'')
 _dir = root
 
-objs = []
-objs.append(SConscript('client/SConstruct', exports='env', build_dir='build/client', duplicate=0))
-objs.append(SConscript('linux/SConstruct', exports='env', build_dir='build/gui', duplicate=0))
-Default(env.Program('ldcpp', objs))
 
-glade_files=['glade/favoritehubs.glade','glade/hash.glade',
-	'glade/mainwindow.glade','glade/publichubs.glade',
-	'glade/settingsdialog.glade','glade/downloadqueue.glade',
-	'glade/finishedtransfers.glade','glade/hub.glade',
-	'glade/privatemessage.glade','glade/search.glade',
+# Build the executable
+
+env.ParseConfig('pkg-config --libs libglade-2.0')
+env.ParseConfig('pkg-config --libs gthread-2.0')
+
+build = env.Program(target = 'ldcpp', source = [
+	SConscript('client/SConstruct', exports='env', build_dir='build/client', duplicate=0),
+	SConscript('linux/SConstruct', exports='env', build_dir='build/gui', duplicate=0)])
+Default(build)
+
+
+# Install the executable and data files
+
+glade_files = [
+	'glade/downloadqueue.glade',
+	'glade/favoritehubs.glade',
+	'glade/finishedtransfers.glade',
+	'glade/hash.glade',
+	'glade/hub.glade',
+	'glade/mainwindow.glade',
+	'glade/privatemessage.glade',
+	'glade/publichubs.glade',
+	'glade/search.glade',
+	'glade/settingsdialog.glade',
 	'glade/sharebrowser.glade']
-pixmap_files=['pixmaps/dc++-fw.png','pixmaps/dc++.png',
-	'pixmaps/favhubs.png','pixmaps/FinishedUL.png',
-	'pixmaps/normal-fw.png','pixmaps/normal.png',
-	'pixmaps/queue.png','pixmaps/settings.png',
-	'pixmaps/dc++-fw-op.png','pixmaps/dc++-op.png',
-	'pixmaps/download.png','pixmaps/FinishedDL.png',
-	'pixmaps/normal-fw-op.png','pixmaps/normal-op.png',
-	'pixmaps/publichubs.png','pixmaps/search.png',
-	'pixmaps/upload.png','pixmaps/linuxdcpp.svg']
 
-text_files=['Changelog.txt','Credits.txt','License.txt','Readme.txt']
+pixmap_files =	[
+	'pixmaps/dc++.png',
+	'pixmaps/dc++-fw.png',
+	'pixmaps/dc++-fw-op.png',
+	'pixmaps/dc++-op.png',
+	'pixmaps/download.png',
+	'pixmaps/favhubs.png',
+	'pixmaps/FinishedDL.png',
+	'pixmaps/FinishedUL.png',
+	'pixmaps/linuxdcpp.svg',
+	'pixmaps/normal.png',
+	'pixmaps/normal-fw.png',
+	'pixmaps/normal-fw-op.png',
+	'pixmaps/normal-op.png',
+	'pixmaps/publichubs.png',
+	'pixmaps/queue.png',
+	'pixmaps/search.png',
+	'pixmaps/settings.png',
+	'pixmaps/upload.png']
+
+text_files = [
+	'Changelog.txt',
+	'Credits.txt',
+	'License.txt',
+	'Readme.txt']
 
 env.Install(dir = _dir + datadir + '/ldcpp/glade', source = glade_files)
 env.Install(dir = _dir + datadir + '/ldcpp/pixmaps', source = pixmap_files)

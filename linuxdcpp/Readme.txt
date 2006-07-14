@@ -24,6 +24,10 @@ Hopefully. Fingers crossed. Knock on wood. Etc, etc.
 
 For compile options, look in the main SConstruct file.
 
+For more information on compiling, read the manual in the wiki:
+
+http://openfacts.berlios.de/index-en.phtml?title=Ldcpp_Manual
+
 Installing:
 -----------
 With binreloc:
