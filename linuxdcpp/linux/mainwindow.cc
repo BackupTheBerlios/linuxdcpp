@@ -52,7 +52,8 @@ MainWindow::MainWindow():
 	ConnectionManager::getInstance()->addListener(this);
 }
 
-MainWindow::~MainWindow() {
+MainWindow::~MainWindow()
+{
 	QueueManager::getInstance()->removeListener(this);
 	TimerManager::getInstance()->removeListener(this);
 	DownloadManager::getInstance()->removeListener(this);
@@ -105,7 +106,8 @@ MainWindow::~MainWindow() {
 	}
 }
 
-void MainWindow::createWindow_gui() {
+void MainWindow::createWindow_gui()
+{
 	string file = WulforManager::get()->getPath() + "/glade/mainwindow.glade";
 	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
 	if (xml == NULL)
@@ -147,12 +149,49 @@ void MainWindow::createWindow_gui() {
 	connectEntry = GTK_ENTRY(glade_xml_get_widget(xml, "connectEntry"));
 	windowMenu = glade_xml_get_widget(xml, "windowMenu");
 
-	// Set the logo in the about menu.
-	file = WulforManager::get()->getPath() + "/pixmaps/linuxdcpp.svg";
-	GtkImage *logo = GTK_IMAGE(gtk_image_new_from_file(file.c_str()));
-	gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(aboutDialog), gtk_image_get_pixbuf(logo));
+	// Load icons. We need to do this in the code and not in the .glade file,
+	// otherwise we won't always find the images using binreloc
+	string path = WulforManager::get()->getPath() + "/pixmaps/";
+
+	// Set the toolbar icons.
+	if (!WGETI("use-stock-icons"))
+	{
+		file = path + "connect.png";
+		gtk_tool_button_set_icon_widget(connectButton, gtk_image_new_from_file(file.c_str()));
+		file = path + "publichubs.png";
+		gtk_tool_button_set_icon_widget(pubHubsButton, gtk_image_new_from_file(file.c_str()));
+		file = path + "search.png";
+		gtk_tool_button_set_icon_widget(searchButton, gtk_image_new_from_file(file.c_str()));
+		file = path + "settings.png";
+		gtk_tool_button_set_icon_widget(settingsButton, gtk_image_new_from_file(file.c_str()));
+		file = path + "hash.png";
+		gtk_tool_button_set_icon_widget(hashButton, gtk_image_new_from_file(file.c_str()));
+		file = path + "FinishedDL.png";
+		gtk_tool_button_set_icon_widget(finishedDL_button, gtk_image_new_from_file(file.c_str()));
+		file = path + "FinishedUL.png";
+		gtk_tool_button_set_icon_widget(finishedUL_button, gtk_image_new_from_file(file.c_str()));
+		file = path + "queue.png";
+		gtk_tool_button_set_icon_widget(queueButton, gtk_image_new_from_file(file.c_str()));
+		file = path + "favhubs.png";
+		gtk_tool_button_set_icon_widget(favHubsButton, gtk_image_new_from_file(file.c_str()));
+		file = path + "quit.png";
+		gtk_tool_button_set_icon_widget(quitButton, gtk_image_new_from_file(file.c_str()));
+	}
+
+	// Set the transfer view icons.
+	file = path + "upload.png";
+	uploadPic = gdk_pixbuf_new_from_file(file.c_str(), NULL);
+	file = path + "download.png";
+	downloadPic = gdk_pixbuf_new_from_file(file.c_str(), NULL);
+
+	// Set the about menu icon
+	file = path + "linuxdcpp.png";
+	GdkPixbuf *logo = gdk_pixbuf_new_from_file(file.c_str(), NULL);
+	gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(aboutDialog), logo);
+	g_object_unref(logo);
 
 	// Set all windows to the default icon
+	file = path + "linuxdcpp-icon.png";
 	gtk_window_set_icon_from_file(window, file.c_str(), NULL);
 	gtk_window_set_default_icon_from_file(file.c_str(), NULL);
 
@@ -221,39 +260,9 @@ void MainWindow::createWindow_gui() {
 
 	g_signal_connect(G_OBJECT(transferView.get()), "button_press_event", G_CALLBACK(transferClicked_gui), (gpointer)this);
 
-	file = WulforManager::get()->getPath() + "/pixmaps/upload.png";
-	uploadPic = gdk_pixbuf_new_from_file(file.c_str(), NULL);
-	file = WulforManager::get()->getPath() + "/pixmaps/download.png";
-	downloadPic = gdk_pixbuf_new_from_file(file.c_str(), NULL);
-
 	//All notebooks created in glade need one page.
 	//In our case, this is just a placeholder, so we remove it.
 	gtk_notebook_remove_page(book, -1);
-
-	//We need to do this in the code and not in the .glade file,
-	//otherwise we won't always find the images using binreloc
-	file = WulforManager::get()->getPath() + "/pixmaps/publichubs.png";
-	gtk_tool_button_set_icon_widget(pubHubsButton, 
-		gtk_image_new_from_file(file.c_str()));
-	file = WulforManager::get()->getPath() + "/pixmaps/search.png";
-	gtk_tool_button_set_icon_widget(searchButton, 
-		gtk_image_new_from_file(file.c_str()));
-	file = WulforManager::get()->getPath() + "/pixmaps/settings.png";
-	gtk_tool_button_set_icon_widget(settingsButton, 
-		gtk_image_new_from_file(file.c_str()));
-	file = WulforManager::get()->getPath() + "/pixmaps/FinishedDL.png";
-	gtk_tool_button_set_icon_widget(finishedDL_button, 
-		gtk_image_new_from_file(file.c_str()));
-	file = WulforManager::get()->getPath() + "/pixmaps/FinishedUL.png";
-	gtk_tool_button_set_icon_widget(finishedUL_button, 
-		gtk_image_new_from_file(file.c_str()));
-
-	file = WulforManager::get()->getPath() + "/pixmaps/queue.png";
-	gtk_tool_button_set_icon_widget(queueButton, 
-		gtk_image_new_from_file(file.c_str()));
-	file = WulforManager::get()->getPath() + "/pixmaps/favhubs.png";
-	gtk_tool_button_set_icon_widget(favHubsButton, 
-		gtk_image_new_from_file(file.c_str()));
 		
 	popupMenu = gtk_menu_new ();
 	filelist = gtk_menu_item_new_with_label ("Get file list");
@@ -347,21 +356,15 @@ void MainWindow::createTrayIcon_gui()
 {
 	GtkWidget *trayBox, *trayImage, *toggleWindowItem, *quitItem;
 	string iconPath;
-	GdkPixbuf *icon, *iconScaled;
 
 	trayIcon = GTK_WIDGET(egg_tray_icon_new("Linux DC++"));
 	trayBox = gtk_event_box_new();
-	iconPath = WulforManager::get()->getPath() + "/pixmaps/linuxdcpp.svg";
-	icon = gdk_pixbuf_new_from_file(iconPath.c_str(), NULL);
-	iconScaled = gdk_pixbuf_scale_simple(icon, 20, 20, GDK_INTERP_HYPER);
-	trayImage = gtk_image_new_from_pixbuf(iconScaled);
+	iconPath = WulforManager::get()->getPath() + "/pixmaps/linuxdcpp-icon.png";
+	trayImage = gtk_image_new_from_file(iconPath.c_str());
 	trayToolTip = gtk_tooltips_new();
 	trayMenu = gtk_menu_new();
 	toggleWindowItem = gtk_menu_item_new_with_label("Show/Hide Interface");
 	quitItem = gtk_menu_item_new_with_label("Quit");
-
-	g_object_unref(icon);
-	g_object_unref(iconScaled);
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(trayMenu), toggleWindowItem);
 	gtk_menu_shell_append(GTK_MENU_SHELL(trayMenu), quitItem);
@@ -630,14 +633,15 @@ void MainWindow::settingsClicked_gui(GtkWidget *widget, gpointer data)
 	unsigned short tcpPort = (unsigned short)SETTING(TCP_PORT);
 	unsigned short udpPort = (unsigned short)SETTING(UDP_PORT);
 	int lastConn = SETTING(INCOMING_CONNECTIONS);
-	bool lastShowProgressSetting = SETTING(SHOW_PROGRESS_BARS);
+	bool lastShowProgressSetting = BOOLSETTING(SHOW_PROGRESS_BARS);
 
 	if (gtk_dialog_run(GTK_DIALOG(s->getDialog())) == GTK_RESPONSE_OK)
 	{
 		s->saveSettings_client();
 		SettingsManager::getInstance()->save();
 
-		if (SETTING(INCOMING_CONNECTIONS) != lastConn || SETTING(TCP_PORT) != tcpPort || SETTING(UDP_PORT) != udpPort) {
+		if (SETTING(INCOMING_CONNECTIONS) != lastConn || SETTING(TCP_PORT) != tcpPort || SETTING(UDP_PORT) != udpPort)
+		{
 			F0 *func = new F0(mw, &MainWindow::startSocket_client);
 			WulforManager::get()->dispatchClientFunc(func);
 		}
@@ -758,11 +762,11 @@ void MainWindow::autoConnect_client()
 
 void MainWindow::autoOpen_gui()
 {
-	if (SETTING(OPEN_PUBLIC))
+	if (BOOLSETTING(OPEN_PUBLIC))
 		WulforManager::get()->addPublicHubs_gui();
-	if (SETTING(OPEN_QUEUE))
+	if (BOOLSETTING(OPEN_QUEUE))
 		WulforManager::get()->addDownloadQueue_gui();
-	if (SETTING(OPEN_FAVORITE_HUBS))
+	if (BOOLSETTING(OPEN_FAVORITE_HUBS))
 		WulforManager::get()->addFavoriteHubs_gui();
 	if (BOOLSETTING(OPEN_FINISHED_DOWNLOADS))
 		WulforManager::get()->addFinishedTransfers_gui("Finished Downloads"); 
@@ -830,7 +834,7 @@ void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw()
 
 	if (BOOLSETTING(MINIMIZE_TRAY))
 	{
-		string toolTip = status5 + status6;
+		string toolTip = status5 + " " + status6;
 		typedef Func1<MainWindow, string> F1;
 		F1 *f1 = new F1(this, &MainWindow::updateTrayToolTip_gui, toolTip);
 		WulforManager::get()->dispatchGuiFunc(f1);
@@ -846,20 +850,22 @@ void MainWindow::on(QueueManagerListener::Finished, QueueItem *item, int64_t avS
 	string searchString = item->getSearchString();
 	string listName = item->getListName();
 
-	if (item->isSet(QueueItem::FLAG_CLIENT_VIEW) && 
-		item->isSet(QueueItem::FLAG_USER_LIST))
+	if (item->isSet(QueueItem::FLAG_CLIENT_VIEW) && item->isSet(QueueItem::FLAG_USER_LIST))
 	{
-		typedef Func3<MainWindow, User::Ptr, string, string> F3;
-		F3 *func = new F3(this, &MainWindow::addShareBrowser_gui, 
-			user, searchString, listName);
+		typedef Func4<MainWindow, User::Ptr, string, string, bool> F4;
+		F4 *func = new F4(this, &MainWindow::addShareBrowser_gui, user, listName, searchString, TRUE);
 		WulforManager::get()->dispatchGuiFunc(func);
 	}
 }
 
-void MainWindow::addShareBrowser_gui(User::Ptr user, string searchString, string listName)
+void MainWindow::addShareBrowser_gui(User::Ptr user, string listName, string searchString, bool useSetting)
 {
 	ShareBrowser *browser;
-	browser = WulforManager::get()->addShareBrowser_gui(user, listName, !BOOLSETTING(POPUNDER_FILELIST));
+	bool raise;
+
+	raise = useSetting ? !BOOLSETTING(POPUNDER_FILELIST) : TRUE;
+	browser = WulforManager::get()->addShareBrowser_gui(user, listName, raise);
+
 	///@todo: figure out how to set ShareBrowser to open at a specific path
 	//browser->setPosition_gui(searchString);
 }
@@ -922,8 +928,7 @@ void MainWindow::setStatus_gui(GtkStatusbar *status, std::string text)
 		g_object_unref(G_OBJECT(pango));
 		gtk_widget_size_request(GTK_WIDGET(status), &req);
 		if (width > req.width - emptyStatusWidth)
-			gtk_widget_set_size_request(GTK_WIDGET(status), 
-				width + emptyStatusWidth, -1);
+			gtk_widget_set_size_request(GTK_WIDGET(status), width + emptyStatusWidth, -1);
 	}
 
 	gtk_statusbar_pop(status, 0);
@@ -981,9 +986,10 @@ void MainWindow::openOwnList_client()
 	User::Ptr user = ClientManager::getInstance()->getMe();
 	string path = ShareManager::getInstance()->getOwnListFile();
 
-	typedef Func3<MainWindow, User::Ptr, string, string> F3;
-	F3 *f3 = new F3(this, &MainWindow::addShareBrowser_gui, user, "", path);
-	WulforManager::get()->dispatchGuiFunc(f3);
+	// Have to use MainWindow::addShareBrowser_gui since WulforManager's has a return type
+	typedef Func4<MainWindow, User::Ptr, string, string, bool> F4;
+	F4 *f4 = new F4(this, &MainWindow::addShareBrowser_gui, user, path, "", FALSE);
+	WulforManager::get()->dispatchGuiFunc(f4);
 
 	typedef Func2<MainWindow, GtkStatusbar *, string> F2;
 	F2 *f2 = new F2(this, &MainWindow::setStatus_gui, mainStatus, "File list loaded");

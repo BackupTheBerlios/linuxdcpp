@@ -267,7 +267,7 @@ string& Text::toLower(const string& str, string& tmp) throw() {
 string Text::acpToUtf8(const string& str) throw()
 {
 	std::string utf8String;
-	gchar *utf8CString = g_locale_to_utf8(str.c_str(), -1, NULL, NULL, NULL);
+	gchar *utf8CString = g_filename_to_utf8(str.c_str(), -1, NULL, NULL, NULL);
 	if (utf8CString == NULL)
 	{
 		utf8CString = g_convert_with_fallback(str.c_str(), -1, "UTF-8", WGETS("fallback-encoding").c_str(), "", NULL, NULL, NULL);
@@ -282,7 +282,7 @@ string Text::acpToUtf8(const string& str) throw()
 string Text::utf8ToAcp(const string& str) throw()
 {
 	std::string acpString;
-	gchar *acpCString = g_locale_from_utf8(str.c_str(), -1, NULL, NULL, NULL);
+	gchar *acpCString = g_filename_from_utf8(str.c_str(), -1, NULL, NULL, NULL);
 	if (acpCString == NULL)
 		return acpString;
 	acpString = string(acpCString);

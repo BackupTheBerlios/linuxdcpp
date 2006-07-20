@@ -63,7 +63,7 @@ FavoriteHubs::FavoriteHubs():
 	menuItems["Connect"] = gtk_menu_item_new_with_label("Connect");
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuItems["Connect"]);
 	g_signal_connect(G_OBJECT(menuItems["Connect"]), "activate", G_CALLBACK(onConnect_gui), (gpointer)this);
-	menuItems["New"] = gtk_menu_item_new_with_label("New...");
+	menuItems["New"] = gtk_menu_item_new_with_label("New");
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuItems["New"]);
 	g_signal_connect(G_OBJECT(menuItems["New"]), "activate", G_CALLBACK(onAddEntry_gui), (gpointer)this);
 	menuItems["Properties"] = gtk_menu_item_new_with_label("Properties");

@@ -38,6 +38,7 @@ WulforSettingsManager::WulforSettingsManager() {
 	defaultInt["transfer-pane-position"] = 300;
 	defaultInt["nick-pane-position"] = 500;
 	defaultInt["show-tray-icon"] = 1;
+	defaultInt["use-stock-icons"] = 0;
 	defaultString["downloadqueue-order"] = "";
 	defaultString["downloadqueue-width"] = "";
 	defaultString["downloadqueue-visibility"] = "";

@@ -283,6 +283,8 @@ void Hub::getPassword_gui()
 		F1 *func = new F1(this, &Hub::setPassword_client, password);
 		WulforManager::get()->dispatchClientFunc(func);
 	}
+	else
+		client->disconnect(TRUE);
 }
 
 void Hub::addStatusMessage_gui(string message)

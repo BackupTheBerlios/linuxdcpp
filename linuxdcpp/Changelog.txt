@@ -1,3 +1,19 @@
+2006-07-19 - Steven Sheehy
+* Replaced old windows-style icons with new Gnome-style icons (huge thanks to Johannes Sjölund).
+  Note: There's a new svg subdir with these icons saved as svg for backup purposes.
+  These do not need to be distributed in any binary packages.
+* Added an option to use the stock GTK+ icons if you don't like the provided ones.
+  Note: You have to manually edit ~/.dc++/LinuxDC++.xml currently to activate this due to 
+  settings dialog issues. Add <use-stock-icons type="int">1</use-stock-icons> to the file and restart ldcpp.
+* Moved logo & tray icon back to png from svg since not everyone had librsvg.
+* Changed Settings to Preferences in the GUI to follow Gnome HIG.
+* Fixed a problem with open own list opening in the background.
+* More sharebrowser changes:
+	* Additional code clean up.
+	* Rewrote find to search in the proper order, expand dirView properly & fix a crash.
+	* Made find case insensitive.
+	* Made find search directory names in addition to file names.
+
 2006-07-14 - Steven Sheehy
 * SCons/build process changes:
 	* NOTE: I recommend you checkout a fresh CVS due to all these scons changes.
@@ -22,7 +38,7 @@
 	* Added ability to retrieve chat history by using the up and down arrows.
 	* Fixed problem with not having userlist sorted when joining a hub.
 	* Turned off "rules-hint" (AKA striped lines) in nick treeview to speed things up.
-	* Replaced nick completion code with the much simpler GtkEntryCompletion (5 lines of code vs 100).
+	* Replaced nick completion code with the much simpler GtkEntryCompletion (6 lines of code vs 100).
 	* Implemented these options:
 		* Filter kick messages
 		* Log status messages

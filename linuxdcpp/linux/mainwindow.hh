@@ -85,7 +85,7 @@ class MainWindow:
 		void setStatus_gui(GtkStatusbar *status, std::string text);
 		void setStats_gui(std::string hub, std::string slot, 
 			std::string dTot, std::string uTot, std::string dl, std::string ul);
-		void addShareBrowser_gui(User::Ptr user, std::string searchString, std::string listName);
+		void addShareBrowser_gui(User::Ptr user, std::string listName, std::string searchString, bool useSetting);
 		void openHub_gui(string server, string nick, string desc, string password);
 		User::Ptr getSelectedTransfer_gui();
 		void popup_gui(GtkWidget *menu, GdkEventButton *event);

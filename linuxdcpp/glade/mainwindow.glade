@@ -142,7 +142,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="settings1">
 		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">Settings</property>
+		      <property name="label" translatable="yes">Preferences</property>
 		      <property name="use_underline">True</property>
 
 		      <child internal-child="image">
@@ -417,7 +417,7 @@
 		  <property name="visible">True</property>
 		  <property name="label" translatable="yes">Connect</property>
 		  <property name="use_underline">True</property>
-		  <property name="stock_id">gtk-jump-to</property>
+		  <property name="stock_id">gtk-connect</property>
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
@@ -463,7 +463,7 @@
 	      <child>
 		<widget class="GtkToolButton" id="settings">
 		  <property name="visible">True</property>
-		  <property name="label" translatable="yes">Settings</property>
+		  <property name="label" translatable="yes">Preferences</property>
 		  <property name="use_underline">True</property>
 		  <property name="stock_id">gtk-preferences</property>
 		  <property name="visible_horizontal">True</property>
@@ -497,7 +497,7 @@
 		  <property name="visible">True</property>
 		  <property name="label" translatable="yes">Queue</property>
 		  <property name="use_underline">True</property>
-		  <property name="stock_id">gtk-dnd-multiple</property>
+		  <property name="stock_id">gtk-directory</property>
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
@@ -513,7 +513,7 @@
 		  <property name="visible">True</property>
 		  <property name="label" translatable="yes">Finished Downloads</property>
 		  <property name="use_underline">True</property>
-		  <property name="stock_id">gtk-no</property>
+		  <property name="stock_id">gtk-go-down</property>
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
@@ -529,7 +529,7 @@
 		  <property name="visible">True</property>
 		  <property name="label" translatable="yes">Finished Uploads</property>
 		  <property name="use_underline">True</property>
-		  <property name="stock_id">gtk-no</property>
+		  <property name="stock_id">gtk-go-up</property>
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>

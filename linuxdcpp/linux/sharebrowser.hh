@@ -45,24 +45,24 @@ class ShareBrowser:
 	private:
 		// GUI functions
 		void buildDirs_gui(DirectoryListing::Directory::List dir, GtkTreeIter *iter);
+		void buildDirDownloadMenu_gui();
+		void buildFileDownloadMenu_gui();
 		void updateFiles_gui(DirectoryListing::Directory *dir);
 		void updateStatus_gui();
 		void setStatus_gui(GtkStatusbar *status, std::string msg);
-		void findNext_gui(bool firstFile);
+		void fileViewSelected_gui();
 		void downloadSelectedFiles_gui(std::string target);
 		void downloadSelectedDirs_gui(std::string target);
-		void buildDirDownloadMenu_gui();
-		void buildFileDownloadMenu_gui();
-		void fileViewSelected_gui();
+		void filePopupMenu_gui();
+		void dirPopupMenu_gui();
+		void find_gui();
 
 		// GUI callbacks
-		static gboolean onFileButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean onFileButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onFileKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
-		static gboolean onFilePopupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onDirButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onDirKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
-		static gboolean onDirPopupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static void onMatchButtonClicked_gui(GtkWidget *widget, gpointer data);
 		static void onFindButtonClicked_gui(GtkWidget *widget, gpointer);
 		static void onNextButtonClicked_gui(GtkWidget *widget, gpointer);
@@ -76,8 +76,8 @@ class ShareBrowser:
 
 		// Client functions
 		void downloadFile_client(DirectoryListing::File *file, std::string target);
-		void matchQueue_client();
 		void downloadDir_client(DirectoryListing::Directory *dir, std::string target);
+		void matchQueue_client();
 
 		GdkEventType oldType;
 		DirectoryListing listing;
@@ -87,14 +87,16 @@ class ShareBrowser:
 		int shareItems;
 		int currentItems;
 		std::string search;
-		GtkTreePath *posDir;
-		DirectoryListing::File::Iter posFile;
+		bool updateFileView;
+		int skipHits;
 		TreeView dirView, fileView;
 		GtkStatusbar *mainStatus, *itemsStatus, *sizeStatus, *filesStatus, *totalStatus;
 		GtkListStore *fileStore;
 		GtkTreeStore *dirStore;
 		GtkTreeSelection *fileSelection, *dirSelection;
 		GtkWidget *box;
+		GtkWidget *findDialog;
+		GtkEntry *findEntry;
 		GtkButton *matchButton, *findButton, *nextButton;
 		GdkPixbuf *iconFile, *iconDirectory;
 		GtkMenu *fileMenu, *dirMenu, *fileDownloadMenu, *dirDownloadMenu;

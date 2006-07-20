@@ -21,7 +21,6 @@
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/Util.h>
-#include <iostream>
 
 using namespace std;
 
@@ -45,8 +44,7 @@ BookEntry::BookEntry(string title)
 	gtk_container_add(GTK_CONTAINER(eventBox), GTK_WIDGET(label));
 
 	button = GTK_BUTTON(gtk_button_new());
-	gtk_container_add(GTK_CONTAINER(button), 
-		gtk_image_new_from_stock(GTK_STOCK_CLOSE, GTK_ICON_SIZE_MENU));
+	gtk_container_add(GTK_CONTAINER(button), gtk_image_new_from_stock(GTK_STOCK_CLOSE, GTK_ICON_SIZE_MENU));
 	gtk_widget_set_size_request(GTK_WIDGET(button), 16, 16);
 	gtk_button_set_relief(button, GTK_RELIEF_NONE);
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(button), FALSE, TRUE, 0);
@@ -79,16 +77,13 @@ GladeXML* BookEntry::getGladeXML(string file)
 	file = WulforManager::get()->getPath() + "/glade/" + file;
 	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
 	if (xml == NULL)
-	{
-		cout << "Error: Missing required glade file: " << file << endl;
-		exit(1);
-	}
+		gtk_main_quit();
 	return xml;
 }
 
 void BookEntry::setLabel_gui(string text)
 {
-	gtk_tooltips_set_tip (tips, eventBox, text.c_str(), text.c_str());
+	gtk_tooltips_set_tip(tips, eventBox, text.c_str(), text.c_str());
 	if (text.size() > 20) 
 		text = text.substr(0, 17) + "...";
 	gtk_label_set_text(label, text.c_str());

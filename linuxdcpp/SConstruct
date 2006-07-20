@@ -12,7 +12,7 @@
 #                              eg. PREFIX=/usr/local -> ldcpp goes into
 #                              PREFIX/bin/ and other files into PREFIX/share/
 #      BINDIR="path":          Place the program (ldcpp executable) in BINDIR
-#                              defaluts to PREFIX/bin/
+#                              defaults to PREFIX/bin/
 #      DATADIR="path":          Place the glade and pixmap files under DATADIR
 #                              defaults to PREFIX/share/
 #      DOCDIR="path":          Place the program docs into DOCDIR
@@ -195,6 +195,7 @@ glade_files = [
 	'glade/sharebrowser.glade']
 
 pixmap_files =	[
+	'pixmaps/connect.png',
 	'pixmaps/dc++.png',
 	'pixmaps/dc++-fw.png',
 	'pixmaps/dc++-fw-op.png',
@@ -203,13 +204,16 @@ pixmap_files =	[
 	'pixmaps/favhubs.png',
 	'pixmaps/FinishedDL.png',
 	'pixmaps/FinishedUL.png',
-	'pixmaps/linuxdcpp.svg',
+	'pixmaps/hash.png',
+	'pixmaps/linuxdcpp.png',
+	'pixmaps/linuxdcpp-icon.png',
 	'pixmaps/normal.png',
 	'pixmaps/normal-fw.png',
 	'pixmaps/normal-fw-op.png',
 	'pixmaps/normal-op.png',
 	'pixmaps/publichubs.png',
 	'pixmaps/queue.png',
+	'pixmaps/quit.png',
 	'pixmaps/search.png',
 	'pixmaps/settings.png',
 	'pixmaps/upload.png']
