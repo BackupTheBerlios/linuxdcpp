@@ -1,4 +1,4 @@
-2006-07- - Steven Sheehy
+2006-07-21 - Steven Sheehy
 * Replaced a lot of text buttons with GTK+ stock icons (thanks Rimas Kudelis).
 * Main toolbar now respects gtk-toolbar-style option (thanks Rimas Kudelis).
 * Moved most static popup menus into glade and made them use stock icons where applicable.
