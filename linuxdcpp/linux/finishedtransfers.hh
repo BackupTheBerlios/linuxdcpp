@@ -63,8 +63,7 @@ class FinishedTransfers:
 		bool isUpload;
 		int items;
 		int64_t totalBytes, totalTime;
-		GtkMenu *finishedTransfersMenu;
-		GtkMenuItem *openWith, *remove, *removeAll;
+		GtkMenu *menu;
 };
 
 #else

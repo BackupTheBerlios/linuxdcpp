@@ -19,8 +19,6 @@
 #ifndef WULFOR_FAVORITE_HUBS_HH
 #define WULFOR_FAVORITE_HUBS_HH
 
-#include <iostream>
-
 #include "bookentry.hh"
 #include "treeview.hh"
 #include "wulformanager.hh"
@@ -50,20 +48,20 @@ class FavoriteHubs:
 		void popupMenu_gui();
 
 		// GUI callbacks
-		static void onConnect_gui(GtkWidget *widget, gpointer data);
-		static void onToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
 		static gboolean onButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
 		static void onAddEntry_gui(GtkWidget *widget, gpointer data);
 		static void onEditEntry_gui(GtkWidget *widget, gpointer data);
 		static void onRemoveEntry_gui(GtkWidget *widget, gpointer data);
+		static void onConnect_gui(GtkButton *widget, gpointer data);
+		static void onToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
 
 		// Client functions
-		void setConnect_client(FavoriteHubEntry *entry, bool active);
 		void addEntry_client(const FavoriteHubEntry entry);
 		void editEntry_client(FavoriteHubEntry *oldEntry, const FavoriteHubEntry newEntry);
 		void removeEntry_client(FavoriteHubEntry *entry);
+		void setConnect_client(FavoriteHubEntry *entry, bool active);
 
 		// Client callbacks from FavoriteManagerListener
 		void on(FavoriteManagerListener::FavoriteAdded, const FavoriteHubEntry *entry) throw();

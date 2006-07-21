@@ -24,6 +24,7 @@ Johannes Sjölund
 Pavlov Konstantin
 Fredrik Ullner
 Mikael Eman
+Rimas Kudelis
 
 DC++:
 -----

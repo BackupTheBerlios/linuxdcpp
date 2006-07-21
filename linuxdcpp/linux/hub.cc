@@ -96,14 +96,14 @@ Hub::Hub(string address):
 	gtk_entry_completion_set_model(completion, GTK_TREE_MODEL(nickStore));
 	gtk_entry_completion_set_text_column(completion, nickView.col("Nick"));
 
-	// Create menu
-	nickMenu = GTK_MENU(gtk_menu_new());
-	GtkWidget *browseItem = GTK_WIDGET(gtk_menu_item_new_with_label("Browse files"));
-	GtkWidget *msgItem = GTK_WIDGET(gtk_menu_item_new_with_label("Private message"));
-	GtkWidget *grantItem = GTK_WIDGET(gtk_menu_item_new_with_label("Grant slot"));
-	gtk_menu_shell_append(GTK_MENU_SHELL(nickMenu), browseItem);
-	gtk_menu_shell_append(GTK_MENU_SHELL(nickMenu), msgItem);
-	gtk_menu_shell_append(GTK_MENU_SHELL(nickMenu), grantItem);
+	// Initialize nick popup menu
+	nickMenu = GTK_MENU(glade_xml_get_widget(xml, "nickMenu"));
+	GtkWidget *browseItem = glade_xml_get_widget(xml, "browseItem");
+	g_signal_connect(G_OBJECT(browseItem), "activate", G_CALLBACK(onBrowseItemClicked_gui), (gpointer)this);
+	GtkWidget *msgItem = glade_xml_get_widget(xml, "msgItem");
+	g_signal_connect(G_OBJECT(msgItem), "activate", G_CALLBACK(onMsgItemClicked_gui), (gpointer)this);
+	GtkWidget *grantItem = glade_xml_get_widget(xml, "grantItem");
+	g_signal_connect(G_OBJECT(grantItem), "activate", G_CALLBACK(onGrantItemClicked_gui), (gpointer)this);
 
 	// Load icons for the nick list
 	string icon, path = WulforManager::get()->getPath() + "/pixmaps/";
@@ -129,9 +129,6 @@ Hub::Hub(string address):
 	g_signal_connect(G_OBJECT(nickView.get()), "button-press-event", G_CALLBACK(onNickListButtonPress_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(nickView.get()), "button-release-event", G_CALLBACK(onNickListButtonRelease_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(nickView.get()), "key-release-event", G_CALLBACK(onNickListKeyRelease_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(browseItem), "activate", G_CALLBACK(onBrowseItemClicked_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(msgItem), "activate", G_CALLBACK(onMsgItemClicked_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(grantItem), "activate", G_CALLBACK(onGrantItemClicked_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(chatEntry), "key-press-event", G_CALLBACK(onEntryKeyPress_gui), (gpointer)this);
 
 	gtk_widget_grab_focus(GTK_WIDGET(chatEntry));
@@ -454,7 +451,7 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
 		else if (command == "help")
 		{
 			hub->addStatusMessage_gui("Available commands: /away <message>, /back, /clear, /close, /favorite, " \
-				 "/getlist <nick>, /grant <nick>, /help, /join <address>, /pm <nick>, /rebuild, /userlist");
+				 "/getlist <nick>, /grant <nick>, /help, /join <address>, /pm <nick>, /rebuild, /refresh, /userlist");
 		}
 		else if (command == "join" && !param.empty())
 		{
@@ -478,6 +475,10 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
 		else if (command == "rebuild")
 		{
 			WulforManager::get()->dispatchClientFunc(new Func0<Hub>(hub, &Hub::rebuildHashData_client));
+		}
+		else if (command == "refresh")
+		{
+			WulforManager::get()->dispatchClientFunc(new Func0<Hub>(hub, &Hub::refreshFileList_client));
 		}
 		else if (command == "userlist")
 		{
@@ -754,6 +755,18 @@ void Hub::redirect_client(string address)
 void Hub::rebuildHashData_client()
 {
 	HashManager::getInstance()->rebuild();
+}
+
+void Hub::refreshFileList_client()
+{
+	try
+	{
+		ShareManager::getInstance()->setDirty();
+		ShareManager::getInstance()->refresh(true);
+	}
+	catch (const ShareException& e)
+	{
+	}
 }
 
 void Hub::addAsFavorite_client()

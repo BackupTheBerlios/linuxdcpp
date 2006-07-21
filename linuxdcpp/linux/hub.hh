@@ -76,6 +76,7 @@ class Hub:
 		void grantSlot_client(std::string nick);
 		void redirect_client(std::string address);
 		void rebuildHashData_client();
+		void refreshFileList_client();
 		void addAsFavorite_client();
 
 		// Client callbacks

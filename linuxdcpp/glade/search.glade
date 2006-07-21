@@ -418,7 +418,8 @@ TTH</property>
 		    <widget class="GtkButton" id="buttonSearch">
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
-		      <property name="label" translatable="yes">Search</property>
+		      <property name="label">gtk-find</property>
+		      <property name="use_stock">True</property>
 		      <property name="use_underline">True</property>
 		      <property name="relief">GTK_RELIEF_NORMAL</property>
 		      <property name="focus_on_click">True</property>
@@ -531,6 +532,133 @@ TTH</property>
 	  <property name="fill">False</property>
 	</packing>
       </child>
+    </widget>
+  </child>
+</widget>
+
+<widget class="GtkMenu" id="mainMenu">
+
+  <child>
+    <widget class="GtkMenuItem" id="downloadItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Download</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="downloadToItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Download to...</property>
+      <property name="use_underline">True</property>
+
+      <child>
+	<widget class="GtkMenu" id="downloadMenu">
+	</widget>
+      </child>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="downloadWholeDirItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Download whole directory</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="downloadWholeDirToItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Download whole directory to...</property>
+      <property name="use_underline">True</property>
+
+      <child>
+	<widget class="GtkMenu" id="downloadDirMenu">
+	</widget>
+      </child>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkSeparatorMenuItem" id="separator2">
+      <property name="visible">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="searchByTTHItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Search by TTH</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkSeparatorMenuItem" id="separator3">
+      <property name="visible">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="getFileListItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Get file list</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="matchQueueItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Match Queue</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="sendPrivateMessageItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Send private message</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="addToFavoritesItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Add to favorites</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="grantExtraSlotItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Grant extra slot</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="removeUserFromQueueITem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Remove user from queue</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkSeparatorMenuItem" id="separator4">
+      <property name="visible">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="removeItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Remove</property>
+      <property name="use_underline">True</property>
     </widget>
   </child>
 </widget>

@@ -178,4 +178,261 @@
   </child>
 </widget>
 
+<widget class="GtkMenu" id="dirMenu">
+
+  <child>
+    <widget class="GtkMenuItem" id="dirSetPriorityItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Set Priority</property>
+      <property name="use_underline">True</property>
+
+      <child>
+	<widget class="GtkMenu" id="dirPriorityMenu">
+
+	  <child>
+	    <widget class="GtkMenuItem" id="pausedPriorityItem">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Paused</property>
+	      <property name="use_underline">True</property>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="GtkMenuItem" id="lowestPriorityItem">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Lowest</property>
+	      <property name="use_underline">True</property>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="GtkMenuItem" id="lowPrioritytem">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Low</property>
+	      <property name="use_underline">True</property>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="GtkMenuItem" id="normalPriorityItem">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Normal</property>
+	      <property name="use_underline">True</property>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="GtkMenuItem" id="highPriorityItem">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">High</property>
+	      <property name="use_underline">True</property>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="GtkMenuItem" id="highestPriorityItem">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Highest</property>
+	      <property name="use_underline">True</property>
+	    </widget>
+	  </child>
+	</widget>
+      </child>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkSeparatorMenuItem" id="separator4">
+      <property name="visible">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="moveRenameItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Move/Rename</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkSeparatorMenuItem" id="separator5">
+      <property name="visible">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="removeDirItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Remove</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+</widget>
+
+<widget class="GtkMenu" id="fileMenu">
+
+  <child>
+    <widget class="GtkMenuItem" id="searchForAlternatesItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Search for alternates</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="searchByTTHItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Search by TTH</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkSeparatorMenuItem" id="separator6">
+      <property name="visible">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="fileSetPriorityItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Set Priority</property>
+      <property name="use_underline">True</property>
+
+      <child>
+	<widget class="GtkMenu" id="filePriorityMenu">
+
+	  <child>
+	    <widget class="GtkMenuItem" id="filePausedItem">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Paused</property>
+	      <property name="use_underline">True</property>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="GtkMenuItem" id="fileLowestPriorityItem">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Lowest</property>
+	      <property name="use_underline">True</property>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="GtkMenuItem" id="fileLowPriorityItem">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Low</property>
+	      <property name="use_underline">True</property>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="GtkMenuItem" id="fileNormalPriorityItem">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Normal</property>
+	      <property name="use_underline">True</property>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="GtkMenuItem" id="fileHighPriorityItem">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">High</property>
+	      <property name="use_underline">True</property>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="GtkMenuItem" id="fileHighestPriorityItem">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Highest</property>
+	      <property name="use_underline">True</property>
+	    </widget>
+	  </child>
+	</widget>
+      </child>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="getFileListItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Get file list</property>
+      <property name="use_underline">True</property>
+
+      <child>
+	<widget class="GtkMenu" id="browseMenu">
+	</widget>
+      </child>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="sendPrivateMessageItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Send private message</property>
+      <property name="use_underline">True</property>
+
+      <child>
+	<widget class="GtkMenu" id="pmMenu">
+	</widget>
+      </child>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="reAddSourceItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Re-add source</property>
+      <property name="use_underline">True</property>
+
+      <child>
+	<widget class="GtkMenu" id="reAddMenu">
+	</widget>
+      </child>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkSeparatorMenuItem" id="separator8">
+      <property name="visible">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="removeSourceItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Remove Source</property>
+      <property name="use_underline">True</property>
+
+      <child>
+	<widget class="GtkMenu" id="removeMenu">
+	</widget>
+      </child>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="removeUserFromQueueItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Remove user from queue</property>
+      <property name="use_underline">True</property>
+
+      <child>
+	<widget class="GtkMenu" id="removeAllMenu">
+	</widget>
+      </child>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="fileRemoveItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Remove</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+</widget>
+
 </glade-interface>

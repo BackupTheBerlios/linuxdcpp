@@ -296,4 +296,31 @@
   </child>
 </widget>
 
+<widget class="GtkMenu" id="nickMenu">
+
+  <child>
+    <widget class="GtkMenuItem" id="browseItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Browse files</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="msgItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Private message</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="grantItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Grant slot</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+</widget>
+
 </glade-interface>

@@ -2,7 +2,6 @@
 <!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
 
 <glade-interface>
-<requires lib="gnome"/>
 
 <widget class="GtkWindow" id="favoriteHubsWindow">
   <property name="width_request">640</property>
@@ -20,6 +19,7 @@
   <property name="type_hint">GDK_WINDOW_TYPE_HINT_NORMAL</property>
   <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="focus_on_map">True</property>
+  <property name="urgency_hint">False</property>
 
   <child>
     <widget class="GtkVBox" id="mainBox">
@@ -68,42 +68,8 @@
 	    <widget class="GtkButton" id="buttonNew">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
-	      <property name="label" translatable="yes">New</property>
-	      <property name="use_underline">True</property>
-	      <property name="relief">GTK_RELIEF_NORMAL</property>
-	      <property name="focus_on_click">True</property>
-	    </widget>
-	    <packing>
-	      <property name="padding">0</property>
-	      <property name="expand">False</property>
-	      <property name="fill">False</property>
-	    </packing>
-	  </child>
-
-	  <child>
-	    <widget class="GtkButton" id="buttonProperties">
-	      <property name="visible">True</property>
-	      <property name="sensitive">False</property>
-	      <property name="can_focus">True</property>
-	      <property name="label" translatable="yes">Properties</property>
-	      <property name="use_underline">True</property>
-	      <property name="relief">GTK_RELIEF_NORMAL</property>
-	      <property name="focus_on_click">True</property>
-	    </widget>
-	    <packing>
-	      <property name="padding">0</property>
-	      <property name="expand">False</property>
-	      <property name="fill">False</property>
-	    </packing>
-	  </child>
-
-	  <child>
-	    <widget class="GtkButton" id="buttonRemove">
-	      <property name="visible">True</property>
-	      <property name="sensitive">False</property>
-	      <property name="can_focus">True</property>
-	      <property name="label" translatable="yes">Remove</property>
-	      <property name="use_underline">True</property>
+	      <property name="label">gtk-add</property>
+	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
 	    </widget>
@@ -119,8 +85,42 @@
 	      <property name="visible">True</property>
 	      <property name="sensitive">False</property>
 	      <property name="can_focus">True</property>
-	      <property name="label" translatable="yes">Connect</property>
-	      <property name="use_underline">True</property>
+	      <property name="label">gtk-connect</property>
+	      <property name="use_stock">True</property>
+	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
+	    </widget>
+	    <packing>
+	      <property name="padding">0</property>
+	      <property name="expand">False</property>
+	      <property name="fill">False</property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkButton" id="buttonProperties">
+	      <property name="visible">True</property>
+	      <property name="sensitive">False</property>
+	      <property name="can_focus">True</property>
+	      <property name="label">gtk-properties</property>
+	      <property name="use_stock">True</property>
+	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
+	    </widget>
+	    <packing>
+	      <property name="padding">0</property>
+	      <property name="expand">False</property>
+	      <property name="fill">False</property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkButton" id="buttonRemove">
+	      <property name="visible">True</property>
+	      <property name="sensitive">False</property>
+	      <property name="can_focus">True</property>
+	      <property name="label">gtk-remove</property>
+	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
 	    </widget>
@@ -154,6 +154,7 @@
   <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
   <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="focus_on_map">True</property>
+  <property name="urgency_hint">False</property>
   <property name="has_separator">True</property>
 
   <child internal-child="vbox">
@@ -626,6 +627,7 @@
   <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
   <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="focus_on_map">True</property>
+  <property name="urgency_hint">False</property>
   <property name="has_separator">True</property>
 
   <child internal-child="vbox">
@@ -701,7 +703,6 @@
   </child>
 </widget>
 
-
 <widget class="GtkDialog" id="errorDialog">
   <property name="title" translatable="yes">Error</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
@@ -715,6 +716,7 @@
   <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
   <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="focus_on_map">True</property>
+  <property name="urgency_hint">False</property>
   <property name="has_separator">True</property>
 
   <child internal-child="vbox">
@@ -775,6 +777,42 @@
       </child>
     </widget>
   </child>
+</widget>
+
+<widget class="GtkMenu" id="menu">
+
+  <child>
+    <widget class="GtkImageMenuItem" id="addMenuItem">
+      <property name="visible">True</property>
+      <property name="label">gtk-add</property>
+      <property name="use_stock">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkImageMenuItem" id="connectMenuItem">
+      <property name="visible">True</property>
+      <property name="label">gtk-connect</property>
+      <property name="use_stock">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkImageMenuItem" id="propertiesMenuItem">
+      <property name="visible">True</property>
+      <property name="label">gtk-properties</property>
+      <property name="use_stock">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkImageMenuItem" id="removeMenuItem">
+      <property name="visible">True</property>
+      <property name="label">gtk-remove</property>
+      <property name="use_stock">True</property>
+    </widget>
+  </child>
+
 </widget>
 
 </glade-interface>

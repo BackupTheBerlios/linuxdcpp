@@ -357,4 +357,66 @@
   </child>
 </widget>
 
+<widget class="GtkMenu" id="dirMenu">
+
+  <child>
+    <widget class="GtkMenuItem" id="dirDownloadItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Download</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="dirDownloadToItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Download to...</property>
+      <property name="use_underline">True</property>
+
+      <child>
+	<widget class="GtkMenu" id="dirDownloadMenu">
+	</widget>
+      </child>
+    </widget>
+  </child>
+</widget>
+
+<widget class="GtkMenu" id="fileMenu">
+
+  <child>
+    <widget class="GtkMenuItem" id="fileDownloadItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Download</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="fileDownloadToItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Download to...</property>
+      <property name="use_underline">True</property>
+
+      <child>
+	<widget class="GtkMenu" id="fileDownloadMenu">
+	</widget>
+      </child>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkSeparatorMenuItem" id="separator8">
+      <property name="visible">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="searchForAlternatesItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Search for alternates</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+</widget>
+
 </glade-interface>

@@ -57,13 +57,14 @@ FinishedTransfers::FinishedTransfers(std::string title):
 	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(transferView.get(), transferView.col("Time")), TRUE);
 	gtk_tree_view_set_fixed_height_mode(transferView.get(), TRUE);
 
-	finishedTransfersMenu = GTK_MENU(gtk_menu_new());
-	openWith = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Open with"));
-	remove = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Remove"));
-	removeAll = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Remove all"));
-	gtk_menu_shell_append(GTK_MENU_SHELL(finishedTransfersMenu), GTK_WIDGET(openWith));
-	gtk_menu_shell_append(GTK_MENU_SHELL(finishedTransfersMenu), GTK_WIDGET(remove));
-	gtk_menu_shell_append(GTK_MENU_SHELL(finishedTransfersMenu), GTK_WIDGET(removeAll));
+	// Connect callbacks to popup menu
+	menu = GTK_MENU(glade_xml_get_widget(xml, "menu"));
+	GtkWidget *openWithItem = glade_xml_get_widget(xml, "openWithItem");
+	g_signal_connect(G_OBJECT(openWithItem), "activate", G_CALLBACK(onOpenWith_gui), (gpointer)this);
+	GtkWidget *removeItem = glade_xml_get_widget(xml, "removeItem");
+	g_signal_connect(G_OBJECT(removeItem), "activate", G_CALLBACK(onRemoveItems_gui), (gpointer)this);
+	GtkWidget *removeAllItem = glade_xml_get_widget(xml, "removeAllItem");
+	g_signal_connect(G_OBJECT(removeAllItem), "activate", G_CALLBACK(onRemoveAll_gui), (gpointer)this);
 
 	items = 0;
 	totalBytes = 0;
@@ -76,9 +77,6 @@ FinishedTransfers::FinishedTransfers(std::string title):
 
 	g_signal_connect(G_OBJECT(transferView.get()), "button-release-event", G_CALLBACK(onPopupMenu_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(transferView.get()), "key-release-event", G_CALLBACK(onKeyReleased_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(remove), "activate", G_CALLBACK(onRemoveItems_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(removeAll), "activate", G_CALLBACK(onRemoveAll_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(openWith), "activate", G_CALLBACK(onOpenWith_gui), (gpointer)this);
 }
 
 FinishedTransfers::~FinishedTransfers()
@@ -98,8 +96,8 @@ gboolean FinishedTransfers::onPopupMenu_gui(GtkWidget *widget, GdkEventButton *e
 
 	if (event->button == 3 && gtk_tree_selection_get_selected(ft->transferSelection, NULL, NULL))
 	{
-		gtk_menu_popup(ft->finishedTransfersMenu, NULL, NULL, NULL, NULL, event->button, event->time);
-		gtk_widget_show_all(GTK_WIDGET(ft->finishedTransfersMenu));
+		gtk_menu_popup(ft->menu, NULL, NULL, NULL, NULL, event->button, event->time);
+		gtk_widget_show_all(GTK_WIDGET(ft->menu));
 	}
 	return FALSE;
 }
@@ -114,8 +112,8 @@ gboolean FinishedTransfers::onKeyReleased_gui(GtkWidget *widget, GdkEventKey *ev
 		onRemoveItems_gui(NULL, data);
 	else if (event->keyval == GDK_Menu || (event->keyval == GDK_F10 && event->state & GDK_SHIFT_MASK))
 	{
-		gtk_menu_popup(ft->finishedTransfersMenu, NULL, NULL, NULL, NULL, 1, event->time);
-		gtk_widget_show_all(GTK_WIDGET(ft->finishedTransfersMenu));
+		gtk_menu_popup(ft->menu, NULL, NULL, NULL, NULL, 1, event->time);
+		gtk_widget_show_all(GTK_WIDGET(ft->menu));
 	}	
 }
 

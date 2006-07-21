@@ -104,7 +104,7 @@
 		      <child internal-child="image">
 			<widget class="GtkImage" id="image67">
 			  <property name="visible">True</property>
-			  <property name="stock">gtk-jump-to</property>
+			  <property name="stock">gtk-connect</property>
 			  <property name="icon_size">1</property>
 			  <property name="xalign">0.5</property>
 			  <property name="yalign">0.5</property>
@@ -408,7 +408,6 @@
 	    <widget class="GtkToolbar" id="toolbar1">
 	      <property name="visible">True</property>
 	      <property name="orientation">GTK_ORIENTATION_HORIZONTAL</property>
-	      <property name="toolbar_style">GTK_TOOLBAR_BOTH</property>
 	      <property name="tooltips">True</property>
 	      <property name="show_arrow">True</property>
 
@@ -953,7 +952,7 @@
 		      <child>
 			<widget class="GtkImage" id="image41">
 			  <property name="visible">True</property>
-			  <property name="stock">gtk-jump-to</property>
+			  <property name="stock">gtk-connect</property>
 			  <property name="icon_size">4</property>
 			  <property name="xalign">0.5</property>
 			  <property name="yalign">0.5</property>
@@ -1131,6 +1130,7 @@ Contributors:
   Pavlov Konstantin
   Fredrik Ullner
   Mikael Eman
+  Rimas Kudelis
 </property>
   <property name="artists">Johannes Sjölund</property>
 </widget>

@@ -63,12 +63,9 @@ PublicHubs::PublicHubs():
 	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(hubView.get(), hubView.col("Users")), TRUE);
 	gtk_tree_view_set_fixed_height_mode(hubView.get(), TRUE);
 
-	// Create popup menu
-	menu = GTK_MENU(gtk_menu_new());
-	GtkMenuItem *conItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Connect"));
-	GtkMenuItem *favItem = GTK_MENU_ITEM(gtk_menu_item_new_with_label("Add to favorites"));
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(conItem));
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(favItem));
+	menu = GTK_MENU(glade_xml_get_widget(xml, "menu"));
+	GObject *conItem = G_OBJECT(glade_xml_get_widget(xml, "connectMenuItem"));
+	GObject *favItem = G_OBJECT(glade_xml_get_widget(xml, "favMenuItem"));
 
 	// Initialize list of public hub lists treeview
 	listsView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "listsView")));
@@ -121,7 +118,7 @@ PublicHubs::PublicHubs():
 	g_signal_connect(G_OBJECT(hubView.get()), "button-press-event", G_CALLBACK(onButtonPress_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(hubView.get()), "button-release-event", G_CALLBACK(onButtonRelease_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(hubView.get()), "key-release-event", G_CALLBACK(onKeyRelease_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(favItem), "activate", G_CALLBACK(onAddFav_gui), (gpointer)this);
+	g_signal_connect(favItem, "activate", G_CALLBACK(onAddFav_gui), (gpointer)this);
 
 	pthread_mutex_init(&hubLock, NULL);
 }
@@ -370,24 +367,18 @@ void PublicHubs::onAdd_gui(GtkWidget *widget, gpointer data)
 void PublicHubs::onMoveUp_gui(GtkWidget *widget, gpointer data)
 {
 	PublicHubs *ph = (PublicHubs *)data;
-	GtkTreeIter prev, current, next;
+	GtkTreeIter prev, current;
 	GtkTreeModel *m = GTK_TREE_MODEL(ph->listsStore);
-	gboolean valid;
 
-	if (!gtk_tree_selection_get_selected(ph->listsSelection, NULL, &current)) return;
-
-	valid = gtk_tree_model_get_iter_first(m, &next);
-	while (valid)
+	if (gtk_tree_selection_get_selected(ph->listsSelection, NULL, &current))
 	{
-		prev = next;
-		valid = gtk_tree_model_iter_next(m, &next);
+		GtkTreePath *path = gtk_tree_model_get_path(m, &current);
 
-		if (next.stamp == current.stamp && next.user_data == current.user_data &&
-			next.user_data2 == current.user_data2 && next.user_data3 == current.user_data3)
+		if (gtk_tree_path_prev(path) && gtk_tree_model_get_iter(m, &prev, path))
 		{
 			gtk_list_store_swap(ph->listsStore, &current, &prev);
-			return;
 		}
+		gtk_tree_path_free(path);
 	}
 }
 

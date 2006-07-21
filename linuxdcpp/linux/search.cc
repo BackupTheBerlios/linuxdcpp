@@ -92,53 +92,32 @@ Search::Search():
 	g_signal_connect(G_OBJECT(resultView.get()), "button_press_event", G_CALLBACK(onButtonPressed_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(resultView.get()), "popup_menu", G_CALLBACK(onPopupMenu_gui), (gpointer)this);
 	
-	mainMenu = GTK_MENU (gtk_menu_new ());
-	downloadMenu = GTK_MENU (gtk_menu_new ());
-	downloadDirMenu = GTK_MENU (gtk_menu_new ());
-	menuItems["Download"] = gtk_menu_item_new_with_label ("Download");
-	gtk_menu_shell_append (GTK_MENU_SHELL (mainMenu), menuItems["Download"]);
-	g_signal_connect (G_OBJECT (menuItems["Download"]), "activate", G_CALLBACK (onDownloadClicked_gui), (gpointer)this);
-	
-	menuItems["DownloadTo"] = gtk_menu_item_new_with_label ("Download to...");
-	gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuItems["DownloadTo"]), GTK_WIDGET (downloadMenu));
-	gtk_menu_shell_append (GTK_MENU_SHELL (mainMenu), menuItems["DownloadTo"]);
-	
-	menuItems["DownloadWholeDir"] = gtk_menu_item_new_with_label ("Download whole directory");
-	gtk_menu_shell_append (GTK_MENU_SHELL (mainMenu), menuItems["DownloadWholeDir"]);
-	g_signal_connect (G_OBJECT (menuItems["DownloadWholeDir"]), "activate", G_CALLBACK (onDownloadDirClicked_gui), (gpointer)this);
-	
-	menuItems["DownloadWholeDirTo"] = gtk_menu_item_new_with_label ("Download whole directory to...");
-	gtk_menu_shell_append (GTK_MENU_SHELL (mainMenu), menuItems["DownloadWholeDirTo"]);
-	gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuItems["DownloadWholeDirTo"]), GTK_WIDGET (downloadDirMenu));
-	gtk_menu_shell_append (GTK_MENU_SHELL (mainMenu), gtk_separator_menu_item_new ());
-	menuItems["SearchByTTH"] = gtk_menu_item_new_with_label ("Search by TTH");
-	gtk_menu_shell_append (GTK_MENU_SHELL (mainMenu), menuItems["SearchByTTH"]);
-	g_signal_connect (G_OBJECT (menuItems["SearchByTTH"]), "activate", G_CALLBACK (onSearchForTTHClicked_gui), (gpointer)this);
-	gtk_menu_shell_append (GTK_MENU_SHELL (mainMenu), gtk_separator_menu_item_new ());
-	menuItems["GetFileList"] = gtk_menu_item_new_with_label ("Get file list");
-	gtk_menu_shell_append (GTK_MENU_SHELL (mainMenu), menuItems["GetFileList"]);
-	g_signal_connect (G_OBJECT (menuItems["GetFileList"]), "activate", G_CALLBACK (onGetFileListClicked_gui), (gpointer)this);
-	menuItems["MatchQueue"] = gtk_menu_item_new_with_label ("Match queue");
-	gtk_menu_shell_append (GTK_MENU_SHELL (mainMenu), menuItems["MatchQueue"]);
-	g_signal_connect (G_OBJECT (menuItems["MatchQueue"]), "activate", G_CALLBACK (onMatchQueueClicked_gui), (gpointer)this);
-	menuItems["SendPrivateMessage"] = gtk_menu_item_new_with_label ("Send private message");
-	gtk_menu_shell_append (GTK_MENU_SHELL (mainMenu), menuItems["SendPrivateMessage"]);
-	g_signal_connect (G_OBJECT (menuItems["SendPrivateMessage"]), "activate", G_CALLBACK (onPrivateMessageClicked_gui), (gpointer)this);
-	menuItems["AddToFavorites"] = gtk_menu_item_new_with_label ("Add to favorites");
-	gtk_menu_shell_append (GTK_MENU_SHELL (mainMenu), menuItems["AddToFavorites"]);
-	g_signal_connect (G_OBJECT (menuItems["AddToFavorites"]), "activate", G_CALLBACK (onAddFavoriteUserClicked_gui), (gpointer)this);
-	menuItems["GrantExtraSlot"] = gtk_menu_item_new_with_label ("Grant extra slot");
-	gtk_menu_shell_append (GTK_MENU_SHELL (mainMenu), menuItems["GrantExtraSlot"]);
-	g_signal_connect (G_OBJECT (menuItems["GrantExtraSlot"]), "activate", G_CALLBACK (onGrantExtraSlotClicked_gui), (gpointer)this);
-	menuItems["RemoveUserFromQueue"] = gtk_menu_item_new_with_label ("Remove user from queue");
-	gtk_menu_shell_append (GTK_MENU_SHELL (mainMenu), menuItems["RemoveUserFromQueue"]);
-	g_signal_connect (G_OBJECT (menuItems["RemoveUserFromQueue"]), "activate", G_CALLBACK (onRemoveUserFromQueueClicked_gui), (gpointer)this);
-	gtk_menu_shell_append (GTK_MENU_SHELL (mainMenu), gtk_separator_menu_item_new ());
-	menuItems["Remove"] = gtk_menu_item_new_with_label ("Remove");
-	gtk_menu_shell_append (GTK_MENU_SHELL (mainMenu), menuItems["Remove"]);
-	g_signal_connect (G_OBJECT (menuItems["Remove"]), "activate", G_CALLBACK (onRemoveClicked_gui), (gpointer)this);
-	gtk_widget_show_all (GTK_WIDGET (mainMenu));
-			
+	mainMenu = GTK_MENU(glade_xml_get_widget(xml, "mainMenu"));
+	downloadMenu = GTK_MENU(glade_xml_get_widget(xml, "downloadMenu"));
+	downloadDirMenu = GTK_MENU(glade_xml_get_widget(xml, "downloadDirMenu"));
+	menuItems["Download"] = glade_xml_get_widget(xml, "downloadItem");
+	g_signal_connect(G_OBJECT(menuItems["Download"]), "activate", G_CALLBACK(onDownloadClicked_gui), (gpointer)this);
+	menuItems["DownloadTo"] = glade_xml_get_widget(xml, "downloadToItem");
+	menuItems["DownloadWholeDir"] = glade_xml_get_widget(xml, "downloadWholeDirItem");
+	g_signal_connect(G_OBJECT(menuItems["DownloadWholeDir"]), "activate", G_CALLBACK(onDownloadDirClicked_gui), (gpointer)this);
+	menuItems["DownloadWholeDirTo"] = glade_xml_get_widget(xml, "downloadWholeDirToItem");
+	menuItems["SearchByTTH"] = glade_xml_get_widget(xml, "searchByTTHItem");
+	g_signal_connect(G_OBJECT(menuItems["SearchByTTH"]), "activate", G_CALLBACK(onSearchForTTHClicked_gui), (gpointer)this);
+	menuItems["GetFileList"] = glade_xml_get_widget(xml, "getFileListItem");
+	g_signal_connect(G_OBJECT(menuItems["GetFileList"]), "activate", G_CALLBACK(onGetFileListClicked_gui), (gpointer)this);
+	menuItems["MatchQueue"] = glade_xml_get_widget(xml, "matchQueueItem");
+	g_signal_connect(G_OBJECT(menuItems["MatchQueue"]), "activate", G_CALLBACK(onMatchQueueClicked_gui), (gpointer)this);
+	menuItems["SendPrivateMessage"] = glade_xml_get_widget(xml, "sendPrivateMessageItem");
+	g_signal_connect(G_OBJECT(menuItems["SendPrivateMessage"]), "activate", G_CALLBACK(onPrivateMessageClicked_gui), (gpointer)this);
+	menuItems["AddToFavorites"] = glade_xml_get_widget(xml, "addToFavoritesItem");
+	g_signal_connect(G_OBJECT(menuItems["AddToFavorites"]), "activate", G_CALLBACK(onAddFavoriteUserClicked_gui), (gpointer)this);
+	menuItems["GrantExtraSlot"] = glade_xml_get_widget(xml, "grantExtraSlotItem");
+	g_signal_connect(G_OBJECT(menuItems["GrantExtraSlot"]), "activate", G_CALLBACK(onGrantExtraSlotClicked_gui), (gpointer)this);
+	menuItems["RemoveUserFromQueue"] = glade_xml_get_widget(xml, "removeUserFromQueueITem");
+	g_signal_connect(G_OBJECT(menuItems["RemoveUserFromQueue"]), "activate", G_CALLBACK(onRemoveUserFromQueueClicked_gui), (gpointer)this);
+	menuItems["Remove"] = glade_xml_get_widget(xml, "removeItem");
+	g_signal_connect(G_OBJECT(menuItems["Remove"]), "activate", G_CALLBACK(onRemoveClicked_gui), (gpointer)this);
+
 	lastSearch = 0;
 	listItems = 0;
 	

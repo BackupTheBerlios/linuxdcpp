@@ -96,27 +96,20 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file):
 	g_signal_connect(G_OBJECT(dirView.get()), "button-release-event", G_CALLBACK(onDirButtonReleased_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(dirView.get()), "key-release-event", G_CALLBACK(onDirKeyReleased_gui), (gpointer)this);
 
-	// Create the popup menus
-	dirMenu = GTK_MENU(gtk_menu_new());
-	dirDownloadMenu = GTK_MENU(gtk_menu_new());
-	dirMenuItems["Download"] = gtk_menu_item_new_with_label("Download");
-	gtk_menu_shell_append(GTK_MENU_SHELL(dirMenu), dirMenuItems["Download"]);
+	// Initialize the dir popup menu
+	dirMenu = GTK_MENU(glade_xml_get_widget(xml, "dirMenu"));
+	dirMenuItems["Download"] = glade_xml_get_widget(xml, "dirDownloadItem");
 	g_signal_connect(G_OBJECT(dirMenuItems["Download"]), "activate", G_CALLBACK(onDownloadDirClicked_gui), (gpointer)this);
-	dirMenuItems["DownloadTo"] = gtk_menu_item_new_with_label("Download to...");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(dirMenuItems["DownloadTo"]), GTK_WIDGET(dirDownloadMenu));
-	gtk_menu_shell_append(GTK_MENU_SHELL(dirMenu), dirMenuItems["DownloadTo"]);
+	dirMenuItems["DownloadTo"] = glade_xml_get_widget(xml, "dirDownloadToItem");
+	dirDownloadMenu = GTK_MENU(glade_xml_get_widget(xml, "dirDownloadMenu"));
 
-	fileMenu = GTK_MENU(gtk_menu_new());
-	fileDownloadMenu = GTK_MENU(gtk_menu_new());
-	fileMenuItems["Download"] = gtk_menu_item_new_with_label("Download");
-	gtk_menu_shell_append(GTK_MENU_SHELL(fileMenu), fileMenuItems["Download"]);
+	// Initialize the file popup menu
+	fileMenu = GTK_MENU(glade_xml_get_widget(xml, "fileMenu"));
+	fileMenuItems["Download"] = glade_xml_get_widget(xml, "fileDownloadItem");
 	g_signal_connect(G_OBJECT(fileMenuItems["Download"]), "activate", G_CALLBACK(onDownloadClicked_gui), (gpointer)this);
-	fileMenuItems["DownloadTo"] = gtk_menu_item_new_with_label("Download to...");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(fileMenuItems["DownloadTo"]), GTK_WIDGET(fileDownloadMenu));
-	gtk_menu_shell_append(GTK_MENU_SHELL(fileMenu), fileMenuItems["DownloadTo"]);
-	gtk_menu_shell_append(GTK_MENU_SHELL(fileMenu), gtk_separator_menu_item_new());
-	fileMenuItems["SearchForAlternates"] = gtk_menu_item_new_with_label("Search for alternates");
-	gtk_menu_shell_append(GTK_MENU_SHELL(fileMenu), fileMenuItems["SearchForAlternates"]);
+	fileMenuItems["DownloadTo"] = glade_xml_get_widget(xml, "fileDownloadToItem");
+	fileDownloadMenu = GTK_MENU(glade_xml_get_widget(xml, "fileDownloadMenu"));
+	fileMenuItems["SearchForAlternates"] = glade_xml_get_widget(xml, "searchForAlternatesItem");
 	g_signal_connect(G_OBJECT(fileMenuItems["SearchForAlternates"]), "activate", G_CALLBACK(onSearchAlternatesClicked_gui), (gpointer)this);
 
 	// Set the buttons text to small so that the statusbar isn't too high.
@@ -534,6 +527,15 @@ void ShareBrowser::find_gui()
 	{
 		gtk_tree_path_free(dirPath);
 		return;
+	}
+
+	gint sortColumn;
+	GtkSortType sortType;
+	gtk_tree_sortable_get_sort_column_id(GTK_TREE_SORTABLE(fileStore), &sortColumn, &sortType);
+	if (sortColumn != fileView.col("File Order") || sortType != GTK_SORT_ASCENDING)
+	{
+		gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(fileStore), fileView.col("File Order"), GTK_SORT_ASCENDING);
+		gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(fileView.get(), fileView.col("Filename")), TRUE);
 	}
 
 	while (TRUE)
