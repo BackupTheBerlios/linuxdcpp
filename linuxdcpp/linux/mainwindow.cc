@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -39,6 +39,14 @@ using namespace std;
 MainWindow::MainWindow():
 	lastUpdate(0)
 {
+	string file = WulforManager::get()->getPath() + "/glade/mainwindow.glade";
+	xml = glade_xml_new(file.c_str(), NULL, NULL);
+	if (xml == NULL)
+	{
+		cout << "Error: Missing required glade file: " << file << endl;
+		exit(1);
+	}
+
 	createWindow_gui();
 	createTrayIcon_gui();
 	Func0<MainWindow> *f0 = new Func0<MainWindow>(this, &MainWindow::startSocket_client);
@@ -62,7 +70,8 @@ MainWindow::~MainWindow()
 	ConnectionManager::getInstance()->removeListener(this);
 
 	//Save window state and position
-	int posX, posY, sizeX, sizeY, state, transferPanePosition;
+	int posX, posY, sizeX, sizeY, transferPanePosition;
+	int state = 1;
 	GdkWindowState gdkState;
 	WulforSettingsManager *sm = WulforSettingsManager::get();
 
@@ -71,9 +80,8 @@ MainWindow::~MainWindow()
 	gdkState = gdk_window_get_state(GTK_WIDGET(window)->window);
 	transferPanePosition = gtk_paned_get_position(transferPane);
 
-	if (gdkState & GDK_WINDOW_STATE_MAXIMIZED) {
-		state = 1;
-	} else {
+	if (!(gdkState & GDK_WINDOW_STATE_MAXIMIZED))
+	{
 		state = 0;
 		//The get pos/size functions return junk when window is maximized
 		sm->set("main-window-pos-x", posX);
@@ -81,7 +89,7 @@ MainWindow::~MainWindow()
 		sm->set("main-window-size-x", sizeX);
 		sm->set("main-window-size-y", sizeY);
 	}
-	
+
 	sm->set("main-window-maximized", state);
 	sm->set("transfer-pane-position", transferPanePosition);
 
@@ -104,18 +112,12 @@ MainWindow::~MainWindow()
 		gtk_tree_row_reference_free(it->second->rowRef);
 		delete it->second;
 	}
+
+	g_object_unref(xml);
 }
 
 void MainWindow::createWindow_gui()
 {
-	string file = WulforManager::get()->getPath() + "/glade/mainwindow.glade";
-	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
-	if (xml == NULL)
-	{
-		cout << "Error: Missing required glade file: " << file << endl;
-		exit(1);
-	}
-
 	mainStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "status1"));
 	hubStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "status2"));
 	slotStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "status3"));
@@ -151,7 +153,7 @@ void MainWindow::createWindow_gui()
 
 	// Load icons. We need to do this in the code and not in the .glade file,
 	// otherwise we won't always find the images using binreloc
-	string path = WulforManager::get()->getPath() + "/pixmaps/";
+	string file, path = WulforManager::get()->getPath() + "/pixmaps/";
 
 	// Set the toolbar icons.
 	if (!WGETI("use-stock-icons"))
@@ -203,8 +205,8 @@ void MainWindow::createWindow_gui()
 	GtkMenuItem *followRedirect = GTK_MENU_ITEM(glade_xml_get_widget(xml, "follow_last_redirect1"));
 	GtkMenuItem *reconnectItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "reconnect1"));
 	GtkMenuItem *settingsItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "settings1"));
+	GtkMenuItem *closeItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "close1"));
 	GtkMenuItem *quitItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "exit1"));
-	
 	GtkMenuItem *pubHubsItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "public_hubs1"));
 	GtkMenuItem *queueItem = GTK_MENU_ITEM(glade_xml_get_widget(xml, "download_queue1"));
 	GtkMenuItem *finishedDL_item = GTK_MENU_ITEM(glade_xml_get_widget(xml, "finished_downloads1"));
@@ -263,36 +265,27 @@ void MainWindow::createWindow_gui()
 	//All notebooks created in glade need one page.
 	//In our case, this is just a placeholder, so we remove it.
 	gtk_notebook_remove_page(book, -1);
-		
-	popupMenu = gtk_menu_new ();
-	filelist = gtk_menu_item_new_with_label ("Get file list");
-	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), filelist);
-	g_signal_connect (G_OBJECT (filelist), "activate", G_CALLBACK (onGetFileListClicked_gui), (gpointer)this);
-	matchQueue = gtk_menu_item_new_with_label ("Match queue");
-	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), matchQueue);
-	g_signal_connect (G_OBJECT (matchQueue), "activate", G_CALLBACK (onMatchQueueClicked_gui), (gpointer)this);
-	privateMessage = gtk_menu_item_new_with_label ("Send private message");
-	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), privateMessage);
-	g_signal_connect (G_OBJECT (privateMessage), "activate", G_CALLBACK (onPrivateMessageClicked_gui), (gpointer)this);
-	addToFavorites = gtk_menu_item_new_with_label ("Add to favorites");
+
+	// Initialize transfer view popup menu
+	popupMenu = glade_xml_get_widget(xml, "transferMenu");
+	filelist = glade_xml_get_widget(xml, "getFileListItem");
+	g_signal_connect(G_OBJECT(filelist), "activate", G_CALLBACK(onGetFileListClicked_gui), (gpointer)this);
+	matchQueue = glade_xml_get_widget(xml, "matchQueueItem");
+	g_signal_connect(G_OBJECT(matchQueue), "activate", G_CALLBACK(onMatchQueueClicked_gui), (gpointer)this);
+	privateMessage = glade_xml_get_widget(xml, "sendPrivateMessageItem");
+	g_signal_connect(G_OBJECT(privateMessage), "activate", G_CALLBACK(onPrivateMessageClicked_gui), (gpointer)this);
+	addToFavorites = glade_xml_get_widget(xml, "addToFavoritesItem");
 	gtk_widget_set_sensitive(addToFavorites, FALSE); // Fav user not implemented yet.
-	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), addToFavorites);
-	g_signal_connect (G_OBJECT (addToFavorites), "activate", G_CALLBACK (onAddFavoriteUserClicked_gui), (gpointer)this);
-	grantExtraSlot = gtk_menu_item_new_with_label ("Grant extra slot");
-	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), grantExtraSlot);
-	g_signal_connect (G_OBJECT (grantExtraSlot), "activate", G_CALLBACK (onGrantExtraSlotClicked_gui), (gpointer)this);
-	removeUser = gtk_menu_item_new_with_label ("Remove user from queue");
-	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), removeUser);
-	g_signal_connect (G_OBJECT (removeUser), "activate", G_CALLBACK (onRemoveUserFromQueueClicked_gui), (gpointer)this);
-	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), gtk_separator_menu_item_new ());
-	forceAttempt = gtk_menu_item_new_with_label ("Force attempt");
-	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), forceAttempt);
-	g_signal_connect (G_OBJECT (forceAttempt), "activate", G_CALLBACK (onForceAttemptClicked_gui), (gpointer)this);
-	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), gtk_separator_menu_item_new ());
-	closeConnection = gtk_menu_item_new_with_label ("Close connection");
-	g_signal_connect (G_OBJECT (closeConnection), "activate", G_CALLBACK (onCloseConnectionClicked_gui), (gpointer)this);
-	gtk_menu_shell_append (GTK_MENU_SHELL (popupMenu), closeConnection);
-		
+	g_signal_connect(G_OBJECT(addToFavorites), "activate", G_CALLBACK(onAddFavoriteUserClicked_gui), (gpointer)this);
+	grantExtraSlot = glade_xml_get_widget(xml, "grantExtraSlotItem");
+	g_signal_connect(G_OBJECT(grantExtraSlot), "activate", G_CALLBACK(onGrantExtraSlotClicked_gui), (gpointer)this);
+	removeUser = glade_xml_get_widget(xml, "removeUserItem");
+	g_signal_connect(G_OBJECT(removeUser), "activate", G_CALLBACK(onRemoveUserFromQueueClicked_gui), (gpointer)this);
+	forceAttempt = glade_xml_get_widget(xml, "forceAttemptItem");
+	g_signal_connect(G_OBJECT(forceAttempt), "activate", G_CALLBACK(onForceAttemptClicked_gui), (gpointer)this);
+	closeConnection = glade_xml_get_widget(xml, "closeConnectionItem");
+	g_signal_connect(G_OBJECT(closeConnection), "activate", G_CALLBACK(onCloseConnectionClicked_gui), (gpointer)this);
+
 	g_signal_connect(G_OBJECT(connectButton), "clicked", G_CALLBACK(connectClicked_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(quickConnect), "activate", G_CALLBACK(connectClicked_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(pubHubsButton), "clicked", G_CALLBACK(pubHubsClicked_gui), (gpointer)this);
@@ -311,6 +304,7 @@ void MainWindow::createWindow_gui()
 	g_signal_connect(G_OBJECT(finishedUL_item), "activate", G_CALLBACK(finishedULclicked_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(favHubsButton), "clicked", G_CALLBACK(favHubsClicked_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(favHubsItem), "activate", G_CALLBACK(favHubsClicked_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(closeItem), "activate", G_CALLBACK(closeClicked_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(quitItem), "activate", G_CALLBACK(quitClicked_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(quitButton), "clicked", G_CALLBACK(quitClicked_gui), (gpointer)this);
 	g_signal_connect(G_OBJECT(aboutItem), "activate", G_CALLBACK(aboutClicked_gui), (gpointer)this);
@@ -327,20 +321,20 @@ void MainWindow::createWindow_gui()
 	int sizeX = sm->getInt("main-window-size-x");
 	int sizeY = sm->getInt("main-window-size-y");
 	int transferPanePosition = sm->getInt("transfer-pane-position");
- 	
+
 	gtk_window_move(window, posX, posY);
 	gtk_window_resize(window, sizeX, sizeY);
 	if (sm->getInt("main-window-maximized"))
 		gtk_window_maximize(window);
 	gtk_paned_set_position(transferPane, transferPanePosition);
-	
+
 	GtkWidget *dummy;
 	GtkRequisition req;
 	dummy = gtk_statusbar_new();
 	gtk_widget_size_request(dummy, &req);
 	gtk_widget_destroy(dummy);
 	emptyStatusWidth = req.width;
-	
+
 	gtk_statusbar_push(mainStatus, 0, "Welcome to Linux DC++");
 
 	//Putting this after all the resizing and moving makes the window appear
@@ -362,12 +356,10 @@ void MainWindow::createTrayIcon_gui()
 	iconPath = WulforManager::get()->getPath() + "/pixmaps/linuxdcpp-icon.png";
 	trayImage = gtk_image_new_from_file(iconPath.c_str());
 	trayToolTip = gtk_tooltips_new();
-	trayMenu = gtk_menu_new();
-	toggleWindowItem = gtk_menu_item_new_with_label("Show/Hide Interface");
-	quitItem = gtk_menu_item_new_with_label("Quit");
+	trayMenu = glade_xml_get_widget(xml, "trayMenu");
+	toggleWindowItem = glade_xml_get_widget(xml, "toggleInterfaceItem");
+	quitItem = glade_xml_get_widget(xml, "quitTrayItem");
 
-	gtk_menu_shell_append(GTK_MENU_SHELL(trayMenu), toggleWindowItem);
-	gtk_menu_shell_append(GTK_MENU_SHELL(trayMenu), quitItem);
 	gtk_container_add(GTK_CONTAINER(trayBox), trayImage);
 	gtk_container_add(GTK_CONTAINER(trayIcon), trayBox);
 
@@ -427,14 +419,14 @@ gboolean MainWindow::transferClicked_gui(GtkWidget *widget, GdkEventButton *even
 			gtk_widget_set_sensitive(mw->privateMessage, true);
 			gtk_widget_set_sensitive(mw->grantExtraSlot, true);
 			gtk_widget_set_sensitive(mw->removeUser, true);
-		}	
+		}
 		else if (count > 1)
 		{
 			gtk_widget_set_sensitive(mw->filelist, false);
 			gtk_widget_set_sensitive(mw->matchQueue, false);
 			gtk_widget_set_sensitive(mw->privateMessage, false);
 			gtk_widget_set_sensitive(mw->grantExtraSlot, false);
-			gtk_widget_set_sensitive(mw->removeUser, false);			
+			gtk_widget_set_sensitive(mw->removeUser, false);
 		}
 		mw->popup_gui(mw->popupMenu, event);
 		return TRUE;
@@ -472,11 +464,11 @@ void MainWindow::onGetFileListClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	MainWindow *mw = (MainWindow*)data;
 	User::Ptr user = mw->getSelectedTransfer_gui();
-	try 
+	try
 	{
 		QueueManager::getInstance()->addList(user, QueueItem::FLAG_CLIENT_VIEW);
-	} 
-	catch(const Exception&) 
+	}
+	catch(const Exception&)
 	{
 	}
 }
@@ -485,11 +477,11 @@ void MainWindow::onMatchQueueClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	MainWindow *mw = (MainWindow*)data;
 	User::Ptr user = mw->getSelectedTransfer_gui();
-	try 
+	try
 	{
 		QueueManager::getInstance()->addList(user, QueueItem::FLAG_MATCH_QUEUE);
-	} 
-	catch(const Exception&) 
+	}
+	catch(const Exception&)
 	{
 	}
 }
@@ -574,11 +566,11 @@ void MainWindow::connectClicked_gui(GtkWidget *widget, gpointer data)
 	MainWindow *mw = (MainWindow *)data;
 	int response;
 	string address;
-	
+
 	gtk_widget_show_all(GTK_WIDGET(mw->connectDialog));
 	response = gtk_dialog_run(mw->connectDialog);
 	gtk_widget_hide(GTK_WIDGET(mw->connectDialog));
-	
+
 	if (response == GTK_RESPONSE_OK)
 	{
 		address = gtk_entry_get_text(mw->connectEntry);
@@ -615,7 +607,7 @@ void MainWindow::favHubsClicked_gui(GtkWidget *widget, gpointer data)
 void MainWindow::finishedDLclicked_gui(GtkWidget *widget, gpointer data)
 {
 	WulforManager *wm = WulforManager::get();
-	wm->addFinishedTransfers_gui("Finished Downloads"); 
+	wm->addFinishedTransfers_gui("Finished Downloads");
 }
 
 void MainWindow::finishedULclicked_gui(GtkWidget *widget, gpointer data)
@@ -670,8 +662,23 @@ void MainWindow::settingsClicked_gui(GtkWidget *widget, gpointer data)
 			gtk_widget_hide_all(mw->trayIcon);
 	}
 
-	gtk_widget_destroy(s->getDialog()); 	 
+	gtk_widget_destroy(s->getDialog());
 	delete s;
+}
+
+void MainWindow::closeClicked_gui(GtkWidget *widget, gpointer data)
+{
+	MainWindow *mw = (MainWindow *)data;
+	GtkWidget *entryWidget = mw->currentPage_gui();
+
+	if (entryWidget)
+	{
+		string id = (char *)g_object_get_data(G_OBJECT(entryWidget), "id");
+		BookEntry *entry = WulforManager::get()->getBookEntry_gui(id, FALSE);
+
+		if (entry)
+			WulforManager::get()->deleteBookEntry_gui(entry);
+	}
 }
 
 void MainWindow::quitClicked_gui(GtkWidget *widget, gpointer data)
@@ -769,7 +776,7 @@ void MainWindow::autoOpen_gui()
 	if (BOOLSETTING(OPEN_FAVORITE_HUBS))
 		WulforManager::get()->addFavoriteHubs_gui();
 	if (BOOLSETTING(OPEN_FINISHED_DOWNLOADS))
-		WulforManager::get()->addFinishedTransfers_gui("Finished Downloads"); 
+		WulforManager::get()->addFinishedTransfers_gui("Finished Downloads");
 }
 
 void MainWindow::startSocket_client()
@@ -811,7 +818,7 @@ void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw()
 	string status1, status2, status3, status4, status5, status6;
 
 	status1 = "H: " + Client::getCounts();
-	status2 = "S: " + Util::toString(SETTING(SLOTS) -  
+	status2 = "S: " + Util::toString(SETTING(SLOTS) -
 		UploadManager::getInstance()->getRunning()) + '/' +
 		Util::toString(SETTING(SLOTS));
 	status3 = "D: " + Util::formatBytes(Socket::getTotalDown());
@@ -843,7 +850,7 @@ void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw()
 
 void MainWindow::on(QueueManagerListener::Finished, QueueItem *item, int64_t avSpeed) throw()
 {
-	if (!item->isSet(QueueItem::FLAG_CLIENT_VIEW | QueueItem::FLAG_USER_LIST)) 
+	if (!item->isSet(QueueItem::FLAG_CLIENT_VIEW | QueueItem::FLAG_USER_LIST))
 		return;
 
 	User::Ptr user = item->getCurrent()->getUser();
@@ -908,14 +915,14 @@ GtkWidget *MainWindow::currentPage_gui()
 
 	if (pageNum == -1)
 		return NULL;
-	else 
+	else
 		return gtk_notebook_get_nth_page(book, pageNum);
 }
 
 void MainWindow::setStatus_gui(GtkStatusbar *status, std::string text)
 {
 	// Apparently if (!status) ... crashes for some people. Strange.
-	if (status == NULL) return; 
+	if (status == NULL) return;
 
 	if (status != mainStatus)
 	{
@@ -935,7 +942,7 @@ void MainWindow::setStatus_gui(GtkStatusbar *status, std::string text)
 	gtk_statusbar_push(status, 0, text.c_str());
 }
 
-void MainWindow::setStats_gui(std::string hub, std::string slot, 
+void MainWindow::setStats_gui(std::string hub, std::string slot,
 	std::string dTot, std::string uTot, std::string dl, std::string ul)
 {
 	setStatus_gui(hubStatus, hub);
@@ -1398,7 +1405,7 @@ void MainWindow::onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data)
 		gtk_window_move(win, x, y);
 		if (isMaximized) gtk_window_maximize(win);
 		if (isIconified) gtk_window_iconify(win);
-		///@todo: fix row below. 
+		///@todo: fix row below.
 		//It seems like it doesn't get the correct window size if it is maximized
 		gtk_paned_set_position(pane, panePos);
 		gtk_widget_show_all(GTK_WIDGET(win));

@@ -78,6 +78,8 @@ class MainWindow:
 		void autoConnect_client();
 
 	private:
+		class TransferItem;
+
 		// GUI functions
 		void createWindow_gui();
 		void createTrayIcon_gui();
@@ -89,6 +91,9 @@ class MainWindow:
 		void openHub_gui(string server, string nick, string desc, string password);
 		User::Ptr getSelectedTransfer_gui();
 		void popup_gui(GtkWidget *menu, GdkEventButton *event);
+		void insertTransfer_gui(TransferItem *item);
+		void updateTransfer_gui(TransferItem *item);
+		void removeTransfer_gui(TransferItem *item);
 
 		// Client functions
 		void startSocket_client();
@@ -114,6 +119,7 @@ class MainWindow:
 		static void favHubsClicked_gui(GtkWidget *widget, gpointer data);
 		static void searchClicked_gui(GtkWidget *widget, gpointer data);
 		static void hashClicked_gui(GtkWidget *widget, gpointer data);
+		static void closeClicked_gui(GtkWidget *widget, gpointer data);
 		static void quitClicked_gui(GtkWidget *widget, gpointer data);
 		static void aboutClicked_gui(GtkWidget *widget, gpointer data);
 		static void finishedDLclicked_gui(GtkWidget *widget, gpointer data);
@@ -222,11 +228,6 @@ class MainWindow:
 		hash_map<UserID, TransferItem *, HashPair> transferMap;
 		TransferItem* getTransferItem(UserID id);
 
-		// More GUI funcs (can't be declared above because of TransferItem class declaration.
-		void insertTransfer_gui(TransferItem *item);
-		void updateTransfer_gui(TransferItem *item);
-		void removeTransfer_gui(TransferItem *item);
-
 		int64_t lastUpdate, lastUp, lastDown;
 		int emptyStatusWidth;
 		TreeView transferView;
@@ -248,6 +249,7 @@ class MainWindow:
 		GtkWidget *trayMenu;
 		GtkTooltips *trayToolTip;
 		GtkWidget *trayIcon;
+		GladeXML *xml;
 
 		// Convenience thing for the updateTransfer_gui function.
 		typedef Func1 <MainWindow, TransferItem *> UFunc;

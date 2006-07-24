@@ -1,3 +1,11 @@
+2006-07-23 - Steven Sheehy
+* Replaced more menu items with stock icons (thanks Rimas Kudelis).
+* Changed "Quick Connect" shortcut from Ctrl-Q to Ctrl-N (Ctrl-Q is now used
+  for quitting the application) (thanks Rimas Kudelis).
+* Added tooltips to the toolbar items.
+* Rearranged a couple toolbar items to flow better.
+* Added a close item to the file menu that closes the current tab (shortcut Ctrl-W).
+
 2006-07-21 - Steven Sheehy
 * Replaced a lot of text buttons with GTK+ stock icons (thanks Rimas Kudelis).
 * Main toolbar now respects gtk-toolbar-style option (thanks Rimas Kudelis).
@@ -291,7 +299,7 @@
 2005-12-13 - paskharen
 * Fixed bug in sharebrowser when a file has no extension (thanks Vikram Aggarwal)
 * Added atomic code for mips and ia64 (thanks Romain Beauxis)
-* Changed behaivour when cpu type is not supported, it now disables atomic
+* Changed behavior when cpu type is not supported, it now disables atomic
   operations automatically.
 * Made finished ul and dl icons same size as the others.
 

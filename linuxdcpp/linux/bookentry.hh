@@ -27,6 +27,7 @@
 class BookEntry
 {
 	public:
+		BookEntry() {}
 		BookEntry(std::string title);
 		virtual ~BookEntry() {}
 

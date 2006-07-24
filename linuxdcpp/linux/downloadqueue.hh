@@ -98,7 +98,6 @@ private:
 	std::vector<GtkWidget*> pmItems;
 	std::vector<GtkWidget*> removeItems;
 	std::vector<GtkWidget*> removeallItems;
-	void buildStaticMenu_gui ();	
 	void buildDynamicMenu_gui ();
 
 	static void removeFileClicked_gui (GtkMenuItem *menuitem, gpointer user_data);
