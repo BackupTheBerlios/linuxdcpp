@@ -242,13 +242,13 @@ void DownloadQueue::buildDynamicMenu_gui ()
 	removeItems.clear ();
 	removeallItems.clear ();			
 	
-	for (int i=0;i<iter.size (); i++)
+	for (size_t i=0;i<iter.size (); i++)
 	{	
 		QueueItemInfo *ii = fileView.getValue<gpointer,QueueItemInfo*>(&iter[i], "Info");
 		for (QueueItemInfo::SourceIter it=ii->getSources ().begin (); it != ii->getSources ().end (); it++)
 		{
 			bool found=false;
-			for (int j=0;j<names.size ();j++)
+			for (size_t j=0;j<names.size ();j++)
 			{
 				if (names[j] == it->getUser()->getFirstNick ())
 				{
@@ -260,7 +260,7 @@ void DownloadQueue::buildDynamicMenu_gui ()
 				names.push_back (it->getUser()->getFirstNick ());
 		}
 	}
-	for (int i=0;i<names.size ();i++)
+	for (size_t i=0;i<names.size ();i++)
 	{
 		browseItems.push_back (gtk_menu_item_new_with_label (names[i].c_str ()));
 		gtk_menu_shell_append (GTK_MENU_SHELL (browseMenu), browseItems.back ());
@@ -299,7 +299,7 @@ void DownloadQueue::setDirPriority_gui (string path, QueueItem::Priority p)
 {
 	vector<string> iter;
 	getChildren (path, &iter);
-	for (int i=0;i<iter.size ();i++)
+	for (size_t i=0;i<iter.size ();i++)
 		setPriority_client (iter[i], p);
 }
 
@@ -354,7 +354,7 @@ void DownloadQueue::setFilePriorityClicked_gui (GtkMenuItem *item, gpointer user
 			break;
 	}
 
-	for (int i=0;i<iter.size (); i++)
+	for (size_t i=0;i<iter.size (); i++)
 	{
 		if (item == GTK_MENU_ITEM (q->fileItems["Paused"]))
 			q->setPriority_client(q->fileView.getValue<gpointer,QueueItemInfo*>(&iter[i], "Info")->getTarget(), QueueItem::PAUSED);
@@ -417,7 +417,7 @@ void DownloadQueue::removeFileClicked_gui (GtkMenuItem *menuitem, gpointer user_
 			break;
 	}
 
-	for (int i=0;i<iter.size ();i++)
+	for (size_t i=0;i<iter.size ();i++)
 		q->remove_client((q->fileView.getValue<gpointer,QueueItemInfo*>(&iter[i], "Info"))->getTarget());
 }
 
@@ -447,9 +447,9 @@ void DownloadQueue::onSearchAlternatesClicked_gui (GtkMenuItem *item, gpointer u
 		bool bigFile = (ii->getSize() > 10*1024*1024);
 		Search *s = WulforManager::get ()->addSearch_gui ();
 		if(bigFile)
-			s->putValue (searchString, ii->getSize ()-1, SearchManager::SIZE_ATLEAST, ShareManager::getInstance()->getType(target));
+			s->putValue_gui(searchString, ii->getSize ()-1, SearchManager::SIZE_ATLEAST, ShareManager::getInstance()->getType(target));
 		else
-			s->putValue (searchString, ii->getSize ()+1, SearchManager::SIZE_ATMOST, ShareManager::getInstance()->getType(target));
+			s->putValue_gui(searchString, ii->getSize ()+1, SearchManager::SIZE_ATMOST, ShareManager::getInstance()->getType(target));
 	}
 }
 
@@ -473,7 +473,7 @@ void DownloadQueue::onSearchByTTHClicked_gui (GtkMenuItem *item, gpointer user_d
 	QueueItemInfo *ii = q->fileView.getValue<gpointer,QueueItemInfo*>(&iter[0], "Info");
 		
 	Search *s = WulforManager::get ()->addSearch_gui ();
-	s->putValue (ii->getTTH ()->toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
+	s->putValue_gui(ii->getTTH ()->toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
 }
 void DownloadQueue::onGetFileListClicked_gui (GtkMenuItem *item, gpointer user_data)
 {
@@ -685,7 +685,6 @@ void DownloadQueue::buildList_gui ()
 	GtkTreeIter row;
 	queueItems = 0;
 	queueSize = 0;
-	GtkTreeModel *m = GTK_TREE_MODEL (dirStore);
 	for (QueueItem::StringMap::const_iterator it = ll.begin (); it != ll.end (); it++)
 	{
 		string realpath = "/" + getNextSubDir (Util::getFilePath(it->second->getTarget())) + "/";
@@ -719,7 +718,6 @@ void DownloadQueue::addDir_gui (string path, GtkTreeIter *row, string &current)
 {
 	GtkTreeIter newRow;
 	string tmp = getNextSubDir (path);
-	GtkTreeModel *m = GTK_TREE_MODEL (dirStore);
 	string rowdata = dirView.getString(row, "Path");
 	string realpath = rowdata + tmp + "/";
 	if (tmp == "")
@@ -861,7 +859,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 					if(getSources().size() == 1)
 						sprintf (buf, "Waiting (User online)");
 					else
-						sprintf(buf, "Waiting (%d of %d users online)", online, getSources().size());
+						sprintf(buf, "Waiting (%d of %lu users online)", online, getSources().size());
 					gtk_list_store_set (dq->fileStore, &it, dq->fileView.col("Status"), buf, -1);
 				}
 				else
@@ -873,7 +871,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 					else if(getSources().size() == 2)
 						sprintf (buf, "Both users offline");
 					else
-						sprintf(buf, "All %d users offline", getSources().size());
+						sprintf(buf, "All %lu users offline", getSources().size());
 					gtk_list_store_set (dq->fileStore, &it, dq->fileView.col("Status"), buf, -1);
 				}
 			}
@@ -917,6 +915,8 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 				case QueueItem::HIGHEST:
 					gtk_list_store_set (dq->fileStore, &it, dq->fileView.col("Priority"), "Highest", -1);
 					break;
+				default:
+					gtk_list_store_set(dq->fileStore, &it, dq->fileView.col("Priority"), "Normal", -1);
 			}
 		}
 		// Path
@@ -996,7 +996,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 					else if (getSources().size() < 0)
 						sprintf(buf, "Waiting (%d users online)", online);
 					else
-						sprintf(buf, "Waiting (%d of %d users online)", online, getSources().size());
+						sprintf(buf, "Waiting (%d of %lu users online)", online, getSources().size());
 					gtk_list_store_set(dq->fileStore, &it, dq->fileView.col("Status"), buf, -1);
 				}
 				else
@@ -1008,7 +1008,7 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 					else if(getSources().size() == 2)
 						sprintf (buf, "Both users offline");
 					else
-						sprintf(buf, "All %d users offline", getSources().size());
+						sprintf(buf, "All %lu users offline", getSources().size());
 					gtk_list_store_set(dq->fileStore, &it, dq->fileView.col("Status"), buf, -1);
 				}
 			}
@@ -1052,6 +1052,8 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 				case QueueItem::HIGHEST:
 					gtk_list_store_set(dq->fileStore, &it, dq->fileView.col("Priority"), "Highest", -1);
 					break;
+				default:
+					gtk_list_store_set(dq->fileStore, &it, dq->fileView.col("Priority"), "Normal", -1);
 			}
 		}
 		// Path
@@ -1180,7 +1182,7 @@ int DownloadQueue::countFiles_gui (string path)
 		
 	vector<GtkTreeIter> iter;
 	getChildren (path, &iter);
-	for (int i=0; i<iter.size ();i++)
+	for (size_t i=0; i<iter.size ();i++)
 	{
 		string rp = dirView.getString(&iter[i], "Path");
 		if (dirFileMap.find (rp) == dirFileMap.end ())

@@ -48,7 +48,7 @@ private:
 	GtkWidget *virtualName;
 
 	void addOption(GtkListStore *store, TreeView view, string name, SettingsManager::IntSetting setting);
-	void onToggledClicked_gui(TreeView view, GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+	void onToggledClicked_gui(TreeView view, GtkCellRendererToggle *cell, gchar *path, gpointer data);
 
 	// General
 	void initGeneral_gui();
@@ -96,7 +96,7 @@ private:
 	// Queue
 	TreeView queueView;
 	GtkListStore *queueStore;
-	static void onQueueToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+	static void onQueueToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
 
 	// Sharing
 	TreeView shareView;
@@ -115,24 +115,24 @@ private:
 	TreeView appearanceView;
 	GtkListStore *appearanceStore;
 	void initAppearance_gui();
-	static void onAppearanceToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+	static void onAppearanceToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
 
 	// Colors and Sound
 	TreeView colorView;
 	GtkListStore *colorStore;
-	static void onColorToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+	static void onColorToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
 	///@todo Uncomment when implemented
-	//static void onWinColorClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
-	//static void onDownColorClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
-	//static void onUpColorClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
-	//static void onTextStyleClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+	//static void onWinColorClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
+	//static void onDownColorClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
+	//static void onUpColorClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
+	//static void onTextStyleClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
 
 	// Windows
 	TreeView windowView1, windowView2, windowView3;
 	GtkListStore *windowStore1, *windowStore2, *windowStore3;
-	static void onWindowView1ToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
-	static void onWindowView2ToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
-	static void onWindowView3ToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+	static void onWindowView1ToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
+	static void onWindowView2ToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
+	static void onWindowView3ToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
 
 	// Logs and sound
 	void initLog_gui();
@@ -147,7 +147,7 @@ private:
 	TreeView advancedView;
 	GtkListStore *advancedStore;
 	void initAdvanced_gui();
-	static void onAdvancedToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data);
+	static void onAdvancedToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
 	void addAdvanced(string name, bool use);
 
 	hash_map<string, GtkWidget *> generalItems;

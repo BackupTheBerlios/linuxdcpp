@@ -145,7 +145,7 @@ env.Append(CXXFLAGS = ['-I.', '-D_GNU_SOURCE', '-DENABLE_BINRELOC', '-D_FILE_OFF
 
 debug = ARGUMENTS.get('debug', 0)
 if int(debug):
-	env.Append(CXXFLAGS = '-g -ggdb -D_DEBUG')
+	env.Append(CXXFLAGS = '-g -ggdb -D_DEBUG -Wall')
 	env.Append(LDFLAGS = '-g -ggdb')
 
 release = ARGUMENTS.get('release', 0)

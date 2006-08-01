@@ -17,6 +17,8 @@
  */
 
 #include "treeview.hh"
+#include <iostream>
+using namespace std;
 
 TreeView::TreeView()
 {
@@ -170,8 +172,8 @@ void TreeView::addColumn_gui(Column column)
 	switch (column.type)
 	{
 		case STRING:
-			col = gtk_tree_view_column_new_with_attributes(
-				column.title.c_str(), gtk_cell_renderer_text_new(), "text", column.pos, NULL);
+			col = gtk_tree_view_column_new_with_attributes(column.title.c_str(),
+				gtk_cell_renderer_text_new(), "text", column.pos, NULL);
 			break;
 		case STRINGR:
 			renderer = gtk_cell_renderer_text_new();
@@ -180,16 +182,16 @@ void TreeView::addColumn_gui(Column column)
 			gtk_tree_view_column_set_alignment(col, 1.0);
 			break;
 		case INT:
-			col = gtk_tree_view_column_new_with_attributes(
-				column.title.c_str(), gtk_cell_renderer_text_new(), "text", column.pos, NULL);
+			col = gtk_tree_view_column_new_with_attributes(column.title.c_str(),
+				gtk_cell_renderer_text_new(), "text", column.pos, NULL);
 			break;
 		case BOOL:
   			renderer = gtk_cell_renderer_toggle_new();
-  			col = gtk_tree_view_column_new_with_attributes(column.title.c_str (), renderer, "active", column.pos, NULL);
+  			col = gtk_tree_view_column_new_with_attributes(column.title.c_str(), renderer, "active", column.pos, NULL);
 			break;
 		case PIXBUF:
-			col = gtk_tree_view_column_new_with_attributes(
-				column.title.c_str(), gtk_cell_renderer_pixbuf_new(), "pixbuf", column.pos, NULL);
+			col = gtk_tree_view_column_new_with_attributes(column.title.c_str(),
+				gtk_cell_renderer_pixbuf_new(), "pixbuf", column.pos, NULL);
 			break;
 		case PIXBUF_STRING:
 			renderer = gtk_cell_renderer_pixbuf_new();
@@ -209,8 +211,8 @@ void TreeView::addColumn_gui(Column column)
 		case PROGRESS:
 			renderer = gtk_cell_renderer_progress_new();
 			g_object_set(renderer, "xalign", 0.0, NULL); // Doesn't work yet. See: http://bugzilla.gnome.org/show_bug.cgi?id=334576
-			col = gtk_tree_view_column_new_with_attributes(
-				column.title.c_str(), renderer, "text", column.id, "value", TreeView::col(column.linkedCol), NULL);
+			col = gtk_tree_view_column_new_with_attributes(column.title.c_str(),
+				renderer, "text", column.id, "value", TreeView::col(column.linkedCol), NULL);
 			break;
 	};
 
@@ -260,8 +262,9 @@ int TreeView::col(const string &title)
 		return hiddenColumns[title].id;
 	else
 	{
-		perror("Invalid column accessed.");
-		exit(1);
+		cerr << "Invalid column accessed: " << title << endl;
+		gtk_main_quit();
+		return -1;
 	}
 }
 
@@ -330,7 +333,7 @@ void TreeView::restoreSettings()
 	{
 		for (ColIter iter = columns.begin(); iter != columns.end(); iter++)
 		{
-			for (int i = 0; i < columns.size(); i++)
+			for (size_t i = 0; i < columns.size(); i++)
 			{
 				if (iter->second.id == columnOrder.at(i))
 				{
@@ -355,7 +358,7 @@ void TreeView::saveSettings()
 
 	dcassert(columns.size() > 0);
 
-	for (int i = 0; i < columns.size(); i++)
+	for (size_t i = 0; i < columns.size(); i++)
 	{
 		col = gtk_tree_view_get_column(view, i);
 		title = string(gtk_tree_view_column_get_title(col));

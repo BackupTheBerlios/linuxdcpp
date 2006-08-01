@@ -161,6 +161,7 @@ private:
 			SourceInfo& operator=(const QueueItem::Source& s) {
 				*((Flags*)this) = s;
 				user = s.getUser();
+				return *this;
 			}
 			User::Ptr& getUser() { return user; };
 
@@ -177,9 +178,9 @@ private:
 			size(aQI->getSize()), 
 			downloadedBytes(aQI->getDownloadedBytes()), 
 			added(aQI->getAdded()), 
-			tth(aQI->getTTH()), 
 			priority(aQI->getPriority()), 
-			status(aQI->getStatus())
+			status(aQI->getStatus()), 
+			tth(aQI->getTTH())
 		{ 
 			QueueItem::Source::Iter i;
 			for(i = aQI->getSources().begin(); i != aQI->getSources().end(); ++i) {

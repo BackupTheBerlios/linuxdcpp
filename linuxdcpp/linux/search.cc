@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,10 +18,10 @@
 
 #include "search.hh"
 
-TStringList Search::lastSearches;
-string Search::lastDir;
+bool Search::onlyOp = FALSE;
+GtkTreeModel* Search::searchEntriesModel = NULL;
 
-Search::Search(): 
+Search::Search():
 	BookEntry("Search")
 {
 	ClientManager::getInstance()->addListener(this);
@@ -29,45 +29,79 @@ Search::Search():
 
 	GladeXML *xml = getGladeXML("search.glade");
 
+	// Initialize window
 	GtkWidget *window = glade_xml_get_widget(xml, "searchWindow");
 	mainBox = glade_xml_get_widget(xml, "mainBox");
 	gtk_widget_ref(mainBox);
 	gtk_container_remove(GTK_CONTAINER(window), mainBox);
 	gtk_widget_destroy(window);
-	
+
+	// Get widgets from glade.
 	searchItems["Search"] = glade_xml_get_widget(xml, "comboboxentrySearch");
-	g_signal_connect (G_OBJECT (GTK_BIN (searchItems["Search"])->child), "activate", G_CALLBACK (onSearchEntryDown_gui), (gpointer)this);
-	searchItems["Diffrence"] = glade_xml_get_widget(xml, "comboboxSize");
+	if (!searchEntriesModel)
+		searchEntriesModel = gtk_combo_box_get_model(GTK_COMBO_BOX(searchItems["Search"]));
+	gtk_combo_box_set_model(GTK_COMBO_BOX(searchItems["Search"]), searchEntriesModel);
+	searchItems["Entry"] = gtk_bin_get_child(GTK_BIN(searchItems["Search"]));
+	g_signal_connect(G_OBJECT(searchItems["Entry"]), "key-press-event", G_CALLBACK(onSearchEntryKeyPressed_gui), (gpointer)this);
+	searchItems["Difference"] = glade_xml_get_widget(xml, "comboboxSize");
 	searchItems["Size"] = glade_xml_get_widget(xml, "entrySize");
 	searchItems["Unit"] = glade_xml_get_widget(xml, "comboboxUnit");
 	searchItems["File type"] = glade_xml_get_widget(xml, "comboboxFile");
-	searchItems["Slots"] = glade_xml_get_widget(xml, "checkbuttonSlots");
 	searchItems["Button"] = glade_xml_get_widget(xml, "buttonSearch");
-	g_signal_connect (G_OBJECT (searchItems["Button"]), "clicked", G_CALLBACK (onSearchButtonClicked_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(searchItems["Button"]), "clicked", G_CALLBACK(onSearchButtonClicked_gui), (gpointer)this);
 	searchItems["Status1"] = glade_xml_get_widget(xml, "statusbar1");
 	searchItems["Status2"] = glade_xml_get_widget(xml, "statusbar2");
 	searchItems["Status3"] = glade_xml_get_widget(xml, "statusbar3");
-	
-	gtk_combo_box_set_active(GTK_COMBO_BOX (searchItems["Diffrence"]), 1);
-	gtk_combo_box_set_active(GTK_COMBO_BOX (searchItems["Unit"]), 0);
-	gtk_combo_box_set_active(GTK_COMBO_BOX (searchItems["File type"]), 0);
+
+	// Initialize directory chooser dialog
+	dirChooserDialog = glade_xml_get_widget(xml, "dirChooserDialog");
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dirChooserDialog), SETTING(DOWNLOAD_DIRECTORY).c_str());
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dirChooserDialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+
+	// Initialize check button options.
+	searchItems["Slots"] = glade_xml_get_widget(xml, "checkbuttonSlots");
+	onlyFree = BOOLSETTING(SEARCH_ONLY_FREE_SLOTS);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(searchItems["Slots"]), onlyFree);
+	g_signal_connect(G_OBJECT(searchItems["Slots"]), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
+	searchItems["TTH"] = glade_xml_get_widget(xml, "checkbuttonTTH");
+	onlyTTH = BOOLSETTING(SEARCH_ONLY_TTH);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(searchItems["TTH"]), onlyTTH);
+	g_signal_connect(G_OBJECT(searchItems["TTH"]), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
+	searchItems["Op"] = glade_xml_get_widget(xml, "checkbuttonOp");
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(searchItems["Op"]), onlyOp);
+	g_signal_connect(G_OBJECT(searchItems["Op"]), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
+
+	gtk_combo_box_set_active(GTK_COMBO_BOX(searchItems["Difference"]), 1);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(searchItems["Unit"]), 2);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(searchItems["File type"]), 0);
+
+	// Load icons
+	iconFile = gtk_icon_theme_load_icon(gtk_icon_theme_get_default(),
+		GTK_STOCK_FILE, 16, (GtkIconLookupFlags)0, NULL);
+	iconDirectory = gtk_icon_theme_load_icon(gtk_icon_theme_get_default(),
+		GTK_STOCK_DIRECTORY, 16, (GtkIconLookupFlags)0, NULL);
 
 	// Initialize hub list treeview
 	hubView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "treeviewHubs")));
 	hubView.insertColumn("Search", G_TYPE_BOOLEAN, TreeView::BOOL, -1);
 	hubView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, -1);
-	hubView.insertHiddenColumn("Info", G_TYPE_POINTER);
+	hubView.insertHiddenColumn("Url", G_TYPE_STRING);
+	hubView.insertHiddenColumn("Op", G_TYPE_BOOLEAN);
+	hubView.insertHiddenColumn("Editable", G_TYPE_BOOLEAN);
 	hubView.finalize();
 	hubStore = gtk_list_store_newv(hubView.getColCount(), hubView.getGTypes());
 	gtk_tree_view_set_model(hubView.get(), GTK_TREE_MODEL(hubStore));
 	g_object_unref(hubStore);
-	GList *list = gtk_tree_view_column_get_cell_renderers(gtk_tree_view_get_column(hubView.get(), hubView.col("Search")));
-	GtkCellRenderer *renderer = (GtkCellRenderer*)list->data;
-	g_signal_connect (renderer, "toggled", G_CALLBACK (onToggledClicked_gui), (gpointer)this);	
+	GtkTreeViewColumn *col = gtk_tree_view_get_column(hubView.get(), hubView.col("Search"));
+	GList *list = gtk_tree_view_column_get_cell_renderers(col);
+	GtkCellRenderer *renderer = (GtkCellRenderer *)g_list_nth_data(list, 0);
+	g_signal_connect(renderer, "toggled", G_CALLBACK(onToggledClicked_gui), (gpointer)this);
+	gtk_tree_view_column_add_attribute(col, renderer, "sensitive", hubView.col("Editable"));
+	g_list_free(list);
 
 	// Initialize search result treeview
-	resultView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "treeviewResult")), true, "search");
-	resultView.insertColumn("Filename", G_TYPE_STRING, TreeView::STRING, 200);
+	resultView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "treeviewResult")), TRUE, "search");
+	resultView.insertColumn("Filename", G_TYPE_STRING, TreeView::PIXBUF_STRING, 250, "Icon");
 	resultView.insertColumn("Nick", G_TYPE_STRING, TreeView::STRING, 100);
 	resultView.insertColumn("Type", G_TYPE_STRING, TreeView::STRING, 50);
 	resultView.insertColumn("Size", G_TYPE_STRING, TreeView::STRING, 80);
@@ -78,20 +112,29 @@ Search::Search():
 	resultView.insertColumn("Exact Size", G_TYPE_STRING, TreeView::STRING, 80);
 	resultView.insertColumn("IP", G_TYPE_STRING, TreeView::STRING, 100);
 	resultView.insertColumn("TTH", G_TYPE_STRING, TreeView::STRING, 125);
-	resultView.insertHiddenColumn("Info", G_TYPE_POINTER);
+	resultView.insertHiddenColumn("Icon", GDK_TYPE_PIXBUF);
 	resultView.insertHiddenColumn("Real Size", G_TYPE_INT64);
+	resultView.insertHiddenColumn("Slots Order", G_TYPE_DOUBLE);
+	resultView.insertHiddenColumn("File Order", G_TYPE_STRING);
+	resultView.insertHiddenColumn("SearchResult", G_TYPE_POINTER);
+	resultView.insertHiddenColumn("Visible", G_TYPE_BOOLEAN);
 	resultView.finalize();
 	resultStore = gtk_list_store_newv(resultView.getColCount(), resultView.getGTypes());
 	gtk_tree_view_set_model(resultView.get(), GTK_TREE_MODEL(resultStore));
 	g_object_unref(resultStore);
-	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(resultView.get()), GTK_SELECTION_MULTIPLE);
+	selection = gtk_tree_view_get_selection(resultView.get());
+	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
 	resultView.setSortColumn_gui("Size", "Real Size");
 	resultView.setSortColumn_gui("Exact Size", "Real Size");
+	resultView.setSortColumn_gui("Slots", "Slots Order");
+	resultView.setSortColumn_gui("Filename", "File Order");
 	gtk_tree_view_set_fixed_height_mode(resultView.get(), TRUE);
 
-	g_signal_connect(G_OBJECT(resultView.get()), "button_press_event", G_CALLBACK(onButtonPressed_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(resultView.get()), "popup_menu", G_CALLBACK(onPopupMenu_gui), (gpointer)this);
-	
+	g_signal_connect(G_OBJECT(resultView.get()), "button-press-event", G_CALLBACK(onButtonPressed_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(resultView.get()), "button-release-event", G_CALLBACK(onButtonReleased_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(resultView.get()), "key-release-event", G_CALLBACK(onKeyReleased_gui), (gpointer)this);
+
+	// Initialize popup menu
 	mainMenu = GTK_MENU(glade_xml_get_widget(xml, "mainMenu"));
 	downloadMenu = GTK_MENU(glade_xml_get_widget(xml, "downloadMenu"));
 	downloadDirMenu = GTK_MENU(glade_xml_get_widget(xml, "downloadDirMenu"));
@@ -102,7 +145,7 @@ Search::Search():
 	g_signal_connect(G_OBJECT(menuItems["DownloadWholeDir"]), "activate", G_CALLBACK(onDownloadDirClicked_gui), (gpointer)this);
 	menuItems["DownloadWholeDirTo"] = glade_xml_get_widget(xml, "downloadWholeDirToItem");
 	menuItems["SearchByTTH"] = glade_xml_get_widget(xml, "searchByTTHItem");
-	g_signal_connect(G_OBJECT(menuItems["SearchByTTH"]), "activate", G_CALLBACK(onSearchForTTHClicked_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(menuItems["SearchByTTH"]), "activate", G_CALLBACK(onSearchByTTHClicked_gui), (gpointer)this);
 	menuItems["GetFileList"] = glade_xml_get_widget(xml, "getFileListItem");
 	g_signal_connect(G_OBJECT(menuItems["GetFileList"]), "activate", G_CALLBACK(onGetFileListClicked_gui), (gpointer)this);
 	menuItems["MatchQueue"] = glade_xml_get_widget(xml, "matchQueueItem");
@@ -118,1047 +161,368 @@ Search::Search():
 	menuItems["Remove"] = glade_xml_get_widget(xml, "removeItem");
 	g_signal_connect(G_OBJECT(menuItems["Remove"]), "activate", G_CALLBACK(onRemoveClicked_gui), (gpointer)this);
 
-	lastSearch = 0;
-	listItems = 0;
-	
-	pthread_mutex_init (&searchLock, NULL);
-	
-	for (TStringList::iterator it = lastSearches.begin (); it != lastSearches.end (); it++)
-	{
-		listItems++;
-		GtkTreeIter iter;
-		GtkTreeModel *m = gtk_combo_box_get_model (GTK_COMBO_BOX (searchItems["Search"]));
-		gtk_list_store_append (GTK_LIST_STORE (m), &iter);
-		gtk_list_store_set (GTK_LIST_STORE (m), &iter, 0, (*it).c_str (), -1);
-	}
-	
-	initHubs_gui ();
+	initHubs_gui();
 }
 
-Search::~Search ()
+Search::~Search()
 {
 	ClientManager::getInstance()->removeListener(this);
 	SearchManager::getInstance()->removeListener(this);
-	pthread_mutex_destroy (&searchLock);
+	gtk_widget_destroy(dirChooserDialog);
+	clearList_gui();
+
+	if (iconFile)
+		g_object_unref(iconFile);
+	if (iconDirectory)
+		g_object_unref(iconDirectory);
 }
 
-GtkWidget *Search::getWidget() 
+GtkWidget *Search::getWidget()
 {
 	return mainBox;
 }
 
-string Search::getTextFromMenu(GtkMenuItem *item)
+void Search::putValue_gui(const string &str, int64_t size, SearchManager::SizeModes mode, SearchManager::TypeModes type)
 {
-	if (GTK_BIN(item)->child)
-    {
-      	GtkWidget *child = GTK_BIN(item)->child;
-		gchar *text;
-		if (GTK_IS_LABEL(child))
-    	{
-			gtk_label_get(GTK_LABEL(child), &text);
-			return string(text);
-		}
-	}
-	return "";
-}
-
-void Search::putValue(const string &str, int64_t size, SearchManager::SizeModes mode, SearchManager::TypeModes type)
-{
-	gtk_entry_set_text(GTK_ENTRY(GTK_BIN(searchItems["Search"])->child), str.c_str());
-	gtk_entry_set_text(GTK_ENTRY(searchItems["Size"]), Util::toString (size).c_str());
-	gtk_combo_box_set_active(GTK_COMBO_BOX(searchItems["Diffrence"]), (int)mode);
+	gtk_entry_set_text(GTK_ENTRY(searchItems["Entry"]), str.c_str());
+	gtk_entry_set_text(GTK_ENTRY(searchItems["Size"]), Util::toString(size).c_str());
+	gtk_combo_box_set_active(GTK_COMBO_BOX(searchItems["Difference"]), (int)mode);
 	gtk_combo_box_set_active(GTK_COMBO_BOX(searchItems["File type"]), (int)type);
-	
+
 	search_gui();
 }
 
-void Search::buildDownloadMenu_gui (int menu)
-{	
-	pthread_mutex_lock (&searchLock);
-	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (resultStore);
-	selection = gtk_tree_view_get_selection(resultView.get());
-
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
-	vector<GtkTreeIter> iter;
-	GtkTreeIter tmpiter;
-	int count=0;
-	
-	if (!tmp)
-		return;
-	
-	while (1)
-	{
-		if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
-		{
-			iter.push_back (tmpiter);
-			count++;	
-		}
-		
-		tmp = g_list_next (tmp);
-		if (!tmp)
-			break;
-	}
-	
-	if (count == 1)
-	{
-		SearchInfo *si = resultView.getValue<gpointer,SearchInfo*>(&iter[0], "Info");
-		if (si->result->getTTH ())
-			gtk_widget_set_sensitive (menuItems["SearchByTTH"], true);
-		else
-			gtk_widget_set_sensitive (menuItems["SearchByTTH"], false);
-			
-		gtk_widget_set_sensitive (menuItems["GetFileList"], true);
-		gtk_widget_set_sensitive (menuItems["SendPrivateMessage"], true);
-		gtk_widget_set_sensitive (menuItems["AddToFavorites"], true);
-		gtk_widget_set_sensitive (menuItems["MatchQueue"], true);
-		gtk_widget_set_sensitive (menuItems["GrantExtraSlot"], true);
-		gtk_widget_set_sensitive (menuItems["RemoveUserFromQueue"], true);
-	}
-	else
-	{
-		gtk_widget_set_sensitive (menuItems["SearchByTTH"], false);
-		gtk_widget_set_sensitive (menuItems["GetFileList"], false);
-		gtk_widget_set_sensitive (menuItems["SendPrivateMessage"], false);
-		gtk_widget_set_sensitive (menuItems["AddToFavorites"], false);
-		gtk_widget_set_sensitive (menuItems["MatchQueue"], false);
-		gtk_widget_set_sensitive (menuItems["GrantExtraSlot"], false);
-		gtk_widget_set_sensitive (menuItems["RemoveUserFromQueue"], false);
-	}
-	if (menu == 1)
-	{
-		for (vector<GtkWidget*>::iterator it=downloadItems.begin (); it != downloadItems.end (); it++)
-			gtk_container_remove (GTK_CONTAINER (downloadMenu), *it);
-
-		downloadItems.clear ();
-						
-		StringPairList spl = FavoriteManager::getInstance()->getFavoriteDirs();
-		if (spl.size() > 0) 
-		{
-			for(StringPairIter i = spl.begin(); i != spl.end(); i++) 
-			{
-				downloadItems.push_back (gtk_menu_item_new_with_label (i->second.c_str()));
-				gtk_menu_shell_append (GTK_MENU_SHELL (downloadMenu), downloadItems.back ());
-				g_signal_connect (G_OBJECT (downloadItems.back ()), "activate", G_CALLBACK (onDownloadFavoriteClicked_gui), (gpointer)this);
-			}
-			downloadItems.push_back (gtk_separator_menu_item_new ());
-			gtk_menu_shell_append (GTK_MENU_SHELL (downloadMenu), downloadItems.back ());
-		}
-		downloadItems.push_back (gtk_menu_item_new_with_label ("Browse..."));
-		gtk_menu_shell_append (GTK_MENU_SHELL (downloadMenu), downloadItems.back ());
-		g_signal_connect (G_OBJECT (downloadItems.back ()), "activate", G_CALLBACK (onDownloadToClicked_gui), (gpointer)this);
-		gtk_widget_show_all (GTK_WIDGET (downloadMenu));
-	}
-	else if (menu == 2)
-	{
-		for (vector<GtkWidget*>::iterator it=downloadDirItems.begin (); it != downloadDirItems.end (); it++)
-			gtk_container_remove (GTK_CONTAINER (downloadDirMenu), *it);
-			
-		downloadDirItems.clear ();			
-			
-		StringPairList spl = FavoriteManager::getInstance()->getFavoriteDirs();
-		if (spl.size() > 0) 
-		{
-			for(StringPairIter i = spl.begin(); i != spl.end(); i++) 
-			{
-				downloadDirItems.push_back (gtk_menu_item_new_with_label (i->second.c_str()));
-				gtk_menu_shell_append (GTK_MENU_SHELL (downloadDirMenu), downloadDirItems.back ());
-				g_signal_connect (G_OBJECT (downloadDirItems.back ()), "activate", G_CALLBACK (onDownloadFavoriteDirClicked_gui), (gpointer)this);
-			}
-			downloadDirItems.push_back (gtk_separator_menu_item_new ());
-			gtk_menu_shell_append (GTK_MENU_SHELL (downloadDirMenu), downloadDirItems.back ());
-		}
-		downloadDirItems.push_back (gtk_menu_item_new_with_label ("Browse..."));
-		gtk_menu_shell_append (GTK_MENU_SHELL (downloadDirMenu), downloadDirItems.back ());
-		g_signal_connect (G_OBJECT (downloadDirItems.back ()), "activate", G_CALLBACK (onDownloadDirToClicked_gui), (gpointer)this);
-		gtk_widget_show_all (GTK_WIDGET (downloadDirMenu));	
-	}
-	pthread_mutex_unlock (&searchLock);
-}
-
-void Search::onSearchForTTHClicked_gui (GtkMenuItem *item, gpointer user_data)
+void Search::initHubs_gui()
 {
-	Search *s = (Search*)user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (s->resultStore);
-	selection = gtk_tree_view_get_selection(s->resultView.get());
-
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
-	GtkTreeIter iter;
-	
-	if (!tmp)
-		return;
-	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
-		return;
-	SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter, "Info");
-	if (!si->result->getTTH ())
-		return;
-		
-	s->putValue (si->result->getTTH ()->toBase32 (), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
-}
-
-void Search::onGetFileListClicked_gui (GtkMenuItem *item, gpointer user_data)
-{
-	Search *s = (Search*)user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (s->resultStore);
-	selection = gtk_tree_view_get_selection(s->resultView.get());
-
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
-	GtkTreeIter iter;
-	
-	if (!tmp)
-		return;
-	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
-		return;
-	SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter, "Info");
-	try 
-	{
-		QueueManager::getInstance()->addList(si->result->getUser (), QueueItem::FLAG_CLIENT_VIEW);
-	} 
-	catch(const Exception&) 
-	{
-	}
-}
-
-void Search::onMatchQueueClicked_gui (GtkMenuItem *item, gpointer user_data)
-{
-	Search *s = (Search*)user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (s->resultStore);
-	selection = gtk_tree_view_get_selection(s->resultView.get());
-
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
-	GtkTreeIter iter;
-	
-	if (!tmp)
-		return;
-	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
-		return;
-	SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter, "Info");
-	try 
-	{
-		QueueManager::getInstance()->addList(si->result->getUser (), QueueItem::FLAG_MATCH_QUEUE);
-	} 
-	catch(const Exception&) 
-	{
-	}
-}
-
-void Search::onPrivateMessageClicked_gui (GtkMenuItem *item, gpointer user_data)
-{
-	Search *s = (Search*)user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (s->resultStore);
-	selection = gtk_tree_view_get_selection(s->resultView.get());
-
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
-	GtkTreeIter iter;
-	
-	if (!tmp)
-		return;
-	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
-		return;
-	SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter, "Info");
-	WulforManager::get()->addPrivMsg_gui(si->result->getUser ());
-}
-
-void Search::onAddFavoriteUserClicked_gui (GtkMenuItem *item, gpointer user_data)
-{
-	Search *s = (Search*)user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (s->resultStore);
-	selection = gtk_tree_view_get_selection(s->resultView.get());
-
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
-	GtkTreeIter iter;
-	
-	if (!tmp)
-		return;
-	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
-		return;
-	SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter, "Info");
-	FavoriteManager::getInstance()->addFavoriteUser(si->result->getUser ());
-}
-
-void Search::onGrantExtraSlotClicked_gui (GtkMenuItem *item, gpointer user_data)
-{
-	Search *s = (Search*)user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (s->resultStore);
-	selection = gtk_tree_view_get_selection(s->resultView.get());
-
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
-	GtkTreeIter iter;
-	
-	if (!tmp)
-		return;
-	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
-		return;
-	SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter, "Info");
-	UploadManager::getInstance()->reserveSlot(si->result->getUser ());
-}
-
-void Search::onRemoveUserFromQueueClicked_gui (GtkMenuItem *item, gpointer user_data)
-{
-	Search *s = (Search*)user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (s->resultStore);
-	selection = gtk_tree_view_get_selection(s->resultView.get());
-
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
-	GtkTreeIter iter;
-	
-	if (!tmp)
-		return;
-	if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
-		return;	
-	SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter, "Info");
-	QueueManager::getInstance()->removeSource(si->result->getUser (), QueueItem::Source::FLAG_REMOVED);
-}
-
-void Search::onDownloadFavoriteClicked_gui (GtkMenuItem *item, gpointer user_data)
-{
-	Search *s = (Search*)user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (s->resultStore);
-	selection = gtk_tree_view_get_selection(s->resultView.get());
-
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
-	vector<GtkTreeIter> iter;
-	GtkTreeIter tmpiter;
-	
-	if (!tmp)
-		return;
-	
-	while (1)
-	{
-		if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
-			iter.push_back (tmpiter);
-		
-		tmp = g_list_next (tmp);
-		if (!tmp)
-			break;
-	}	
-	
-	string label = s->getTextFromMenu(item), path;
-	StringPairList spl = FavoriteManager::getInstance()->getFavoriteDirs();
-	bool found=false;
-	if (spl.size() > 0) 
-	{
-		for(StringPairIter i = spl.begin(); i != spl.end(); i++) 
-			if (label == i->second)
-			{
-				found=true;
-				path = i->first;
-				break;
-			}
-	}
-	if (!found)
-		return;	
-	for (int i=0;i<iter.size ();i++)
-	{
-		SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter[i], "Info");
-		si->downloadTo (path + Util::getFileName (WulforUtil::linuxSeparator (si->result->getFile ())));
-	}
-}
-
-void Search::onDownloadFavoriteDirClicked_gui (GtkMenuItem *item, gpointer user_data)
-{
-	Search *s = (Search*)user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (s->resultStore);
-	selection = gtk_tree_view_get_selection(s->resultView.get());
-
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
-	vector<GtkTreeIter> iter;
-	GtkTreeIter tmpiter;
-	
-	if (!tmp)
-		return;
-	
-	while (1)
-	{
-		if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
-			iter.push_back (tmpiter);
-		
-		tmp = g_list_next (tmp);
-		if (!tmp)
-			break;
-	}	
-	
-	string label = s->getTextFromMenu(item), path;
-	StringPairList spl = FavoriteManager::getInstance()->getFavoriteDirs();
-	bool found=false;
-	if (spl.size() > 0) 
-	{
-		for(StringPairIter i = spl.begin(); i != spl.end(); i++) 
-			if (label == i->second)
-			{
-				found=true;
-				path = i->first;
-				break;
-			}
-	}
-	if (!found)
-		return;	
-	
-	for (int i=0;i<iter.size ();i++)
-	{	
-		SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter[i], "Info");
-		si->downloadDirTo (path);
-	}
-}
-
-void Search::onSearchEntryDown_gui (GtkEntry *entry, gpointer user_data)
-{
-	((Search*)user_data)->search_gui ();
-}
-
-gboolean Search::onButtonPressed_gui (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
-{
-	Search *s = (Search*)user_data;
-	if (event->type == GDK_BUTTON_PRESS)
-    {
-		if (event->button == 3)
-		{
-        	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
-			GtkTreeModel *m = gtk_tree_view_get_model (GTK_TREE_VIEW (widget));
-			GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-			GList *tmp = g_list_first (list);
-			GtkTreeIter iter;
-	
-			if (!tmp)
-				return FALSE;
-			if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
-				return FALSE;
-				
-			pthread_mutex_lock(&s->searchLock);
-			SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter, "Info");
-			pthread_mutex_unlock(&s->searchLock);
-			s->buildDownloadMenu_gui(1);
-			s->buildDownloadMenu_gui(2);
-			s->popup_menu_gui(event, user_data);			
-			return TRUE;
-		}
-	}
-	else if (event->type == GDK_2BUTTON_PRESS)
-	{
-		if (event->button == 1)
-		{
-			GtkTreeSelection *selection;
-			GtkTreeModel *m = GTK_TREE_MODEL (s->resultStore);
-			selection = gtk_tree_view_get_selection(s->resultView.get());
-			int count = gtk_tree_selection_count_selected_rows (selection);
-			GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-			GList *tmp = g_list_first (list);
-			GtkTreeIter iter;
-						
-			if (count < 1 && count > 1)
-				return FALSE;
-		
-			if (!tmp)
-				return FALSE;
-			if (!gtk_tree_model_get_iter (m, &iter, (GtkTreePath*)tmp->data))
-				return FALSE;	
-				
-			SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter, "Info");
-			si->download ();
-			return TRUE;
-		}
-	}
-
-	return FALSE;
-}
-gboolean Search::onPopupMenu_gui (GtkWidget *widget, gpointer user_data)
-{
-	((Search*)user_data)->popup_menu_gui(NULL, user_data);
-	return TRUE;
-}
-void Search::popup_menu_gui (GdkEventButton *event, gpointer user_data)
-{
-    gtk_menu_popup(mainMenu, NULL, NULL, NULL, NULL,
-                   (event != NULL) ? 1 : 0,
-                   gdk_event_get_time((GdkEvent*)event));
-}
-
-void Search::onToggledClicked_gui (GtkCellRendererToggle *cell, gchar *path_str, gpointer data)
-{
-	Search *s = (Search *)data;
-	GtkTreeIter iter;
-	gboolean fixed;
-	GtkTreeModel *m = gtk_tree_view_get_model(s->hubView.get());
-
-	gtk_tree_model_get_iter (m, &iter, gtk_tree_path_new_from_string (path_str));
-	fixed = s->hubView.getValue<gboolean>(&iter, "Search");
-	fixed = !fixed;
-	gtk_list_store_set(GTK_LIST_STORE (m), &iter, s->hubView.col("Search"), fixed, -1);
-}
-
-void Search::onSearchButtonClicked_gui (GtkWidget *widget, gpointer user_data)
-{
-	((Search*)user_data)->search_gui ();
-}
-
-void Search::onDownloadClicked_gui (GtkMenuItem *item, gpointer user_data)
-{
-	Search *s = (Search*)user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (s->resultStore);
-	selection = gtk_tree_view_get_selection(s->resultView.get());
-
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
-	vector<GtkTreeIter> iter;
-	GtkTreeIter tmpiter;
-	
-	if (!tmp)
-		return;
-	
-	while (1)
-	{
-		if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
-			iter.push_back (tmpiter);
-		
-		tmp = g_list_next (tmp);
-		if (!tmp)
-			break;
-	}	
-	for (int i=0;i<iter.size ();i++)
-	{
-		SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter[i], "Info");
-		si->download ();
-	}
-}
-void Search::onDownloadToClicked_gui (GtkMenuItem *item, gpointer user_data)
-{
-	Search *s = (Search*)user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (s->resultStore);
-	selection = gtk_tree_view_get_selection(s->resultView.get());
-	
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
-	vector<GtkTreeIter> iter;
-	GtkTreeIter tmpiter;	
-	int count=0;
-	
-	if (!tmp)
-		return;
-		
-	while (1)
-	{
-		if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
-		{
-			iter.push_back (tmpiter);
-			count++;
-		}
-		
-		tmp = g_list_next (tmp);
-		if (!tmp)
-			break;
-	}	
-	if (count == 1)
-	{
-		SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter[0], "Info");
-		si->browse(true);
-	}
-	
-	GtkWidget *dirChooser = gtk_file_chooser_dialog_new ("Choose location",
-												WulforManager::get ()->getMainWindow ()->getWindow (),
-												GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-												GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-												GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-												NULL);								
-	if (Search::lastDir != "")
-		gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (dirChooser), Search::lastDir.c_str ());
-	else
-		gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (dirChooser), SETTING (DOWNLOAD_DIRECTORY).c_str ());			
-	gint response = gtk_dialog_run (GTK_DIALOG (dirChooser));
-	if (response == GTK_RESPONSE_OK)
-	{
-		string path = gtk_file_chooser_get_current_folder (GTK_FILE_CHOOSER (dirChooser));
-		if (path[path.length ()-1] != PATH_SEPARATOR)
-			path += PATH_SEPARATOR;
-		Search::lastDir = path;
-		
-		for (int i=0;i<iter.size ();i++)
-		{
-			SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter[i], "Info");
-			si->downloadTo (path+Util::getFileName (si->result->getFile ()));	
-		}			
-	}
-	gtk_widget_hide (dirChooser);
-	dirChooser = NULL;	
-}
-void Search::onDownloadDirClicked_gui (GtkMenuItem *item, gpointer user_data)
-{
-	Search *s = (Search*)user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (s->resultStore);
-	selection = gtk_tree_view_get_selection(s->resultView.get());
-
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
-	vector<GtkTreeIter> iter;
-	GtkTreeIter tmpiter;
-	
-	if (!tmp)
-		return;
-	
-	while (1)
-	{
-		if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
-			iter.push_back (tmpiter);
-		
-		tmp = g_list_next (tmp);
-		if (!tmp)
-			break;
-	}	
-	for (int i=0;i<iter.size ();i++)
-	{
-		SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter[i], "Info");
-		si->downloadDir ();
-	}
-}
-void Search::onDownloadDirToClicked_gui (GtkMenuItem *item, gpointer user_data)
-{
-	Search *s = (Search*)user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (s->resultStore);
-	selection = gtk_tree_view_get_selection(s->resultView.get());
-	
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
-	vector<GtkTreeIter> iter;
-	GtkTreeIter tmpiter;	
-	int count=0;
-	
-	if (!tmp)
-		return;
-		
-	while (1)
-	{
-		if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
-		{
-			iter.push_back (tmpiter);
-			count++;
-		}
-		
-		tmp = g_list_next (tmp);
-		if (!tmp)
-			break;
-	}	
-	if (count == 1)
-	{
-		SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter[0], "Info");
-		si->browse(false);
-	}	
-	
-	GtkWidget *dirChooser = gtk_file_chooser_dialog_new ("Choose location",
-												WulforManager::get ()->getMainWindow ()->getWindow (),
-												GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-												GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-												GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-												NULL);								
-	if (Search::lastDir != "")
-		gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (dirChooser), Search::lastDir.c_str ());
-	else
-		gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (dirChooser), SETTING (DOWNLOAD_DIRECTORY).c_str ());			
-	gint response = gtk_dialog_run (GTK_DIALOG (dirChooser));
-	if (response == GTK_RESPONSE_OK)
-	{
-		string path = gtk_file_chooser_get_current_folder (GTK_FILE_CHOOSER (dirChooser));
-		if (path[path.length ()-1] != PATH_SEPARATOR)
-			path += PATH_SEPARATOR;
-		Search::lastDir = path;
-		
-		for (int i=0;i<iter.size ();i++)
-		{
-			SearchInfo *si = s->resultView.getValue<gpointer,SearchInfo*>(&iter[i], "Info");
-			si->downloadDirTo (path);	
-		}			
-	}
-	gtk_widget_hide (dirChooser);
-	dirChooser = NULL;	
-}
-
-void Search::onRemoveClicked_gui (GtkMenuItem *item, gpointer user_data)
-{
-	Search *s = (Search*)user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *m = GTK_TREE_MODEL (s->resultStore);
-	selection = gtk_tree_view_get_selection(s->resultView.get());
-	
-	GList *list = gtk_tree_selection_get_selected_rows (selection, &m);
-	GList *tmp = g_list_first (list);
-	vector<GtkTreeIter> iter;
-	GtkTreeIter tmpiter;
-	
-	if (!tmp)
-		return;
-	
-	while (1)
-	{
-		if (gtk_tree_model_get_iter (m, &tmpiter, (GtkTreePath*)tmp->data))
-			iter.push_back (tmpiter);
-		
-		tmp = g_list_next (tmp);
-		if (!tmp)
-			break;
-	}
-	
-	for (int i=0;i<iter.size ();i++)
-	{
-		gtk_list_store_remove (s->resultStore, &iter[i]);
-	}	
-}
-
-void Search::search_gui ()
-{
-	StringList clients;
-	GtkTreeIter iter;
-	string text, size, s;
-	
-	text = gtk_entry_get_text (GTK_ENTRY (GTK_BIN (searchItems["Search"])->child));
-	setLabel_gui("Search: " + text);
-	
-	if(!(text.length () > 0 && lastSearch + 3*1000 < TimerManager::getInstance()->getTick()))
-		return;
-
-	if (!gtk_tree_model_get_iter_first (GTK_TREE_MODEL (hubStore), &iter))
-		return;
-	
-	bool op = hubView.getValue<gboolean>(&iter, "Search");
- 	while (1)
- 	{
-		HubInfo *hi = hubView.getValue<gpointer,HubInfo*> (&iter, "Info");
- 		if (op)
- 		{
- 			if (hi->op)
- 				clients.push_back (hi->ipPort);
- 		}
-		else if (hubView.getValue<gboolean>(&iter, "Search"))
-		{
-			clients.push_back (hi->ipPort);
-		}
-		
-		if (!gtk_tree_model_iter_next (GTK_TREE_MODEL (hubStore), &iter))
-			break;
-	}
-	if(!clients.size())
-		return;
-
-	size = gtk_entry_get_text (GTK_ENTRY (searchItems["Size"]));
-	
-	double lsize = Util::toDouble(size);
-	switch(gtk_combo_box_get_active (GTK_COMBO_BOX (searchItems["Unit"]))) {
-	case 1:
-		lsize*=1024.0; break;
-	case 2:
-		lsize*=1024.0*1024.0; break;
-	case 3:
-		lsize*=1024.0*1024.0*1024.0; break;
-	}
-
-	int64_t llsize = (int64_t)lsize;
-
-	gtk_list_store_clear (resultStore);
-	s = text;
-	{
-		Lock l(cs);
-		searchlist = StringTokenizer<tstring>(s, ' ').getTokens();
-	}
-
-	//strip out terms beginning with -
-	s.clear();
-	for (TStringList::const_iterator si = searchlist.begin(); si != searchlist.end(); ++si)
-		if ((*si)[0] != '-' || si->size() != 1) 
-			s += *si + ' ';	//Shouldn't get 0-length tokens, so safely assume at least a first char.
-	s = s.substr(0, max(s.size(), static_cast<tstring::size_type>(1)) - 1);
-
-	SearchManager::SizeModes mode((SearchManager::SizeModes)gtk_combo_box_get_active (GTK_COMBO_BOX (searchItems["Diffrence"])));
-	if(llsize == 0)
-		mode = SearchManager::SIZE_DONTCARE;
-
-	int ftype = gtk_combo_box_get_active (GTK_COMBO_BOX (searchItems["File type"]));
-
-	// Add new searches to the last-search dropdown list
-	if(find(lastSearches.begin(), lastSearches.end(), s) == lastSearches.end()) 
-	{
-		GtkTreeModel *m = gtk_combo_box_get_model (GTK_COMBO_BOX (searchItems["Search"]));
-		if(listItems > 9)
-		{
-			if (gtk_tree_model_get_iter_first (m, &iter))
-			{
-				int count=0;
-				while (gtk_tree_model_iter_next (m, &iter))
-				{
-					if (count == 8)
-					{
-						gtk_list_store_remove (GTK_LIST_STORE (m), &iter);
-						break;
-					}
-					count++;	
-				}
-			}	
-		}
-		else
-		{
-			listItems++;
-		}
-
-		gtk_list_store_insert (GTK_LIST_STORE (m), &iter, 0);
-		gtk_list_store_set (GTK_LIST_STORE (m), &iter, 0, s.c_str(), -1);
-
-		if(lastSearches.size() > 9)
-			lastSearches.erase(lastSearches.begin());
-		lastSearches.push_back(s);
-	}
-	
-	droppedResult = 0;
-	isHash = (ftype == SearchManager::TYPE_TTH);
-
-	gtk_list_store_clear (resultStore);
-	searchHits = 0;
-	gtk_statusbar_pop(GTK_STATUSBAR (searchItems["Status1"]), 0);
-	gtk_statusbar_push(GTK_STATUSBAR (searchItems["Status1"]), 0, string ("Searching for " + s + "...").c_str ());
-	gtk_statusbar_pop(GTK_STATUSBAR (searchItems["Status2"]), 0);
-	gtk_statusbar_push(GTK_STATUSBAR (searchItems["Status2"]), 0, "");
-	gtk_statusbar_pop(GTK_STATUSBAR (searchItems["Status3"]), 0);
-	gtk_statusbar_push(GTK_STATUSBAR (searchItems["Status3"]), 0, "");	
-
-	if(SearchManager::getInstance()->okToSearch()) {
-		SearchManager::getInstance()->search(clients, s, llsize, (SearchManager::TypeModes)ftype, (SearchManager::SizeModes)mode, "manual");
-
-		if(BOOLSETTING(CLEAR_SEARCH)) // Only clear if the search was sent.
-			gtk_entry_set_text (GTK_ENTRY (GTK_BIN (searchItems["Search"])->child), "");
-
-	} else {
-		int32_t waitFor = SearchManager::getInstance()->timeToSearch();
-		string line = "Searching too soon, retry in %i s\n";
-		char buf[line.size() + 16];
-		sprintf(buf, line.c_str(), waitFor);
-		gtk_statusbar_pop(GTK_STATUSBAR (searchItems["Status1"]), 0);
-		gtk_statusbar_push(GTK_STATUSBAR (searchItems["Status1"]), 0, buf);
-		gtk_statusbar_pop(GTK_STATUSBAR (searchItems["Status2"]), 0);
-		gtk_statusbar_push(GTK_STATUSBAR (searchItems["Status2"]), 0, "");
-		gtk_statusbar_pop(GTK_STATUSBAR (searchItems["Status3"]), 0);
-		gtk_statusbar_push(GTK_STATUSBAR (searchItems["Status3"]), 0, "");
-
-		///@todo: add a timer to change the status line (countdown).
-	}
-}
-
-void Search::initHubs_gui ()
-{
-	GtkTreeIter iter;
-	gtk_list_store_append (hubStore, &iter);
-	gtk_list_store_set (hubStore, &iter, 
-		hubView.col("Search"), false,
-		hubView.col("Name"), "Only where I'm op",
-		hubView.col("Info"), new HubInfo (0, "", "Only where I'm op", false),
-		-1);
-
 	ClientManager* clientMgr = ClientManager::getInstance();
 	clientMgr->lock();
 
 	Client::List& clients = clientMgr->getClients();
 
-	Client::List::iterator it;
-	Client::List::iterator endIt = clients.end();
-	for(it = clients.begin(); it != endIt; ++it) {
-		Client* client = *it;
-		if (!client->isConnected())
-			continue;
-
-		changeHubs_gui (0, new HubInfo (client, client->getHubUrl(), client->getHubName(), client->isOp()));
+	Client *client;
+	for (Client::List::iterator it = clients.begin(); it != clients.end(); it++)
+	{
+		client = *it;
+		if (client->isConnected())
+			addHub_gui(client->getHubName(), client->getHubUrl(), client->getMyIdentity().isOp());
 	}
 
 	clientMgr->unlock();
-}																		
+}
 
-void Search::changeHubs_gui (int mode, HubInfo *i)
+void Search::addHub_gui(string name, string url, bool op)
 {
-	if (mode == 0)
-	{
-		GtkTreeIter iter;
-		pthread_mutex_lock (&searchLock);
-		gtk_list_store_append (hubStore, &iter);	
-		gtk_list_store_set (hubStore, &iter,
-			hubView.col("Search"), true,
-			hubView.col("Name"), (i->name=="") ? "Connecting..." : i->name.c_str (),
-			hubView.col("Info"), (gpointer)i,
-			-1);
-		pthread_mutex_unlock (&searchLock);
-	}
-	else if (mode == 1)
-	{
-		GtkTreeIter iter;
-		if (!gtk_tree_model_get_iter_first (GTK_TREE_MODEL (hubStore), &iter))
-			return;
-			
-		while (1)
-		{
-			HubInfo *hi = hubView.getValue<gpointer,HubInfo*>(&iter, "Info");
-			if (hi->client != NULL)
-			{
-				if (hi->client == i->client)
-				{
-					if (hi->ipPort == i->ipPort && hi->name == i->name)
-						return;
+	GtkTreeIter iter;
+	gtk_list_store_append(hubStore, &iter);
+	gtk_list_store_set(hubStore, &iter,
+		hubView.col("Search"), TRUE,
+		hubView.col("Name"), name.empty() ? url.c_str() : name.c_str(),
+		hubView.col("Url"), url.c_str(),
+		hubView.col("Op"), op,
+		hubView.col("Editable"), onlyOp ? op : TRUE,
+		-1);
+}
 
-					pthread_mutex_lock(&searchLock);
-					gtk_list_store_set (hubStore, &iter,
-						hubView.col("Name"), i->name.c_str(),
-						hubView.col("Info"), (gpointer)i,
-						-1);
-					pthread_mutex_unlock(&searchLock);
-					return;
-				}
-			}
-			if (!gtk_tree_model_iter_next (GTK_TREE_MODEL (hubStore), &iter))
-				return;
-		}
-	}
-	else if (mode == 2)
+void Search::modifyHub_gui(string name, string url, bool op)
+{
+	GtkTreeIter iter;
+	GtkTreeModel *m = GTK_TREE_MODEL(hubStore);
+	gboolean valid = gtk_tree_model_get_iter_first(m, &iter);
+
+	while (valid)
 	{
-		GtkTreeIter iter;
-		if (!gtk_tree_model_get_iter_first (GTK_TREE_MODEL (hubStore), &iter))
-			return;
-			
-		while (1)
+		if (url == hubView.getString(&iter, "Url"))
 		{
-			if (hubView.getValue<gpointer,HubInfo*>(&iter, "Info")->client == i->client)
-			{
-				pthread_mutex_lock (&searchLock);
-				gtk_list_store_remove (hubStore, &iter);
-				pthread_mutex_unlock (&searchLock);
-				return;
-			}
-			if (!gtk_tree_model_iter_next (GTK_TREE_MODEL (hubStore), &iter))
-				return;
-		}	
+			gtk_list_store_set(hubStore, &iter,
+				hubView.col("Name"), name.empty() ? url.c_str() : name.c_str(),
+				hubView.col("Url"), url.c_str(),
+				hubView.col("Op"), op,
+				hubView.col("Editable"), onlyOp ? op : TRUE,
+				-1);
+			return;
+		}
+		valid = gtk_tree_model_iter_next(m, &iter);
 	}
 }
 
-void Search::addResult_gui (SearchInfo *info)
+void Search::removeHub_gui(string url)
 {
-	SearchResult *aResult = info->result;
-	if (!aResult)
-		return;
-	pthread_mutex_lock (&searchLock);
-	// Check that this is really a relevant search result...
-	{
-
-		if(searchlist.empty())
-		{
-			pthread_mutex_unlock (&searchLock);
-			return;
-		}
-			
-		if(isHash) {
-			if(aResult->getTTH() == NULL)
-			{
-				pthread_mutex_unlock (&searchLock);
-				return;
-			}
-			if(Util::stricmp(aResult->getTTH()->toBase32(), searchlist[0]) != 0)
-			{
-				pthread_mutex_unlock (&searchLock);
-				return;
-			}
-		} 
-		else {
-			// match all here
-			for(TStringIter j = searchlist.begin(); j != searchlist.end(); ++j) 
-			{
-				if((*j->begin() != '-' && Util::findSubString(aResult->getUtf8() ? aResult->getFile() : Text::acpToUtf8(aResult->getFile()), *j) == -1) ||
-					(*j->begin() == '-' && j->size() != 1 && Util::findSubString(aResult->getUtf8() ? aResult->getFile() : Text::acpToUtf8(aResult->getFile()), j->substr(1)) != -1)
-					) 
-				{
-					droppedResult++;
-					gtk_statusbar_pop(GTK_STATUSBAR (searchItems["Status3"]), 0);
-					gtk_statusbar_push(GTK_STATUSBAR (searchItems["Status3"]), 0, string (Util::toString(droppedResult) + " filtered").c_str ());
-					pthread_mutex_unlock (&searchLock);
-					return;
-				}
-			}
-		}
-	}
-
-	// Reject results without free slots if selected
-	if(gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (searchItems["Slots"])) && aResult->getFreeSlots() < 1)
-	{
-		pthread_mutex_unlock (&searchLock);
-		return;
-	}
-
-	SearchResult *r = aResult;
 	GtkTreeIter iter;
-	
-	string fileName, path, type, size, exactSize, nick, connection, hubName, slots, ip, TTH;
-	if(r->getType() == SearchResult::TYPE_FILE) 
-	{
-		string file = WulforUtil::linuxSeparator (r->getFile ());
-		if(file.rfind('/') == tstring::npos)
-			fileName = r->getUtf8() ? file : Text::acpToUtf8(file);
-		else 
-		{
-			fileName = Util::getFileName(r->getUtf8() ? file : Text::acpToUtf8(file));
-			path = Util::getFilePath(r->getUtf8() ? file : Text::acpToUtf8(file));
-		}
+	GtkTreeModel *m = GTK_TREE_MODEL(hubStore);
+	gboolean valid = gtk_tree_model_get_iter_first(m, &iter);
 
-		type = Util::getFileExt(fileName);
-		if(!type.empty() && type[0] == '.')
-			type.erase(0, 1);
-		size = Util::formatBytes(r->getSize());
-		exactSize = Util::formatExactSize(r->getSize());
-	} 
-	else 
-	{
-		fileName = WulforUtil::linuxSeparator (r->getUtf8() ? r->getFileName() : Text::acpToUtf8(r->getFileName()));
-		path = WulforUtil::linuxSeparator (r->getUtf8() ? r->getFile() : Text::acpToUtf8(r->getFile()));
-		type = "Directory";
-	}
-	slots = r->getSlotString ();
-	connection = ClientManager::getInstance()->getIdentity(r->getUser()).getConnection();
-	hubName = r->getHubName ();
-	ip = r->getIP ();
-	if(r->getTTH() != NULL)
-		TTH = r->getTTH ()->toBase32 ();
-
-	//Check that it's not a duplicate
-	GtkTreeIter i;
-	GtkTreeModel *m = GTK_TREE_MODEL(resultStore);
-	gboolean valid = gtk_tree_model_get_iter_first(m, &i);
-	string fileString, ipString;
 	while (valid)
 	{
-		fileString = resultView.getString(&i, "Filename");
-		ipString = resultView.getString(&i, "IP");
-		if (ipString == ip && fileString == fileName) {
-			pthread_mutex_unlock (&searchLock);
+		if (url == hubView.getString(&iter, "Url"))
+		{
+			gtk_list_store_remove(hubStore, &iter);
 			return;
 		}
-
-		valid = gtk_tree_model_iter_next(m, &i);
+		valid = gtk_tree_model_iter_next(m, &iter);
 	}
-	
-	gtk_list_store_append (resultStore, &iter);
-	gtk_list_store_set (resultStore, &iter,
-		resultView.col("Nick"), WulforUtil::getNicks(r->getUser()).c_str(),
-		resultView.col("Filename"), fileName.c_str(),
+}
+
+void Search::buildDownloadMenu_gui()
+{
+	GtkWidget *menuItem;
+
+	if (gtk_tree_selection_count_selected_rows(selection) == 1)
+	{
+		GtkTreeIter iter;
+		SearchResult *result = NULL;
+		GList *list = gtk_tree_selection_get_selected_rows(selection, NULL);
+		GtkTreePath *path = (GtkTreePath *)g_list_nth_data(list, 0);
+
+		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(resultStore), &iter, path))
+			result = resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+		gtk_tree_path_free(path);
+		g_list_free(list);
+
+		if (result->getTTH())
+			gtk_widget_set_sensitive(menuItems["SearchByTTH"], TRUE);
+		else
+			gtk_widget_set_sensitive(menuItems["SearchByTTH"], FALSE);
+
+		gtk_widget_set_sensitive(menuItems["GetFileList"], TRUE);
+		gtk_widget_set_sensitive(menuItems["SendPrivateMessage"], TRUE);
+		gtk_widget_set_sensitive(menuItems["AddToFavorites"], TRUE);
+		gtk_widget_set_sensitive(menuItems["MatchQueue"], TRUE);
+		gtk_widget_set_sensitive(menuItems["GrantExtraSlot"], TRUE);
+		gtk_widget_set_sensitive(menuItems["RemoveUserFromQueue"], TRUE);
+	}
+	else
+	{
+		gtk_widget_set_sensitive(menuItems["SearchByTTH"], FALSE);
+		gtk_widget_set_sensitive(menuItems["GetFileList"], FALSE);
+		gtk_widget_set_sensitive(menuItems["SendPrivateMessage"], FALSE);
+		gtk_widget_set_sensitive(menuItems["AddToFavorites"], FALSE);
+		gtk_widget_set_sensitive(menuItems["MatchQueue"], FALSE);
+		gtk_widget_set_sensitive(menuItems["GrantExtraSlot"], FALSE);
+		gtk_widget_set_sensitive(menuItems["RemoveUserFromQueue"], FALSE);
+	}
+
+	// Build "Download to..." submenu
+	gtk_container_foreach(GTK_CONTAINER(downloadMenu), (GtkCallback)gtk_widget_destroy, NULL);
+
+	StringPairList spl = FavoriteManager::getInstance()->getFavoriteDirs();
+	if (spl.size() > 0)
+	{
+		for (StringPairIter i = spl.begin(); i != spl.end(); i++)
+		{
+			menuItem = gtk_menu_item_new_with_label(i->second.c_str());
+			g_object_set_data_full(G_OBJECT(menuItem), "fav", g_strdup(i->first.c_str()), g_free);
+			g_signal_connect(G_OBJECT(menuItem), "activate", G_CALLBACK(onDownloadFavoriteClicked_gui), (gpointer)this);
+			gtk_menu_shell_append(GTK_MENU_SHELL(downloadMenu), menuItem);
+		}
+		menuItem = gtk_separator_menu_item_new();
+		gtk_menu_shell_append(GTK_MENU_SHELL(downloadMenu), menuItem);
+	}
+
+	menuItem = gtk_menu_item_new_with_label("Browse...");
+	g_signal_connect(G_OBJECT(menuItem), "activate", G_CALLBACK(onDownloadToClicked_gui), (gpointer)this);
+	gtk_menu_shell_append(GTK_MENU_SHELL(downloadMenu), menuItem);
+
+	// Build "Download whole directory to..." submenu
+	gtk_container_foreach(GTK_CONTAINER(downloadDirMenu), (GtkCallback)gtk_widget_destroy, NULL);
+
+	spl.clear();
+	spl = FavoriteManager::getInstance()->getFavoriteDirs();
+	if (spl.size() > 0)
+	{
+		for (StringPairIter i = spl.begin(); i != spl.end(); i++)
+		{
+			menuItem = gtk_menu_item_new_with_label(i->second.c_str());
+			g_object_set_data_full(G_OBJECT(menuItem), "fav", g_strdup(i->first.c_str()), g_free);
+			g_signal_connect(G_OBJECT(menuItem), "activate", G_CALLBACK(onDownloadFavoriteDirClicked_gui), (gpointer)this);
+			gtk_menu_shell_append(GTK_MENU_SHELL(downloadDirMenu), menuItem);
+		}
+		menuItem = gtk_separator_menu_item_new();
+		gtk_menu_shell_append(GTK_MENU_SHELL(downloadDirMenu), menuItem);
+	}
+
+	menuItem = gtk_menu_item_new_with_label("Browse...");
+	g_signal_connect(G_OBJECT(menuItem), "activate", G_CALLBACK(onDownloadDirToClicked_gui), (gpointer)this);
+	gtk_menu_shell_append(GTK_MENU_SHELL(downloadDirMenu), menuItem);
+}
+
+void Search::popupMenu_gui()
+{
+	buildDownloadMenu_gui();
+	gtk_menu_popup(mainMenu, NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
+	gtk_widget_show_all(GTK_WIDGET(mainMenu));
+}
+
+void Search::setStatus_gui(string statusBar, string text)
+{
+	gtk_statusbar_pop(GTK_STATUSBAR(searchItems[statusBar]), 0);
+	gtk_statusbar_push(GTK_STATUSBAR(searchItems[statusBar]), 0, text.c_str());
+}
+
+void Search::search_gui()
+{
+	StringList clients;
+	GtkTreeIter iter;
+
+	string text = gtk_entry_get_text(GTK_ENTRY(searchItems["Entry"]));
+	if (text.empty())
+		return;
+
+	gboolean valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(hubStore), &iter);
+ 	while (valid)
+ 	{
+ 		if (hubView.getValue<gboolean>(&iter, "Editable") && hubView.getValue<gboolean>(&iter, "Search"))
+ 			clients.push_back(hubView.getString(&iter, "Url"));
+		valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(hubStore), &iter);
+	}
+
+	if (clients.size() < 1)
+		return;
+
+	double lsize = Util::toDouble(gtk_entry_get_text(GTK_ENTRY(searchItems["Size"])));
+
+	switch (gtk_combo_box_get_active(GTK_COMBO_BOX(searchItems["Unit"])))
+	{
+		case 1:
+			lsize *= 1024.0;
+			break;
+		case 2:
+			lsize *= 1024.0 * 1024.0;
+			break;
+		case 3:
+			lsize *= 1024.0 * 1024.0 * 1024.0;
+			break;
+	}
+
+	clearList_gui();
+	int64_t llsize = static_cast<int64_t>(lsize);
+	searchlist = StringTokenizer<tstring>(text, ' ').getTokens();
+
+	// Strip out terms beginning with -
+	text.clear();
+	for (TStringList::const_iterator si = searchlist.begin(); si != searchlist.end(); ++si)
+		if ((*si)[0] != '-')
+			text += *si + ' ';
+	text = text.substr(0, std::max(text.size(), static_cast<string::size_type>(1)) - 1);
+
+	SearchManager::SizeModes mode((SearchManager::SizeModes)gtk_combo_box_get_active(GTK_COMBO_BOX(searchItems["Difference"])));
+	if (llsize == 0)
+		mode = SearchManager::SIZE_DONTCARE;
+
+	int ftype = gtk_combo_box_get_active(GTK_COMBO_BOX(searchItems["File type"]));
+	isHash = (ftype == SearchManager::TYPE_TTH);
+
+	// Add new searches to the dropdown list
+	GtkListStore *store = GTK_LIST_STORE(searchEntriesModel);
+	size_t max = std::max(SETTING(SEARCH_HISTORY) - 1, 0);
+	size_t count = 0;
+	gchar *entry;
+	valid = gtk_tree_model_get_iter_first(searchEntriesModel, &iter);
+	while (valid)
+	{
+		gtk_tree_model_get(searchEntriesModel, &iter, 0, &entry, -1);
+		if (text == string(entry) || count >= max)
+			valid = gtk_list_store_remove(store, &iter);
+		else
+			valid = gtk_tree_model_iter_next(searchEntriesModel, &iter);
+		count++;
+		g_free(entry);
+	}
+
+	gtk_list_store_prepend(store, &iter);
+	gtk_list_store_set(store, &iter, 0, text.c_str(), -1);
+
+	droppedResult = 0;
+	searchHits = 0;
+	setStatus_gui("Status1", "Searching for " + text + " ...");
+	setStatus_gui("Status2", "0 items");
+	setStatus_gui("Status3", "0 filtered");
+	setLabel_gui("Search: " + text);
+
+	if (SearchManager::getInstance()->okToSearch())
+	{
+		SearchManager::getInstance()->search(clients, text, llsize, (SearchManager::TypeModes)ftype, mode, "manual");
+
+		if (BOOLSETTING(CLEAR_SEARCH)) // Only clear if the search was sent.
+			gtk_entry_set_text(GTK_ENTRY(searchItems["Entry"]), "");
+	}
+	else
+	{
+		int32_t waitFor = SearchManager::getInstance()->timeToSearch();
+		string line = "Searching too soon, retry in " + Util::toString(waitFor) + " s";
+		setStatus_gui("Status1", line);
+		setStatus_gui("Status2", "");
+		setStatus_gui("Status3", "");
+
+		///@todo: add a timer to change the status line(countdown).
+	}
+}
+
+void Search::addResult_gui(SearchResult *result)
+{
+	string filename, fileOrder, path, type, size, exactSize, nick, connection, hubName, slots, ip, TTH;
+	GdkPixbuf *icon;
+	double actualSlots;
+
+	if (result->getType() == SearchResult::TYPE_FILE)
+	{
+		string file = WulforUtil::linuxSeparator(result->getFile());
+		if (file.rfind('/') == tstring::npos)
+			filename = result->getUtf8() ? file : Text::acpToUtf8(file);
+		else
+		{
+			filename = Util::getFileName(result->getUtf8() ? file : Text::acpToUtf8(file));
+			path = Util::getFilePath(result->getUtf8() ? file : Text::acpToUtf8(file));
+		}
+
+		fileOrder = "f" + filename;
+		type = Util::getFileExt(filename);
+		if (!type.empty() && type[0] == '.')
+			type.erase(0, 1);
+		size = Util::formatBytes(result->getSize());
+		exactSize = Util::formatExactSize(result->getSize());
+		icon = iconFile;
+	}
+	else
+	{
+		filename = WulforUtil::linuxSeparator(result->getUtf8() ? result->getFileName() : Text::acpToUtf8(result->getFileName()));
+		path = WulforUtil::linuxSeparator(result->getUtf8() ? result->getFile() : Text::acpToUtf8(result->getFile()));
+		fileOrder = "d" + filename;
+		type = "Directory";
+		icon = iconDirectory;
+		if (result->getSize() > 0)
+		{
+			size = Util::formatBytes(result->getSize());
+			exactSize = Util::formatExactSize(result->getSize());
+		}
+	}
+
+	nick = WulforUtil::getNicks(result->getUser());
+	slots = result->getSlotString();
+	connection = ClientManager::getInstance()->getIdentity(result->getUser()).getConnection();
+	hubName = result->getHubName().empty() ? result->getHubURL().c_str() : result->getHubName().c_str();
+	ip = result->getIP();
+	if (result->getTTH() != NULL)
+		TTH = result->getTTH()->toBase32();
+	actualSlots = Util::toDouble(Util::toString(result->getFreeSlots()) + '.' + Util::toString(result->getSlots()));
+
+	// Check that it's not a duplicate
+	GtkTreeIter iter;
+	SearchResult *result2;
+	GtkTreeModel *m = GTK_TREE_MODEL(resultStore);
+	gboolean valid = gtk_tree_model_get_iter_first(m, &iter);
+	while (valid)
+	{
+		result2 = resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+		if (result->getUser()->getCID() == result2->getUser()->getCID() && result->getFile() == result2->getFile())
+			return;
+
+		valid = gtk_tree_model_iter_next(m, &iter);
+	}
+
+	gtk_list_store_append(resultStore, &iter);
+	gtk_list_store_set(resultStore, &iter,
+		resultView.col("Nick"), nick.c_str(),
+		resultView.col("Filename"), filename.c_str(),
 		resultView.col("Slots"), slots.c_str(),
 		resultView.col("Size"), size.c_str(),
 		resultView.col("Path"), path.c_str(),
@@ -1168,194 +532,711 @@ void Search::addResult_gui (SearchInfo *info)
 		resultView.col("Exact Size"), exactSize.c_str(),
 		resultView.col("IP"), ip.c_str(),
 		resultView.col("TTH"), TTH.c_str(),
-		resultView.col("Info"), (gpointer)(new SearchInfo(aResult)), 
-		resultView.col("Real Size"), r->getSize(),
+		resultView.col("Icon"), icon,
+		resultView.col("File Order"), fileOrder.c_str(),
+		resultView.col("Real Size"), result->getSize(),
+		resultView.col("Slots Order"), actualSlots,
+		resultView.col("SearchResult"), (gpointer)result,
+		resultView.col("Visible"), TRUE,
 		-1);
-	searchHits++;
-	gtk_statusbar_pop(GTK_STATUSBAR (searchItems["Status2"]), 0);
-	gtk_statusbar_push(GTK_STATUSBAR (searchItems["Status2"]), 0, string (Util::toString(searchHits) + " items").c_str ());
-	pthread_mutex_unlock (&searchLock);
+
+	++searchHits;
+	setStatus_gui("Status2", Util::toString(searchHits) + " items");
 
 	if (BOOLSETTING(BOLD_SEARCH))
 		setBold_gui();
 }
-void Search::on(ClientManagerListener::ClientConnected, Client *c) throw ()
-{
-	Lock l(cs);
-	changeHubs_gui (0, new HubInfo (c, c->getHubUrl(), c->getHubName (), c->isOp ()));
-}
-void Search::on(ClientManagerListener::ClientUpdated, Client *c) throw ()
-{
-	Lock l(cs);
-	changeHubs_gui (1, new HubInfo (c, c->getHubUrl(), c->getHubName (), c->isOp ()));
-}
-void Search::on(ClientManagerListener::ClientDisconnected, Client *c) throw ()
-{
-	Lock l(cs);
-	changeHubs_gui (2, new HubInfo (c, c->getHubUrl(), c->getHubName (), c->isOp ()));
-}
 
-void Search::on(SearchManagerListener::SR, SearchResult* aResult) throw()
+void Search::clearList_gui()
 {
-	typedef Func1<Search, SearchInfo*> F1;
-	F1 *func;
-	func = new F1 (this, &Search::addResult_gui, new SearchInfo(aResult));
-	WulforManager::get()->dispatchGuiFunc (func);
-}
-
-void Search::SearchInfo::browse (bool file)
-{
-	if (file)
+	GtkTreeIter iter;
+	GtkTreeModel *m = GTK_TREE_MODEL(resultStore);
+	gboolean valid = gtk_tree_model_get_iter_first(m, &iter);
+	while (valid)
 	{
-		GtkWidget *fileChooser = gtk_file_chooser_dialog_new (	"Choose location",
-											WulforManager::get ()->getMainWindow ()->getWindow (),
-											 GTK_FILE_CHOOSER_ACTION_SAVE,
-											GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-											GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-											NULL);
-		if (result->getUtf8()) 
-			gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(fileChooser), Util::getFileName(WulforUtil::linuxSeparator(result->getFile())).c_str());
-		else 
-			gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(fileChooser), Text::acpToUtf8(Util::getFileName(WulforUtil::linuxSeparator (result->getFile()))).c_str());
-		if (Search::lastDir != "")
-			gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (fileChooser), Search::lastDir.c_str ());
-		else
-			gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (fileChooser), SETTING (DOWNLOAD_DIRECTORY).c_str ());
-		gint response = gtk_dialog_run (GTK_DIALOG (fileChooser));
-		if (response == GTK_RESPONSE_OK)
+		SearchResult *result = resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+		result->decRef();
+		valid = gtk_tree_model_iter_next(m, &iter);
+	}
+	gtk_list_store_clear(resultStore);
+}
+
+gboolean Search::onButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+	Search *s = (Search *)data;
+	s->oldEventType = event->type;
+	return FALSE;
+}
+
+gboolean Search::onButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+	Search *s = (Search *)data;
+	gint count = gtk_tree_selection_count_selected_rows(s->selection);
+
+	if (count > 0 && event->type == GDK_BUTTON_RELEASE && event->button == 3)
+		s->popupMenu_gui();
+	else if (count == 1 && s->oldEventType == GDK_2BUTTON_PRESS && event->button == 1)
+		s->onDownloadClicked_gui(NULL, data);
+
+	return FALSE;
+}
+
+gboolean Search::onKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data)
+{
+	Search *s = (Search *)data;
+	gint count = gtk_tree_selection_count_selected_rows(s->selection);
+
+	if (count > 0)
+	{
+		if (event->keyval == GDK_Return || event->keyval == GDK_KP_Enter)
+			s->onDownloadClicked_gui(NULL, data);
+		else if (event->keyval == GDK_Delete || event->keyval == GDK_BackSpace)
+			s->onRemoveClicked_gui(NULL, data);
+		else if (event->keyval == GDK_Menu || (event->keyval == GDK_F10 && event->state & GDK_SHIFT_MASK))
+			s->popupMenu_gui();
+	}
+
+	return FALSE;
+}
+
+gboolean Search::onSearchEntryKeyPressed_gui(GtkWidget *widget, GdkEventKey *event, gpointer data)
+{
+	Search *s = (Search *)data;
+
+	if (event->keyval == GDK_Return || event->keyval == GDK_KP_Enter)
+	{
+		s->search_gui();
+	}
+	else if (event->keyval == GDK_Down || event->keyval == GDK_KP_Down)
+	{
+		gtk_combo_box_popup(GTK_COMBO_BOX(s->searchItems["Search"]));
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+void Search::onSearchButtonClicked_gui(GtkWidget *widget, gpointer data)
+{
+	Search *s = (Search *)data;
+	s->search_gui();
+}
+
+void Search::onButtonToggled_gui(GtkToggleButton *button, gpointer data)
+{
+	Search *s = (Search *)data;
+	GtkTreeIter iter;
+	GtkTreeModel *m;
+	gboolean valid;
+	SearchResult *result;
+
+	if (button == GTK_TOGGLE_BUTTON(s->searchItems["Slots"]))
+	{
+		s->onlyFree = gtk_toggle_button_get_active(button);
+		if (s->onlyFree != BOOLSETTING(SEARCH_ONLY_FREE_SLOTS))
+			SettingsManager::getInstance()->set(SettingsManager::SEARCH_ONLY_FREE_SLOTS, s->onlyFree);
+
+		if (s->onlyFree)
 		{
-			string path = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (fileChooser));
-			Search::lastDir = Util::getFilePath (path);
-			downloadTo (path);
+			m = GTK_TREE_MODEL(s->resultStore);
+			valid = gtk_tree_model_get_iter_first(m, &iter);
+	 		while (valid)
+	 		{
+				result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+				if (result->getFreeSlots() < 1)
+					valid = gtk_list_store_remove(s->resultStore, &iter);
+				else
+					valid = gtk_tree_model_iter_next(m, &iter);
+			}
 		}
-		gtk_widget_hide (fileChooser);
-		fileChooser = NULL;
+	}
+	else if (button == GTK_TOGGLE_BUTTON(s->searchItems["TTH"]))
+	{
+		s->onlyTTH = gtk_toggle_button_get_active(button);
+		if (s->onlyTTH != BOOLSETTING(SEARCH_ONLY_TTH))
+			SettingsManager::getInstance()->set(SettingsManager::SEARCH_ONLY_TTH, s->onlyTTH);
+
+		if (s->onlyTTH)
+		{
+			m = GTK_TREE_MODEL(s->resultStore);
+			valid = gtk_tree_model_get_iter_first(m, &iter);
+		 	while (valid)
+		 	{
+				result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+				if (result->getTTH() == NULL && result->getType() != SearchResult::TYPE_DIRECTORY)
+					valid = gtk_list_store_remove(s->resultStore, &iter);
+				else
+					valid = gtk_tree_model_iter_next(m, &iter);
+			}
+		}
 	}
 	else
 	{
-		GtkWidget *dirChooser = gtk_file_chooser_dialog_new ("Choose location",
-													WulforManager::get ()->getMainWindow ()->getWindow (),
-													GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-													GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-													GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-													NULL);								
-		if (Search::lastDir != "")
-			gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (dirChooser), Search::lastDir.c_str ());
+		onlyOp = gtk_toggle_button_get_active(button);
+		hash_map<string, bool> isOp;
+		m = GTK_TREE_MODEL(s->hubStore);
+		valid = gtk_tree_model_get_iter_first(m, &iter);
+	 	while (valid)
+	 	{
+			if (!s->hubView.getValue<gboolean>(&iter, "Op"))
+				gtk_list_store_set(s->hubStore, &iter, s->hubView.col("Editable"), !onlyOp, -1);
+			else
+				isOp[s->hubView.getString(&iter, "Name")] = TRUE;
+			valid = gtk_tree_model_iter_next(m, &iter);
+		}
+
+		if (onlyOp)
+		{
+			string hub;
+			m = GTK_TREE_MODEL(s->resultStore);
+			valid = gtk_tree_model_get_iter_first(m, &iter);
+		 	while (valid)
+		 	{
+				hub = s->resultView.getString(&iter, "Hub");
+				if (isOp.find(hub) == isOp.end())
+					valid = gtk_list_store_remove(s->resultStore, &iter);
+				else
+					valid = gtk_tree_model_iter_next(m, &iter);
+			}
+		}
+	}
+}
+
+void Search::onToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data)
+{
+	Search *s = (Search *)data;
+	GtkTreeIter iter;
+
+	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(s->hubStore), &iter, path))
+	{
+		if (s->hubView.getValue<gboolean>(&iter, "Editable"))
+		{
+			gboolean toggled = s->hubView.getValue<gboolean>(&iter, "Search");
+			toggled = !toggled;
+			gtk_list_store_set(s->hubStore, &iter, s->hubView.col("Search"), toggled, -1);
+			string hub = s->hubView.getString(&iter, "Name");
+
+			if (!toggled)
+			{
+				GtkTreeIter iter;
+				GtkTreeModel *m = GTK_TREE_MODEL(s->resultStore);
+				gboolean valid = gtk_tree_model_get_iter_first(m, &iter);
+			 	while (valid)
+			 	{
+					if (hub == s->resultView.getString(&iter, "Hub"))
+						valid = gtk_list_store_remove(s->resultStore, &iter);
+					else
+						valid = gtk_tree_model_iter_next(m, &iter);
+				}
+			}
+		}
+	}
+}
+
+void Search::onDownloadClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Search *s = (Search *)data;
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	SearchResult *result;
+	typedef Func2<Search, string, SearchResult *> F2;
+	F2 *func;
+
+	GtkTreeModel *m = GTK_TREE_MODEL(s->resultStore);
+	GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
+	gint count = gtk_tree_selection_count_selected_rows(s->selection);
+
+	for (int i = 0; i < count; i++)
+	{
+		path = (GtkTreePath *)g_list_nth_data(list, i);
+		if (gtk_tree_model_get_iter(m, &iter, path))
+		{
+			result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+			func = new F2(s, &Search::download_client, SETTING(DOWNLOAD_DIRECTORY), result);
+			WulforManager::get()->dispatchClientFunc(func);
+		}
+		gtk_tree_path_free(path);
+	}
+	g_list_free(list);
+}
+
+void Search::onDownloadFavoriteClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Search *s = (Search *)data;
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	SearchResult *result;
+	string fav;
+	GtkTreeModel *m = GTK_TREE_MODEL(s->resultStore);
+	GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
+	gint count = gtk_tree_selection_count_selected_rows(s->selection);
+	typedef Func2<Search, string, SearchResult *> F2;
+	F2 *func;
+
+	for (int i = 0; i < count; i++)
+	{
+		path = (GtkTreePath *)g_list_nth_data(list, i);
+		if (gtk_tree_model_get_iter(m, &iter, path))
+		{
+			result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+			fav = string((gchar *)g_object_get_data(G_OBJECT(item), "fav"));
+			func = new F2(s, &Search::download_client, fav, result);
+			WulforManager::get()->dispatchClientFunc(func);
+		}
+		gtk_tree_path_free(path);
+	}
+	g_list_free(list);
+}
+
+void Search::onDownloadToClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Search *s = (Search *)data;
+
+	gint response = gtk_dialog_run(GTK_DIALOG(s->dirChooserDialog));
+	gtk_widget_hide(s->dirChooserDialog);
+
+	if (response == GTK_RESPONSE_OK)
+	{
+		GtkTreeIter iter;
+		GtkTreePath *path;
+		SearchResult *result;
+		typedef Func2<Search, string, SearchResult *> F2;
+		F2 *func;
+
+		GtkTreeModel *m = GTK_TREE_MODEL(s->resultStore);
+		GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
+		gint count = gtk_tree_selection_count_selected_rows(s->selection);
+
+		string target = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->dirChooserDialog));
+		if (target[target.length() - 1] != PATH_SEPARATOR)
+			target += PATH_SEPARATOR;
+
+		for (int i = 0; i < count; i++)
+		{
+			path = (GtkTreePath *)g_list_nth_data(list, i);
+			if (gtk_tree_model_get_iter(m, &iter, path))
+			{
+				result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+				func = new F2(s, &Search::download_client, target, result);
+				WulforManager::get()->dispatchClientFunc(func);
+			}
+			gtk_tree_path_free(path);
+		}
+		g_list_free(list);
+	}
+}
+
+void Search::onDownloadDirClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Search *s = (Search *)data;
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	SearchResult *result;
+	typedef Func2<Search, string, SearchResult *> F2;
+	F2 *func;
+
+	GtkTreeModel *m = GTK_TREE_MODEL(s->resultStore);
+	GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
+	gint count = gtk_tree_selection_count_selected_rows(s->selection);
+
+	for (int i = 0; i < count; i++)
+	{
+		path = (GtkTreePath *)g_list_nth_data(list, i);
+		if (gtk_tree_model_get_iter(m, &iter, path))
+		{
+			result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+			func = new F2(s, &Search::downloadDir_client, SETTING(DOWNLOAD_DIRECTORY), result);
+			WulforManager::get()->dispatchClientFunc(func);
+		}
+		gtk_tree_path_free(path);
+	}
+	g_list_free(list);
+}
+
+void Search::onDownloadFavoriteDirClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Search *s = (Search *)data;
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	SearchResult *result;
+	string fav;
+	GtkTreeModel *m = GTK_TREE_MODEL(s->resultStore);
+	GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
+	gint count = gtk_tree_selection_count_selected_rows(s->selection);
+	typedef Func2<Search, string, SearchResult *> F2;
+	F2 *func;
+
+	for (int i = 0; i < count; i++)
+	{
+		path = (GtkTreePath *)g_list_nth_data(list, i);
+		if (gtk_tree_model_get_iter(m, &iter, path))
+		{
+			result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+			fav = (gchar *)g_object_get_data(G_OBJECT(item), "fav");
+			func = new F2(s, &Search::downloadDir_client, fav, result);
+			WulforManager::get()->dispatchClientFunc(func);
+		}
+		gtk_tree_path_free(path);
+	}
+	g_list_free(list);
+}
+
+void Search::onDownloadDirToClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Search *s = (Search *)data;
+
+	gint response = gtk_dialog_run(GTK_DIALOG(s->dirChooserDialog));
+	gtk_widget_hide(s->dirChooserDialog);
+
+	if (response == GTK_RESPONSE_OK)
+	{
+		GtkTreeIter iter;
+		GtkTreePath *path;
+		SearchResult *result;
+		typedef Func2<Search, string, SearchResult *> F2;
+		F2 *func;
+
+		GtkTreeModel *m = GTK_TREE_MODEL(s->resultStore);
+		GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
+		gint count = gtk_tree_selection_count_selected_rows(s->selection);
+
+		string target = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->dirChooserDialog));
+		if (target[target.length() - 1] != PATH_SEPARATOR)
+			target += PATH_SEPARATOR;
+
+		for (int i = 0; i < count; i++)
+		{
+			path = (GtkTreePath *)g_list_nth_data(list, i);
+			if (gtk_tree_model_get_iter(m, &iter, path))
+			{
+				result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+				func = new F2(s, &Search::downloadDir_client, target, result);
+				WulforManager::get()->dispatchClientFunc(func);
+			}
+			gtk_tree_path_free(path);
+		}
+		g_list_free(list);
+	}
+}
+
+void Search::onSearchByTTHClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Search *s = (Search *)data;
+	dcassert(gtk_tree_selection_count_selected_rows(s->selection) == 1);
+
+	GtkTreeIter iter;
+	GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
+	GtkTreePath *path = (GtkTreePath *)g_list_nth_data(list, 0);
+
+	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(s->resultStore), &iter, path))
+	{
+		SearchResult *result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+
+		if (result->getTTH())
+			s->putValue_gui(result->getTTH()->toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
+	}
+
+	gtk_tree_path_free(path);
+	g_list_free(list);
+}
+
+void Search::onGetFileListClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Search *s = (Search *)data;
+	dcassert(gtk_tree_selection_count_selected_rows(s->selection) == 1);
+
+	GtkTreeIter iter;
+	GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
+	GtkTreePath *path = (GtkTreePath *)g_list_nth_data(list, 0);
+
+	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(s->resultStore), &iter, path))
+	{
+		SearchResult *result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+
+		typedef Func2<Search, User::Ptr &, QueueItem::FileFlags> F2;
+		F2 *func = new F2(s, &Search::getFileList_client, result->getUser(), QueueItem::FLAG_CLIENT_VIEW);
+		WulforManager::get()->dispatchClientFunc(func);
+	}
+
+	gtk_tree_path_free(path);
+	g_list_free(list);
+}
+
+void Search::onMatchQueueClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Search *s = (Search *)data;
+	dcassert(gtk_tree_selection_count_selected_rows(s->selection) == 1);
+
+	GtkTreeIter iter;
+	GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
+	GtkTreePath *path = (GtkTreePath *)g_list_nth_data(list, 0);
+
+	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(s->resultStore), &iter, path))
+	{
+		SearchResult *result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+
+		typedef Func2<Search, User::Ptr &, QueueItem::FileFlags> F2;
+		F2 *func = new F2(s, &Search::getFileList_client, result->getUser(), QueueItem::FLAG_MATCH_QUEUE);
+		WulforManager::get()->dispatchClientFunc(func);
+	}
+
+	gtk_tree_path_free(path);
+	g_list_free(list);
+}
+
+void Search::onPrivateMessageClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Search *s = (Search *)data;
+	dcassert(gtk_tree_selection_count_selected_rows(s->selection) == 1);
+
+	GtkTreeIter iter;
+	GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
+	GtkTreePath *path = (GtkTreePath *)g_list_nth_data(list, 0);
+
+	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(s->resultStore), &iter, path))
+	{
+		SearchResult *result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+		WulforManager::get()->addPrivMsg_gui(result->getUser());
+	}
+
+	gtk_tree_path_free(path);
+	g_list_free(list);
+}
+
+void Search::onAddFavoriteUserClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Search *s = (Search *)data;
+	dcassert(gtk_tree_selection_count_selected_rows(s->selection) == 1);
+
+	GtkTreeIter iter;
+	GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
+	GtkTreePath *path = (GtkTreePath *)g_list_nth_data(list, 0);
+
+	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(s->resultStore), &iter, path))
+	{
+		SearchResult *result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+
+		typedef Func1<Search, User::Ptr &> F1;
+		F1 *func = new F1(s, &Search::addFavUser_client, result->getUser());
+		WulforManager::get()->dispatchClientFunc(func);
+	}
+
+	gtk_tree_path_free(path);
+	g_list_free(list);
+}
+
+void Search::onGrantExtraSlotClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Search *s = (Search *)data;
+	dcassert(gtk_tree_selection_count_selected_rows(s->selection) == 1);
+
+	GtkTreeIter iter;
+	GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
+	GtkTreePath *path = (GtkTreePath *)g_list_nth_data(list, 0);
+
+	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(s->resultStore), &iter, path))
+	{
+		SearchResult *result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+
+		typedef Func1<Search, User::Ptr &> F1;
+		F1 *func = new F1(s, &Search::grantSlot_client, result->getUser());
+		WulforManager::get()->dispatchClientFunc(func);
+	}
+
+	gtk_tree_path_free(path);
+	g_list_free(list);
+}
+
+void Search::onRemoveUserFromQueueClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Search *s = (Search *)data;
+	dcassert(gtk_tree_selection_count_selected_rows(s->selection) == 1);
+
+	GtkTreeIter iter;
+	GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
+	GtkTreePath *path = (GtkTreePath *)g_list_nth_data(list, 0);
+
+	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(s->resultStore), &iter, path))
+	{
+		SearchResult *result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+
+		typedef Func1<Search, User::Ptr &> F1;
+		F1 *func = new F1(s, &Search::removeSource_client, result->getUser());
+		WulforManager::get()->dispatchClientFunc(func);
+	}
+
+	gtk_tree_path_free(path);
+	g_list_free(list);
+}
+
+void Search::onRemoveClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Search *s = (Search *)data;
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	GtkTreeModel *m = GTK_TREE_MODEL(s->resultStore);
+	GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
+	gint count = gtk_tree_selection_count_selected_rows(s->selection);
+
+	for (int i = 0; i < count; i++)
+	{
+		path = (GtkTreePath *)g_list_nth_data(list, i);
+		if (gtk_tree_model_get_iter(m, &iter, path))
+		{
+			SearchResult *result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+			result->decRef();
+			gtk_list_store_remove(s->resultStore, &iter);
+		}
+		gtk_tree_path_free(path);
+	}
+	g_list_free(list);
+}
+
+void Search::download_client(string target, SearchResult *result)
+{
+	target = Text::utf8ToAcp(target);
+
+	try
+	{
+		if (result->getType() == SearchResult::TYPE_FILE)
+		{
+			string subdir = Util::getFileName(WulforUtil::linuxSeparator(result->getFile()));
+			if (result->getUtf8())
+				subdir = Text::utf8ToAcp(subdir);
+
+			QueueManager::getInstance()->add(target + subdir, result->getSize(), result->getTTH(),
+				result->getUser(), result->getFile(), result->getUtf8());
+		}
 		else
-			gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (dirChooser), SETTING (DOWNLOAD_DIRECTORY).c_str ());			
-		gint response = gtk_dialog_run (GTK_DIALOG (dirChooser));
-		if (response == GTK_RESPONSE_OK)
 		{
-			string path = gtk_file_chooser_get_current_folder (GTK_FILE_CHOOSER (dirChooser));
-			if (path[path.length ()-1] != PATH_SEPARATOR)
-				path += PATH_SEPARATOR;
-			Search::lastDir = path;
-			downloadDirTo (path);
+			QueueManager::getInstance()->addDirectory(result->getFile(), result->getUser(), target);
 		}
-		gtk_widget_hide (dirChooser);
-		dirChooser = NULL;
+	}
+	catch (const Exception&)
+	{
 	}
 }
 
-void Search::SearchInfo::download ()
+void Search::downloadDir_client(string target, SearchResult *result)
 {
-	string dir = Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY));
-	string target = dir;
-	target += Util::getFileName (WulforUtil::linuxSeparator (result->getFile ()));
-	
-	if (result->getUtf8())
-		target = Text::utf8ToAcp(target);
-	
-	try 
+	target = Text::utf8ToAcp(target);
+
+	try
 	{
-		if(result->getType() == SearchResult::TYPE_FILE) 
+		if (result->getType() == SearchResult::TYPE_FILE)
 		{
-			QueueManager::getInstance()->add(target, result->getSize(), result->getTTH(),
-			                                 result->getUser(), result->getFile(), result->getUtf8(),
-			                                 QueueItem::FLAG_RESUME, QueueItem::DEFAULT);
-		} 
-		else 
-		{
-			QueueManager::getInstance()->addDirectory(result->getFile(), result->getUser(), dir,
-				QueueItem::DEFAULT);
+			string path = WulforUtil::windowsSeparator(Util::getFilePath(WulforUtil::linuxSeparator(result->getFile())));
+			QueueManager::getInstance()->addDirectory(path, result->getUser(), target);
 		}
-	} 
-	catch(const Exception&) 
+		else
+		{
+			QueueManager::getInstance()->addDirectory(result->getFile(), result->getUser(), target);
+		}
+	}
+	catch (const Exception&)
 	{
-		///@todo add status message.
-		cout << "Couldn't add file to queue." << endl;
 	}
 }
 
-void Search::SearchInfo::downloadTo (string target)
-{
-	try 
-	{
-		if(result->getType() == SearchResult::TYPE_FILE) 
-		{
-			QueueManager::getInstance()->add(target, result->getSize(), result->getTTH(),
-			                                 result->getUser(), result->getFile(), result->getUtf8(),
-			                                 QueueItem::FLAG_RESUME, QueueItem::DEFAULT);
-		} 
-		else 
-		{
-			QueueManager::getInstance()->addDirectory(result->getFile(), result->getUser(), Util::getFilePath (target),
-				QueueItem::DEFAULT);
-		}
-	} 
-	catch(const Exception&) 
-	{
-		cout << "Couldn't add file to queue." << endl;
-	}	
-}
-
-void Search::SearchInfo::downloadDir ()
+void Search::getFileList_client(User::Ptr &user, QueueItem::FileFlags flags)
 {
 	try
 	{
-		if(result->getType() == SearchResult::TYPE_FILE) 
-		{
-			QueueManager::getInstance()->addDirectory(WulforUtil::windowsSeparator (Util::getFilePath (WulforUtil::linuxSeparator (result->getFile ()))),
-				result->getUser(),
-				SETTING (DOWNLOAD_DIRECTORY), 
-				QueueItem::DEFAULT);
-		}
-		else 
-		{
-			QueueManager::getInstance()->addDirectory(
-				result->getFile (),
-				result->getUser(),
-				SETTING (DOWNLOAD_DIRECTORY), 
-				QueueItem::DEFAULT);
-		}
+		QueueManager::getInstance()->addList(user, flags);
 	}
-	catch(...)
+	catch (const Exception&)
 	{
-		cout << "Couldn't add dir for download." << endl;
-	}	
+	}
 }
-void Search::SearchInfo::downloadDirTo (string dir)
+
+void Search::grantSlot_client(User::Ptr &user)
 {
-	try
+	UploadManager::getInstance()->reserveSlot(user);
+}
+
+void Search::addFavUser_client(User::Ptr &user)
+{
+	FavoriteManager::getInstance()->addFavoriteUser(user);
+}
+
+void Search::removeSource_client(User::Ptr &user)
+{
+	QueueManager::getInstance()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
+}
+
+void Search::on(ClientManagerListener::ClientConnected, Client *client) throw()
+{
+	if (client)
 	{
-		if(result->getType() == SearchResult::TYPE_FILE) 
+		typedef Func3<Search, string, string, bool> F3;
+		F3 *func = new F3(this, &Search::addHub_gui, client->getHubName(), client->getHubUrl(), client->getMyIdentity().isOp());
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
+}
+
+void Search::on(ClientManagerListener::ClientUpdated, Client *client) throw()
+{
+	if (client)
+	{
+		typedef Func3<Search, string, string, bool> F3;
+		F3 *func = new F3(this, &Search::modifyHub_gui, client->getHubName(), client->getHubUrl(), client->getMyIdentity().isOp());
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
+}
+
+void Search::on(ClientManagerListener::ClientDisconnected, Client *client) throw()
+{
+	if (client)
+	{
+		typedef Func1<Search, string> F1;
+		F1 *func = new F1(this, &Search::removeHub_gui, client->getHubUrl());
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
+}
+
+void Search::on(SearchManagerListener::SR, SearchResult *result) throw()
+{
+	dcassert(result);
+
+	if (searchlist.empty())
+		return;
+
+	if (isHash)
+	{
+		if (result->getTTH() == NULL || Util::stricmp(result->getTTH()->toBase32(), searchlist[0]) != 0)
+			return;
+	}
+	else
+	{
+		for (TStringIter i = searchlist.begin(); i != searchlist.end(); i++)
 		{
-			QueueManager::getInstance()->addDirectory(WulforUtil::windowsSeparator (Util::getFilePath (WulforUtil::linuxSeparator (result->getFile ()))),
-				result->getUser(),
-				dir+'/', 
-				QueueItem::DEFAULT);
-		}
-		else 
-		{
-			QueueManager::getInstance()->addDirectory(
-				result->getFile (),
-				result->getUser(),
-				dir+'/', 
-				QueueItem::DEFAULT);
+			if ((*i->begin() != '-' && Util::findSubString(result->getUtf8() ? result->getFile() :
+				Text::acpToUtf8(result->getFile()), *i) == (string::size_type)-1) ||
+				(*i->begin() == '-' && i->size() != 1 && Util::findSubString(result->getUtf8() ? result->getFile() :
+				Text::acpToUtf8(result->getFile()), i->substr(1)) != (string::size_type)-1))
+			{
+				droppedResult++;
+				typedef Func2<Search, string, string> F2;
+				F2 *func = new F2(this, &Search::setStatus_gui, "Status3", Util::toString(droppedResult) + " filtered");
+				WulforManager::get()->dispatchGuiFunc(func);
+				return;
+			}
 		}
 	}
-	catch(...)
+
+	// Reject results without free slots if selected, but always show directories
+	if ((onlyFree && result->getFreeSlots() < 1 || onlyTTH && result->getTTH() == NULL) &&
+		result->getType() != SearchResult::TYPE_DIRECTORY)
 	{
-		cout << "Couldn't add dir for download." << endl;
-	}	
+		droppedResult++;
+		typedef Func2<Search, string, string> F2;
+		F2 *func = new F2(this, &Search::setStatus_gui, "Status3", Util::toString(droppedResult) + " filtered");
+		WulforManager::get()->dispatchGuiFunc(func);
+		return;
+	}
+
+	result->incRef();
+	typedef Func1<Search, SearchResult *> F1;
+	F1 *func = new F1(this, &Search::addResult_gui, result);
+	WulforManager::get()->dispatchGuiFunc(func);
 }

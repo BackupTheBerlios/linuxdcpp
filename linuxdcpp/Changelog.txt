@@ -1,3 +1,20 @@
+2006-08-01 - Steven Sheehy
+* Fixed the gui freezing that occurred sometimes when closing the hub tab.
+* Added -Wall to debug mode CXXFLAGS and fixed most compiler warnings (including dc++ core).
+* Search changes:
+	* Cleaned up code.
+	* Added keyboard events.
+	* Fixed a massive amount of memory leaks (seriously, it was ridiculous).
+	* Fixed most areas that could cause potential deadlock.
+	* Added "Only results with TTH root" option.
+	* Made above & "Only users with free slots" option persistent.
+	* Improved "Only where I'm op" option.
+	* Made the checkbox options filter the list as they're selected instead of just on next search.
+	* Slots column now sorts properly (used to sort as a string).
+	* Filename col now sorts directories first.
+	* Added file & dir icons to search results.
+	* Fixed and improved search drop down box.
+
 2006-07-23 - Steven Sheehy
 * Replaced more menu items with stock icons (thanks Rimas Kudelis).
 * Changed "Quick Connect" shortcut from Ctrl-Q to Ctrl-N (Ctrl-Q is now used

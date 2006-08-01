@@ -49,9 +49,9 @@ class FinishedTransfers:
 		static void onRemoveAll_gui(GtkMenuItem *item, gpointer data);
 		static void onOpenWith_gui(GtkMenuItem *item, gpointer data);
 
-		// Client callbacks from FinishedManagerListener
-		void on(FinishedManagerListener::AddedDl, FinishedItem* entry) throw();
-		void on(FinishedManagerListener::AddedUl, FinishedItem* entry) throw();
+		// Client callbacks
+		virtual void on(FinishedManagerListener::AddedDl, FinishedItem* entry) throw();
+		virtual void on(FinishedManagerListener::AddedUl, FinishedItem* entry) throw();
 
 		GtkWidget *mainBox;
 		GtkListStore *transferStore;

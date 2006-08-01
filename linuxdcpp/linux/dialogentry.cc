@@ -52,9 +52,6 @@ GladeXML* DialogEntry::getGladeXML(string file)
 	file = WulforManager::get()->getPath() + "/glade/" + file;
 	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
 	if (xml == NULL)
-	{
-		cout << "Error: Missing required glade file: " << file << endl;
-		exit(1);
-	}
+		gtk_main_quit();
 	return xml;
 }

@@ -80,27 +80,24 @@ class Hub:
 		void addAsFavorite_client();
 
 		// Client callbacks
-		// From ClientListener
-		void on(ClientListener::Connecting, Client *) throw();
-		void on(ClientListener::Connected, Client *) throw();
-		void on(ClientListener::BadPassword, Client *) throw();
-		void on(ClientListener::UserUpdated, Client *, const OnlineUser &user) throw();
-		void on(ClientListener::UsersUpdated, Client *, const OnlineUser::List &list) throw();
-		void on(ClientListener::UserRemoved, Client *, const OnlineUser &user) throw();
-		void on(ClientListener::Redirect, Client *, const string &address) throw();
-		void on(ClientListener::Failed, Client *, const string &reason) throw();
-		void on(ClientListener::GetPassword, Client *) throw();
-		void on(ClientListener::HubUpdated, Client *) throw();
-		void on(ClientListener::Message, Client *, const OnlineUser &user, const string &message) throw();
-		void on(ClientListener::StatusMessage, Client *, const string &message) throw();
-		void on(ClientListener::PrivateMessage, Client *, const OnlineUser &from,
+		virtual void on(ClientListener::Connecting, Client *) throw();
+		virtual void on(ClientListener::Connected, Client *) throw();
+		virtual void on(ClientListener::BadPassword, Client *) throw();
+		virtual void on(ClientListener::UserUpdated, Client *, const OnlineUser &user) throw();
+		virtual void on(ClientListener::UsersUpdated, Client *, const OnlineUser::List &list) throw();
+		virtual void on(ClientListener::UserRemoved, Client *, const OnlineUser &user) throw();
+		virtual void on(ClientListener::Redirect, Client *, const string &address) throw();
+		virtual void on(ClientListener::Failed, Client *, const string &reason) throw();
+		virtual void on(ClientListener::GetPassword, Client *) throw();
+		virtual void on(ClientListener::HubUpdated, Client *) throw();
+		virtual void on(ClientListener::Message, Client *, const OnlineUser &user, const string &message) throw();
+		virtual void on(ClientListener::StatusMessage, Client *, const string &message) throw();
+		virtual void on(ClientListener::PrivateMessage, Client *, const OnlineUser &from,
 			const OnlineUser &to, const OnlineUser &replyTo, const string &message) throw();
-		void on(ClientListener::NickTaken, Client *) throw();
-		void on(ClientListener::SearchFlood, Client *, const string &message) throw();
-
-		// From TimerManagerListener
-		void on(TimerManagerListener::Second, u_int32_t tics) throw();
-		void on(TimerManagerListener::Minute, u_int32_t tics) throw();
+		virtual void on(ClientListener::NickTaken, Client *) throw();
+		virtual void on(ClientListener::SearchFlood, Client *, const string &message) throw();
+		virtual void on(TimerManagerListener::Second, u_int32_t tics) throw();
+		virtual void on(TimerManagerListener::Minute, u_int32_t tics) throw();
 
 		hash_map<std::string, Identity> idMap;
 		hash_map<std::string, GdkPixbuf *> userIcons;

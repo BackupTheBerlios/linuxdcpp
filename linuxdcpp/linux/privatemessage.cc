@@ -207,7 +207,7 @@ gboolean PrivateMessage::onKeyPress_gui(GtkWidget *widget, GdkEventKey *event, g
 {
 	PrivateMessage *pm = (PrivateMessage *)data;
 	string text;
-	int index;
+	size_t index;
 
 	if (event->keyval == GDK_Up || event->keyval == GDK_KP_Up)
 	{

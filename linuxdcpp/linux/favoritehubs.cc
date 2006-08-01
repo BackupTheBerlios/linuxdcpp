@@ -242,7 +242,6 @@ void FavoriteHubs::onAddEntry_gui(GtkWidget *widget, gpointer data)
 {
 	FavoriteHubs *fh = (FavoriteHubs *)data;
 	FavoriteHubEntry entry;
-	GtkTreeIter iter;
 	string name, server, description, nick, password, userDescription;
 
 	gtk_entry_set_text(GTK_ENTRY(fh->dialog["Name"]), "");
@@ -389,12 +388,10 @@ void FavoriteHubs::onToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path
 {
 	FavoriteHubs *fh = (FavoriteHubs*)data;
   	GtkTreeIter iter;
-  	gboolean fixed;
-	GtkTreeModel *m = GTK_TREE_MODEL(fh->favoriteStore);
 
-  	if (gtk_tree_model_get_iter_from_string(m, &iter, path))
+  	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(fh->favoriteStore), &iter, path))
   	{
-  		fixed = fh->favoriteView.getValue<gboolean>(&iter, "Auto Connect");
+  		gboolean fixed = fh->favoriteView.getValue<gboolean>(&iter, "Auto Connect");
 		fixed = !fixed;
   		gtk_list_store_set(fh->favoriteStore, &iter, fh->favoriteView.col("Auto Connect"), fixed, -1);
 

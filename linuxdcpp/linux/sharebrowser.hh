@@ -81,7 +81,6 @@ class ShareBrowser:
 
 		GdkEventType oldType;
 		DirectoryListing listing;
-		std::string lastDir;
 		int64_t shareSize;
 		int64_t currentSize;
 		int shareItems;
@@ -97,6 +96,7 @@ class ShareBrowser:
 		GtkWidget *box;
 		GtkWidget *findDialog;
 		GtkEntry *findEntry;
+		GtkWidget *dirChooserDialog;
 		GtkButton *matchButton, *findButton, *nextButton;
 		GdkPixbuf *iconFile, *iconDirectory;
 		GtkMenu *fileMenu, *dirMenu, *fileDownloadMenu, *dirDownloadMenu;

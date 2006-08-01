@@ -145,7 +145,9 @@ Hub::~Hub()
 	if (client)
 	{
 		client->removeListener(this);
+		client->disconnect(TRUE);
 		ClientManager::getInstance()->putClient(client);
+		client = NULL;
 	}
 
 	hash_map<string, GdkPixbuf *>::iterator it;
@@ -574,7 +576,7 @@ gboolean Hub::onEntryKeyPress_gui(GtkWidget *widget, GdkEventKey *event, gpointe
 	Hub *hub = (Hub *)data;
 	GtkEntry *chatEntry = GTK_ENTRY(widget);
 	string text;
-	int index;
+	size_t index;
 
 	if (event->keyval == GDK_Up || event->keyval == GDK_KP_Up)
 	{

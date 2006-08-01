@@ -68,10 +68,10 @@ class PublicHubs:
 		void refresh_client();
 		void addFav_client(FavoriteHubEntry entry);
 
-		// Client callbacks from FavoriteManagerListener
-		void on(FavoriteManagerListener::DownloadStarting, const std::string &file) throw();
-		void on(FavoriteManagerListener::DownloadFailed, const std::string &file) throw();
-		void on(FavoriteManagerListener::DownloadFinished, const std::string &file) throw();
+		// Client callbacks
+		virtual void on(FavoriteManagerListener::DownloadStarting, const std::string &file) throw();
+		virtual void on(FavoriteManagerListener::DownloadFailed, const std::string &file) throw();
+		virtual void on(FavoriteManagerListener::DownloadFinished, const std::string &file) throw();
 
 		pthread_mutex_t hubLock;
 		HubEntry::List hubs;
@@ -85,7 +85,7 @@ class PublicHubs:
 		GtkListStore *hubStore, *listsStore;
 		GtkStatusbar *statusMain, *statusHubs, *statusUsers;
 		GtkMenu *menu;
-		gint oldButton, oldType;
+		guint oldButton, oldType;
 };
 
 #else

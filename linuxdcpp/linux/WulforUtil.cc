@@ -21,7 +21,7 @@
 
 vector<int> WulforUtil::splitString(const string &str, const string &delimiter)
 {
-	int loc, len, pos = 0;
+	string::size_type loc, len, pos = 0;
 	vector<int> array;
 	if (!str.empty())
 	{

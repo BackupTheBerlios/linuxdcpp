@@ -32,8 +32,8 @@
 #define POLL_TIMEOUT 250
 
 BufferedSocket::BufferedSocket(char aSeparator) throw() : 
-separator(aSeparator), mode(MODE_LINE), 
-dataBytes(0), rollback(0), failed(false), sock(0), disconnecting(false), filterIn(NULL)
+separator(aSeparator), mode(MODE_LINE), filterIn(NULL),
+dataBytes(0), rollback(0), failed(false), sock(0), disconnecting(false)
 {
 	sockets++;
 }
@@ -67,6 +67,8 @@ void BufferedSocket::setMode (Modes aMode, size_t aRollback) {
 			break;
 		case MODE_ZPIPE:
 			filterIn = new UnZFilter;
+			break;
+		case MODE_DATA:
 			break;
 	}
 }
@@ -419,6 +421,8 @@ bool BufferedSocket::checkEvents() {
 				break;
 			case SHUTDOWN: 
 				return false;
+			case ACCEPTED:
+				break;
 		}
 
 		delete p.second;

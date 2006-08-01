@@ -595,7 +595,7 @@
 
 		      <child>
 			<widget class="GtkEntry" id="entryTCP">
-			  <property name="width_request">40</property>
+			  <property name="width_request">50</property>
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="editable">True</property>
@@ -618,7 +618,7 @@
 
 		      <child>
 			<widget class="GtkEntry" id="entryUDP">
-			  <property name="width_request">40</property>
+			  <property name="width_request">50</property>
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="editable">True</property>
@@ -7462,7 +7462,6 @@ resolve hostnames</property>
     </widget>
   </child>
 </widget>
-
 
 <widget class="GtkFileChooserDialog" id="dirChooserDialog">
 	<property name="title" translatable="yes">Choose a directory</property>

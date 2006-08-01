@@ -42,10 +42,7 @@ MainWindow::MainWindow():
 	string file = WulforManager::get()->getPath() + "/glade/mainwindow.glade";
 	xml = glade_xml_new(file.c_str(), NULL, NULL);
 	if (xml == NULL)
-	{
-		cout << "Error: Missing required glade file: " << file << endl;
-		exit(1);
-	}
+		gtk_main_quit();
 
 	createWindow_gui();
 	createTrayIcon_gui();
@@ -792,7 +789,7 @@ void MainWindow::startSocket_client()
 		}
 		catch(const Exception& e)
 		{
-			cout << "StartSocket (tcp): Caught \"" << e.getError() << "\"" << endl;
+			cerr << "StartSocket (tcp): Caught \"" << e.getError() << "\"" << endl;
 		}
 		try
 		{
@@ -800,7 +797,7 @@ void MainWindow::startSocket_client()
 		}
 		catch(const Exception& e)
 		{
-			cout << "StartSocket (udp): Caught \"" << e.getError() << "\"" << endl;
+			cerr << "StartSocket (udp): Caught \"" << e.getError() << "\"" << endl;
 		}
 	}
 

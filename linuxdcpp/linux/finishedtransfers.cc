@@ -114,7 +114,8 @@ gboolean FinishedTransfers::onKeyReleased_gui(GtkWidget *widget, GdkEventKey *ev
 	{
 		gtk_menu_popup(ft->menu, NULL, NULL, NULL, NULL, 1, event->time);
 		gtk_widget_show_all(GTK_WIDGET(ft->menu));
-	}	
+	}
+	return FALSE;
 }
 
 void FinishedTransfers::onRemoveItems_gui(GtkMenuItem *item, gpointer data)

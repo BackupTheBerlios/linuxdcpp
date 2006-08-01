@@ -81,12 +81,14 @@ void *WulforManager::threadFunc_gui(void *data)
 {
 	WulforManager *man = (WulforManager *)data;
 	man->processGuiQueue();
+	pthread_exit(NULL);
 }
 
 void *WulforManager::threadFunc_client(void *data)
 {
 	WulforManager *man = (WulforManager *)data;
 	man->processClientQueue();
+	pthread_exit(NULL);
 }
 
 void WulforManager::processGuiQueue()
@@ -268,13 +270,13 @@ void WulforManager::insertBookEntry_gui(BookEntry *entry, bool raise)
 	pthread_mutex_unlock(&bookEntryLock);
 }
 
-// This is a callback, so gtk_thread_enter/leave is called automatically.
+// This is a callback, so gdk_threads_enter/leave is called automatically.
 void WulforManager::deleteBookEntry_gui(BookEntry *entry)
 {
-	vector<FuncBase *>::iterator fIt;
-	//Save a pointer to the page before the entry is deleted
+	// Save a pointer to the page before the entry is deleted
 	GtkWidget *notebookPage = entry->getWidget();
 	string id = entry->getID();
+	vector<FuncBase *>::iterator fIt;
 
 	pthread_mutex_lock(&clientCallLock);
 
@@ -310,17 +312,17 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry)
 	// Remove the bookentry from the list.
 	pthread_mutex_lock(&bookEntryLock);
 	if (bookEntries.find(id) != bookEntries.end())
-	{
-		if (id.substr(0, 5) == "Hub: " || id.substr(0, 4) == "PM: ")
-			mainWin->removeWindowItem(notebookPage);
 		bookEntries.erase(id);
-		delete entry;
-	}
 	pthread_mutex_unlock(&bookEntryLock);
+
+	delete entry;
 
 	pthread_mutex_unlock(&clientCallLock);
 
-	//remove the flap from the notebook
+	if (id.substr(0, 5) == "Hub: " || id.substr(0, 4) == "PM: ")
+		mainWin->removeWindowItem(notebookPage);
+
+	// Remove the flap from the notebook
 	mainWin->removePage_gui(notebookPage);
 }
 
@@ -356,7 +358,7 @@ void WulforManager::hideDialogEntry_gui(DialogEntry *entry)
 		gtk_widget_hide(entry->getDialog());
 }
 
-// This is a callback, so gtk_thread_enter/leave is called automatically.
+// This is a callback, so gdk_threads_enter/leave is called automatically.
 void WulforManager::deleteDialogEntry_gui(DialogEntry *entry)
 {
 	vector<FuncBase *>::iterator it;
@@ -395,11 +397,10 @@ void WulforManager::deleteDialogEntry_gui(DialogEntry *entry)
 
 	pthread_mutex_lock(&dialogEntryLock);
 	if (dialogEntries.find(id) != dialogEntries.end())
-	{
 		dialogEntries.erase(id);
-		delete entry;
-	}
 	pthread_mutex_unlock(&dialogEntryLock);
+
+	delete entry;
 
 	pthread_mutex_unlock(&clientCallLock);	
 }
@@ -418,8 +419,7 @@ PublicHubs *WulforManager::addPublicHubs_gui()
 	PublicHubs *pubHubs = new PublicHubs();
 	insertBookEntry_gui(pubHubs);
 
-	Func0<PublicHubs> *func = new Func0<PublicHubs>(pubHubs, &PublicHubs::downloadList_client);
-	dispatchClientFunc(func);
+	dispatchClientFunc(new Func0<PublicHubs>(pubHubs, &PublicHubs::downloadList_client));
 
 	return pubHubs;
 }
@@ -457,7 +457,7 @@ Hub *WulforManager::addHub_gui(string address, string nick, string desc, string 
 
 	typedef Func4<Hub, string, string, string, string> F4;
 	F4 *func = new F4(hub, &Hub::connectClient_client, address, nick, desc, password);
-	WulforManager::get()->dispatchClientFunc(func);
+	dispatchClientFunc(func);
 
 	return hub;
 }

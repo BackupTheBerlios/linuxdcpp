@@ -39,10 +39,7 @@ Settings::Settings()
 	string file = WulforManager::get()->getPath() + "/glade/settingsdialog.glade";
 	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
 	if (xml == NULL)
-	{
-		cout << "Error: Missing required glade file: " << file << endl;
-		exit(1);
-	}
+		gtk_main_quit();
 
 	dialog = glade_xml_get_widget(xml, "settingsDialog");
 	favoriteName = glade_xml_get_widget(xml, "favoriteName");
@@ -932,7 +929,7 @@ void Settings::onAddFavorite_gui(GtkWidget *widget, gpointer data)
 			else
 			{
 				GtkWidget *d = gtk_message_dialog_new(WulforManager::get()->getMainWindow()->getWindow(),
-					GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "Directory or directory name already exists", NULL);
+					GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "Directory or directory name already exists");
 				gtk_dialog_run(GTK_DIALOG(d));
 				gtk_widget_hide(d);
 			}
@@ -1163,6 +1160,7 @@ gboolean Settings::onShareHiddenPressed_gui(GtkToggleButton *togglebutton, gpoin
 			-1);
 	}
 	gtk_label_set_text(GTK_LABEL(s->shareItems["Size"]), string("Total size: " +Util::formatBytes(ShareManager::getInstance()->getShareSize())).c_str());
+	return FALSE;
 }
 
 // Appearance tab
@@ -1318,30 +1316,28 @@ void Settings::addOption(GtkListStore *store, TreeView view, string name, Settin
 		view.col("Name"), name.c_str(), view.col("Setting"), setting,  -1);
 }
 
-void Settings::onAppearanceToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data)
+void Settings::onAppearanceToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data)
 {
 	Settings *s = (Settings *)data;
   	GtkTreeIter iter;
-  	gboolean fixed;
-  	GtkTreePath *path = gtk_tree_path_new_from_string(pathString);
-	GtkTreeModel *m = GTK_TREE_MODEL(s->appearanceStore);
-  	gtk_tree_model_get_iter(m, &iter, path);
-  	fixed = s->appearanceView.getValue<gboolean>(&iter,"Use");
-  	gtk_list_store_set(s->appearanceStore, &iter, s->appearanceView.col("Use"), !fixed, -1);
-	gtk_tree_path_free(path);
+
+  	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(s->appearanceStore), &iter, path))
+  	{
+		gboolean fixed = s->appearanceView.getValue<gboolean>(&iter,"Use");
+  		gtk_list_store_set(s->appearanceStore, &iter, s->appearanceView.col("Use"), !fixed, -1);
+	}
 }
 
-void Settings::onQueueToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data)
+void Settings::onQueueToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data)
 {
 	Settings *s = (Settings *)data;
   	GtkTreeIter iter;
-  	gboolean fixed;
-  	GtkTreePath *path = gtk_tree_path_new_from_string(pathString);
-	GtkTreeModel *m = GTK_TREE_MODEL(s->queueStore);
-  	gtk_tree_model_get_iter(m, &iter, path);
-  	fixed = s->queueView.getValue<gboolean>(&iter,"Use");
-  	gtk_list_store_set(s->queueStore, &iter, s->queueView.col("Use"), !fixed, -1);
-	gtk_tree_path_free(path);
+
+  	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(s->queueStore), &iter, path))
+  	{
+		gboolean fixed = s->queueView.getValue<gboolean>(&iter,"Use");
+  		gtk_list_store_set(s->queueStore, &iter, s->queueView.col("Use"), !fixed, -1);
+	}
 }
 
 void Settings::checkClicked()
@@ -1485,68 +1481,62 @@ void Settings::initAdvanced_gui()
 
 }
 
-void Settings::onColorToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data)
+void Settings::onColorToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data)
 {
 	Settings *s = (Settings *)data;
   	GtkTreeIter iter;
-  	gboolean fixed;
-  	GtkTreePath *path = gtk_tree_path_new_from_string(pathString);
-	GtkTreeModel *m = GTK_TREE_MODEL(s->colorStore);
-  	gtk_tree_model_get_iter(m, &iter, path);
-  	gtk_tree_model_get(m, &iter, s->colorView.col("Use"), &fixed, -1);
-	fixed = s->colorView.getValue<gboolean>(&iter, "Use");
-  	gtk_list_store_set(s->colorStore, &iter, s->colorView.col("Use"), !fixed, -1);
-	gtk_tree_path_free(path);
+
+  	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(s->colorStore), &iter, path))
+  	{
+		gboolean fixed = s->colorView.getValue<gboolean>(&iter, "Use");
+  		gtk_list_store_set(s->colorStore, &iter, s->colorView.col("Use"), !fixed, -1);
+	}
 }
 
-void Settings::onWindowView1ToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data)
+void Settings::onWindowView1ToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data)
 {
 	Settings *s = (Settings *)data;
 	GtkTreeIter iter;
-	gboolean fixed;
-  	GtkTreePath *path = gtk_tree_path_new_from_string(pathString);
-	GtkTreeModel *m = GTK_TREE_MODEL(s->windowStore1);
-	gtk_tree_model_get_iter(m, &iter, path);
-	fixed = s->windowView1.getValue<gboolean>(&iter, "Use");
-	gtk_list_store_set(s->windowStore1, &iter, s->windowView1.col("Use"), !fixed, -1);
-	gtk_tree_path_free(path);
+
+	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(s->windowStore1), &iter, path))
+	{
+		gboolean fixed = s->windowView1.getValue<gboolean>(&iter, "Use");
+		gtk_list_store_set(s->windowStore1, &iter, s->windowView1.col("Use"), !fixed, -1);
+	}
 }
 
-void Settings::onWindowView2ToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data)
+void Settings::onWindowView2ToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data)
 {
 	Settings *s = (Settings *)data;
 	GtkTreeIter iter;
-	gboolean fixed;
-  	GtkTreePath *path = gtk_tree_path_new_from_string(pathString);
-	GtkTreeModel *m = GTK_TREE_MODEL(s->windowStore2);
-	gtk_tree_model_get_iter(m, &iter, path);
-	fixed = s->windowView2.getValue<gboolean>(&iter, "Use");
-	gtk_list_store_set(s->windowStore2, &iter, s->windowView2.col("Use"), !fixed, -1);
-	gtk_tree_path_free(path);
+  
+	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(s->windowStore2), &iter, path))
+	{
+		gboolean fixed = s->windowView2.getValue<gboolean>(&iter, "Use");
+		gtk_list_store_set(s->windowStore2, &iter, s->windowView2.col("Use"), !fixed, -1);
+	}
 }
 
-void Settings::onWindowView3ToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data)
+void Settings::onWindowView3ToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data)
 {
 	Settings *s = (Settings *)data;
 	GtkTreeIter iter;
-	gboolean fixed;
-  	GtkTreePath *path = gtk_tree_path_new_from_string(pathString);
-	GtkTreeModel *m = GTK_TREE_MODEL(s->windowStore3);
-	gtk_tree_model_get_iter(m, &iter, path);
-	fixed = s->windowView3.getValue<gboolean>(&iter, "Use");
-	gtk_list_store_set(s->windowStore3, &iter, s->windowView3.col("Use"), !fixed, -1);
-	gtk_tree_path_free(path);
+
+	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(s->windowStore3), &iter, path))
+	{
+		gboolean fixed = s->windowView3.getValue<gboolean>(&iter, "Use");
+		gtk_list_store_set(s->windowStore3, &iter, s->windowView3.col("Use"), !fixed, -1);
+	}
 }
 
-void Settings::onAdvancedToggledClicked_gui(GtkCellRendererToggle *cell, gchar *pathString, gpointer data)
+void Settings::onAdvancedToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data)
 {
 	Settings *s = (Settings *)data;
   	GtkTreeIter iter;
-  	gboolean fixed;
-  	GtkTreePath *path = gtk_tree_path_new_from_string(pathString);
-	GtkTreeModel *m = GTK_TREE_MODEL(s->advancedStore);
-  	gtk_tree_model_get_iter(m, &iter, path);
-	fixed = s->advancedView.getValue<gboolean>(&iter, "Use");
-  	gtk_list_store_set(s->advancedStore, &iter, s->advancedView.col("Use"), !fixed, -1);
-	gtk_tree_path_free(path);
+
+  	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(s->advancedStore), &iter, path))
+  	{
+		gboolean fixed = s->advancedView.getValue<gboolean>(&iter, "Use");
+  		gtk_list_store_set(s->advancedStore, &iter, s->advancedView.col("Use"), !fixed, -1);
+	}
 }

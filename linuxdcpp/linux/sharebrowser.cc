@@ -21,7 +21,6 @@
 ShareBrowser::ShareBrowser(User::Ptr user, std::string file):
 	BookEntry("List: " + WulforUtil::getNicks(user)),
 	listing(user),
-	lastDir(""),
 	updateFileView(TRUE)
 {
 	GladeXML *xml = getGladeXML("sharebrowser.glade");
@@ -35,6 +34,9 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file):
 	findDialog = glade_xml_get_widget(xml, "findDialog");
 	findEntry = GTK_ENTRY(glade_xml_get_widget(xml, "findEntry"));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(findDialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	dirChooserDialog = glade_xml_get_widget(xml, "dirChooserDialog");
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dirChooserDialog), Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY)).c_str());
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dirChooserDialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	mainStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "mainStatus"));
 	itemsStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "itemsStatus"));
@@ -152,6 +154,7 @@ ShareBrowser::~ShareBrowser()
 		g_object_unref(iconDirectory);
 
 	gtk_widget_destroy(findDialog);
+	gtk_widget_destroy(dirChooserDialog);
 }
 
 GtkWidget *ShareBrowser::getWidget()
@@ -255,7 +258,6 @@ void ShareBrowser::updateFiles_gui(DirectoryListing::Directory *dir)
 	DirectoryListing::Directory::Iter it_dir;
 	DirectoryListing::File::List *files = &(dir->files);
 	DirectoryListing::File::Iter it_file;
-	gpointer ptr;
 	GtkTreeIter iter;
 	int64_t size;
 	gint sortColumn;
@@ -341,8 +343,8 @@ void ShareBrowser::updateFiles_gui(DirectoryListing::Directory *dir)
 			fileView.col("DL File"), (gpointer)(*it_file),
 			-1);
 
-		TTHValue *tth;
-		if (tth = (*it_file)->getTTH())
+		TTHValue *tth = (*it_file)->getTTH();
+		if (tth)
 			gtk_list_store_set(fileStore, &iter, fileView.col("TTH"), tth->toBase32().c_str(), -1);
 		else
 			gtk_list_store_set(fileStore, &iter, fileView.col("TTH"), "N/A", -1);
@@ -769,30 +771,18 @@ void ShareBrowser::onDownloadClicked_gui(GtkMenuItem *item, gpointer data)
 void ShareBrowser::onDownloadToClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	ShareBrowser *sb = (ShareBrowser *)data;
-	GtkWidget *chooser = gtk_file_chooser_dialog_new("Choose location",
-		WulforManager::get()->getMainWindow()->getWindow(),
-		GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-		GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-		NULL);
-	gtk_dialog_set_alternative_button_order(GTK_DIALOG(chooser), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
-	if (!sb->lastDir.empty())
-		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(chooser), sb->lastDir.c_str());
-	else
-		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(chooser), Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY)).c_str());
+	gint response = gtk_dialog_run(GTK_DIALOG(sb->dirChooserDialog));
+	gtk_widget_hide(sb->dirChooserDialog);
 
-	gint response = gtk_dialog_run(GTK_DIALOG (chooser));
 	if (response == GTK_RESPONSE_OK)
 	{
-		string path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(chooser));
-		if (path[path.length () - 1] != PATH_SEPARATOR)
+		string path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(sb->dirChooserDialog));
+		if (path[path.length() - 1] != PATH_SEPARATOR)
 			path += PATH_SEPARATOR;
-		sb->lastDir = path;
 
 		sb->downloadSelectedFiles_gui(path);
 	}
-	gtk_widget_destroy(chooser);
 }
 
 void ShareBrowser::onDownloadFavoriteClicked_gui(GtkMenuItem *item, gpointer data)
@@ -811,30 +801,18 @@ void ShareBrowser::onDownloadDirClicked_gui(GtkMenuItem *item, gpointer data)
 void ShareBrowser::onDownloadDirToClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	ShareBrowser *sb = (ShareBrowser *)data;
-	GtkWidget *chooser = gtk_file_chooser_dialog_new("Choose location",
-		WulforManager::get()->getMainWindow()->getWindow(),
-		GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-		GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-		NULL);
-	gtk_dialog_set_alternative_button_order(GTK_DIALOG(chooser), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
-	if (!sb->lastDir.empty())
-		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(chooser), sb->lastDir.c_str());
-	else
-		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(chooser), Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY)).c_str());
+	gint response = gtk_dialog_run(GTK_DIALOG(sb->dirChooserDialog));
+	gtk_widget_hide(sb->dirChooserDialog);
 
-	gint response = gtk_dialog_run(GTK_DIALOG(chooser));
 	if (response == GTK_RESPONSE_OK)
 	{
-		string path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(chooser));
+		string path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(sb->dirChooserDialog));
 		if (path[path.length() - 1] != PATH_SEPARATOR)
 			path += PATH_SEPARATOR;
-		sb->lastDir = path;
 
 		sb->downloadSelectedDirs_gui(path);
 	}
-	gtk_widget_destroy(chooser);
 }
 
 void ShareBrowser::onDownloadFavoriteDirClicked_gui(GtkMenuItem *item, gpointer data)
@@ -876,7 +854,7 @@ void ShareBrowser::onSearchAlternatesClicked_gui(GtkMenuItem *item, gpointer dat
 			Search *s = WulforManager::get()->addSearch_gui();
 
 			if (file->getTTH())
-				s->putValue(file->getTTH()->toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
+				s->putValue_gui(file->getTTH()->toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
 			else
 			{
 				bigFile = (file->getSize() > 10 * 1024 * 1024);
@@ -888,9 +866,9 @@ void ShareBrowser::onSearchAlternatesClicked_gui(GtkMenuItem *item, gpointer dat
 				if (!target.empty())
 				{
 					if (bigFile)
-						s->putValue(SearchManager::clean(target), file->getSize()-1, SearchManager::SIZE_ATLEAST, ShareManager::getInstance()->getType(target));
+						s->putValue_gui(SearchManager::clean(target), file->getSize()-1, SearchManager::SIZE_ATLEAST, ShareManager::getInstance()->getType(target));
 					else
-						s->putValue(SearchManager::clean(target), file->getSize()+1, SearchManager::SIZE_ATMOST, ShareManager::getInstance()->getType(target));
+						s->putValue_gui(SearchManager::clean(target), file->getSize()+1, SearchManager::SIZE_ATMOST, ShareManager::getInstance()->getType(target));
 				}
 			}
 		}
