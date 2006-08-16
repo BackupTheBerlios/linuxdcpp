@@ -25,12 +25,15 @@ TreeView::TreeView()
 	view = NULL;
 	count = 0;
 	padding = false;
+	gtypes = NULL;
 }
 
 TreeView::~TreeView()
 {
 	if (!name.empty() && name != "main")
 		saveSettings();
+	if (gtypes)
+		delete gtypes;
 }
 
 void TreeView::setView(GtkTreeView *view)
@@ -62,6 +65,7 @@ string TreeView::getString(GtkTreeIter *i, string column)
 	GtkTreeModel *m = gtk_tree_view_get_model(view);
 	dcassert(gtk_tree_model_get_column_type(m, col(column)) == G_TYPE_STRING);
 	gtk_tree_model_get(m, i, col(column), &temp, -1);
+	dcassert(temp != NULL);
 	value = string(temp);
 	g_free(temp);
 	return value;
@@ -154,7 +158,8 @@ int TreeView::getRowCount()
 GType* TreeView::getGTypes()
 {
 	int i = 0;
-	GType *gtypes = new GType[count]; ///@todo: fix memory leak
+	dcassert(gtypes == NULL);
+	gtypes = new GType[count];
 
 	for (SortedColIter iter = sortedColumns.begin(); iter != sortedColumns.end(); iter++)
 		gtypes[i++] = columns[iter->second].gtype;
@@ -171,6 +176,7 @@ void TreeView::addColumn_gui(Column column)
 
 	switch (column.type)
 	{
+		case INT:
 		case STRING:
 			col = gtk_tree_view_column_new_with_attributes(column.title.c_str(),
 				gtk_cell_renderer_text_new(), "text", column.pos, NULL);
@@ -180,10 +186,6 @@ void TreeView::addColumn_gui(Column column)
 			g_object_set(renderer, "xalign", 1.0, NULL);
 			col = gtk_tree_view_column_new_with_attributes(column.title.c_str(), renderer, "text", column.pos, NULL);
 			gtk_tree_view_column_set_alignment(col, 1.0);
-			break;
-		case INT:
-			col = gtk_tree_view_column_new_with_attributes(column.title.c_str(),
-				gtk_cell_renderer_text_new(), "text", column.pos, NULL);
 			break;
 		case BOOL:
   			renderer = gtk_cell_renderer_toggle_new();

@@ -272,7 +272,7 @@ void ShareBrowser::updateFiles_gui(DirectoryListing::Directory *dir)
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(fileStore), GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID, sortType);
 
 	// Add directories to the store.
-	for (it_dir = dirs->begin(); it_dir != dirs->end(); it_dir++)
+	for (it_dir = dirs->begin(); it_dir != dirs->end(); ++it_dir)
 	{
 		gtk_list_store_append(fileStore, &iter);
 
@@ -307,7 +307,7 @@ void ShareBrowser::updateFiles_gui(DirectoryListing::Directory *dir)
 	}
 
 	// Add files to the store.
-	for (it_file = files->begin(); it_file != files->end(); it_file++)
+	for (it_file = files->begin(); it_file != files->end(); ++it_file)
 	{
 		gtk_list_store_append(fileStore, &iter);
 

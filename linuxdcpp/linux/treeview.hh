@@ -26,9 +26,11 @@
 #include "settingsmanager.hh"
 #include "WulforUtil.hh"
 
-class TreeView {
+class TreeView
+{
 	public:
-		typedef enum {
+		typedef enum
+		{
 			STRING,
 			STRINGR,
 			INT,
@@ -108,6 +110,7 @@ class TreeView {
 		int count;
 		int visibleColumns;
 		GtkMenu *menu;
+		GType *gtypes;
 		hash_map<std::string, GtkWidget*> colMenuItems;
 
 		typedef hash_map<std::string, Column> ColMap;

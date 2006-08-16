@@ -1,3 +1,19 @@
+2006-08-16 - Steven Sheehy
+* Fixed more memory leaks.
+* Fixed possible security issues due to lack of bounds checking on sprintf.
+* Fixed allocating large buffers on the stack from causing random crashes (thanks Tobias Nygren).
+* Fixed ADC not working on big-endian architectures (thanks Tobias Nygren).
+* Fixed testing for non-blocking I/O on some System V-derived systems (thanks Tobias Nygren).
+* Added stdint.h to core header for use in BSD operating systems.
+* Added ability to specify additional compile flags by looking at the CXXFLAGS env variable.
+* Fixed an issue with public hubs defaulting to a blank url in the list.
+* Settings dialog changes:
+	* Cleaned up code.
+	* Public hub list in settings now matches the one in public hubs tab.
+	* Fixed SOCKS5 settings not saving properly.
+	* Fixed a crash when adding a share and closing settings dialog soon afterwards.
+	* Added ability to specify hidden directories when browsing folders.
+
 2006-08-01 - Steven Sheehy
 * Fixed the gui freezing that occurred sometimes when closing the hub tab.
 * Added -Wall to debug mode CXXFLAGS and fixed most compiler warnings (including dc++ core).

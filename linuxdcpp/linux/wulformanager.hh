@@ -51,7 +51,6 @@ class WulforManager
 		~WulforManager();
 
 		std::string getPath();
-		MainWindow *createMainWindow();
 		MainWindow *getMainWindow();
 		void dispatchGuiFunc(FuncBase *func);
 		void dispatchClientFunc(FuncBase *func);
@@ -63,7 +62,6 @@ class WulforManager
 		PrivateMessage *addPrivMsg_gui(User::Ptr user, bool raise = TRUE);
 		DownloadQueue *addDownloadQueue_gui();
 		FavoriteHubs *addFavoriteHubs_gui();
-		Settings *openSettingsDialog_gui();
 		Search *addSearch_gui();
 		ShareBrowser *addShareBrowser_gui(User::Ptr user, std::string file, bool raise = TRUE);
 		FinishedTransfers *addFinishedTransfers_gui(std::string title);
@@ -71,7 +69,8 @@ class WulforManager
 		void deleteBookEntry_gui(BookEntry *entry);
 
 		// DialogEntry functions
-		Hash *openHashDialog_gui();
+		int openHashDialog_gui();
+		int openSettingsDialog_gui();
 		void deleteAllDialogEntries();
 
 	private:
@@ -91,8 +90,8 @@ class WulforManager
 		void processClientQueue();
 
 		// Callbacks
-		static void closeBookEntry_callback(GtkWidget *widget, gpointer data);
-		static void closeDialogEntry_callback(GtkDialog *dialog, gint response, gpointer data);
+		static void onCloseBookEntry_gui(GtkWidget *widget, gpointer data);
+		static void onCloseDialogEntry_gui(GtkDialog *dialog, gint response, gpointer data);
 
 		static WulforManager *manager;
 		MainWindow *mainWin;

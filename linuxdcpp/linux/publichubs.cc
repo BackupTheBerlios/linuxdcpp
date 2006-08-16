@@ -89,7 +89,10 @@ PublicHubs::PublicHubs():
 	GtkCellRenderer *cell = gtk_cell_renderer_text_new();
 	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(comboBox), cell, FALSE);
 	gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(comboBox), cell, "text", 0);
-	gtk_combo_box_set_active(comboBox, hman->getSelectedHubList());
+	if (static_cast<size_t>(hman->getSelectedHubList()) >= list.size())
+		gtk_combo_box_set_active(comboBox, list.size() - 1);
+	else
+		gtk_combo_box_set_active(comboBox, hman->getSelectedHubList());
 
 	// Connect the callbacks
 	GtkTreeViewColumn *c = gtk_tree_view_get_column(listsView.get(), 0);
@@ -279,9 +282,10 @@ void PublicHubs::onRefresh_gui(GtkWidget *widget, gpointer data)
 {
 	PublicHubs *ph = (PublicHubs *)data;
 	int pos = gtk_combo_box_get_active(ph->comboBox);
-	FavoriteManager::getInstance()->setHubList(pos);
-	Func0<PublicHubs> *f = new Func0<PublicHubs>(ph, &PublicHubs::refresh_client);
-	WulforManager::get()->dispatchClientFunc(f);
+
+	typedef Func1<PublicHubs, int> F1;
+	F1 *func = new F1(ph, &PublicHubs::refresh_client, pos);
+	WulforManager::get()->dispatchClientFunc(func);
 }
 
 void PublicHubs::onAddFav_gui(GtkMenuItem *item, gpointer data)
@@ -373,11 +377,8 @@ void PublicHubs::onMoveUp_gui(GtkWidget *widget, gpointer data)
 	if (gtk_tree_selection_get_selected(ph->listsSelection, NULL, &current))
 	{
 		GtkTreePath *path = gtk_tree_model_get_path(m, &current);
-
 		if (gtk_tree_path_prev(path) && gtk_tree_model_get_iter(m, &prev, path))
-		{
 			gtk_list_store_swap(ph->listsStore, &current, &prev);
-		}
 		gtk_tree_path_free(path);
 	}
 }
@@ -409,12 +410,13 @@ void PublicHubs::onCellEdited_gui(GtkCellRendererText *cell, char *path, char *t
 	PublicHubs *ph = (PublicHubs *)data;
 	GtkTreeIter it;
 
-	gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(ph->listsStore), &it, path);
-	gtk_list_store_set(ph->listsStore, &it, ph->listsView.col("List"), text, -1);
+	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(ph->listsStore), &it, path))
+		gtk_list_store_set(ph->listsStore, &it, ph->listsView.col("List"), text, -1);
 }
 
-void PublicHubs::refresh_client()
+void PublicHubs::refresh_client(int pos)
 {
+	FavoriteManager::getInstance()->setHubList(pos);
 	FavoriteManager::getInstance()->refresh();
 }
 

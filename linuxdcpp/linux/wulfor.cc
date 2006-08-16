@@ -29,13 +29,13 @@
 #include <iostream>
 #include <signal.h>
 
-using namespace std;
-
-void callBack(void* x, const string& a) {
-	cout << "Loading: " << a << endl;
+void callBack(void* x, const string& a)
+{
+	std::cout << "Loading: " << a << std::endl;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	//starts the dc++ client part
 	startup(callBack, NULL);
 	

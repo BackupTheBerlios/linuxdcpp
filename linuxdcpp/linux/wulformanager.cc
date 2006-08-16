@@ -1,4 +1,4 @@
-/* 
+/*
 * Copyright (C) 2004 Jens Oknelid, paskharen@gmail.com
 *
 * This program is free software; you can redistribute it and/or modify
@@ -29,9 +29,22 @@ WulforManager *WulforManager::manager = NULL;
 
 void WulforManager::start()
 {
+	// Create WulforManager
 	dcassert(!manager);
 	manager = new WulforManager();
-	manager->createMainWindow();
+
+	// Create MainWindow
+	dcassert(!manager->mainWin);
+	manager->mainWin = new MainWindow();
+
+	// Autoconnect and autoopen calls stuff in wulformanager that needs to know
+	// what mainWin is, so these cannot be called by the MainWindow constructor.
+	typedef Func0<MainWindow> F0;
+	F0 *f0 = new F0(manager->mainWin, &MainWindow::autoConnect_client);
+	WulforManager::get()->dispatchClientFunc(f0);
+
+	f0 = new F0(manager->mainWin, &MainWindow::autoOpen_gui);
+	WulforManager::get()->dispatchGuiFunc(f0);
 }
 
 void WulforManager::stop()
@@ -61,7 +74,7 @@ WulforManager::WulforManager()
 	sem_init(&clientSem, false, 0);
 	pthread_create(&clientThread, NULL, &threadFunc_client, (void *)this);
 	pthread_create(&guiThread, NULL, &threadFunc_gui, (void *)this);
-	
+
 	mainWin = NULL;
 }
 
@@ -72,7 +85,7 @@ WulforManager::~WulforManager()
 	pthread_mutex_destroy(&clientCallLock);
 	pthread_mutex_destroy(&bookEntryLock);
 	pthread_mutex_destroy(&dialogEntryLock);
-	
+
 	sem_destroy(&guiSem);
 	sem_destroy(&clientSem);
 }
@@ -198,36 +211,26 @@ void WulforManager::dispatchClientFunc(FuncBase *func)
 	sem_post(&clientSem);
 }
 
-MainWindow *WulforManager::createMainWindow()
-{
-	dcassert(!mainWin);
-	mainWin = new MainWindow();
-
-	// Autoconnect and autoopen calls stuff in wulformanager that needs to know
-	// what mainWin is, so these cannot be called by the mainwindow constructor.
-	typedef Func0<MainWindow> F0;
-	F0 *f0 = new F0(mainWin, &MainWindow::autoConnect_client);
-	WulforManager::get()->dispatchClientFunc(f0);
-
-	f0 = new F0(mainWin, &MainWindow::autoOpen_gui);
-	WulforManager::get()->dispatchGuiFunc(f0);
-
-	return mainWin;
-}
-
 MainWindow *WulforManager::getMainWindow()
 {
 	return mainWin;
 }
 
-void WulforManager::closeBookEntry_callback(GtkWidget *widget, gpointer data)
+void WulforManager::onCloseBookEntry_gui(GtkWidget *widget, gpointer data)
 {
 	get()->deleteBookEntry_gui((BookEntry *)data);
 }
 
-void WulforManager::closeDialogEntry_callback(GtkDialog *dialog, gint response, gpointer data)
+void WulforManager::onCloseDialogEntry_gui(GtkDialog *dialog, gint response, gpointer data)
 {
-	get()->hideDialogEntry_gui((DialogEntry *)data);
+	DialogEntry *entry = (DialogEntry *)data;
+	entry->setResponseID(response);
+
+	// We must save the settings if OK was clicked. Can't do this anywhere else.
+	if (response == GTK_RESPONSE_OK && entry->getID() == "Settings")
+		((Settings *)entry)->saveSettings();
+
+	get()->deleteDialogEntry_gui(entry);
 }
 
 string WulforManager::getPath()
@@ -249,7 +252,7 @@ BookEntry *WulforManager::getBookEntry_gui(string id, bool raise)
 	pthread_mutex_lock(&bookEntryLock);
 	ret = bookEntries[id];
 	pthread_mutex_unlock(&bookEntryLock);
-		
+
 	if (ret && raise)
 		mainWin->raisePage_gui(ret->getWidget());
 
@@ -261,7 +264,7 @@ void WulforManager::insertBookEntry_gui(BookEntry *entry, bool raise)
 	// Associates id string to the widget for later retrieval in MainWindow::switchPage_gui()
 	g_object_set_data_full(G_OBJECT(entry->getWidget()), "id", g_strdup(entry->getID().c_str()), g_free);
 
-	entry->applyCallback(G_CALLBACK(closeBookEntry_callback));
+	entry->applyCallback(G_CALLBACK(onCloseBookEntry_gui));
 	mainWin->addPage_gui(entry->getWidget(), entry->getTitle(), raise);
 	gtk_widget_unref(entry->getWidget());
 
@@ -345,11 +348,13 @@ DialogEntry* WulforManager::getDialogEntry_gui(string id)
 
 void WulforManager::insertDialogEntry_gui(DialogEntry *entry)
 {
-	entry->applyCallback(G_CALLBACK(closeDialogEntry_callback));
+	entry->applyCallback(G_CALLBACK(onCloseDialogEntry_gui));
 
 	pthread_mutex_lock(&dialogEntryLock);
 	dialogEntries[entry->getID()] = entry;
 	pthread_mutex_unlock(&dialogEntryLock);
+
+	gtk_dialog_run(GTK_DIALOG(entry->getDialog()));
 }
 
 void WulforManager::hideDialogEntry_gui(DialogEntry *entry)
@@ -363,6 +368,7 @@ void WulforManager::deleteDialogEntry_gui(DialogEntry *entry)
 {
 	vector<FuncBase *>::iterator it;
 	string id = entry->getID();
+	GtkWidget *dialog = entry->getDialog();
 
 	pthread_mutex_lock(&clientCallLock);
 
@@ -402,7 +408,9 @@ void WulforManager::deleteDialogEntry_gui(DialogEntry *entry)
 
 	delete entry;
 
-	pthread_mutex_unlock(&clientCallLock);	
+	pthread_mutex_unlock(&clientCallLock);
+
+	gtk_widget_destroy(dialog);
 }
 
 void WulforManager::deleteAllDialogEntries()
@@ -504,23 +512,18 @@ FinishedTransfers *WulforManager::addFinishedTransfers_gui(string title)
 	return ft;
 }
 
-Hash *WulforManager::openHashDialog_gui()
+int WulforManager::openHashDialog_gui()
 {
-	DialogEntry *entry = getDialogEntry_gui("Hash");
-	if (entry) return dynamic_cast<Hash *>(entry);
-
 	Hash *h = new Hash();
 	insertDialogEntry_gui(h);
 
-	Func0<Hash> *func = new Func0<Hash>(h, &Hash::updateStats_gui);
-	dispatchGuiFunc(func);	
-
-	return h;
+	return Hash::getResponseID();
 }
 
-Settings *WulforManager::openSettingsDialog_gui()
+int WulforManager::openSettingsDialog_gui()
 {
 	Settings *s = new Settings();
+	insertDialogEntry_gui(s);
 
-	return s;
+	return Settings::getResponseID();
 }

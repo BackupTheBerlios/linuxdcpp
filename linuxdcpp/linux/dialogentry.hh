@@ -33,12 +33,15 @@ class DialogEntry
 		void setDialog(GtkWidget *d);
 		std::string getID();
 		GladeXML* getGladeXML(std::string file);
+		void setResponseID(int responseID);
+		static int getResponseID();
 
-		virtual void applyCallback (GCallback closeCallback);
+		virtual void applyCallback(GCallback closeCallback);
 
 	private:
 		GtkWidget *dialog;
 		std::string id;
+		static int responseID;
 };
 
 #else

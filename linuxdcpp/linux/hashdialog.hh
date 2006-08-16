@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,38 +19,36 @@
 #ifndef WULFOR_HASH_HH
 #define WULFOR_HASH_HH
 
-#include <iostream>
-
 #include "dialogentry.hh"
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/HashManager.h>
 #include <client/TimerManager.h>
-#include <client/CriticalSection.h>
 
-class Hash : public DialogEntry, public TimerManagerListener
+class Hash:
+	public DialogEntry,
+	public TimerManagerListener
 {
-public:
-	Hash ();
-	~Hash ();
-	
-	void updateStats_gui ();
-	
-	virtual void on(TimerManagerListener::Second, u_int32_t tics) throw();
-	
-private:
-	bool autoClose;
-	int64_t startBytes;
-	size_t startFiles;
-	u_int32_t startTime;
+	public:
+		Hash();
+		~Hash();
 
-	GtkLabel *lFile;
-	GtkLabel *lSpeed;
-	GtkLabel *lTime;
-	GtkProgressBar *pProgress;
-	
-	CriticalSection cs;
+	private:
+		// GUI functions
+		void updateStats_gui();
+
+		// Client callbacks
+		virtual void on(TimerManagerListener::Second, u_int32_t tics) throw();
+
+		GtkLabel *labelFile;
+		GtkLabel *labelSpeed;
+		GtkLabel *labelTime;
+		GtkProgressBar *progressBar;
+		bool autoClose;
+		int64_t startBytes;
+		size_t startFiles;
+		u_int32_t startTime;
 };
 
 #else

@@ -857,21 +857,21 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 				if(online > 0)
 				{
 					if(getSources().size() == 1)
-						sprintf (buf, "Waiting (User online)");
+						snprintf(buf, sizeof(buf), "Waiting (User online)");
 					else
-						sprintf(buf, "Waiting (%d of %lu users online)", online, getSources().size());
+						snprintf(buf, sizeof(buf), "Waiting (%d of %lu users online)", online, getSources().size());
 					gtk_list_store_set (dq->fileStore, &it, dq->fileView.col("Status"), buf, -1);
 				}
 				else
 				{
 					if(getSources().size() == 0)
-						sprintf (buf, "No users to download from");
+						snprintf(buf, sizeof(buf), "No users to download from");
 					else if(getSources().size() == 1)
-						sprintf (buf, "User offline");
+						snprintf(buf, sizeof(buf), "User offline");
 					else if(getSources().size() == 2)
-						sprintf (buf, "Both users offline");
+						snprintf(buf, sizeof(buf), "Both users offline");
 					else
-						sprintf(buf, "All %lu users offline", getSources().size());
+						snprintf(buf, sizeof(buf), "All %lu users offline", getSources().size());
 					gtk_list_store_set (dq->fileStore, &it, dq->fileView.col("Status"), buf, -1);
 				}
 			}
@@ -992,23 +992,23 @@ void DownloadQueue::QueueItemInfo::update (DownloadQueue *dq, bool add)
 				if(online > 0)
 				{
 					if(getSources().size() == 1)
-						sprintf (buf, "Waiting (User online)");
+						snprintf(buf, sizeof(buf), "Waiting (User online)");
 					else if (getSources().size() < 0)
-						sprintf(buf, "Waiting (%d users online)", online);
+						snprintf(buf, sizeof(buf), "Waiting (%d users online)", online);
 					else
-						sprintf(buf, "Waiting (%d of %lu users online)", online, getSources().size());
+						snprintf(buf, sizeof(buf), "Waiting (%d of %lu users online)", online, getSources().size());
 					gtk_list_store_set(dq->fileStore, &it, dq->fileView.col("Status"), buf, -1);
 				}
 				else
 				{
 					if(getSources().size() == 0)
-						sprintf (buf, "No users to download from");
+						snprintf(buf, sizeof(buf), "No users to download from");
 					else if(getSources().size() == 1)
-						sprintf (buf, "User offline");
+						snprintf(buf, sizeof(buf), "User offline");
 					else if(getSources().size() == 2)
-						sprintf (buf, "Both users offline");
+						snprintf(buf, sizeof(buf), "Both users offline");
 					else
-						sprintf(buf, "All %lu users offline", getSources().size());
+						snprintf(buf, sizeof(buf), "All %lu users offline", getSources().size());
 					gtk_list_store_set(dq->fileStore, &it, dq->fileView.col("Status"), buf, -1);
 				}
 			}

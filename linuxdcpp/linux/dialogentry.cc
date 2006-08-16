@@ -22,6 +22,8 @@
 
 using namespace std;
 
+int DialogEntry::responseID = GTK_RESPONSE_NONE;
+
 DialogEntry::DialogEntry(string id)
 {
 	this->id = id;
@@ -42,6 +44,16 @@ string DialogEntry::getID()
 	return id;
 }
 
+void DialogEntry::setResponseID(int responseID)
+{
+	this->responseID = responseID;
+}
+
+int DialogEntry::getResponseID()
+{
+	return responseID;
+}
+
 void DialogEntry::applyCallback(GCallback closeCallback)
 {
 	g_signal_connect(G_OBJECT(dialog), "response", closeCallback, (gpointer)this);
@@ -51,7 +63,9 @@ GladeXML* DialogEntry::getGladeXML(string file)
 {
 	file = WulforManager::get()->getPath() + "/glade/" + file;
 	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
+
 	if (xml == NULL)
 		gtk_main_quit();
+
 	return xml;
 }

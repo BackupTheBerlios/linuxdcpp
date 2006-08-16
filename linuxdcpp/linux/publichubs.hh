@@ -65,7 +65,7 @@ class PublicHubs:
 		static void onCellEdited_gui(GtkCellRendererText *cell, char *path, char *text, gpointer data);
 
 		// Client functions
-		void refresh_client();
+		void refresh_client(int pos);
 		void addFav_client(FavoriteHubEntry entry);
 
 		// Client callbacks

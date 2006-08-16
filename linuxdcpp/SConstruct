@@ -141,6 +141,13 @@ env = conf.Finish()
 env.Append(CXXFLAGS = ['-I.', '-D_GNU_SOURCE', '-DENABLE_BINRELOC', '-D_FILE_OFFSET_BITS=64'])
 
 
+# Allow additional CXXFLAGS to be specified by looking at the environment variable.
+try:
+	env.Append(CXXFLAGS = os.environ['CXXFLAGS'])
+except KeyError:
+	pass
+
+
 # Parse command line parameters
 
 debug = ARGUMENTS.get('debug', 0)

@@ -1225,8 +1225,8 @@ void Search::on(SearchManagerListener::SR, SearchResult *result) throw()
 	}
 
 	// Reject results without free slots if selected, but always show directories
-	if ((onlyFree && result->getFreeSlots() < 1 || onlyTTH && result->getTTH() == NULL) &&
-		result->getType() != SearchResult::TYPE_DIRECTORY)
+	if ((onlyFree && result->getFreeSlots() < 1) ||
+		(onlyTTH && result->getTTH() == NULL && result->getType() != SearchResult::TYPE_DIRECTORY))
 	{
 		droppedResult++;
 		typedef Func2<Search, string, string> F2;

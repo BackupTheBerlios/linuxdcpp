@@ -104,7 +104,7 @@ MainWindow::~MainWindow()
 
 	// Free the transferMap
 	hash_map<UserID, TransferItem *, HashPair>::iterator it;
-	for (it = transferMap.begin(); it != transferMap.end(); it++)
+	for (it = transferMap.begin(); it != transferMap.end(); ++it)
 	{
 		gtk_tree_row_reference_free(it->second->rowRef);
 		delete it->second;
@@ -587,8 +587,7 @@ void MainWindow::searchClicked_gui(GtkWidget *widget, gpointer data)
 
 void MainWindow::hashClicked_gui(GtkWidget *widget, gpointer data)
 {
-	Hash *h = WulforManager::get()->openHashDialog_gui();
-	gtk_dialog_run(GTK_DIALOG(h->getDialog()));
+	WulforManager::get()->openHashDialog_gui();
 }
 
 void MainWindow::dlQueueClicked_gui(GtkWidget *widget, gpointer data)
@@ -616,7 +615,6 @@ void MainWindow::finishedULclicked_gui(GtkWidget *widget, gpointer data)
 void MainWindow::settingsClicked_gui(GtkWidget *widget, gpointer data)
 {
 	MainWindow *mw = (MainWindow *)data;
-	Settings *s = WulforManager::get()->openSettingsDialog_gui();
 	typedef Func0<MainWindow> F0;
 
 	unsigned short tcpPort = (unsigned short)SETTING(TCP_PORT);
@@ -624,11 +622,8 @@ void MainWindow::settingsClicked_gui(GtkWidget *widget, gpointer data)
 	int lastConn = SETTING(INCOMING_CONNECTIONS);
 	bool lastShowProgressSetting = BOOLSETTING(SHOW_PROGRESS_BARS);
 
-	if (gtk_dialog_run(GTK_DIALOG(s->getDialog())) == GTK_RESPONSE_OK)
+	if (WulforManager::get()->openSettingsDialog_gui() == GTK_RESPONSE_OK)
 	{
-		s->saveSettings_client();
-		SettingsManager::getInstance()->save();
-
 		if (SETTING(INCOMING_CONNECTIONS) != lastConn || SETTING(TCP_PORT) != tcpPort || SETTING(UDP_PORT) != udpPort)
 		{
 			F0 *func = new F0(mw, &MainWindow::startSocket_client);
@@ -658,9 +653,6 @@ void MainWindow::settingsClicked_gui(GtkWidget *widget, gpointer data)
 		else
 			gtk_widget_hide_all(mw->trayIcon);
 	}
-
-	gtk_widget_destroy(s->getDialog());
-	delete s;
 }
 
 void MainWindow::closeClicked_gui(GtkWidget *widget, gpointer data)
@@ -688,7 +680,6 @@ void MainWindow::quitClicked_gui(GtkWidget *widget, gpointer data)
 void MainWindow::aboutClicked_gui(GtkWidget *widget, gpointer data)
 {
 	MainWindow *mw = (MainWindow *)data;
-	gtk_widget_show_all(GTK_WIDGET(mw->aboutDialog));
 	gtk_dialog_run(mw->aboutDialog);
 	gtk_widget_hide(GTK_WIDGET(mw->aboutDialog));
 }
@@ -747,7 +738,7 @@ void MainWindow::autoConnect_client()
 	F4 *func;
 	string nick;
 
-	for (it = l.begin(); it != l.end(); it++)
+	for (it = l.begin(); it != l.end(); ++it)
 	{
 		entry = *it;
 		if (entry->getConnect() && (!entry->getNick().empty() || !SETTING(NICK).empty()))
@@ -847,15 +838,12 @@ void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw()
 
 void MainWindow::on(QueueManagerListener::Finished, QueueItem *item, int64_t avSpeed) throw()
 {
-	if (!item->isSet(QueueItem::FLAG_CLIENT_VIEW | QueueItem::FLAG_USER_LIST))
-		return;
-
-	User::Ptr user = item->getCurrent()->getUser();
-	string searchString = item->getSearchString();
-	string listName = item->getListName();
-
-	if (item->isSet(QueueItem::FLAG_CLIENT_VIEW) && item->isSet(QueueItem::FLAG_USER_LIST))
+	if (item->isSet(QueueItem::FLAG_CLIENT_VIEW | QueueItem::FLAG_USER_LIST))
 	{
+		User::Ptr user = item->getCurrent()->getUser();
+		string searchString = item->getSearchString();
+		string listName = item->getListName();
+
 		typedef Func4<MainWindow, User::Ptr, string, string, bool> F4;
 		F4 *func = new F4(this, &MainWindow::addShareBrowser_gui, user, listName, searchString, TRUE);
 		WulforManager::get()->dispatchGuiFunc(func);
@@ -1229,7 +1217,7 @@ void MainWindow::on(DownloadManagerListener::Tick, const Download::List &list) t
 	Download::List::const_iterator it;
 	TransferItem *item;
 
-	for (it = list.begin(); it != list.end(); it++)
+	for (it = list.begin(); it != list.end(); ++it)
 	{
 		dl = *it;
 		ostringstream stream;
@@ -1323,7 +1311,7 @@ void MainWindow::on(UploadManagerListener::Tick, const Upload::List &list) throw
 	Upload::List::const_iterator it;
 	TransferItem *item;
 
-	for (it = list.begin(); it != list.end(); it++)
+	for (it = list.begin(); it != list.end(); ++it)
 	{
 		ul = *it;
 		ostringstream stream;

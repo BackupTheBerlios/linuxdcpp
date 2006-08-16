@@ -158,6 +158,7 @@ class MainWindow:
 				nicks = WulforUtil::getNicks(user);
 				hubs = WulforUtil::getHubNames(user).first;
 				failed = FALSE;
+				updateMask = 0;
 			}
 
 			typedef enum
