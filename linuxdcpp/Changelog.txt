@@ -1,3 +1,6 @@
+2006-08-17 - Steven Sheehy
+* Fixed search regression.
+
 2006-08-16 - Steven Sheehy
 * Fixed more memory leaks.
 * Fixed possible security issues due to lack of bounds checking on sprintf.
