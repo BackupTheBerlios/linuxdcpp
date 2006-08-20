@@ -19,26 +19,12 @@
 #include "downloadqueue.hh"
 
 DownloadQueue::DownloadQueue():
-	BookEntry("Download Queue")
+	BookEntry("Download Queue", "downloadqueue.glade")
 {
 	QueueManager::getInstance()->addListener(this);
 
-	GladeXML *xml = getGladeXML("downloadqueue.glade");
-
-	GtkWidget *window = glade_xml_get_widget(xml, "downloadQueueWindow");
-	mainBox = glade_xml_get_widget(xml, "downloadQueueBox");
-	gtk_widget_ref(mainBox);
-	gtk_container_remove(GTK_CONTAINER(window), mainBox);
-	gtk_widget_destroy(window);
-
-	statusbar.push_back(glade_xml_get_widget(xml, "statusMain"));
-	statusbar.push_back(glade_xml_get_widget(xml, "statusItems"));
-	statusbar.push_back(glade_xml_get_widget(xml, "statusFileSize"));
-	statusbar.push_back(glade_xml_get_widget(xml, "statusFiles"));
-	statusbar.push_back(glade_xml_get_widget(xml, "statusTotalSize"));
-
 	// Initialize directory treeview
-	dirView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "dirView")));
+	dirView.setView(GTK_TREE_VIEW(getWidget("dirView")));
 	dirView.insertColumn("Dir", G_TYPE_STRING, TreeView::STRING, -1);
 	dirView.insertHiddenColumn("Path", G_TYPE_STRING);
 	dirView.finalize();
@@ -46,12 +32,9 @@ DownloadQueue::DownloadQueue():
 	gtk_tree_view_set_model(dirView.get(), GTK_TREE_MODEL (dirStore));
 	g_object_unref(dirStore);
 	gtk_widget_set_events(GTK_WIDGET(dirView.get()), GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
- 	g_signal_connect(G_OBJECT(dirView.get()), "button_press_event", G_CALLBACK(dir_onButtonPressed_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(dirView.get()), "button_release_event", G_CALLBACK(dir_onButtonReleased_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(dirView.get()), "popup_menu", G_CALLBACK(dir_onPopupMenu_gui), (gpointer)this);
 
 	// Initialize file treeview
-	fileView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "fileView")), true, "downloadqueue");
+	fileView.setView(GTK_TREE_VIEW(getWidget("fileView")), true, "downloadqueue");
 	fileView.insertColumn("Filename", G_TYPE_STRING, TreeView::STRING, 200);
 	fileView.insertColumn("Status", G_TYPE_STRING, TreeView::STRING, 100);
 	fileView.insertColumn("Size", G_TYPE_STRING, TreeView::STRING, 100);
@@ -75,61 +58,28 @@ DownloadQueue::DownloadQueue():
 	fileView.setSortColumn_gui("Exact Size", "Real Size");
 	fileView.setSortColumn_gui("Downloaded", "Download Size");
 
-	// Connect callbacks to dir menu
-	dirMenu = GTK_MENU(glade_xml_get_widget(xml, "dirMenu"));
-	dirItems["Set priority"] = glade_xml_get_widget(xml, "dirSetPriorityItem");
-	dirPriority = GTK_MENU(glade_xml_get_widget(xml, "dirPriorityMenu"));
-	dirItems["Paused"] = glade_xml_get_widget(xml, "pausedPriorityItem");
-	g_signal_connect(G_OBJECT(dirItems["Paused"]), "activate", G_CALLBACK(setDirPriorityClicked_gui), (gpointer)this);
-	dirItems["Lowest"] = glade_xml_get_widget(xml, "lowestPriorityItem");
-	g_signal_connect(G_OBJECT(dirItems["Lowest"]), "activate", G_CALLBACK(setDirPriorityClicked_gui), (gpointer)this);
-	dirItems["Low"] = glade_xml_get_widget(xml, "lowPrioritytem");
-	g_signal_connect(G_OBJECT(dirItems["Low"]), "activate", G_CALLBACK(setDirPriorityClicked_gui), (gpointer)this);
-	dirItems["Normal"] = glade_xml_get_widget(xml, "normalPriorityItem");
-	g_signal_connect(G_OBJECT(dirItems["Normal"]), "activate", G_CALLBACK(setDirPriorityClicked_gui), (gpointer)this);
-	dirItems["High"] = glade_xml_get_widget(xml, "highPriorityItem");
-	g_signal_connect(G_OBJECT(dirItems["High"]), "activate", G_CALLBACK(setDirPriorityClicked_gui), (gpointer)this);
-	dirItems["Highest"] = glade_xml_get_widget(xml, "highestPriorityItem");
-	g_signal_connect(G_OBJECT(dirItems["Highest"]), "activate", G_CALLBACK(setDirPriorityClicked_gui), (gpointer)this);
-	dirItems["Move/Rename"] = glade_xml_get_widget(xml, "moveRenameItem");
-	dirItems["Remove"] = glade_xml_get_widget(xml, "removeDirItem");
-	g_signal_connect(G_OBJECT(dirItems["Remove"]), "activate", G_CALLBACK(removeDirClicked_gui), (gpointer)this);
-
-	// Connect callbacks to file menu
-	fileMenu = GTK_MENU(glade_xml_get_widget(xml, "fileMenu"));
-	fileItems["Search for alternates"] = glade_xml_get_widget(xml, "searchForAlternatesItem");
-	g_signal_connect(G_OBJECT(fileItems["Search for alternates"]), "activate", G_CALLBACK(onSearchAlternatesClicked_gui), (gpointer)this);
-	fileItems["Search by TTH"] = glade_xml_get_widget(xml, "searchByTTHItem");
-	g_signal_connect(G_OBJECT (fileItems["Search by TTH"]), "activate", G_CALLBACK (onSearchByTTHClicked_gui), (gpointer)this);
-	fileItems["Set priority"] = glade_xml_get_widget(xml, "fileSetPriorityItem");
-	filePriority = GTK_MENU(glade_xml_get_widget(xml, "filePriorityMenu"));
-	fileItems["Paused"] = glade_xml_get_widget(xml, "filePausedItem");
-	g_signal_connect(G_OBJECT(fileItems["Paused"]), "activate", G_CALLBACK(setFilePriorityClicked_gui), (gpointer)this);
-	fileItems["Lowest"] = glade_xml_get_widget(xml, "fileLowestPriorityItem");
-	g_signal_connect(G_OBJECT(fileItems["Lowest"]), "activate", G_CALLBACK(setFilePriorityClicked_gui), (gpointer)this);
-	fileItems["Low"] = glade_xml_get_widget(xml, "fileLowPriorityItem");
-	g_signal_connect(G_OBJECT(fileItems["Low"]), "activate", G_CALLBACK(setFilePriorityClicked_gui), (gpointer)this);
-	fileItems["Normal"] = glade_xml_get_widget(xml, "fileNormalPriorityItem");
-	g_signal_connect(G_OBJECT(fileItems["Normal"]), "activate", G_CALLBACK(setFilePriorityClicked_gui), (gpointer)this);
-	fileItems["High"] = glade_xml_get_widget(xml, "fileHighPriorityItem");
-	g_signal_connect(G_OBJECT(fileItems["High"]), "activate", G_CALLBACK(setFilePriorityClicked_gui), (gpointer)this);
-	fileItems["Highest"] = glade_xml_get_widget(xml, "fileHighestPriorityItem");
-	g_signal_connect(G_OBJECT(fileItems["Highest"]), "activate", G_CALLBACK(setFilePriorityClicked_gui), (gpointer)this);
-	fileItems["Get file list"] = glade_xml_get_widget(xml, "getFileListItem");
-	browseMenu = GTK_MENU(glade_xml_get_widget(xml, "browseMenu"));
-	fileItems["Send private message"] = glade_xml_get_widget(xml, "sendPrivateMessageItem");
-	pmMenu = GTK_MENU(glade_xml_get_widget(xml, "pmMenu"));
-	fileItems["Re-add source"] = glade_xml_get_widget(xml, "reAddSourceItem");
-	readdMenu = GTK_MENU(glade_xml_get_widget(xml, "reAddMenu"));
-	fileItems["Remove source"] = glade_xml_get_widget(xml, "removeSourceItem");
-	removeMenu = GTK_MENU(glade_xml_get_widget(xml, "removeMenu"));
-	fileItems["Remove user from queue"] = glade_xml_get_widget(xml, "removeUserFromQueueItem");
-	removeallMenu = GTK_MENU(glade_xml_get_widget(xml, "removeAllMenu"));
-	fileItems["Remove"] = glade_xml_get_widget(xml, "fileRemoveItem");
-	g_signal_connect(G_OBJECT(fileItems["Remove"]), "activate", G_CALLBACK(removeFileClicked_gui), (gpointer)this);
-
-	g_signal_connect(G_OBJECT(fileView.get()), "button_press_event", G_CALLBACK(file_onButtonPressed_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(fileView.get()), "popup_menu", G_CALLBACK(file_onPopupMenu_gui), (gpointer)this);
+	// Connect the signals to their callback functions.
+	g_signal_connect(getWidget("pausedPriorityItem"), "activate", G_CALLBACK(setDirPriorityClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("lowestPriorityItem"), "activate", G_CALLBACK(setDirPriorityClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("lowPrioritytem"), "activate", G_CALLBACK(setDirPriorityClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("normalPriorityItem"), "activate", G_CALLBACK(setDirPriorityClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("highPriorityItem"), "activate", G_CALLBACK(setDirPriorityClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("highestPriorityItem"), "activate", G_CALLBACK(setDirPriorityClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("removeDirItem"), "activate", G_CALLBACK(removeDirClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("searchForAlternatesItem"), "activate", G_CALLBACK(onSearchAlternatesClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("searchByTTHItem"), "activate", G_CALLBACK(onSearchByTTHClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("filePausedItem"), "activate", G_CALLBACK(setFilePriorityClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("fileLowestPriorityItem"), "activate", G_CALLBACK(setFilePriorityClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("fileLowPriorityItem"), "activate", G_CALLBACK(setFilePriorityClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("fileNormalPriorityItem"), "activate", G_CALLBACK(setFilePriorityClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("fileHighPriorityItem"), "activate", G_CALLBACK(setFilePriorityClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("fileHighestPriorityItem"), "activate", G_CALLBACK(setFilePriorityClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("fileRemoveItem"), "activate", G_CALLBACK(removeFileClicked_gui), (gpointer)this);
+	g_signal_connect(fileView.get(), "button_press_event", G_CALLBACK(file_onButtonPressed_gui), (gpointer)this);
+	g_signal_connect(fileView.get(), "popup_menu", G_CALLBACK(file_onPopupMenu_gui), (gpointer)this);
+ 	g_signal_connect(dirView.get(), "button_press_event", G_CALLBACK(dir_onButtonPressed_gui), (gpointer)this);
+	g_signal_connect(dirView.get(), "button_release_event", G_CALLBACK(dir_onButtonReleased_gui), (gpointer)this);
+	g_signal_connect(dirView.get(), "popup_menu", G_CALLBACK(dir_onPopupMenu_gui), (gpointer)this);
 
 	pthread_mutex_init(&queueLock, NULL);
 
@@ -145,11 +95,6 @@ DownloadQueue::~DownloadQueue()
 	for (iter = dirFileMap.begin(); iter != dirFileMap.end(); iter++)
 		for (iter2 = iter->second.begin(); iter2 != iter->second.end(); iter2++)
 			delete *iter2;
-}
-
-GtkWidget *DownloadQueue::getWidget() 
-{
-	return mainBox;
 }
 
 string DownloadQueue::getTextFromMenu(GtkMenuItem *item)
@@ -202,39 +147,39 @@ void DownloadQueue::buildDynamicMenu_gui ()
 	{
 		QueueItemInfo *i = fileView.getValue<gpointer,QueueItemInfo*>(&iter[0], "Info");
 		if (i->getTTH ())
-			gtk_widget_set_sensitive (fileItems["Search by TTH"], true);
+			gtk_widget_set_sensitive (getWidget("searchByTTHItem"), true);
 		else
-			gtk_widget_set_sensitive (fileItems["Search by TTH"], false);
+			gtk_widget_set_sensitive (getWidget("searchByTTHItem"), false);
 			
-		gtk_widget_set_sensitive (fileItems["Search for alternates"], true);
-		gtk_widget_set_sensitive (fileItems["Get file list"], true);
-		gtk_widget_set_sensitive (fileItems["Send private message"], true);
-		gtk_widget_set_sensitive (fileItems["Re-add source"], true);
-		gtk_widget_set_sensitive (fileItems["Remove source"], true);
-		gtk_widget_set_sensitive (fileItems["Remove user from queue"], true);		
+		gtk_widget_set_sensitive (getWidget("searchForAlternatesItem"), true);
+		gtk_widget_set_sensitive (getWidget("getFileListItem"), true);
+		gtk_widget_set_sensitive (getWidget("sendPrivateMessageItem"), true);
+		gtk_widget_set_sensitive (getWidget("reAddSourceItem"), true);
+		gtk_widget_set_sensitive (getWidget("removeSourceItem"), true);
+		gtk_widget_set_sensitive (getWidget("removeUserFromQueueItem"), true);		
 	}
 	else
 	{
-		gtk_widget_set_sensitive (fileItems["Search by TTH"], false);
-		gtk_widget_set_sensitive (fileItems["Search for alternates"], false);
+		gtk_widget_set_sensitive (getWidget("searchByTTHItem"), false);
+		gtk_widget_set_sensitive (getWidget("searchForAlternatesItem"), false);
 
-		gtk_widget_set_sensitive (fileItems["Get file list"], false);
-		gtk_widget_set_sensitive (fileItems["Send private message"], false);
-		gtk_widget_set_sensitive (fileItems["Re-add source"], false);
-		gtk_widget_set_sensitive (fileItems["Remove source"], false);
-		gtk_widget_set_sensitive (fileItems["Remove user from queue"], false);
+		gtk_widget_set_sensitive (getWidget("getFileListItem"), false);
+		gtk_widget_set_sensitive (getWidget("sendPrivateMessageItem"), false);
+		gtk_widget_set_sensitive (getWidget("reAddSourceItem"), false);
+		gtk_widget_set_sensitive (getWidget("removeSourceItem"), false);
+		gtk_widget_set_sensitive (getWidget("removeUserFromQueueItem"), false);
 	}
 	
 	for (vector<GtkWidget*>::iterator it=browseItems.begin (); it != browseItems.end (); it++)
-		gtk_container_remove (GTK_CONTAINER (browseMenu), *it);
+		gtk_container_remove(GTK_CONTAINER(getWidget("browseMenu")), *it);
 	for (vector<GtkWidget*>::iterator it=pmItems.begin (); it != pmItems.end (); it++)
-		gtk_container_remove (GTK_CONTAINER (pmMenu), *it);
+		gtk_container_remove(GTK_CONTAINER(getWidget("pmMenu")), *it);
 	for (vector<GtkWidget*>::iterator it=readdItems.begin (); it != readdItems.end (); it++)
-		gtk_container_remove (GTK_CONTAINER (readdMenu), *it);
+		gtk_container_remove(GTK_CONTAINER(getWidget("reAddMenu")), *it);
 	for (vector<GtkWidget*>::iterator it=removeItems.begin (); it != removeItems.end (); it++)
-		gtk_container_remove (GTK_CONTAINER (removeMenu), *it);
+		gtk_container_remove(GTK_CONTAINER(getWidget("removeMenu")), *it);
 	for (vector<GtkWidget*>::iterator it=removeallItems.begin (); it != removeallItems.end (); it++)
-		gtk_container_remove (GTK_CONTAINER (removeallMenu), *it);	
+		gtk_container_remove(GTK_CONTAINER(getWidget("removeAllMenu")), *it);	
 
 	browseItems.clear ();
 	pmItems.clear ();
@@ -263,30 +208,30 @@ void DownloadQueue::buildDynamicMenu_gui ()
 	for (size_t i=0;i<names.size ();i++)
 	{
 		browseItems.push_back (gtk_menu_item_new_with_label (names[i].c_str ()));
-		gtk_menu_shell_append (GTK_MENU_SHELL (browseMenu), browseItems.back ());
+		gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("browseMenu")), browseItems.back ());
 		g_signal_connect (G_OBJECT (browseItems.back ()), "activate", G_CALLBACK (onGetFileListClicked_gui), (gpointer)this);
 
 		pmItems.push_back (gtk_menu_item_new_with_label (names[i].c_str ()));
-		gtk_menu_shell_append (GTK_MENU_SHELL (pmMenu), pmItems.back ());
+		gtk_menu_shell_append (GTK_MENU_SHELL(getWidget("pmMenu")), pmItems.back ());
 		g_signal_connect (G_OBJECT (pmItems.back ()), "activate", G_CALLBACK (onSendPrivateMessageClicked_gui), (gpointer)this);
 
 		readdItems.push_back (gtk_menu_item_new_with_label (names[i].c_str ()));
-		gtk_menu_shell_append (GTK_MENU_SHELL (readdMenu), readdItems.back ());
+		gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("reAddMenu")), readdItems.back ());
 		g_signal_connect (G_OBJECT (readdItems.back ()), "activate", G_CALLBACK (onReAddSourceClicked_gui), (gpointer)this);
 
 		removeItems.push_back (gtk_menu_item_new_with_label (names[i].c_str ()));
-		gtk_menu_shell_append (GTK_MENU_SHELL (removeMenu), removeItems.back ());
+		gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("removeMenu")), removeItems.back ());
 		g_signal_connect (G_OBJECT (removeItems.back ()), "activate", G_CALLBACK (onRemoveSourceClicked_gui), (gpointer)this);
 
 		removeallItems.push_back (gtk_menu_item_new_with_label (names[i].c_str ()));
-		gtk_menu_shell_append (GTK_MENU_SHELL (removeallMenu), removeallItems.back ());
+		gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("removeAllMenu")), removeallItems.back ());
 		g_signal_connect (G_OBJECT (removeallItems.back ()), "activate", G_CALLBACK (onRemoveUserFromQueueClicked_gui), (gpointer)this);
 	}
-	gtk_widget_show_all (GTK_WIDGET (browseMenu));
-	gtk_widget_show_all (GTK_WIDGET (pmMenu));
-	gtk_widget_show_all (GTK_WIDGET (readdMenu));
-	gtk_widget_show_all (GTK_WIDGET (removeMenu));
-	gtk_widget_show_all (GTK_WIDGET (removeallMenu));
+	gtk_widget_show_all(getWidget("browseMenu"));
+	gtk_widget_show_all(getWidget("pmMenu"));
+	gtk_widget_show_all(getWidget("reAddMenu"));
+	gtk_widget_show_all(getWidget("removeMenu"));
+	gtk_widget_show_all(getWidget("removeAllMenu"));
 }
 
 void DownloadQueue::setPriority_client (string target, QueueItem::Priority p)
@@ -315,17 +260,17 @@ void DownloadQueue::setDirPriorityClicked_gui (GtkMenuItem *item, gpointer user_
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 		return;
 
-	if (item == GTK_MENU_ITEM (q->dirItems["Paused"]))
+	if (item == GTK_MENU_ITEM (q->getWidget("pausedPriorityItem")))
 		q->setDirPriority_gui(q->dirView.getString(&iter, "Path"), QueueItem::PAUSED);
-	else if (item == GTK_MENU_ITEM (q->dirItems["Lowest"]))
+	else if (item == GTK_MENU_ITEM (q->getWidget("lowestPriorityItem")))
 		q->setDirPriority_gui(q->dirView.getString(&iter, "Path"), QueueItem::LOWEST);
-	else if (item == GTK_MENU_ITEM (q->dirItems["Low"]))
+	else if (item == GTK_MENU_ITEM (q->getWidget("lowPrioritytem")))
 		q->setDirPriority_gui(q->dirView.getString(&iter, "Path"), QueueItem::LOW);
-	else if (item == GTK_MENU_ITEM (q->dirItems["Normal"]))
+	else if (item == GTK_MENU_ITEM (q->getWidget("normalPriorityItem")))
 		q->setDirPriority_gui(q->dirView.getString(&iter, "Path"), QueueItem::NORMAL);
-	else if (item == GTK_MENU_ITEM (q->dirItems["High"]))
+	else if (item == GTK_MENU_ITEM (q->getWidget("highPriorityItem")))
 		q->setDirPriority_gui(q->dirView.getString(&iter, "Path"), QueueItem::HIGH);
-	else if (item == GTK_MENU_ITEM (q->dirItems["Highest"]))
+	else if (item == GTK_MENU_ITEM (q->getWidget("highestPriorityItem")))
 		q->setDirPriority_gui(q->dirView.getString(&iter, "Path"), QueueItem::HIGHEST);
 	
 }
@@ -356,17 +301,17 @@ void DownloadQueue::setFilePriorityClicked_gui (GtkMenuItem *item, gpointer user
 
 	for (size_t i=0;i<iter.size (); i++)
 	{
-		if (item == GTK_MENU_ITEM (q->fileItems["Paused"]))
+		if (item == GTK_MENU_ITEM (q->getWidget("filePausedItem")))
 			q->setPriority_client(q->fileView.getValue<gpointer,QueueItemInfo*>(&iter[i], "Info")->getTarget(), QueueItem::PAUSED);
-		else if (item == GTK_MENU_ITEM (q->fileItems["Lowest"]))
+		else if (item == GTK_MENU_ITEM (q->getWidget("fileLowestPriorityItem")))
 			q->setPriority_client(q->fileView.getValue<gpointer,QueueItemInfo*>(&iter[i], "Info")->getTarget(), QueueItem::LOWEST);
-		else if (item == GTK_MENU_ITEM (q->fileItems["Low"]))
+		else if (item == GTK_MENU_ITEM (q->getWidget("fileLowPriorityItem")))
 			q->setPriority_client(q->fileView.getValue<gpointer,QueueItemInfo*>(&iter[i], "Info")->getTarget(), QueueItem::LOW);
-		else if (item == GTK_MENU_ITEM (q->fileItems["Normal"]))
+		else if (item == GTK_MENU_ITEM (q->getWidget("fileNormalPriorityItem")))
 			q->setPriority_client(q->fileView.getValue<gpointer,QueueItemInfo*>(&iter[i], "Info")->getTarget(), QueueItem::NORMAL);
-		else if (item == GTK_MENU_ITEM (q->fileItems["High"]))
+		else if (item == GTK_MENU_ITEM (q->getWidget("fileHighPriorityItem")))
 			q->setPriority_client(q->fileView.getValue<gpointer,QueueItemInfo*>(&iter[i], "Info")->getTarget(), QueueItem::HIGH);
-		else if (item == GTK_MENU_ITEM (q->fileItems["Highest"]))
+		else if (item == GTK_MENU_ITEM (q->getWidget("fileHighestPriorityItem")))
 			q->setPriority_client(q->fileView.getValue<gpointer,QueueItemInfo*>(&iter[i], "Info")->getTarget(), QueueItem::HIGHEST);
 	}
 }
@@ -641,7 +586,7 @@ gboolean DownloadQueue::dir_onPopupMenu_gui (GtkWidget *widget, gpointer user_da
 }
 void DownloadQueue::dir_popup_menu_gui (GdkEventButton *event, gpointer user_data)
 {
-    gtk_menu_popup(GTK_MENU(dirMenu), NULL, NULL, NULL, NULL,
+    gtk_menu_popup(GTK_MENU(getWidget("dirMenu")), NULL, NULL, NULL, NULL,
                    (event != NULL) ? 1 : 0,
                    gdk_event_get_time((GdkEvent*)event));
 }
@@ -672,7 +617,7 @@ gboolean DownloadQueue::file_onPopupMenu_gui (GtkWidget *widget, gpointer user_d
 }
 void DownloadQueue::file_popup_menu_gui (GdkEventButton *event, gpointer user_data)
 {
-    gtk_menu_popup(GTK_MENU(fileMenu), NULL, NULL, NULL, NULL,
+    gtk_menu_popup(GTK_MENU(getWidget("fileMenu")), NULL, NULL, NULL, NULL,
                    (event != NULL) ? 1 : 0,
                    gdk_event_get_time((GdkEvent*)event));
 }
@@ -1107,19 +1052,19 @@ void DownloadQueue::updateStatus_gui ()
 
 	if (!gtk_tree_selection_get_selected (selection, &m, &iter))
 	{
-		setStatus_gui ("Items: 0", STATUS_ITEMS);
-		setStatus_gui ("Size: 0 B", STATUS_FILE_SIZE);
-		setStatus_gui ("Files: " + Util::toString (queueItems), STATUS_FILES);
-		setStatus_gui ("Size: " + Util::formatBytes (queueSize), STATUS_TOTAL_SIZE);
+		setStatus_gui("Items: 0", "statusItems");
+		setStatus_gui("Size: 0 B", "statusFileSize");
+		setStatus_gui("Files: " + Util::toString(queueItems), "statusFiles");
+		setStatus_gui("Size: " + Util::formatBytes(queueSize), "statusTotalSize");
 		return;
 	}
 	string path = dirView.getString(&iter, "Path");
 	if (dirFileMap[path].empty ())
 	{
-		setStatus_gui ("Items: 0", STATUS_ITEMS);
-		setStatus_gui ("Size: 0 B", STATUS_FILE_SIZE);
-		setStatus_gui ("Files: " + Util::toString (queueItems), STATUS_FILES);
-		setStatus_gui ("Size: " + Util::formatBytes (queueSize), STATUS_TOTAL_SIZE);
+		setStatus_gui("Items: 0", "statusItems");
+		setStatus_gui("Size: 0 B", "statusFileSize");
+		setStatus_gui("Files: " + Util::toString(queueItems), "statusFiles");
+		setStatus_gui("Size: " + Util::formatBytes(queueSize), "statusTotalSize");
 		return;
 	}
 
@@ -1136,10 +1081,10 @@ void DownloadQueue::updateStatus_gui ()
 		}
 	}
 
-	setStatus_gui ("Items: " + Util::toString (count), STATUS_ITEMS);
-	setStatus_gui ("Size: " + Util::formatBytes (total), STATUS_FILE_SIZE);
-	setStatus_gui ("Files: " + Util::toString (queueItems), STATUS_FILES);
-	setStatus_gui ("Size: " + Util::formatBytes (queueSize), STATUS_TOTAL_SIZE);
+	setStatus_gui("Items: " + Util::toString(count), "statusItems");
+	setStatus_gui("Size: " + Util::formatBytes (total), "statusFileSize");
+	setStatus_gui("Files: " + Util::toString (queueItems), "statusFiles");
+	setStatus_gui("Size: " + Util::formatBytes (queueSize), "statusTotalSize");
 }
 void DownloadQueue::update_gui ()
 {
@@ -1165,15 +1110,13 @@ void DownloadQueue::updateItem_gui (QueueItemInfo *i, bool add)
 	i->update (this, add);
 }
 
-void DownloadQueue::setStatus_gui (string text, int num)
+void DownloadQueue::setStatus_gui(string text, string statusItem)
 {
-	if (num<0 || num>STATUS_LAST-1) return;
-
-	gtk_statusbar_pop(GTK_STATUSBAR (statusbar[num]), 0);
-	if (num == 0)
-		gtk_statusbar_push(GTK_STATUSBAR (statusbar[num]), 0, string ("[" + Util::getShortTimeString() + "] " + text).c_str ());
+	gtk_statusbar_pop(GTK_STATUSBAR(getWidget(statusItem)), 0);
+	if (statusItem == "statusMain")
+		gtk_statusbar_push(GTK_STATUSBAR(getWidget(statusItem)), 0, string("[" + Util::getShortTimeString() + "] " + text).c_str());
 	else
-		gtk_statusbar_push(GTK_STATUSBAR (statusbar[num]), 0, text.c_str ());	
+		gtk_statusbar_push(GTK_STATUSBAR(getWidget(statusItem)), 0, text.c_str());	
 }
 int DownloadQueue::countFiles_gui (string path)
 {

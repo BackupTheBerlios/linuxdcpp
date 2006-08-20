@@ -45,9 +45,6 @@ class Search:
 		Search();
 		~Search();
 
-		// From BookEntry
-		GtkWidget *getWidget();
-
 		void putValue_gui(const std::string &str, int64_t size, SearchManager::SizeModes mode, SearchManager::TypeModes type);
 
 	private:
@@ -100,15 +97,11 @@ class Search:
 		virtual void on(ClientManagerListener::ClientDisconnected, Client *client) throw();
 		virtual void on(SearchManagerListener::SR, SearchResult *result) throw();
 
-		GtkWidget *mainBox;
-		hash_map<std::string, GtkWidget *> searchItems;
-		hash_map<std::string, GtkWidget *> menuItems;
 		TreeView hubView, resultView;
 		GtkListStore *hubStore;
 		GtkListStore *resultStore;
 		GtkTreeSelection *selection;
-		GtkWidget *dirChooserDialog;
-		GtkMenu *mainMenu, *downloadMenu, *downloadDirMenu;
+		GtkWidget *searchEntry;
 		GdkEventType oldEventType;
 		GdkPixbuf *iconFile, *iconDirectory;
 		int droppedResult, searchHits;

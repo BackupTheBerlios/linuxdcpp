@@ -254,7 +254,7 @@ BookEntry *WulforManager::getBookEntry_gui(string id, bool raise)
 	pthread_mutex_unlock(&bookEntryLock);
 
 	if (ret && raise)
-		mainWin->raisePage_gui(ret->getWidget());
+		mainWin->raisePage_gui(ret->getWidget("mainBox"));
 
 	return ret;
 }
@@ -262,11 +262,11 @@ BookEntry *WulforManager::getBookEntry_gui(string id, bool raise)
 void WulforManager::insertBookEntry_gui(BookEntry *entry, bool raise)
 {
 	// Associates id string to the widget for later retrieval in MainWindow::switchPage_gui()
-	g_object_set_data_full(G_OBJECT(entry->getWidget()), "id", g_strdup(entry->getID().c_str()), g_free);
+	g_object_set_data_full(G_OBJECT(entry->getWidget("mainBox")), "id", g_strdup(entry->getID().c_str()), g_free);
 
 	entry->applyCallback(G_CALLBACK(onCloseBookEntry_gui));
-	mainWin->addPage_gui(entry->getWidget(), entry->getTitle(), raise);
-	gtk_widget_unref(entry->getWidget());
+	mainWin->addPage_gui(entry->getWidget("mainBox"), entry->getTitle(), raise);
+	gtk_widget_unref(entry->getWidget("mainBox"));
 
 	pthread_mutex_lock(&bookEntryLock);
 	bookEntries[entry->getID()] = entry;
@@ -277,7 +277,7 @@ void WulforManager::insertBookEntry_gui(BookEntry *entry, bool raise)
 void WulforManager::deleteBookEntry_gui(BookEntry *entry)
 {
 	// Save a pointer to the page before the entry is deleted
-	GtkWidget *notebookPage = entry->getWidget();
+	GtkWidget *notebookPage = entry->getWidget("mainBox");
 	string id = entry->getID();
 	vector<FuncBase *>::iterator fIt;
 
@@ -354,13 +354,13 @@ void WulforManager::insertDialogEntry_gui(DialogEntry *entry)
 	dialogEntries[entry->getID()] = entry;
 	pthread_mutex_unlock(&dialogEntryLock);
 
-	gtk_dialog_run(GTK_DIALOG(entry->getDialog()));
+	gtk_dialog_run(GTK_DIALOG(entry->getWidget("dialog")));
 }
 
 void WulforManager::hideDialogEntry_gui(DialogEntry *entry)
 {
-	if (entry->getDialog())
-		gtk_widget_hide(entry->getDialog());
+	if (entry->getWidget("dialog"))
+		gtk_widget_hide(entry->getWidget("dialog"));
 }
 
 // This is a callback, so gdk_threads_enter/leave is called automatically.
@@ -368,7 +368,7 @@ void WulforManager::deleteDialogEntry_gui(DialogEntry *entry)
 {
 	vector<FuncBase *>::iterator it;
 	string id = entry->getID();
-	GtkWidget *dialog = entry->getDialog();
+	GtkWidget *dialog = entry->getWidget("dialog");
 
 	pthread_mutex_lock(&clientCallLock);
 
@@ -460,7 +460,7 @@ Hub *WulforManager::addHub_gui(string address, string nick, string desc, string 
 	if (entry) return dynamic_cast<Hub *>(entry);
 
 	Hub *hub = new Hub(address);
-	mainWin->appendWindowItem(hub->getWidget(), hub->getID());
+	mainWin->appendWindowItem(hub->getWidget("mainBox"), hub->getID());
 	insertBookEntry_gui(hub);
 
 	typedef Func4<Hub, string, string, string, string> F4;
@@ -476,7 +476,7 @@ PrivateMessage *WulforManager::addPrivMsg_gui(User::Ptr user, bool raise)
 	if (entry) return dynamic_cast<PrivateMessage *>(entry);
 
 	PrivateMessage *privMsg = new PrivateMessage(user);
-	mainWin->appendWindowItem(privMsg->getWidget(), privMsg->getID());
+	mainWin->appendWindowItem(privMsg->getWidget("mainBox"), privMsg->getID());
 	insertBookEntry_gui(privMsg, raise);
 
 	return privMsg;

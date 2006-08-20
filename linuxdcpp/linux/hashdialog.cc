@@ -19,22 +19,12 @@
 #include "hashdialog.hh"
 #include "wulformanager.hh"
 
-Hash::Hash() : DialogEntry("Hash")
+Hash::Hash() : DialogEntry("Hash", "hash.glade")
 {
 	TimerManager::getInstance()->addListener(this);
 
-	GladeXML *xml = getGladeXML("hash.glade");
-
-	setDialog(glade_xml_get_widget(xml, "hashDialog"));
-
-	labelFile = GTK_LABEL(glade_xml_get_widget(xml, "labelFile"));
-	labelSpeed = GTK_LABEL(glade_xml_get_widget(xml, "labelSpeed"));
-	labelTime = GTK_LABEL(glade_xml_get_widget(xml, "labelTime"));
-	progressBar = GTK_PROGRESS_BAR(glade_xml_get_widget(xml, "progressbar"));
-
 	string tmp;
 	startTime = GET_TICK();
-	autoClose = false;
 	HashManager::getInstance()->getStats(tmp, startBytes, startFiles);
 	HashManager::getInstance()->setPriority(Thread::NORMAL);
 	updateStats_gui();
@@ -60,52 +50,46 @@ void Hash::updateStats_gui()
 	if (files > startFiles)
 		startFiles = files;
 
-	if (autoClose && files == 0)
-	{
-		gtk_dialog_response(GTK_DIALOG(getDialog()), GTK_RESPONSE_OK);
-		return;
-	}
-
 	double diff = tick - startTime;
 	if (diff < 1000 || files == 0 || bytes == 0)
 	{
-		gtk_label_set_text(labelSpeed, string("-.-- B/s, " + Util::formatBytes(bytes) + " left").c_str());
-		gtk_label_set_text(labelTime, "-:--:-- left");
-		gtk_progress_bar_set_text (progressBar, "0%");
-		gtk_progress_bar_set_fraction(progressBar, 0.0);
+		gtk_label_set_text(GTK_LABEL(getWidget("labelSpeed")), string("-.-- B/s, " + Util::formatBytes(bytes) + " left").c_str());
+		gtk_label_set_text(GTK_LABEL(getWidget("labelTime")), "-:--:-- left");
+		gtk_progress_bar_set_text (GTK_PROGRESS_BAR(getWidget("progressbar")), "0%");
+		gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(getWidget("progressbar")), 0.0);
 	}
 	else
 	{
 		double speedStat = (((double)(startBytes - bytes)) * 1000) / diff;
 
-		gtk_label_set_text(labelSpeed, string(Util::formatBytes((int64_t)speedStat) + "/s, " + Util::formatBytes(bytes) + " left").c_str());
+		gtk_label_set_text(GTK_LABEL(getWidget("labelSpeed")), string(Util::formatBytes((int64_t)speedStat) + "/s, " + Util::formatBytes(bytes) + " left").c_str());
 
 		if (speedStat == 0)
-			gtk_label_set_text(labelTime,"-:--:-- left");
+			gtk_label_set_text(GTK_LABEL(getWidget("labelTime")),"-:--:-- left");
 		else
 		{
 			double ss = bytes / speedStat;
-			gtk_label_set_text(labelTime, string(Util::formatSeconds((int64_t)ss) + " left").c_str());
+			gtk_label_set_text(GTK_LABEL(getWidget("labelTime")), string(Util::formatSeconds((int64_t)ss) + " left").c_str());
 		}
 	}
 
 	if (files == 0)
-		gtk_label_set_text(labelFile, "Done");
+		gtk_label_set_text(GTK_LABEL(getWidget("labelFile")), "Done");
 	else
-		gtk_label_set_text(labelFile, file.c_str());
+		gtk_label_set_text(GTK_LABEL(getWidget("labelFile")), file.c_str());
 
 	if (startFiles == 0 || startBytes == 0)
 	{
-		gtk_progress_bar_set_text(progressBar, "0%");
-		gtk_progress_bar_set_fraction(progressBar, 0.0);
+		gtk_progress_bar_set_text(GTK_PROGRESS_BAR(getWidget("progressbar")), "0%");
+		gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(getWidget("progressbar")), 0.0);
 	}
 	else
 	{
 		double progress = ((0.5 * (double)(startFiles - files)/(double)startFiles) + (0.5 * (double)(startBytes - bytes)/(double)startBytes));
 		char buf[16];
 		snprintf(buf, sizeof(buf), "%.0f", progress * 100);
-		gtk_progress_bar_set_text(progressBar, string(string(buf) + "%").c_str());
-		gtk_progress_bar_set_fraction(progressBar, progress);
+		gtk_progress_bar_set_text(GTK_PROGRESS_BAR(getWidget("progressbar")), string(string(buf) + "%").c_str());
+		gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(getWidget("progressbar")), progress);
 	}
 }
 

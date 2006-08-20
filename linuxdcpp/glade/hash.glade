@@ -3,7 +3,7 @@
 
 <glade-interface>
 
-<widget class="GtkDialog" id="hashDialog">
+<widget class="GtkDialog" id="dialog">
   <property name="visible">True</property>
   <property name="title" translatable="yes">Indexing files...</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>

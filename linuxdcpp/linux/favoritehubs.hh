@@ -35,9 +35,6 @@ class FavoriteHubs:
 		FavoriteHubs();
 		~FavoriteHubs();
 
-		// From BookEntry
-		GtkWidget *getWidget();
-
 	private:
 		// GUI functions
 		void updateList_gui();
@@ -67,14 +64,6 @@ class FavoriteHubs:
 		virtual void on(FavoriteManagerListener::FavoriteAdded, const FavoriteHubEntry *entry) throw();
 		virtual void on(FavoriteManagerListener::FavoriteRemoved, const FavoriteHubEntry *entry) throw();
 
-		GtkWidget *mainBox;
-		GtkDialog *deleteDialog;
-		GtkDialog *errorDialog;
-		GtkLabel *errorLabel;
-		GtkMenu *menu;
-		hash_map<std::string, GtkWidget *> button;
-		hash_map<std::string, GtkWidget *> dialog;
-		hash_map<std::string, GtkWidget *> menuItems;
 		TreeView favoriteView;
 		GtkListStore *favoriteStore;
 		GtkTreeSelection *favoriteSelection;

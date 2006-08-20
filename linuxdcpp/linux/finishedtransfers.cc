@@ -19,26 +19,18 @@
 #include "finishedtransfers.hh"
 
 FinishedTransfers::FinishedTransfers(std::string title):
-	BookEntry(title)
+	BookEntry(title, "finishedtransfers.glade"),
+	items(0),
+	totalBytes(0),
+	totalTime(0)
 {
-	GladeXML *xml = getGladeXML("finishedtransfers.glade");
+	FinishedManager::getInstance()->addListener(this);
 
-	GtkWidget *window = glade_xml_get_widget(xml, "finishedTransfers");
-	mainBox = glade_xml_get_widget(xml, "mBox");
-	gtk_widget_ref(mainBox);
-	gtk_container_remove(GTK_CONTAINER(window), mainBox);
-	gtk_widget_destroy(window);
-
-	totalItems = GTK_STATUSBAR(glade_xml_get_widget(xml, "totalItems"));
-	totalSize = GTK_STATUSBAR(glade_xml_get_widget(xml, "totalSize"));
-	averageSpeed = GTK_STATUSBAR(glade_xml_get_widget(xml, "averageSpeed"));
-
-	openWithDialog = GTK_DIALOG(glade_xml_get_widget(xml, "openWithDialog"));
-	openWithEntry = GTK_ENTRY(glade_xml_get_widget(xml, "openWithEntry"));
-	gtk_dialog_set_alternative_button_order(openWithDialog, GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	// Configure the dialog
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("openWithDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	// Initialize transfer treeview
-	transferView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "view")), true, "finished");
+	transferView.setView(GTK_TREE_VIEW(getWidget("view")), true, "finished");
 	transferView.insertColumn("Time", G_TYPE_STRING, TreeView::STRING, 150);
 	transferView.insertColumn("Filename", G_TYPE_STRING, TreeView::STRING, 100);
 	transferView.insertColumn("Path", G_TYPE_STRING, TreeView::STRING, 200);
@@ -57,37 +49,23 @@ FinishedTransfers::FinishedTransfers(std::string title):
 	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(transferView.get(), transferView.col("Time")), TRUE);
 	gtk_tree_view_set_fixed_height_mode(transferView.get(), TRUE);
 
-	// Connect callbacks to popup menu
-	menu = GTK_MENU(glade_xml_get_widget(xml, "menu"));
-	GtkWidget *openWithItem = glade_xml_get_widget(xml, "openWithItem");
-	g_signal_connect(G_OBJECT(openWithItem), "activate", G_CALLBACK(onOpenWith_gui), (gpointer)this);
-	GtkWidget *removeItem = glade_xml_get_widget(xml, "removeItem");
-	g_signal_connect(G_OBJECT(removeItem), "activate", G_CALLBACK(onRemoveItems_gui), (gpointer)this);
-	GtkWidget *removeAllItem = glade_xml_get_widget(xml, "removeAllItem");
-	g_signal_connect(G_OBJECT(removeAllItem), "activate", G_CALLBACK(onRemoveAll_gui), (gpointer)this);
+	// Connect the signals to their callback functions.
+	g_signal_connect(getWidget("openWithItem"), "activate", G_CALLBACK(onOpenWith_gui), (gpointer)this);
+	g_signal_connect(getWidget("removeItem"), "activate", G_CALLBACK(onRemoveItems_gui), (gpointer)this);
+	g_signal_connect(getWidget("removeAllItem"), "activate", G_CALLBACK(onRemoveAll_gui), (gpointer)this);
+	g_signal_connect(transferView.get(), "button-release-event", G_CALLBACK(onPopupMenu_gui), (gpointer)this);
+	g_signal_connect(transferView.get(), "key-release-event", G_CALLBACK(onKeyReleased_gui), (gpointer)this);
 
-	items = 0;
-	totalBytes = 0;
-	totalTime = 0;
+	// Update the list of finished items.
 	isUpload = (getID() == string("Finished Uploads")) ? TRUE : FALSE;
-
-	FinishedManager::getInstance()->addListener(this);
 	updateList_gui(FinishedManager::getInstance()->lockList(isUpload));
 	FinishedManager::getInstance()->unlockList();
-
-	g_signal_connect(G_OBJECT(transferView.get()), "button-release-event", G_CALLBACK(onPopupMenu_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(transferView.get()), "key-release-event", G_CALLBACK(onKeyReleased_gui), (gpointer)this);
 }
 
 FinishedTransfers::~FinishedTransfers()
 {
 	FinishedManager::getInstance()->removeListener(this);
-	gtk_widget_destroy(GTK_WIDGET(openWithDialog));
-}
-
-GtkWidget *FinishedTransfers::getWidget()
-{
-	return mainBox;
+	gtk_widget_destroy(getWidget("openWithDialog"));
 }
 
 gboolean FinishedTransfers::onPopupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
@@ -96,8 +74,8 @@ gboolean FinishedTransfers::onPopupMenu_gui(GtkWidget *widget, GdkEventButton *e
 
 	if (event->button == 3 && gtk_tree_selection_get_selected(ft->transferSelection, NULL, NULL))
 	{
-		gtk_menu_popup(ft->menu, NULL, NULL, NULL, NULL, event->button, event->time);
-		gtk_widget_show_all(GTK_WIDGET(ft->menu));
+		gtk_menu_popup(GTK_MENU(ft->getWidget("menu")), NULL, NULL, NULL, NULL, event->button, event->time);
+		gtk_widget_show_all(ft->getWidget("menu"));
 	}
 	return FALSE;
 }
@@ -112,8 +90,8 @@ gboolean FinishedTransfers::onKeyReleased_gui(GtkWidget *widget, GdkEventKey *ev
 		onRemoveItems_gui(NULL, data);
 	else if (event->keyval == GDK_Menu || (event->keyval == GDK_F10 && event->state & GDK_SHIFT_MASK))
 	{
-		gtk_menu_popup(ft->menu, NULL, NULL, NULL, NULL, 1, event->time);
-		gtk_widget_show_all(GTK_WIDGET(ft->menu));
+		gtk_menu_popup(GTK_MENU(ft->getWidget("menu")), NULL, NULL, NULL, NULL, 1, event->time);
+		gtk_widget_show_all(ft->getWidget("menu"));
 	}
 	return FALSE;
 }
@@ -184,9 +162,9 @@ void FinishedTransfers::addEntry_gui(FinishedItem *entry)
 void FinishedTransfers::updateStatus_gui()
 {
 	string status = Util::toString(items) + " Items";
-	gtk_statusbar_push(totalItems, 0, status.c_str());
-	gtk_statusbar_push(totalSize, 0, Text::utf8ToAcp(Util::formatBytes(totalBytes)).c_str());
-	gtk_statusbar_push(averageSpeed, 0, Text::utf8ToAcp(Util::formatBytes((totalTime > 0) ? totalBytes * ((int64_t)1000) / totalTime : 0) + "/s").c_str());
+	gtk_statusbar_push(GTK_STATUSBAR(getWidget("totalItems")), 0, status.c_str());
+	gtk_statusbar_push(GTK_STATUSBAR(getWidget("totalSize")), 0, Text::utf8ToAcp(Util::formatBytes(totalBytes)).c_str());
+	gtk_statusbar_push(GTK_STATUSBAR(getWidget("averageSpeed")), 0, Text::utf8ToAcp(Util::formatBytes((totalTime > 0) ? totalBytes * ((int64_t)1000) / totalTime : 0) + "/s").c_str());
 }
 
 void FinishedTransfers::onOpenWith_gui(GtkMenuItem *item, gpointer data)
@@ -197,12 +175,12 @@ void FinishedTransfers::onOpenWith_gui(GtkMenuItem *item, gpointer data)
 	string target;
 	int ret;
 
-	ret = gtk_dialog_run(ft->openWithDialog);
-	gtk_widget_hide(GTK_WIDGET(ft->openWithDialog));
+	ret = gtk_dialog_run(GTK_DIALOG(ft->getWidget("openWithDialog")));
+	gtk_widget_hide(ft->getWidget("openWithDialog"));
 
 	if (ret == GTK_RESPONSE_OK)
 	{
-		command = gtk_entry_get_text(ft->openWithEntry);
+		command = gtk_entry_get_text(GTK_ENTRY(ft->getWidget("openWithEntry")));
 		gtk_tree_selection_get_selected(ft->transferSelection, NULL, &iter);
 		target = ft->transferView.getString(&iter, "Target");
 

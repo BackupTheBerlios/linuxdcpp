@@ -21,7 +21,6 @@
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
-#include <client/SettingsManager.h>
 #include <client/ShareManager.h>
 
 #include "wulformanager.hh"
@@ -59,7 +58,7 @@ int main(int argc, char *argv[])
 
 	WulforSettingsManager::get()->save();
 
-	cout << "Shutting down..." << endl;
+	std::cout << "Shutting down..." << std::endl;
 	shutdown();
 
 	delete WulforSettingsManager::get();

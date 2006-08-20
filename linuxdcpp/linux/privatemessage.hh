@@ -34,9 +34,6 @@ class PrivateMessage:
 		PrivateMessage(User::Ptr user);
 		~PrivateMessage() {}
 
-		// From BookEntry
-		GtkWidget *getWidget();
-
 		// GUI functions
 		void addMessage_gui(std::string message);
 		void addStatusMessage_gui(std::string message);
@@ -52,9 +49,6 @@ class PrivateMessage:
 		// Client functions
 		void sendMessage_client(std::string message);
 
-		GtkWidget *box;
-		GtkScrolledWindow *scroll;
-		GtkTextView *text;
 		GtkTextBuffer *buffer;
 		GtkTextMark *mark;
 		User::Ptr user;

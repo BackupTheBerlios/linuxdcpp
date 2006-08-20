@@ -24,7 +24,7 @@
 
 using namespace std;
 
-BookEntry::BookEntry(string title)
+BookEntry::BookEntry(string title, string glade)
 {
 	// Allow search tab to have many tabs with the same title.
 	if (title == "Search")
@@ -55,6 +55,31 @@ BookEntry::BookEntry(string title)
 	gtk_widget_show_all(box);
 
 	setLabel_gui(title);
+
+	// Load the Glade XML file
+	string file = WulforManager::get()->getPath() + "/glade/" + glade;
+	xml = glade_xml_new(file.c_str(), NULL, NULL);
+	if (xml == NULL)
+		gtk_main_quit();
+
+	// Get the GtkWindow and remove the box from it to use in GtkNotebook
+	gtk_widget_ref(getWidget("mainBox"));
+	gtk_container_remove(GTK_CONTAINER(getWidget("window")), getWidget("mainBox"));
+	gtk_widget_destroy(getWidget("window"));
+
+}
+
+BookEntry::~BookEntry()
+{
+	g_object_unref(xml);
+}
+
+GtkWidget *BookEntry::getWidget(string name) 
+{
+	dcassert(!name.empty());
+	GtkWidget *widget = glade_xml_get_widget(xml, name.c_str());
+	dcassert(widget);
+	return widget;
 }
 
 GtkWidget *BookEntry::getTitle()
@@ -72,15 +97,6 @@ void BookEntry::applyCallback(GCallback closeCallback)
 	g_signal_connect(G_OBJECT(button), "clicked", closeCallback, (gpointer)this);
 }
 
-GladeXML* BookEntry::getGladeXML(string file)
-{
-	file = WulforManager::get()->getPath() + "/glade/" + file;
-	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
-	if (xml == NULL)
-		gtk_main_quit();
-	return xml;
-}
-
 void BookEntry::setLabel_gui(string text)
 {
 	gtk_tooltips_set_tip(tips, eventBox, text.c_str(), text.c_str());
@@ -92,7 +108,7 @@ void BookEntry::setLabel_gui(string text)
 
 void BookEntry::setBold_gui()
 {
-	if (!bold && WulforManager::get()->getMainWindow()->currentPage_gui() != getWidget())
+	if (!bold && WulforManager::get()->getMainWindow()->currentPage_gui() != getWidget("mainBox"))
 	{
 		char *markup = g_markup_printf_escaped("<b>%s</b>", title.c_str());
 		gtk_label_set_markup(label, markup);

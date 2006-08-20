@@ -41,11 +41,6 @@ class Hash:
 		// Client callbacks
 		virtual void on(TimerManagerListener::Second, u_int32_t tics) throw();
 
-		GtkLabel *labelFile;
-		GtkLabel *labelSpeed;
-		GtkLabel *labelTime;
-		GtkProgressBar *progressBar;
-		bool autoClose;
 		int64_t startBytes;
 		size_t startFiles;
 		u_int32_t startTime;

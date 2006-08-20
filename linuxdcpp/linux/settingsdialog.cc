@@ -18,24 +18,19 @@
 
 #include "settingsdialog.hh"
 #include "wulformanager.hh"
-#include <iostream>
 
 using namespace std;
 
-Settings::Settings() : DialogEntry("Settings")
+Settings::Settings() : DialogEntry("Settings", "settingsdialog.glade")
 {
-	string file = WulforManager::get()->getPath() + "/glade/settingsdialog.glade";
-	xml = glade_xml_new(file.c_str(), NULL, NULL);
-	if (xml == NULL)
-		gtk_main_quit();
+	// Configure the dialogs.
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("dialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("favoriteNameDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("publicHubsDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("virtualNameDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("dirChooserDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
-	setDialog(widget("settingsDialog"));
-	gtk_dialog_set_alternative_button_order(GTK_DIALOG(widget("settingsDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-	gtk_dialog_set_alternative_button_order(GTK_DIALOG(widget("favoriteNameDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-	gtk_dialog_set_alternative_button_order(GTK_DIALOG(widget("publicHubsDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-	gtk_dialog_set_alternative_button_order(GTK_DIALOG(widget("virtualNameDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-	gtk_dialog_set_alternative_button_order(GTK_DIALOG(widget("dirChooserDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-
+	// Initialize the tabs in the GtkNotebook.
 	initPersonal_gui();
 	initConnection_gui();
 	initDownloads_gui();
@@ -47,11 +42,10 @@ Settings::Settings() : DialogEntry("Settings")
 
 Settings::~Settings()
 {
-	gtk_widget_destroy(widget("favoriteNameDialog"));
-	gtk_widget_destroy(widget("publicHubsDialog"));
-	gtk_widget_destroy(widget("virtualNameDialog"));
-	gtk_widget_destroy(widget("dirChooserDialog"));
-	g_object_unref(xml);
+	gtk_widget_destroy(getWidget("favoriteNameDialog"));
+	gtk_widget_destroy(getWidget("publicHubsDialog"));
+	gtk_widget_destroy(getWidget("virtualNameDialog"));
+	gtk_widget_destroy(getWidget("dirChooserDialog"));
 }
 
 void Settings::saveSettings()
@@ -64,78 +58,78 @@ void Settings::saveSettings()
 	SettingsManager::IntSetting setting;
 
 	{ // Personal
-		sm->set(SettingsManager::NICK, gtk_entry_get_text(GTK_ENTRY(widget("nickEntry"))));
-		sm->set(SettingsManager::EMAIL, gtk_entry_get_text(GTK_ENTRY(widget("emailEntry"))));
-		sm->set(SettingsManager::DESCRIPTION, gtk_entry_get_text(GTK_ENTRY(widget("descriptionEntry"))));
+		sm->set(SettingsManager::NICK, gtk_entry_get_text(GTK_ENTRY(getWidget("nickEntry"))));
+		sm->set(SettingsManager::EMAIL, gtk_entry_get_text(GTK_ENTRY(getWidget("emailEntry"))));
+		sm->set(SettingsManager::DESCRIPTION, gtk_entry_get_text(GTK_ENTRY(getWidget("descriptionEntry"))));
 		sm->set(SettingsManager::UPLOAD_SPEED, SettingsManager::connectionSpeeds[gtk_combo_box_get_active(connectionSpeedComboBox)]);
 	}
 
 	{ // Connection
 		// Incoming connection
-		if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget("activeRadioButton"))))
+		if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("activeRadioButton"))))
 			sm->set(SettingsManager::INCOMING_CONNECTIONS, SettingsManager::INCOMING_DIRECT);
-		else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget("portForwardRadioButton"))))
+		else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("portForwardRadioButton"))))
 			sm->set(SettingsManager::INCOMING_CONNECTIONS, SettingsManager::INCOMING_FIREWALL_NAT);
-		else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget("passiveRadioButton"))))
+		else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("passiveRadioButton"))))
 			sm->set(SettingsManager::INCOMING_CONNECTIONS, SettingsManager::INCOMING_FIREWALL_PASSIVE);
 
-		sm->set(SettingsManager::EXTERNAL_IP, gtk_entry_get_text(GTK_ENTRY(widget("ipEntry"))));
-		sm->set(SettingsManager::NO_IP_OVERRIDE, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget("forceIPCheckButton"))));
+		sm->set(SettingsManager::EXTERNAL_IP, gtk_entry_get_text(GTK_ENTRY(getWidget("ipEntry"))));
+		sm->set(SettingsManager::NO_IP_OVERRIDE, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("forceIPCheckButton"))));
 
-		int port = Util::toInt(gtk_entry_get_text(GTK_ENTRY(widget("tcpEntry"))));
+		int port = Util::toInt(gtk_entry_get_text(GTK_ENTRY(getWidget("tcpEntry"))));
 		if (port > 0 && port <= 65535)
 			sm->set(SettingsManager::TCP_PORT, port);
-		port = Util::toInt(gtk_entry_get_text(GTK_ENTRY(widget("udpEntry"))));
+		port = Util::toInt(gtk_entry_get_text(GTK_ENTRY(getWidget("udpEntry"))));
 		if (port > 0 && port <= 65535)
 			sm->set(SettingsManager::UDP_PORT, port);
 
 		// Outgoing connection
 		int type = SETTING(OUTGOING_CONNECTIONS);
-		if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget("outDirectRadioButton"))))
+		if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("outDirectRadioButton"))))
 			sm->set(SettingsManager::OUTGOING_CONNECTIONS, SettingsManager::OUTGOING_DIRECT);
-		else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget("socksRadioButton"))))
+		else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("socksRadioButton"))))
 			sm->set(SettingsManager::OUTGOING_CONNECTIONS, SettingsManager::OUTGOING_SOCKS5);
 
 		if (SETTING(OUTGOING_CONNECTIONS) != type)
 			Socket::socksUpdated();
 
-		sm->set(SettingsManager::SOCKS_SERVER, gtk_entry_get_text(GTK_ENTRY(widget("socksIPEntry"))));
-		sm->set(SettingsManager::SOCKS_USER, gtk_entry_get_text(GTK_ENTRY(widget("socksUserEntry"))));
-		sm->set(SettingsManager::SOCKS_PASSWORD, gtk_entry_get_text(GTK_ENTRY(widget("socksPassEntry"))));
+		sm->set(SettingsManager::SOCKS_SERVER, gtk_entry_get_text(GTK_ENTRY(getWidget("socksIPEntry"))));
+		sm->set(SettingsManager::SOCKS_USER, gtk_entry_get_text(GTK_ENTRY(getWidget("socksUserEntry"))));
+		sm->set(SettingsManager::SOCKS_PASSWORD, gtk_entry_get_text(GTK_ENTRY(getWidget("socksPassEntry"))));
 
-		port = Util::toInt(gtk_entry_get_text(GTK_ENTRY(widget("socksPortEntry"))));
+		port = Util::toInt(gtk_entry_get_text(GTK_ENTRY(getWidget("socksPortEntry"))));
 		if (port > 0 && port <= 65535)
 			sm->set(SettingsManager::SOCKS_PORT, port);
 	}
 
 	{ // Downloads
-		path = gtk_entry_get_text(GTK_ENTRY(widget("finishedDownloadsEntry")));
+		path = gtk_entry_get_text(GTK_ENTRY(getWidget("finishedDownloadsEntry")));
 		if (path[path.length() - 1] != PATH_SEPARATOR)
 			path += PATH_SEPARATOR;
 		sm->set(SettingsManager::DOWNLOAD_DIRECTORY, path);
 
-		path = gtk_entry_get_text(GTK_ENTRY(widget("unfinishedDownloadsEntry")));
+		path = gtk_entry_get_text(GTK_ENTRY(getWidget("unfinishedDownloadsEntry")));
 		if (!path.empty() && path[path.length() - 1] != PATH_SEPARATOR)
 			path += PATH_SEPARATOR;
 		sm->set(SettingsManager::TEMP_DOWNLOAD_DIRECTORY, path);
-		sm->set(SettingsManager::DOWNLOAD_SLOTS, (int)gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("maxDownloadsSpinButton"))));
-		sm->set(SettingsManager::MAX_DOWNLOAD_SPEED, (int)gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("newDownloadsSpinButton"))));
-		sm->set(SettingsManager::HTTP_PROXY, gtk_entry_get_text(GTK_ENTRY(widget("proxyEntry"))));
+		sm->set(SettingsManager::DOWNLOAD_SLOTS, (int)gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("maxDownloadsSpinButton"))));
+		sm->set(SettingsManager::MAX_DOWNLOAD_SPEED, (int)gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("newDownloadsSpinButton"))));
+		sm->set(SettingsManager::HTTP_PROXY, gtk_entry_get_text(GTK_ENTRY(getWidget("proxyEntry"))));
 
 		{ // Queue
 			// Auto-priority
-			sm->set(SettingsManager::PRIO_HIGHEST_SIZE, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("priorityHighestSpinButton")))));
-			sm->set(SettingsManager::PRIO_HIGH_SIZE, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("priorityHighSpinButton")))));
-			sm->set(SettingsManager::PRIO_NORMAL_SIZE, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("priorityNormalSpinButton")))));
-			sm->set(SettingsManager::PRIO_LOW_SIZE, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("priorityLowSpinButton")))));
+			sm->set(SettingsManager::PRIO_HIGHEST_SIZE, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("priorityHighestSpinButton")))));
+			sm->set(SettingsManager::PRIO_HIGH_SIZE, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("priorityHighSpinButton")))));
+			sm->set(SettingsManager::PRIO_NORMAL_SIZE, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("priorityNormalSpinButton")))));
+			sm->set(SettingsManager::PRIO_LOW_SIZE, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("priorityLowSpinButton")))));
 
 			// Auto-drop
-			sm->set(SettingsManager::AUTODROP_SPEED, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("dropSpeedSpinButton")))));
-			sm->set(SettingsManager::AUTODROP_ELAPSED, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("dropElapsedSpinButton")))));
-			sm->set(SettingsManager::AUTODROP_MINSOURCES, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("dropMinSourcesSpinButton")))));
-			sm->set(SettingsManager::AUTODROP_INTERVAL, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("dropCheckSpinButton")))));
-			sm->set(SettingsManager::AUTODROP_INACTIVITY, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("dropInactiveSpinButton")))));
-			sm->set(SettingsManager::AUTODROP_FILESIZE, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("dropSizeSpinButton")))));
+			sm->set(SettingsManager::AUTODROP_SPEED, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("dropSpeedSpinButton")))));
+			sm->set(SettingsManager::AUTODROP_ELAPSED, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("dropElapsedSpinButton")))));
+			sm->set(SettingsManager::AUTODROP_MINSOURCES, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("dropMinSourcesSpinButton")))));
+			sm->set(SettingsManager::AUTODROP_INTERVAL, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("dropCheckSpinButton")))));
+			sm->set(SettingsManager::AUTODROP_INACTIVITY, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("dropInactiveSpinButton")))));
+			sm->set(SettingsManager::AUTODROP_FILESIZE, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("dropSizeSpinButton")))));
 
 			// Other queue options
 			m = GTK_TREE_MODEL(queueStore);
@@ -152,8 +146,8 @@ void Settings::saveSettings()
 	}
 
 	{ // Sharing
-		sm->set(SettingsManager::MIN_UPLOAD_SPEED, (int)gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("sharedExtraSlotSpinButton"))));
-		sm->set(SettingsManager::SLOTS, (int)gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("sharedUploadSlotsSpinButton"))));
+		sm->set(SettingsManager::MIN_UPLOAD_SPEED, (int)gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("sharedExtraSlotSpinButton"))));
+		sm->set(SettingsManager::SLOTS, (int)gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("sharedUploadSlotsSpinButton"))));
 	}
 
 	{ // Appearance
@@ -170,15 +164,15 @@ void Settings::saveSettings()
 
 		///@todo: figre out how to use this...
 		//WSET("show-tray-icon", appearanceView.getValue<gboolean>(&iter, "Use"););
-		sm->set(SettingsManager::DEFAULT_AWAY_MESSAGE, string(gtk_entry_get_text(GTK_ENTRY(widget("awayMessageEntry")))));
-		sm->set(SettingsManager::TIME_STAMPS_FORMAT, string(gtk_entry_get_text(GTK_ENTRY(widget("timestampEntry")))));
+		sm->set(SettingsManager::DEFAULT_AWAY_MESSAGE, string(gtk_entry_get_text(GTK_ENTRY(getWidget("awayMessageEntry")))));
+		sm->set(SettingsManager::TIME_STAMPS_FORMAT, string(gtk_entry_get_text(GTK_ENTRY(getWidget("timestampEntry")))));
 
 		{ // Colors and sounds
 			// Colors - not implemented
 
 			// Sounds - not implemented
-			//sm->set(SettingsManager::PRIVATE_MESSAGE_BEEP, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget("soundPMReceivedCheckButton"))));
-			//sm->set(SettingsManager::PRIVATE_MESSAGE_BEEP_OPEN, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget("soundPMWindowCheckButton"))));
+			//sm->set(SettingsManager::PRIVATE_MESSAGE_BEEP, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("soundPMReceivedCheckButton"))));
+			//sm->set(SettingsManager::PRIVATE_MESSAGE_BEEP_OPEN, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("soundPMWindowCheckButton"))));
 
 			// Tab bolding
 			m = GTK_TREE_MODEL(colorStore);
@@ -233,20 +227,20 @@ void Settings::saveSettings()
 	}
 
 	{ // Logs
-		path = gtk_entry_get_text(GTK_ENTRY(widget("logDirectoryEntry")));
+		path = gtk_entry_get_text(GTK_ENTRY(getWidget("logDirectoryEntry")));
 		if (!path.empty() && path[path.length() - 1] != PATH_SEPARATOR)
 			path += PATH_SEPARATOR;
 		sm->set(SettingsManager::LOG_DIRECTORY, path);
-		sm->set(SettingsManager::LOG_MAIN_CHAT, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget("logMainCheckButton"))));
-		sm->set(SettingsManager::LOG_FORMAT_MAIN_CHAT, string(gtk_entry_get_text(GTK_ENTRY(widget("logMainEntry")))));
-		sm->set(SettingsManager::LOG_PRIVATE_CHAT, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget("logPrivateCheckButton"))));
-		sm->set(SettingsManager::LOG_FORMAT_PRIVATE_CHAT, string(gtk_entry_get_text(GTK_ENTRY(widget("logPrivateEntry")))));
-		sm->set(SettingsManager::LOG_DOWNLOADS, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget("logDownloadsCheckButton"))));
-		sm->set(SettingsManager::LOG_FORMAT_POST_DOWNLOAD, string(gtk_entry_get_text(GTK_ENTRY(widget("logDownloadsEntry")))));
-		sm->set(SettingsManager::LOG_UPLOADS, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget("logUploadsCheckButton"))));
-		sm->set(SettingsManager::LOG_FORMAT_POST_UPLOAD, string(gtk_entry_get_text(GTK_ENTRY(widget("logUploadsEntry")))));
-		sm->set(SettingsManager::LOG_SYSTEM, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget("logSystemCheckButton"))));
-		sm->set(SettingsManager::LOG_STATUS_MESSAGES, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget("logStatusCheckButton"))));
+		sm->set(SettingsManager::LOG_MAIN_CHAT, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("logMainCheckButton"))));
+		sm->set(SettingsManager::LOG_FORMAT_MAIN_CHAT, string(gtk_entry_get_text(GTK_ENTRY(getWidget("logMainEntry")))));
+		sm->set(SettingsManager::LOG_PRIVATE_CHAT, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("logPrivateCheckButton"))));
+		sm->set(SettingsManager::LOG_FORMAT_PRIVATE_CHAT, string(gtk_entry_get_text(GTK_ENTRY(getWidget("logPrivateEntry")))));
+		sm->set(SettingsManager::LOG_DOWNLOADS, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("logDownloadsCheckButton"))));
+		sm->set(SettingsManager::LOG_FORMAT_POST_DOWNLOAD, string(gtk_entry_get_text(GTK_ENTRY(getWidget("logDownloadsEntry")))));
+		sm->set(SettingsManager::LOG_UPLOADS, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("logUploadsCheckButton"))));
+		sm->set(SettingsManager::LOG_FORMAT_POST_UPLOAD, string(gtk_entry_get_text(GTK_ENTRY(getWidget("logUploadsEntry")))));
+		sm->set(SettingsManager::LOG_SYSTEM, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("logSystemCheckButton"))));
+		sm->set(SettingsManager::LOG_STATUS_MESSAGES, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("logStatusCheckButton"))));
 	}
 
 	{ // Advanced
@@ -262,28 +256,23 @@ void Settings::saveSettings()
 		}
 
 		// Expert
-		sm->set(SettingsManager::ROLLBACK, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("rollbackSpinButton")))));
-		sm->set(SettingsManager::MAX_HASH_SPEED, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("hashSpeedSpinButton")))));
-		sm->set(SettingsManager::BUFFER_SIZE, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("writeBufferSpinButton")))));
-		sm->set(SettingsManager::SHOW_LAST_LINES_LOG, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("pmHistorySpinButton")))));
-		sm->set(SettingsManager::SET_MINISLOT_SIZE, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("slotSizeSpinButton")))));
-		sm->set(SettingsManager::MAX_FILELIST_SIZE, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("maxListSizeSpinButton")))));
-		sm->set(SettingsManager::PRIVATE_ID, string(gtk_entry_get_text(GTK_ENTRY(widget("CIDEntry")))));
-		sm->set(SettingsManager::AUTO_REFRESH_TIME, Util::toString (gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("autoRefreshSpinButton")))));
-		sm->set(SettingsManager::MAX_TAB_ROWS, Util::toString (gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("maxTabRowsSpinButton")))));
-		sm->set(SettingsManager::SEARCH_HISTORY, Util::toString (gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("searchHistorySpinButton")))));
-		sm->set(SettingsManager::BIND_ADDRESS, string(gtk_entry_get_text(GTK_ENTRY(widget("bindAddressEntry")))));
-		sm->set(SettingsManager::SOCKET_IN_BUFFER, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("socketReadSpinButton")))));
-		sm->set(SettingsManager::SOCKET_OUT_BUFFER, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget("socketWriteSpinButton")))));
-		WSET("fallback-encoding", Text::acpToUtf8(string(gtk_entry_get_text(GTK_ENTRY(widget("encodingEntry"))))));
+		sm->set(SettingsManager::ROLLBACK, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("rollbackSpinButton")))));
+		sm->set(SettingsManager::MAX_HASH_SPEED, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("hashSpeedSpinButton")))));
+		sm->set(SettingsManager::BUFFER_SIZE, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("writeBufferSpinButton")))));
+		sm->set(SettingsManager::SHOW_LAST_LINES_LOG, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("pmHistorySpinButton")))));
+		sm->set(SettingsManager::SET_MINISLOT_SIZE, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("slotSizeSpinButton")))));
+		sm->set(SettingsManager::MAX_FILELIST_SIZE, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("maxListSizeSpinButton")))));
+		sm->set(SettingsManager::PRIVATE_ID, string(gtk_entry_get_text(GTK_ENTRY(getWidget("CIDEntry")))));
+		sm->set(SettingsManager::AUTO_REFRESH_TIME, Util::toString (gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("autoRefreshSpinButton")))));
+		sm->set(SettingsManager::MAX_TAB_ROWS, Util::toString (gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("maxTabRowsSpinButton")))));
+		sm->set(SettingsManager::SEARCH_HISTORY, Util::toString (gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("searchHistorySpinButton")))));
+		sm->set(SettingsManager::BIND_ADDRESS, string(gtk_entry_get_text(GTK_ENTRY(getWidget("bindAddressEntry")))));
+		sm->set(SettingsManager::SOCKET_IN_BUFFER, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("socketReadSpinButton")))));
+		sm->set(SettingsManager::SOCKET_OUT_BUFFER, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("socketWriteSpinButton")))));
+		WSET("fallback-encoding", Text::acpToUtf8(string(gtk_entry_get_text(GTK_ENTRY(getWidget("encodingEntry"))))));
 	}
 
 	sm->save();
-}
-
-GtkWidget* Settings::widget(string name)
-{
-	return glade_xml_get_widget(xml, name.c_str());
 }
 
 void Settings::addOption_gui(GtkListStore *store, string name, SettingsManager::IntSetting setting)
@@ -295,11 +284,11 @@ void Settings::addOption_gui(GtkListStore *store, string name, SettingsManager::
 
 void Settings::initPersonal_gui()
 {
-	gtk_entry_set_text(GTK_ENTRY(widget("nickEntry")), SETTING(NICK).c_str());
-	gtk_entry_set_text(GTK_ENTRY(widget("emailEntry")), SETTING(EMAIL).c_str());
-	gtk_entry_set_text(GTK_ENTRY(widget("descriptionEntry")), SETTING(DESCRIPTION).c_str());
+	gtk_entry_set_text(GTK_ENTRY(getWidget("nickEntry")), SETTING(NICK).c_str());
+	gtk_entry_set_text(GTK_ENTRY(getWidget("emailEntry")), SETTING(EMAIL).c_str());
+	gtk_entry_set_text(GTK_ENTRY(getWidget("descriptionEntry")), SETTING(DESCRIPTION).c_str());
 	connectionSpeedComboBox = GTK_COMBO_BOX(gtk_combo_box_new_text());
-	gtk_box_pack_start(GTK_BOX(widget("connectionBox")), GTK_WIDGET(connectionSpeedComboBox), FALSE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(getWidget("connectionBox")), GTK_WIDGET(connectionSpeedComboBox), FALSE, TRUE, 0);
 	gtk_widget_show_all(GTK_WIDGET(connectionSpeedComboBox));
 
 	for (StringIter i = SettingsManager::connectionSpeeds.begin(); i != SettingsManager::connectionSpeeds.end(); ++i)
@@ -313,49 +302,49 @@ void Settings::initPersonal_gui()
 void Settings::initConnection_gui()
 {
 	// Incoming
-	g_signal_connect(G_OBJECT(widget("activeRadioButton")), "toggled", G_CALLBACK(onInDirect_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(getWidget("activeRadioButton")), "toggled", G_CALLBACK(onInDirect_gui), (gpointer)this);
 	///@todo Uncomment when implemented
-	//g_signal_connect(G_OBJECT(widget("upnpRadioButton"), "toggled", G_CALLBACK(onInFW_UPnP_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(widget("portForwardRadioButton")), "toggled", G_CALLBACK(onInFW_NAT_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(widget("passiveRadioButton")), "toggled", G_CALLBACK(onInPassive_gui), (gpointer)this);
-	gtk_entry_set_text(GTK_ENTRY(widget("ipEntry")), SETTING(EXTERNAL_IP).c_str());
-	gtk_entry_set_text(GTK_ENTRY(widget("tcpEntry")), Util::toString(SETTING(TCP_PORT)).c_str());
-	gtk_entry_set_text(GTK_ENTRY(widget("udpEntry")), Util::toString(SETTING(UDP_PORT)).c_str());
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget("forceIPCheckButton")), SETTING(NO_IP_OVERRIDE));
+	//g_signal_connect(G_OBJECT(getWidget("upnpRadioButton"), "toggled", G_CALLBACK(onInFW_UPnP_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(getWidget("portForwardRadioButton")), "toggled", G_CALLBACK(onInFW_NAT_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(getWidget("passiveRadioButton")), "toggled", G_CALLBACK(onInPassive_gui), (gpointer)this);
+	gtk_entry_set_text(GTK_ENTRY(getWidget("ipEntry")), SETTING(EXTERNAL_IP).c_str());
+	gtk_entry_set_text(GTK_ENTRY(getWidget("tcpEntry")), Util::toString(SETTING(TCP_PORT)).c_str());
+	gtk_entry_set_text(GTK_ENTRY(getWidget("udpEntry")), Util::toString(SETTING(UDP_PORT)).c_str());
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("forceIPCheckButton")), SETTING(NO_IP_OVERRIDE));
 
 	switch (SETTING(INCOMING_CONNECTIONS))
 	{
 		case SettingsManager::INCOMING_DIRECT:
-			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget("activeRadioButton")), TRUE);
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("activeRadioButton")), TRUE);
 			break;
 		case SettingsManager::INCOMING_FIREWALL_NAT:
-			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget("portForwardRadioButton")), TRUE);
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("portForwardRadioButton")), TRUE);
 			break;
 		case SettingsManager::INCOMING_FIREWALL_UPNP:
 			///@todo: implement
 			break;
 		case SettingsManager::INCOMING_FIREWALL_PASSIVE:
-			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget("passiveRadioButton")), TRUE);
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("passiveRadioButton")), TRUE);
 			break;
 	}
 
 	// Outgoing
-	g_signal_connect(G_OBJECT(widget("outDirectRadioButton")), "toggled", G_CALLBACK(onOutDirect_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(widget("socksRadioButton")), "toggled", G_CALLBACK(onSocks5_gui), (gpointer)this);
-	gtk_entry_set_text(GTK_ENTRY(widget("socksIPEntry")), SETTING(SOCKS_SERVER).c_str());
-	gtk_entry_set_text(GTK_ENTRY(widget("socksUserEntry")), SETTING(SOCKS_USER).c_str());
-	gtk_entry_set_text(GTK_ENTRY(widget("socksPortEntry")), Util::toString(SETTING(SOCKS_PORT)).c_str());
-	gtk_entry_set_text(GTK_ENTRY(widget("socksPassEntry")), SETTING(SOCKS_PASSWORD).c_str());
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget("socksCheckButton")), SETTING(SOCKS_RESOLVE));
+	g_signal_connect(G_OBJECT(getWidget("outDirectRadioButton")), "toggled", G_CALLBACK(onOutDirect_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(getWidget("socksRadioButton")), "toggled", G_CALLBACK(onSocks5_gui), (gpointer)this);
+	gtk_entry_set_text(GTK_ENTRY(getWidget("socksIPEntry")), SETTING(SOCKS_SERVER).c_str());
+	gtk_entry_set_text(GTK_ENTRY(getWidget("socksUserEntry")), SETTING(SOCKS_USER).c_str());
+	gtk_entry_set_text(GTK_ENTRY(getWidget("socksPortEntry")), Util::toString(SETTING(SOCKS_PORT)).c_str());
+	gtk_entry_set_text(GTK_ENTRY(getWidget("socksPassEntry")), SETTING(SOCKS_PASSWORD).c_str());
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("socksCheckButton")), SETTING(SOCKS_RESOLVE));
 
 	switch (SETTING(OUTGOING_CONNECTIONS))
 	{
 		case SettingsManager::OUTGOING_DIRECT:
-			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget("outDirectRadioButton")), TRUE);
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("outDirectRadioButton")), TRUE);
 			onOutDirect_gui(NULL, (gpointer)this);
 			break;
 		case SettingsManager::OUTGOING_SOCKS5:
-			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget("socksRadioButton")), TRUE);
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("socksRadioButton")), TRUE);
 			break;
 	}
 }
@@ -363,21 +352,21 @@ void Settings::initConnection_gui()
 void Settings::initDownloads_gui()
 {
 	{ // Downloads
-		g_signal_connect(G_OBJECT(widget("finishedDownloadsButton")), "clicked", G_CALLBACK(onBrowseFinished_gui), (gpointer)this);
-		g_signal_connect(G_OBJECT(widget("unfinishedDownloadsButton")), "clicked", G_CALLBACK(onBrowseUnfinished_gui), (gpointer)this);
-		g_signal_connect(G_OBJECT(widget("publicHubsButton")), "clicked", G_CALLBACK(onPublicHubs_gui), (gpointer)this);
-		g_signal_connect(G_OBJECT(widget("publicHubsDialogAddButton")), "clicked", G_CALLBACK(onPublicAdd_gui), (gpointer)this);
-		g_signal_connect(G_OBJECT(widget("publicHubsDialogUpButton")), "clicked", G_CALLBACK(onPublicMoveUp_gui), (gpointer)this);
-		g_signal_connect(G_OBJECT(widget("publicHubsDialogDownButton")), "clicked", G_CALLBACK(onPublicMoveDown_gui), (gpointer)this);
-		g_signal_connect(G_OBJECT(widget("publicHubsDialogRemoveButton")), "clicked", G_CALLBACK(onPublicRemove_gui), (gpointer)this);
+		g_signal_connect(G_OBJECT(getWidget("finishedDownloadsButton")), "clicked", G_CALLBACK(onBrowseFinished_gui), (gpointer)this);
+		g_signal_connect(G_OBJECT(getWidget("unfinishedDownloadsButton")), "clicked", G_CALLBACK(onBrowseUnfinished_gui), (gpointer)this);
+		g_signal_connect(G_OBJECT(getWidget("publicHubsButton")), "clicked", G_CALLBACK(onPublicHubs_gui), (gpointer)this);
+		g_signal_connect(G_OBJECT(getWidget("publicHubsDialogAddButton")), "clicked", G_CALLBACK(onPublicAdd_gui), (gpointer)this);
+		g_signal_connect(G_OBJECT(getWidget("publicHubsDialogUpButton")), "clicked", G_CALLBACK(onPublicMoveUp_gui), (gpointer)this);
+		g_signal_connect(G_OBJECT(getWidget("publicHubsDialogDownButton")), "clicked", G_CALLBACK(onPublicMoveDown_gui), (gpointer)this);
+		g_signal_connect(G_OBJECT(getWidget("publicHubsDialogRemoveButton")), "clicked", G_CALLBACK(onPublicRemove_gui), (gpointer)this);
 
-		gtk_entry_set_text(GTK_ENTRY(widget("finishedDownloadsEntry")), SETTING(DOWNLOAD_DIRECTORY).c_str());
-		gtk_entry_set_text(GTK_ENTRY(widget("unfinishedDownloadsEntry")), SETTING(TEMP_DOWNLOAD_DIRECTORY).c_str());
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("maxDownloadsSpinButton")), (double)SETTING(DOWNLOAD_SLOTS));
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("newDownloadsSpinButton")), (double)SETTING(MAX_DOWNLOAD_SPEED));
-		gtk_entry_set_text(GTK_ENTRY(widget("proxyEntry")), SETTING(HTTP_PROXY).c_str());
+		gtk_entry_set_text(GTK_ENTRY(getWidget("finishedDownloadsEntry")), SETTING(DOWNLOAD_DIRECTORY).c_str());
+		gtk_entry_set_text(GTK_ENTRY(getWidget("unfinishedDownloadsEntry")), SETTING(TEMP_DOWNLOAD_DIRECTORY).c_str());
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("maxDownloadsSpinButton")), (double)SETTING(DOWNLOAD_SLOTS));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("newDownloadsSpinButton")), (double)SETTING(MAX_DOWNLOAD_SPEED));
+		gtk_entry_set_text(GTK_ENTRY(getWidget("proxyEntry")), SETTING(HTTP_PROXY).c_str());
 
-		publicListView.setView(GTK_TREE_VIEW(widget("publicHubsDialogTreeView")));
+		publicListView.setView(GTK_TREE_VIEW(getWidget("publicHubsDialogTreeView")));
 		publicListView.insertColumn("List", G_TYPE_STRING, TreeView::EDIT_STRING, -1);
 		publicListView.finalize();
 		publicListStore = gtk_list_store_newv(publicListView.getColCount(), publicListView.getGTypes());
@@ -392,9 +381,9 @@ void Settings::initDownloads_gui()
 	}
 
 	{ // Download to
-		g_signal_connect(G_OBJECT(widget("favoriteAddButton")), "clicked", G_CALLBACK(onAddFavorite_gui), (gpointer)this);
-		g_signal_connect(G_OBJECT(widget("favoriteRemoveButton")), "clicked", G_CALLBACK(onRemoveFavorite_gui), (gpointer)this);
-		downloadToView.setView(GTK_TREE_VIEW(widget("favoriteTreeView")));
+		g_signal_connect(G_OBJECT(getWidget("favoriteAddButton")), "clicked", G_CALLBACK(onAddFavorite_gui), (gpointer)this);
+		g_signal_connect(G_OBJECT(getWidget("favoriteRemoveButton")), "clicked", G_CALLBACK(onRemoveFavorite_gui), (gpointer)this);
+		downloadToView.setView(GTK_TREE_VIEW(getWidget("favoriteTreeView")));
 		downloadToView.insertColumn("Favorite Name", G_TYPE_STRING, TreeView::STRING, -1);
 		downloadToView.insertColumn("Directory", G_TYPE_STRING, TreeView::STRING, -1);
 		downloadToView.finalize();
@@ -402,7 +391,7 @@ void Settings::initDownloads_gui()
 		gtk_tree_view_set_model(downloadToView.get(), GTK_TREE_MODEL(downloadToStore));
 		g_object_unref(downloadToStore);
 		g_signal_connect(G_OBJECT(downloadToView.get()), "button-release-event", G_CALLBACK(onFavoriteButtonReleased_gui), (gpointer)this);
-		gtk_widget_set_sensitive(widget("favoriteRemoveButton"), FALSE);
+		gtk_widget_set_sensitive(getWidget("favoriteRemoveButton"), FALSE);
 
 		GtkTreeIter iter;
 		StringPairList directories = FavoriteManager::getInstance()->getFavoriteDirs();
@@ -418,21 +407,21 @@ void Settings::initDownloads_gui()
 
 	{ // Queue
 		// Auto-priority
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("priorityHighestSpinButton")), (double)SETTING(PRIO_HIGHEST_SIZE));
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("priorityHighSpinButton")), (double)SETTING(PRIO_HIGH_SIZE));
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("priorityNormalSpinButton")), (double)SETTING(PRIO_NORMAL_SIZE));
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("priorityLowSpinButton")), (double)SETTING(PRIO_LOW_SIZE));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("priorityHighestSpinButton")), (double)SETTING(PRIO_HIGHEST_SIZE));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("priorityHighSpinButton")), (double)SETTING(PRIO_HIGH_SIZE));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("priorityNormalSpinButton")), (double)SETTING(PRIO_NORMAL_SIZE));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("priorityLowSpinButton")), (double)SETTING(PRIO_LOW_SIZE));
 
 		// Auto-drop
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("dropSpeedSpinButton")), (double)SETTING(AUTODROP_SPEED));
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("dropElapsedSpinButton")), (double)SETTING(AUTODROP_ELAPSED));
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("dropMinSourcesSpinButton")), (double)SETTING(AUTODROP_MINSOURCES));
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("dropCheckSpinButton")), (double)SETTING(AUTODROP_INTERVAL));
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("dropInactiveSpinButton")), (double)SETTING(AUTODROP_INACTIVITY));
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("dropSizeSpinButton")), (double)SETTING(AUTODROP_FILESIZE));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("dropSpeedSpinButton")), (double)SETTING(AUTODROP_SPEED));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("dropElapsedSpinButton")), (double)SETTING(AUTODROP_ELAPSED));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("dropMinSourcesSpinButton")), (double)SETTING(AUTODROP_MINSOURCES));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("dropCheckSpinButton")), (double)SETTING(AUTODROP_INTERVAL));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("dropInactiveSpinButton")), (double)SETTING(AUTODROP_INACTIVITY));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("dropSizeSpinButton")), (double)SETTING(AUTODROP_FILESIZE));
 
 		// Other queue options
-		queueView.setView(GTK_TREE_VIEW(widget("queueOtherTreeView")));
+		queueView.setView(GTK_TREE_VIEW(getWidget("queueOtherTreeView")));
 		queueView.insertColumn("Use", G_TYPE_BOOLEAN, TreeView::BOOL, -1);
 		queueView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, -1);
 		queueView.insertHiddenColumn("Setting", G_TYPE_INT);
@@ -463,11 +452,11 @@ void Settings::initDownloads_gui()
 
 void Settings::initSharing_gui()
 {
-	g_signal_connect(G_OBJECT(widget("shareHiddenCheckButton")), "toggled", G_CALLBACK(onShareHiddenPressed_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(widget("sharedAddButton")), "clicked", G_CALLBACK(onAddShare_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(widget("sharedRemoveButton")), "clicked", G_CALLBACK(onRemoveShare_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(getWidget("shareHiddenCheckButton")), "toggled", G_CALLBACK(onShareHiddenPressed_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(getWidget("sharedAddButton")), "clicked", G_CALLBACK(onAddShare_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(getWidget("sharedRemoveButton")), "clicked", G_CALLBACK(onRemoveShare_gui), (gpointer)this);
 
-	shareView.setView(GTK_TREE_VIEW(widget("sharedTreeView")));
+	shareView.setView(GTK_TREE_VIEW(getWidget("sharedTreeView")));
 	shareView.insertColumn("Virtual Name", G_TYPE_STRING, TreeView::STRING, -1);
 	shareView.insertColumn("Directory", G_TYPE_STRING, TreeView::STRING, -1);
 	shareView.insertColumn("Size", G_TYPE_STRING, TreeView::STRING, -1);
@@ -478,7 +467,7 @@ void Settings::initSharing_gui()
 	g_object_unref(shareStore);
 	shareView.setSortColumn_gui("Size", "Real Size");
 	g_signal_connect(G_OBJECT(shareView.get()), "button-release-event", G_CALLBACK(onShareButtonReleased_gui), (gpointer)this);
-	gtk_widget_set_sensitive(widget("sharedRemoveButton"), FALSE);
+	gtk_widget_set_sensitive(getWidget("sharedRemoveButton"), FALSE);
 
 	GtkTreeIter iter;
 	StringPairList directories = ShareManager::getInstance()->getDirectories();
@@ -493,10 +482,10 @@ void Settings::initSharing_gui()
 			-1);
 	}
 
-	gtk_label_set_text(GTK_LABEL(widget("sharedSizeLabel")), string("Total size: " + Util::formatBytes(ShareManager::getInstance()->getShareSize())).c_str());
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget("shareHiddenCheckButton")), BOOLSETTING(SHARE_HIDDEN));
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("sharedExtraSlotSpinButton")), (double)SETTING(MIN_UPLOAD_SPEED));
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("sharedUploadSlotsSpinButton")), (double)SETTING(SLOTS));
+	gtk_label_set_text(GTK_LABEL(getWidget("sharedSizeLabel")), string("Total size: " + Util::formatBytes(ShareManager::getInstance()->getShareSize())).c_str());
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("shareHiddenCheckButton")), BOOLSETTING(SHARE_HIDDEN));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("sharedExtraSlotSpinButton")), (double)SETTING(MIN_UPLOAD_SPEED));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("sharedUploadSlotsSpinButton")), (double)SETTING(SLOTS));
 }
 
 void Settings::initAppearance_gui()
@@ -504,7 +493,7 @@ void Settings::initAppearance_gui()
 	GList *list;
 	GObject *renderer;
 	{ // Appearance
-		appearanceView.setView(GTK_TREE_VIEW(widget("appearanceOptionsTreeView")));
+		appearanceView.setView(GTK_TREE_VIEW(getWidget("appearanceOptionsTreeView")));
 		appearanceView.insertColumn("Use", G_TYPE_BOOLEAN, TreeView::BOOL, -1);
 		appearanceView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, -1);
 		appearanceView.insertHiddenColumn("Setting", G_TYPE_INT);
@@ -534,26 +523,26 @@ void Settings::initAppearance_gui()
 		///@todo: uncomment when the save problem is solved. Using MINIMIZE_TRAY until then.
 		//addOption_gui(appearanceStore, "Show tray icon", WGETI("show-tray-icon"));
 
-		gtk_entry_set_text(GTK_ENTRY(widget("awayMessageEntry")), SETTING(DEFAULT_AWAY_MESSAGE).c_str());
-		gtk_entry_set_text(GTK_ENTRY(widget("timestampEntry")), SETTING(TIME_STAMPS_FORMAT).c_str());
+		gtk_entry_set_text(GTK_ENTRY(getWidget("awayMessageEntry")), SETTING(DEFAULT_AWAY_MESSAGE).c_str());
+		gtk_entry_set_text(GTK_ENTRY(getWidget("timestampEntry")), SETTING(TIME_STAMPS_FORMAT).c_str());
 	}
 
 	{ // Colors and sounds
 		///@todo uncomment when implemented
-		//g_signal_connect(G_OBJECT(widget("appearanceColor"), "clicked", G_CALLBACK(onWinColorClicked_gui), (gpointer)this);
-		//g_signal_connect(G_OBJECT(widget("upColor"), "clicked", G_CALLBACK(onUpColorClicked_gui), (gpointer)this);
-		//g_signal_connect(G_OBJECT(widget("downColor"), "clicked", G_CALLBACK(onDownColorClicked_gui), (gpointer)this);
-		//g_signal_connect(G_OBJECT(widget("textStyle"), "clicked", G_CALLBACK(onTextStyleClicked_gui), (gpointer)this);
-		//gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget("soundPMReceivedCheckButton")), BOOLSETTING(PRIVATE_MESSAGE_BEEP));
-		//gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget("soundPMWindowCheckButton")), BOOLSETTING(PRIVATE_MESSAGE_BEEP_OPEN));
-		gtk_widget_set_sensitive(widget("appearanceColor"), FALSE);
-		gtk_widget_set_sensitive(widget("upColor"), FALSE);
-		gtk_widget_set_sensitive(widget("downColor"), FALSE);
-		gtk_widget_set_sensitive(widget("textStyle"), FALSE);
-		gtk_widget_set_sensitive(widget("soundPMReceivedCheckButton"), FALSE);
-		gtk_widget_set_sensitive(widget("soundPMWindowCheckButton"), FALSE);
+		//g_signal_connect(G_OBJECT(getWidget("appearanceColor"), "clicked", G_CALLBACK(onWinColorClicked_gui), (gpointer)this);
+		//g_signal_connect(G_OBJECT(getWidget("upColor"), "clicked", G_CALLBACK(onUpColorClicked_gui), (gpointer)this);
+		//g_signal_connect(G_OBJECT(getWidget("downColor"), "clicked", G_CALLBACK(onDownColorClicked_gui), (gpointer)this);
+		//g_signal_connect(G_OBJECT(getWidget("textStyle"), "clicked", G_CALLBACK(onTextStyleClicked_gui), (gpointer)this);
+		//gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("soundPMReceivedCheckButton")), BOOLSETTING(PRIVATE_MESSAGE_BEEP));
+		//gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("soundPMWindowCheckButton")), BOOLSETTING(PRIVATE_MESSAGE_BEEP_OPEN));
+		gtk_widget_set_sensitive(getWidget("appearanceColor"), FALSE);
+		gtk_widget_set_sensitive(getWidget("upColor"), FALSE);
+		gtk_widget_set_sensitive(getWidget("downColor"), FALSE);
+		gtk_widget_set_sensitive(getWidget("textStyle"), FALSE);
+		gtk_widget_set_sensitive(getWidget("soundPMReceivedCheckButton"), FALSE);
+		gtk_widget_set_sensitive(getWidget("soundPMWindowCheckButton"), FALSE);
 
-		colorView.setView(GTK_TREE_VIEW(widget("tabBoldingTreeView")));
+		colorView.setView(GTK_TREE_VIEW(getWidget("tabBoldingTreeView")));
 		colorView.insertColumn("Use", G_TYPE_BOOLEAN, TreeView::BOOL, -1);
 		colorView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, -1);
 		colorView.insertHiddenColumn("Setting", G_TYPE_INT);
@@ -581,7 +570,7 @@ void Settings::initAppearance_gui()
 
 	{ // Window
 		// Auto-open
-		windowView1.setView(GTK_TREE_VIEW(widget("windowsAutoOpenTreeView")));
+		windowView1.setView(GTK_TREE_VIEW(getWidget("windowsAutoOpenTreeView")));
 		windowView1.insertColumn("Use", G_TYPE_BOOLEAN, TreeView::BOOL, -1);
 		windowView1.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, -1);
 		windowView1.insertHiddenColumn("Setting", G_TYPE_INT);
@@ -610,7 +599,7 @@ void Settings::initAppearance_gui()
 		//addOption_gui(windowStore1, "System Log", SettingsManager::OPEN_SYSTEM_LOG);
 
 		// Window options
-		windowView2.setView(GTK_TREE_VIEW(widget("windowsOptionsTreeView")));
+		windowView2.setView(GTK_TREE_VIEW(getWidget("windowsOptionsTreeView")));
 		windowView2.insertColumn("Use", G_TYPE_BOOLEAN, TreeView::BOOL, -1);
 		windowView2.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, -1);
 		windowView2.insertHiddenColumn("Setting", G_TYPE_INT);
@@ -635,7 +624,7 @@ void Settings::initAppearance_gui()
 		//addOption_gui(windowStore2, "Toggle window when selecting an active tab", SettingsManager::TOGGLE_ACTIVE_WINDOW);
 
 		// Confirmation dialog
-		windowView3.setView(GTK_TREE_VIEW(widget("windowsConfirmTreeView")));
+		windowView3.setView(GTK_TREE_VIEW(getWidget("windowsConfirmTreeView")));
 		windowView3.insertColumn("Use", G_TYPE_BOOLEAN, TreeView::BOOL, -1);
 		windowView3.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, -1);
 		windowView3.insertHiddenColumn("Setting", G_TYPE_INT);
@@ -659,41 +648,41 @@ void Settings::initAppearance_gui()
 
 void Settings::initLog_gui()
 {
-	g_signal_connect(G_OBJECT(widget("logBrowseButton")), "clicked", G_CALLBACK(onLogBrowseClicked_gui), (gpointer)this);
-	gtk_entry_set_text(GTK_ENTRY(widget("logDirectoryEntry")), SETTING(LOG_DIRECTORY).c_str());
+	g_signal_connect(G_OBJECT(getWidget("logBrowseButton")), "clicked", G_CALLBACK(onLogBrowseClicked_gui), (gpointer)this);
+	gtk_entry_set_text(GTK_ENTRY(getWidget("logDirectoryEntry")), SETTING(LOG_DIRECTORY).c_str());
 
-	g_signal_connect(G_OBJECT(widget("logMainCheckButton")), "toggled", G_CALLBACK(onLogMainClicked_gui), (gpointer)this);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget("logMainCheckButton")), BOOLSETTING(LOG_MAIN_CHAT));
-	gtk_entry_set_text(GTK_ENTRY(widget("logMainEntry")), SETTING(LOG_FORMAT_MAIN_CHAT).c_str());
-	gtk_widget_set_sensitive(widget("logMainLabel"), BOOLSETTING(LOG_MAIN_CHAT));
-	gtk_widget_set_sensitive(widget("logMainEntry"), BOOLSETTING(LOG_MAIN_CHAT));
+	g_signal_connect(G_OBJECT(getWidget("logMainCheckButton")), "toggled", G_CALLBACK(onLogMainClicked_gui), (gpointer)this);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("logMainCheckButton")), BOOLSETTING(LOG_MAIN_CHAT));
+	gtk_entry_set_text(GTK_ENTRY(getWidget("logMainEntry")), SETTING(LOG_FORMAT_MAIN_CHAT).c_str());
+	gtk_widget_set_sensitive(getWidget("logMainLabel"), BOOLSETTING(LOG_MAIN_CHAT));
+	gtk_widget_set_sensitive(getWidget("logMainEntry"), BOOLSETTING(LOG_MAIN_CHAT));
 
-	g_signal_connect(G_OBJECT(widget("logPrivateCheckButton")), "toggled", G_CALLBACK(onLogPrivateClicked_gui), (gpointer)this);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget("logPrivateCheckButton")), BOOLSETTING(LOG_PRIVATE_CHAT));
-	gtk_entry_set_text(GTK_ENTRY(widget("logPrivateEntry")), SETTING(LOG_FORMAT_PRIVATE_CHAT).c_str());
-	gtk_widget_set_sensitive(widget("logPrivateLabel"), BOOLSETTING(LOG_PRIVATE_CHAT));
-	gtk_widget_set_sensitive(widget("logPrivateEntry"), BOOLSETTING(LOG_PRIVATE_CHAT));
+	g_signal_connect(G_OBJECT(getWidget("logPrivateCheckButton")), "toggled", G_CALLBACK(onLogPrivateClicked_gui), (gpointer)this);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("logPrivateCheckButton")), BOOLSETTING(LOG_PRIVATE_CHAT));
+	gtk_entry_set_text(GTK_ENTRY(getWidget("logPrivateEntry")), SETTING(LOG_FORMAT_PRIVATE_CHAT).c_str());
+	gtk_widget_set_sensitive(getWidget("logPrivateLabel"), BOOLSETTING(LOG_PRIVATE_CHAT));
+	gtk_widget_set_sensitive(getWidget("logPrivateEntry"), BOOLSETTING(LOG_PRIVATE_CHAT));
 
-	g_signal_connect(G_OBJECT(widget("logDownloadsCheckButton")), "toggled", G_CALLBACK(onLogDownloadClicked_gui), (gpointer)this);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget("logDownloadsCheckButton")), BOOLSETTING(LOG_DOWNLOADS));
-	gtk_entry_set_text(GTK_ENTRY(widget("logDownloadsEntry")), SETTING(LOG_FORMAT_POST_DOWNLOAD).c_str());
-	gtk_widget_set_sensitive(widget("logDownloadsLabel"), BOOLSETTING(LOG_DOWNLOADS));
-	gtk_widget_set_sensitive(widget("logDownloadsEntry"), BOOLSETTING(LOG_DOWNLOADS));
+	g_signal_connect(G_OBJECT(getWidget("logDownloadsCheckButton")), "toggled", G_CALLBACK(onLogDownloadClicked_gui), (gpointer)this);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("logDownloadsCheckButton")), BOOLSETTING(LOG_DOWNLOADS));
+	gtk_entry_set_text(GTK_ENTRY(getWidget("logDownloadsEntry")), SETTING(LOG_FORMAT_POST_DOWNLOAD).c_str());
+	gtk_widget_set_sensitive(getWidget("logDownloadsLabel"), BOOLSETTING(LOG_DOWNLOADS));
+	gtk_widget_set_sensitive(getWidget("logDownloadsEntry"), BOOLSETTING(LOG_DOWNLOADS));
 
-	g_signal_connect(G_OBJECT(widget("logUploadsCheckButton")), "toggled", G_CALLBACK(onLogUploadClicked_gui), (gpointer)this);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget("logUploadsCheckButton")), BOOLSETTING(LOG_UPLOADS));
-	gtk_entry_set_text(GTK_ENTRY(widget("logUploadsEntry")), SETTING(LOG_FORMAT_POST_UPLOAD).c_str());
-	gtk_widget_set_sensitive(widget("logUploadsLabel"), BOOLSETTING(LOG_UPLOADS));
-	gtk_widget_set_sensitive(widget("logUploadsEntry"), BOOLSETTING(LOG_UPLOADS));
+	g_signal_connect(G_OBJECT(getWidget("logUploadsCheckButton")), "toggled", G_CALLBACK(onLogUploadClicked_gui), (gpointer)this);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("logUploadsCheckButton")), BOOLSETTING(LOG_UPLOADS));
+	gtk_entry_set_text(GTK_ENTRY(getWidget("logUploadsEntry")), SETTING(LOG_FORMAT_POST_UPLOAD).c_str());
+	gtk_widget_set_sensitive(getWidget("logUploadsLabel"), BOOLSETTING(LOG_UPLOADS));
+	gtk_widget_set_sensitive(getWidget("logUploadsEntry"), BOOLSETTING(LOG_UPLOADS));
 
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget("logSystemCheckButton")), BOOLSETTING(LOG_SYSTEM));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget("logStatusCheckButton")), BOOLSETTING(LOG_STATUS_MESSAGES));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("logSystemCheckButton")), BOOLSETTING(LOG_SYSTEM));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("logStatusCheckButton")), BOOLSETTING(LOG_STATUS_MESSAGES));
 }
 
 void Settings::initAdvanced_gui()
 {
 	{ // Advanced
-		advancedView.setView(GTK_TREE_VIEW(widget("advancedTreeView")));
+		advancedView.setView(GTK_TREE_VIEW(getWidget("advancedTreeView")));
 		advancedView.insertColumn("Use", G_TYPE_BOOLEAN, TreeView::BOOL, -1);
 		advancedView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, -1);
 		advancedView.insertHiddenColumn("Setting", G_TYPE_INT);
@@ -731,28 +720,28 @@ void Settings::initAdvanced_gui()
 	}
 
 	{ // User Commands
-		gtk_widget_set_sensitive(widget("buttonAddUC"), FALSE);
-		gtk_widget_set_sensitive(widget("buttonChangeUC"), FALSE);
-		gtk_widget_set_sensitive(widget("buttonMUUC"), FALSE);
-		gtk_widget_set_sensitive(widget("buttonMDUC"), FALSE);
-		gtk_widget_set_sensitive(widget("buttonRemoveUC"), FALSE);
+		gtk_widget_set_sensitive(getWidget("buttonAddUC"), FALSE);
+		gtk_widget_set_sensitive(getWidget("buttonChangeUC"), FALSE);
+		gtk_widget_set_sensitive(getWidget("buttonMUUC"), FALSE);
+		gtk_widget_set_sensitive(getWidget("buttonMDUC"), FALSE);
+		gtk_widget_set_sensitive(getWidget("buttonRemoveUC"), FALSE);
 	}
 
 	{ // Experts
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("rollbackSpinButton")), (double)SETTING(ROLLBACK));
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("hashSpeedSpinButton")), (double)SETTING(MAX_HASH_SPEED));
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("writeBufferSpinButton")), (double)SETTING(BUFFER_SIZE));
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("pmHistorySpinButton")), (double)SETTING(SHOW_LAST_LINES_LOG));
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("slotSizeSpinButton")), (double)SETTING(SET_MINISLOT_SIZE));
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("maxListSizeSpinButton")), (double)SETTING(MAX_FILELIST_SIZE));
-		gtk_entry_set_text(GTK_ENTRY(widget("CIDEntry")), SETTING(PRIVATE_ID).c_str());
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("autoRefreshSpinButton")), (double)SETTING(AUTO_REFRESH_TIME));
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("maxTabRowsSpinButton")), (double)SETTING(MAX_TAB_ROWS));
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("searchHistorySpinButton")), (double)SETTING(SEARCH_HISTORY));
-		gtk_entry_set_text(GTK_ENTRY(widget("bindAddressEntry")), SETTING(BIND_ADDRESS).c_str());
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("socketReadSpinButton")), (double)SETTING(SOCKET_IN_BUFFER));
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget("socketWriteSpinButton")), (double)SETTING(SOCKET_OUT_BUFFER));
-		gtk_entry_set_text(GTK_ENTRY(widget("encodingEntry")), WGETS("fallback-encoding").c_str());
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("rollbackSpinButton")), (double)SETTING(ROLLBACK));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("hashSpeedSpinButton")), (double)SETTING(MAX_HASH_SPEED));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("writeBufferSpinButton")), (double)SETTING(BUFFER_SIZE));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("pmHistorySpinButton")), (double)SETTING(SHOW_LAST_LINES_LOG));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("slotSizeSpinButton")), (double)SETTING(SET_MINISLOT_SIZE));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("maxListSizeSpinButton")), (double)SETTING(MAX_FILELIST_SIZE));
+		gtk_entry_set_text(GTK_ENTRY(getWidget("CIDEntry")), SETTING(PRIVATE_ID).c_str());
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("autoRefreshSpinButton")), (double)SETTING(AUTO_REFRESH_TIME));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("maxTabRowsSpinButton")), (double)SETTING(MAX_TAB_ROWS));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("searchHistorySpinButton")), (double)SETTING(SEARCH_HISTORY));
+		gtk_entry_set_text(GTK_ENTRY(getWidget("bindAddressEntry")), SETTING(BIND_ADDRESS).c_str());
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("socketReadSpinButton")), (double)SETTING(SOCKET_IN_BUFFER));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("socketWriteSpinButton")), (double)SETTING(SOCKET_OUT_BUFFER));
+		gtk_entry_set_text(GTK_ENTRY(getWidget("encodingEntry")), WGETS("fallback-encoding").c_str());
 	}
 }
 
@@ -760,22 +749,22 @@ void Settings::onAddShare_gui(GtkWidget *widget, gpointer data)
 {
 	Settings *s = (Settings *)data;
 
- 	gint response = gtk_dialog_run(GTK_DIALOG(s->widget("dirChooserDialog")));
-	gtk_widget_hide(s->widget("dirChooserDialog"));
+ 	gint response = gtk_dialog_run(GTK_DIALOG(s->getWidget("dirChooserDialog")));
+	gtk_widget_hide(s->getWidget("dirChooserDialog"));
 
 	if (response == GTK_RESPONSE_OK)
 	{
-		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->widget("dirChooserDialog")));
+		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
 		string path = temp;
 		g_free(temp);
 
-		gtk_entry_set_text(GTK_ENTRY(s->widget("virtualNameDialogEntry")), "");
-		response = gtk_dialog_run(GTK_DIALOG(s->widget("virtualNameDialog")));
-		gtk_widget_hide(s->widget("virtualNameDialog"));
+		gtk_entry_set_text(GTK_ENTRY(s->getWidget("virtualNameDialogEntry")), "");
+		response = gtk_dialog_run(GTK_DIALOG(s->getWidget("virtualNameDialog")));
+		gtk_widget_hide(s->getWidget("virtualNameDialog"));
 
 		if (response == GTK_RESPONSE_OK)
 		{
-			string name = gtk_entry_get_text(GTK_ENTRY(s->widget("virtualNameDialogEntry")));
+			string name = gtk_entry_get_text(GTK_ENTRY(s->getWidget("virtualNameDialogEntry")));
 			typedef Func2<Settings, string, string> F2;
 			F2 *func = new F2(s, &Settings::addShare_client, path, name);
 			WulforManager::get()->dispatchClientFunc(func);
@@ -786,96 +775,96 @@ void Settings::onAddShare_gui(GtkWidget *widget, gpointer data)
 void Settings::onInDirect_gui(GtkToggleButton *button, gpointer data)
 {
 	Settings *s = (Settings *)data;
-	gtk_widget_set_sensitive(s->widget("ipEntry"), TRUE);
-	gtk_widget_set_sensitive(s->widget("ipLabel"), TRUE);
-	gtk_widget_set_sensitive(s->widget("tcpEntry"), TRUE);
-	gtk_widget_set_sensitive(s->widget("tcpLabel"), TRUE);
-	gtk_widget_set_sensitive(s->widget("udpEntry"), TRUE);
-	gtk_widget_set_sensitive(s->widget("udpLabel"), TRUE);
-	gtk_widget_set_sensitive(s->widget("forceIPCheckButton"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("ipEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("ipLabel"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("tcpEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("tcpLabel"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("udpEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("udpLabel"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("forceIPCheckButton"), TRUE);
 }
 
 /**@todo Uncomment when implemented
 void Settings::onInFW_UPnP_gui(GtkToggleButton *button, gpointer data)
 {
 	Settings *s = (Settings *)data;
-	gtk_widget_set_sensitive(s->widget("ipEntry"), TRUE);
-	gtk_widget_set_sensitive(s->widget("ipLabel"), TRUE);
-	gtk_widget_set_sensitive(s->widget("tcpEntry"), TRUE);
-	gtk_widget_set_sensitive(s->widget("tcpLabel"), TRUE);
-	gtk_widget_set_sensitive(s->widget("udpEntry"), TRUE);
-	gtk_widget_set_sensitive(s->widget("udpLabel"), TRUE);
-	gtk_widget_set_sensitive(s->widget("forceIPCheckButton"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("ipEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("ipLabel"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("tcpEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("tcpLabel"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("udpEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("udpLabel"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("forceIPCheckButton"), TRUE);
 }
 */
 
 void Settings::onInFW_NAT_gui(GtkToggleButton *button, gpointer data)
 {
 	Settings *s = (Settings *)data;
-	gtk_widget_set_sensitive(s->widget("ipEntry"), TRUE);
-	gtk_widget_set_sensitive(s->widget("ipLabel"), TRUE);
-	gtk_widget_set_sensitive(s->widget("tcpEntry"), TRUE);
-	gtk_widget_set_sensitive(s->widget("tcpLabel"), TRUE);
-	gtk_widget_set_sensitive(s->widget("udpEntry"), TRUE);
-	gtk_widget_set_sensitive(s->widget("udpLabel"), TRUE);
-	gtk_widget_set_sensitive(s->widget("forceIPCheckButton"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("ipEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("ipLabel"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("tcpEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("tcpLabel"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("udpEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("udpLabel"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("forceIPCheckButton"), TRUE);
 }
 
 void Settings::onInPassive_gui(GtkToggleButton *button, gpointer data)
 {
 	Settings *s = (Settings *)data;
-	gtk_widget_set_sensitive(s->widget("ipEntry"), FALSE);
-	gtk_widget_set_sensitive(s->widget("ipLabel"), FALSE);
-	gtk_widget_set_sensitive(s->widget("tcpEntry"), FALSE);
-	gtk_widget_set_sensitive(s->widget("tcpLabel"), FALSE);
-	gtk_widget_set_sensitive(s->widget("udpEntry"), FALSE);
-	gtk_widget_set_sensitive(s->widget("udpLabel"), FALSE);
-	gtk_widget_set_sensitive(s->widget("forceIPCheckButton"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("ipEntry"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("ipLabel"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("tcpEntry"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("tcpLabel"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("udpEntry"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("udpLabel"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("forceIPCheckButton"), FALSE);
 }
 
 void Settings::onOutDirect_gui(GtkToggleButton *button, gpointer data)
 {
 	Settings *s = (Settings *)data;
-	gtk_widget_set_sensitive(s->widget("socksIPEntry"), FALSE);
-	gtk_widget_set_sensitive(s->widget("socksIPLabel"), FALSE);
-	gtk_widget_set_sensitive(s->widget("socksUserEntry"), FALSE);
-	gtk_widget_set_sensitive(s->widget("socksUserLabel"), FALSE);
-	gtk_widget_set_sensitive(s->widget("socksPortEntry"), FALSE);
-	gtk_widget_set_sensitive(s->widget("socksPortLabel"), FALSE);
-	gtk_widget_set_sensitive(s->widget("socksPassEntry"), FALSE);
-	gtk_widget_set_sensitive(s->widget("socksPassLabel"), FALSE);
-	gtk_widget_set_sensitive(s->widget("socksCheckButton"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("socksIPEntry"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("socksIPLabel"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("socksUserEntry"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("socksUserLabel"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("socksPortEntry"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("socksPortLabel"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("socksPassEntry"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("socksPassLabel"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("socksCheckButton"), FALSE);
 }
 
 void Settings::onSocks5_gui(GtkToggleButton *button, gpointer data)
 {
 	Settings *s = (Settings *)data;
-	gtk_widget_set_sensitive(s->widget("socksIPEntry"), TRUE);
-	gtk_widget_set_sensitive(s->widget("socksIPLabel"), TRUE);
-	gtk_widget_set_sensitive(s->widget("socksUserEntry"), TRUE);
-	gtk_widget_set_sensitive(s->widget("socksUserLabel"), TRUE);
-	gtk_widget_set_sensitive(s->widget("socksPortEntry"), TRUE);
-	gtk_widget_set_sensitive(s->widget("socksPortLabel"), TRUE);
-	gtk_widget_set_sensitive(s->widget("socksPassEntry"), TRUE);
-	gtk_widget_set_sensitive(s->widget("socksPassLabel"), TRUE);
-	gtk_widget_set_sensitive(s->widget("socksCheckButton"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("socksIPEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("socksIPLabel"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("socksUserEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("socksUserLabel"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("socksPortEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("socksPortLabel"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("socksPassEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("socksPassLabel"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("socksCheckButton"), TRUE);
 }
 
 void Settings::onBrowseFinished_gui(GtkWidget *widget, gpointer data)
 {
 	Settings *s = (Settings *)data;
 
- 	gint response = gtk_dialog_run(GTK_DIALOG(s->widget("dirChooserDialog")));
-	gtk_widget_hide(s->widget("dirChooserDialog"));
+ 	gint response = gtk_dialog_run(GTK_DIALOG(s->getWidget("dirChooserDialog")));
+	gtk_widget_hide(s->getWidget("dirChooserDialog"));
 
 	if (response == GTK_RESPONSE_OK)
 	{
-		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->widget("dirChooserDialog")));
+		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
 		string path = temp;
 		g_free(temp);
 		if (!path.empty() && path[path.length() - 1] != PATH_SEPARATOR)
 			path += PATH_SEPARATOR;
-		gtk_entry_set_text(GTK_ENTRY(s->widget("finishedDownloadsEntry")), path.c_str());
+		gtk_entry_set_text(GTK_ENTRY(s->getWidget("finishedDownloadsEntry")), path.c_str());
 	}
 }
 
@@ -883,17 +872,17 @@ void Settings::onBrowseUnfinished_gui(GtkWidget *widget, gpointer data)
 {
 	Settings *s = (Settings *)data;
 
- 	gint response = gtk_dialog_run(GTK_DIALOG(s->widget("dirChooserDialog")));
-	gtk_widget_hide(s->widget("dirChooserDialog"));
+ 	gint response = gtk_dialog_run(GTK_DIALOG(s->getWidget("dirChooserDialog")));
+	gtk_widget_hide(s->getWidget("dirChooserDialog"));
 
 	if (response == GTK_RESPONSE_OK)
 	{
-		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->widget("dirChooserDialog")));
+		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
 		string path = temp;
 		g_free(temp);
 		if (!path.empty() && path[path.length() - 1] != PATH_SEPARATOR)
 			path += PATH_SEPARATOR;
-		gtk_entry_set_text(GTK_ENTRY(s->widget("unfinishedDownloadsEntry")), path.c_str());
+		gtk_entry_set_text(GTK_ENTRY(s->getWidget("unfinishedDownloadsEntry")), path.c_str());
 	}
 }
 
@@ -910,8 +899,8 @@ void Settings::onPublicHubs_gui(GtkWidget *widget, gpointer data)
 		gtk_list_store_set(s->publicListStore, &iter, s->publicListView.col("List"), (*idx).c_str(), -1);
 	}
 
-	gint response = gtk_dialog_run(GTK_DIALOG(s->widget("publicHubsDialog")));
-	gtk_widget_hide(s->widget("publicHubsDialog"));
+	gint response = gtk_dialog_run(GTK_DIALOG(s->getWidget("publicHubsDialog")));
+	gtk_widget_hide(s->getWidget("publicHubsDialog"));
 
 	if (response == GTK_RESPONSE_OK)
 	{
@@ -997,22 +986,22 @@ void Settings::onAddFavorite_gui(GtkWidget *widget, gpointer data)
 {
 	Settings *s = (Settings *)data;
 
- 	gint response = gtk_dialog_run(GTK_DIALOG(s->widget("dirChooserDialog")));
-	gtk_widget_hide(s->widget("dirChooserDialog"));
+ 	gint response = gtk_dialog_run(GTK_DIALOG(s->getWidget("dirChooserDialog")));
+	gtk_widget_hide(s->getWidget("dirChooserDialog"));
 
 	if (response == GTK_RESPONSE_OK)
 	{
-		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->widget("dirChooserDialog")));
+		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
 		string path = temp;
 		g_free(temp);
 
-		gtk_entry_set_text(GTK_ENTRY(s->widget("favoriteNameDialogEntry")), "");
-		response = gtk_dialog_run(GTK_DIALOG(s->widget("favoriteNameDialog")));
-		gtk_widget_hide(s->widget("favoriteNameDialog"));
+		gtk_entry_set_text(GTK_ENTRY(s->getWidget("favoriteNameDialogEntry")), "");
+		response = gtk_dialog_run(GTK_DIALOG(s->getWidget("favoriteNameDialog")));
+		gtk_widget_hide(s->getWidget("favoriteNameDialog"));
 
 		if (response == GTK_RESPONSE_OK)
 		{
-			string name = gtk_entry_get_text(GTK_ENTRY(s->widget("favoriteNameDialogEntry")));
+			string name = gtk_entry_get_text(GTK_ENTRY(s->getWidget("favoriteNameDialogEntry")));
 			if (path[path.length() - 1] != PATH_SEPARATOR)
 				path += PATH_SEPARATOR;
 
@@ -1027,7 +1016,7 @@ void Settings::onAddFavorite_gui(GtkWidget *widget, gpointer data)
 			}
 			else
 			{
-				GtkWidget *d = gtk_message_dialog_new(GTK_WINDOW(s->widget("settingsDialog")), GTK_DIALOG_MODAL,
+				GtkWidget *d = gtk_message_dialog_new(GTK_WINDOW(s->getWidget("dialog")), GTK_DIALOG_MODAL,
 					GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "Directory or favorite name already exists");
 				gtk_dialog_run(GTK_DIALOG(d));
 				gtk_widget_destroy(d);
@@ -1048,7 +1037,7 @@ void Settings::onRemoveFavorite_gui(GtkWidget *widget, gpointer data)
 		if (FavoriteManager::getInstance()->removeFavoriteDir(path))
 		{
 			gtk_list_store_remove(s->downloadToStore, &iter);
-			gtk_widget_set_sensitive(s->widget("favoriteRemoveButton"), FALSE);
+			gtk_widget_set_sensitive(s->getWidget("favoriteRemoveButton"), FALSE);
 		}
 	}
 }
@@ -1060,9 +1049,9 @@ gboolean Settings::onFavoriteButtonReleased_gui(GtkWidget *widget, GdkEventButto
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->downloadToView.get());
 
 	if (gtk_tree_selection_get_selected(selection, NULL, &iter))
-		gtk_widget_set_sensitive(s->widget("favoriteRemoveButton"), TRUE);
+		gtk_widget_set_sensitive(s->getWidget("favoriteRemoveButton"), TRUE);
 	else
-		gtk_widget_set_sensitive(s->widget("favoriteRemoveButton"), FALSE);
+		gtk_widget_set_sensitive(s->getWidget("favoriteRemoveButton"), FALSE);
 
 	return FALSE;
 }
@@ -1096,7 +1085,7 @@ void Settings::addShare_gui(string path, string name, string error)
 	}
 	else
 	{
-		GtkWidget *d = gtk_message_dialog_new(GTK_WINDOW(widget("settingsDialog")),
+		GtkWidget *d = gtk_message_dialog_new(GTK_WINDOW(getWidget("dialog")),
 			GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, error.c_str());
 		gtk_dialog_run(GTK_DIALOG(d));
 		gtk_widget_destroy(d);
@@ -1113,7 +1102,7 @@ void Settings::onRemoveShare_gui(GtkWidget *widget, gpointer data)
 	{
 		string path = s->shareView.getString(&iter, "Directory");
 		gtk_list_store_remove(s->shareStore, &iter);
-		gtk_widget_set_sensitive(s->widget("sharedRemoveButton"), FALSE);
+		gtk_widget_set_sensitive(s->getWidget("sharedRemoveButton"), FALSE);
 
 		ShareManager::getInstance()->removeDirectory(path);
 	}
@@ -1125,9 +1114,9 @@ gboolean Settings::onShareButtonReleased_gui(GtkWidget *widget, GdkEventButton *
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->shareView.get());
 
 	if (gtk_tree_selection_count_selected_rows(selection) == 0)
-		gtk_widget_set_sensitive(s->widget("sharedRemoveButton"), FALSE);
+		gtk_widget_set_sensitive(s->getWidget("sharedRemoveButton"), FALSE);
 	else
-		gtk_widget_set_sensitive(s->widget("sharedRemoveButton"), TRUE);
+		gtk_widget_set_sensitive(s->getWidget("sharedRemoveButton"), TRUE);
 
 	return FALSE;
 }
@@ -1139,7 +1128,7 @@ gboolean Settings::onShareHiddenPressed_gui(GtkToggleButton *togglebutton, gpoin
 	bool show;
 	int64_t size;
 
-	show = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(s->widget("shareHiddenCheckButton")));
+	show = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(s->getWidget("shareHiddenCheckButton")));
 
 	Func1<Settings, bool> *func = new Func1<Settings, bool>(s, &Settings::shareHidden_client, show);
 	WulforManager::get()->dispatchClientFunc(func);
@@ -1158,7 +1147,7 @@ gboolean Settings::onShareHiddenPressed_gui(GtkToggleButton *togglebutton, gpoin
 			-1);
 	}
 
-	gtk_label_set_text(GTK_LABEL(s->widget("sharedSizeLabel")), string("Total size: " +
+	gtk_label_set_text(GTK_LABEL(s->getWidget("sharedSizeLabel")), string("Total size: " +
 		Util::formatBytes(ShareManager::getInstance()->getShareSize())).c_str());
 
 	return FALSE;
@@ -1228,17 +1217,17 @@ void Settings::onLogBrowseClicked_gui(GtkWidget *widget, gpointer data)
 {
 	Settings *s = (Settings *)data;
 
- 	gint response = gtk_dialog_run(GTK_DIALOG(s->widget("dirChooserDialog")));
-	gtk_widget_hide(s->widget("dirChooserDialog"));
+ 	gint response = gtk_dialog_run(GTK_DIALOG(s->getWidget("dirChooserDialog")));
+	gtk_widget_hide(s->getWidget("dirChooserDialog"));
 
 	if (response == GTK_RESPONSE_OK)
 	{
-		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->widget("dirChooserDialog")));
+		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
 		string path = temp;
 		g_free(temp);
 		if (path[path.length() - 1] != PATH_SEPARATOR)
 			path += PATH_SEPARATOR;
-		gtk_entry_set_text(GTK_ENTRY(s->widget("logDirectoryEntry")), path.c_str());
+		gtk_entry_set_text(GTK_ENTRY(s->getWidget("logDirectoryEntry")), path.c_str());
 	}
 }
 
@@ -1246,32 +1235,32 @@ void Settings::onLogMainClicked_gui(GtkToggleButton *button, gpointer data)
 {
 	Settings *s = (Settings *)data;
 	bool toggled = gtk_toggle_button_get_active(button);
-	gtk_widget_set_sensitive(s->widget("logMainLabel"), toggled);
-	gtk_widget_set_sensitive(s->widget("logMainEntry"), toggled);
+	gtk_widget_set_sensitive(s->getWidget("logMainLabel"), toggled);
+	gtk_widget_set_sensitive(s->getWidget("logMainEntry"), toggled);
 }
 
 void Settings::onLogPrivateClicked_gui(GtkToggleButton *button, gpointer data)
 {
 	Settings *s = (Settings *)data;
 	bool toggled = gtk_toggle_button_get_active(button);
-	gtk_widget_set_sensitive(s->widget("logPrivateLabel"), toggled);
-	gtk_widget_set_sensitive(s->widget("logPrivateEntry"), toggled);
+	gtk_widget_set_sensitive(s->getWidget("logPrivateLabel"), toggled);
+	gtk_widget_set_sensitive(s->getWidget("logPrivateEntry"), toggled);
 }
 
 void Settings::onLogDownloadClicked_gui(GtkToggleButton *button, gpointer data)
 {
 	Settings *s = (Settings *)data;
 	bool toggled = gtk_toggle_button_get_active(button);
-	gtk_widget_set_sensitive(s->widget("logDownloadsLabel"), toggled);
-	gtk_widget_set_sensitive(s->widget("logDownloadsEntry"), toggled);
+	gtk_widget_set_sensitive(s->getWidget("logDownloadsLabel"), toggled);
+	gtk_widget_set_sensitive(s->getWidget("logDownloadsEntry"), toggled);
 }
 
 void Settings::onLogUploadClicked_gui(GtkToggleButton *button, gpointer data)
 {
 	Settings *s = (Settings *)data;
 	bool toggled = gtk_toggle_button_get_active(button);
-	gtk_widget_set_sensitive(s->widget("logUploadsLabel"), toggled);
-	gtk_widget_set_sensitive(s->widget("logUploadsEntry"), toggled);
+	gtk_widget_set_sensitive(s->getWidget("logUploadsLabel"), toggled);
+	gtk_widget_set_sensitive(s->getWidget("logUploadsEntry"), toggled);
 }
 
 void Settings::onAdvancedToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data)

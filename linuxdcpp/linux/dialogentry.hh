@@ -26,20 +26,17 @@
 class DialogEntry
 {
 	public:
-		DialogEntry(std::string id);
-		virtual ~DialogEntry() {}
+		DialogEntry(std::string id, std::string glade);
+		virtual ~DialogEntry();
 
-		GtkWidget *getDialog();
-		void setDialog(GtkWidget *d);
+		GtkWidget *getWidget(std::string name);
 		std::string getID();
-		GladeXML* getGladeXML(std::string file);
 		void setResponseID(int responseID);
 		static int getResponseID();
-
 		virtual void applyCallback(GCallback closeCallback);
 
 	private:
-		GtkWidget *dialog;
+		GladeXML *xml;
 		std::string id;
 		static int responseID;
 };

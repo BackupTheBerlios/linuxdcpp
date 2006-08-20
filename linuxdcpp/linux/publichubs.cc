@@ -21,35 +21,18 @@
 using namespace std;
 
 PublicHubs::PublicHubs():
-	BookEntry("Public Hubs"),
+	BookEntry("Public Hubs", "publichubs.glade"),
 	hubs(0),
 	filter("")
 {
-	FavoriteManager *hman = FavoriteManager::getInstance();
-	hman->addListener(this);
+	FavoriteManager *favMan = FavoriteManager::getInstance();
+	favMan->addListener(this);
 
-	GladeXML *xml = getGladeXML("publichubs.glade");
-
-	GtkWidget *window = glade_xml_get_widget(xml, "publicHubsWindow");
-	mainBox = glade_xml_get_widget(xml, "publicHubsBox");
-	gtk_widget_ref(mainBox);
-	gtk_container_remove(GTK_CONTAINER(window), mainBox);
-	gtk_widget_destroy(window);
-
-	filterEntry = GTK_ENTRY(glade_xml_get_widget(xml, "filterEntry"));
-	comboBox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "hubListBox"));
-	configureDialog = GTK_DIALOG(glade_xml_get_widget(xml, "configureDialog"));
-	gtk_dialog_set_alternative_button_order(configureDialog, GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-
-	statusMain = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusMain"));
-	statusHubs = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusHubs"));
-	statusUsers = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusUsers"));
-
-	if (hman->isDownloading())
-		setStatus_gui(statusMain, "Downloading hub list");
+	// Configure the dialog
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("configureDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	// Initialize public hub list treeview
-	hubView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "hubView")), true, "publichubs");
+	hubView.setView(GTK_TREE_VIEW(getWidget("hubView")), true, "publichubs");
 	hubView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, 200);
 	hubView.insertColumn("Description", G_TYPE_STRING, TreeView::STRING, 350);
 	hubView.insertColumn("Users", G_TYPE_INT, TreeView::INT, 75);
@@ -63,12 +46,8 @@ PublicHubs::PublicHubs():
 	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(hubView.get(), hubView.col("Users")), TRUE);
 	gtk_tree_view_set_fixed_height_mode(hubView.get(), TRUE);
 
-	menu = GTK_MENU(glade_xml_get_widget(xml, "menu"));
-	GObject *conItem = G_OBJECT(glade_xml_get_widget(xml, "connectMenuItem"));
-	GObject *favItem = G_OBJECT(glade_xml_get_widget(xml, "favMenuItem"));
-
 	// Initialize list of public hub lists treeview
-	listsView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "listsView")));
+	listsView.setView(GTK_TREE_VIEW(getWidget("listsView")));
 	listsView.insertColumn("List", G_TYPE_STRING, TreeView::EDIT_STRING, -1);
 	listsView.finalize();
 	listsStore = gtk_list_store_newv(listsView.getColCount(), listsView.getGTypes());
@@ -76,7 +55,11 @@ PublicHubs::PublicHubs():
 	g_object_unref(listsStore);
 	gtk_tree_view_set_headers_visible(listsView.get(), FALSE);
 	listsSelection = gtk_tree_view_get_selection(listsView.get());
- 	StringList list = hman->getHubLists();
+	GtkTreeViewColumn *c = gtk_tree_view_get_column(listsView.get(), 0);
+	GList *l = gtk_tree_view_column_get_cell_renderers(c);
+	GObject *editRenderer = G_OBJECT(g_list_nth_data(l, 0));
+	g_list_free(l);
+ 	StringList list = favMan->getHubLists();
 	GtkTreeIter iter;
 	for (StringList::iterator it = list.begin(); it != list.end(); it++)
 	{
@@ -85,57 +68,44 @@ PublicHubs::PublicHubs():
 	}
 
 	// Fill the combo box with hub lists
-	gtk_combo_box_set_model(comboBox, GTK_TREE_MODEL(listsStore));
+	gtk_combo_box_set_model(GTK_COMBO_BOX(getWidget("hubListBox")), GTK_TREE_MODEL(listsStore));
 	GtkCellRenderer *cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(comboBox), cell, FALSE);
-	gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(comboBox), cell, "text", 0);
-	if (static_cast<size_t>(hman->getSelectedHubList()) >= list.size())
-		gtk_combo_box_set_active(comboBox, list.size() - 1);
+	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(GTK_COMBO_BOX(getWidget("hubListBox"))), cell, FALSE);
+	gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(GTK_COMBO_BOX(getWidget("hubListBox"))), cell, "text", 0);
+	if (static_cast<size_t>(favMan->getSelectedHubList()) >= list.size())
+		gtk_combo_box_set_active(GTK_COMBO_BOX(getWidget("hubListBox")), list.size() - 1);
 	else
-		gtk_combo_box_set_active(comboBox, hman->getSelectedHubList());
+		gtk_combo_box_set_active(GTK_COMBO_BOX(getWidget("hubListBox")), favMan->getSelectedHubList());
 
-	// Connect the callbacks
-	GtkTreeViewColumn *c = gtk_tree_view_get_column(listsView.get(), 0);
-	GList *l = gtk_tree_view_column_get_cell_renderers(c);
-	GObject *editRenderer = G_OBJECT(g_list_nth_data(l, 0));
-	g_list_free(l);
-	GObject *connectButton = G_OBJECT(glade_xml_get_widget(xml, "connectButton"));
-	GObject *refreshButton = G_OBJECT(glade_xml_get_widget(xml, "refreshButton"));
-	GObject *configureButton = G_OBJECT(glade_xml_get_widget(xml, "configureButton"));
-	GObject *addButton = G_OBJECT(glade_xml_get_widget(xml, "addButton"));
-	GObject *upButton = G_OBJECT(glade_xml_get_widget(xml, "upButton"));
-	GObject *downButton = G_OBJECT(glade_xml_get_widget(xml, "downButton"));
-	GObject *removeButton = G_OBJECT(glade_xml_get_widget(xml, "removeButton"));
 
-	g_signal_connect(filterEntry, "key-release-event", G_CALLBACK(onFilterHubs_gui), (gpointer)this);
-	g_signal_connect(connectButton, "clicked", G_CALLBACK(onConnect_gui), (gpointer)this);
-	g_signal_connect(conItem, "activate", G_CALLBACK(onConnect_gui), (gpointer)this);
-	g_signal_connect(refreshButton, "clicked", G_CALLBACK(onRefresh_gui), (gpointer)this);
-	g_signal_connect(comboBox, "changed", G_CALLBACK(onRefresh_gui), (gpointer)this);
-	g_signal_connect(configureButton, "clicked", G_CALLBACK(onConfigure_gui), (gpointer)this);
-	g_signal_connect(upButton, "clicked", G_CALLBACK(onMoveUp_gui), (gpointer)this);
-	g_signal_connect(downButton, "clicked", G_CALLBACK(onMoveDown_gui), (gpointer)this);
-	g_signal_connect(addButton, "clicked", G_CALLBACK(onAdd_gui), (gpointer)this);
-	g_signal_connect(removeButton, "clicked", G_CALLBACK(onRemove_gui), (gpointer)this);
+	// Connect the signals to their callback functions.
+	g_signal_connect(getWidget("filterEntry"), "key-release-event", G_CALLBACK(onFilterHubs_gui), (gpointer)this);
+	g_signal_connect(getWidget("connectButton"), "clicked", G_CALLBACK(onConnect_gui), (gpointer)this);
+	g_signal_connect(getWidget("connectMenuItem"), "activate", G_CALLBACK(onConnect_gui), (gpointer)this);
+	g_signal_connect(getWidget("refreshButton"), "clicked", G_CALLBACK(onRefresh_gui), (gpointer)this);
+	g_signal_connect(getWidget("hubListBox"), "changed", G_CALLBACK(onRefresh_gui), (gpointer)this);
+	g_signal_connect(getWidget("configureButton"), "clicked", G_CALLBACK(onConfigure_gui), (gpointer)this);
+	g_signal_connect(getWidget("upButton"), "clicked", G_CALLBACK(onMoveUp_gui), (gpointer)this);
+	g_signal_connect(getWidget("downButton"), "clicked", G_CALLBACK(onMoveDown_gui), (gpointer)this);
+	g_signal_connect(getWidget("addButton"), "clicked", G_CALLBACK(onAdd_gui), (gpointer)this);
+	g_signal_connect(getWidget("removeButton"), "clicked", G_CALLBACK(onRemove_gui), (gpointer)this);
 	g_signal_connect(editRenderer, "edited", G_CALLBACK(onCellEdited_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(hubView.get()), "button-press-event", G_CALLBACK(onButtonPress_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(hubView.get()), "button-release-event", G_CALLBACK(onButtonRelease_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(hubView.get()), "key-release-event", G_CALLBACK(onKeyRelease_gui), (gpointer)this);
-	g_signal_connect(favItem, "activate", G_CALLBACK(onAddFav_gui), (gpointer)this);
+	g_signal_connect(hubView.get(), "button-press-event", G_CALLBACK(onButtonPress_gui), (gpointer)this);
+	g_signal_connect(hubView.get(), "button-release-event", G_CALLBACK(onButtonRelease_gui), (gpointer)this);
+	g_signal_connect(hubView.get(), "key-release-event", G_CALLBACK(onKeyRelease_gui), (gpointer)this);
+	g_signal_connect(getWidget("favMenuItem"), "activate", G_CALLBACK(onAddFav_gui), (gpointer)this);
 
 	pthread_mutex_init(&hubLock, NULL);
+
+	if (favMan->isDownloading())
+		setStatus_gui("statusMain", "Downloading hub list");
 }
 
 PublicHubs::~PublicHubs()
 {
 	FavoriteManager::getInstance()->removeListener(this);
 	pthread_mutex_destroy(&hubLock);
-	gtk_widget_destroy(GTK_WIDGET(configureDialog));
-}
-
-GtkWidget *PublicHubs::getWidget()
-{
-	return mainBox;
+	gtk_widget_destroy(getWidget("configureDialog"));
 }
 
 void PublicHubs::downloadList_client()
@@ -189,14 +159,14 @@ void PublicHubs::updateList_gui()
 
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(hubStore), sortColumn, sortType);
 
-	setStatus_gui(statusHubs, "Hubs: " + Util::toString(numHubs));
-	setStatus_gui(statusUsers, "Users: " + Util::toString(numUsers));
+	setStatus_gui("statusHubs", "Hubs: " + Util::toString(numHubs));
+	setStatus_gui("statusUsers", "Users: " + Util::toString(numUsers));
 }
 
-void PublicHubs::setStatus_gui(GtkStatusbar *status, string text)
+void PublicHubs::setStatus_gui(string statusBar, string text)
 {
-	gtk_statusbar_pop(status, 0);
-	gtk_statusbar_push(status, 0, text.c_str());
+	gtk_statusbar_pop(GTK_STATUSBAR(getWidget(statusBar)), 0);
+	gtk_statusbar_push(GTK_STATUSBAR(getWidget(statusBar)), 0, text.c_str());
 }
 
 gboolean PublicHubs::onButtonPress_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
@@ -220,8 +190,8 @@ gboolean PublicHubs::onButtonRelease_gui(GtkWidget *widget, GdkEventButton *even
 	{
 		if (event->button == 3 && ph->oldType == GDK_BUTTON_PRESS)
 		{
-			gtk_menu_popup(ph->menu, NULL, NULL, NULL, NULL, 0, event->time);
-			gtk_widget_show_all(GTK_WIDGET(ph->menu));
+			gtk_menu_popup(GTK_MENU(ph->getWidget("menu")), NULL, NULL, NULL, NULL, 0, event->time);
+			gtk_widget_show_all(ph->getWidget("menu"));
 		}
 		else if (event->button == 1 && ph->oldType == GDK_2BUTTON_PRESS)
 		{
@@ -240,8 +210,8 @@ gboolean PublicHubs::onKeyRelease_gui(GtkWidget *widget, GdkEventKey *event, gpo
 	{
 		if (event->keyval == GDK_Menu || (event->keyval == GDK_F10 && event->state & GDK_SHIFT_MASK))
 		{
-			gtk_menu_popup(ph->menu, NULL, NULL, NULL, NULL, 0, event->time);
-			gtk_widget_show_all(GTK_WIDGET(ph->menu));
+			gtk_menu_popup(GTK_MENU(ph->getWidget("menu")), NULL, NULL, NULL, NULL, 0, event->time);
+			gtk_widget_show_all(ph->getWidget("menu"));
 		}
 		else if (event->keyval == GDK_Return || event->keyval == GDK_KP_Enter)
 		{
@@ -255,7 +225,7 @@ gboolean PublicHubs::onKeyRelease_gui(GtkWidget *widget, GdkEventKey *event, gpo
 gboolean PublicHubs::onFilterHubs_gui(GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
 	PublicHubs *ph = (PublicHubs *)data;
-	StringSearch pattern(gtk_entry_get_text(ph->filterEntry));
+	StringSearch pattern(gtk_entry_get_text(GTK_ENTRY(ph->getWidget("filterEntry"))));
 
 	if (!(pattern == ph->filter))
 	{
@@ -281,7 +251,7 @@ void PublicHubs::onConnect_gui(GtkWidget *widget, gpointer data)
 void PublicHubs::onRefresh_gui(GtkWidget *widget, gpointer data)
 {
 	PublicHubs *ph = (PublicHubs *)data;
-	int pos = gtk_combo_box_get_active(ph->comboBox);
+	int pos = gtk_combo_box_get_active(GTK_COMBO_BOX(ph->getWidget("hubListBox")));
 
 	typedef Func1<PublicHubs, int> F1;
 	F1 *func = new F1(ph, &PublicHubs::refresh_client, pos);
@@ -319,13 +289,12 @@ void PublicHubs::onConfigure_gui(GtkWidget *widget, gpointer data)
 	PublicHubs *ph = (PublicHubs *)data;
 
 	// Have to get active here since temp could be NULL after dialog is closed
-	gchar *temp = gtk_combo_box_get_active_text(ph->comboBox);
+	gchar *temp = gtk_combo_box_get_active_text(GTK_COMBO_BOX(ph->getWidget("hubListBox")));
 	string active = string(temp);
 	g_free(temp);
 
-	gtk_widget_show_all(GTK_WIDGET(ph->configureDialog));
-	gint ret = gtk_dialog_run(ph->configureDialog);
-	gtk_widget_hide(GTK_WIDGET(ph->configureDialog));
+	gint ret = gtk_dialog_run(GTK_DIALOG(ph->getWidget("configureDialog")));
+	gtk_widget_hide(ph->getWidget("configureDialog"));
 
 	if (ret == GTK_RESPONSE_OK)
 	{
@@ -339,12 +308,12 @@ void PublicHubs::onConfigure_gui(GtkWidget *widget, gpointer data)
 			url = ph->listsView.getString(&iter, "List");
 			lists += url + ";";
 			if (url == active)
-				gtk_combo_box_set_active_iter(ph->comboBox, &iter);
+				gtk_combo_box_set_active_iter(GTK_COMBO_BOX(ph->getWidget("hubListBox")), &iter);
 			valid = gtk_tree_model_iter_next(m, &iter);
 		}
 
-		if (gtk_combo_box_get_active(ph->comboBox) < 0)
-			gtk_combo_box_set_active(ph->comboBox, 0);
+		if (gtk_combo_box_get_active(GTK_COMBO_BOX(ph->getWidget("hubListBox"))) < 0)
+			gtk_combo_box_set_active(GTK_COMBO_BOX(ph->getWidget("hubListBox")), 0);
 
 		if (!lists.empty())
 			lists.erase(lists.size() - 1);
@@ -428,24 +397,24 @@ void PublicHubs::addFav_client(FavoriteHubEntry entry)
 void PublicHubs::on(FavoriteManagerListener::DownloadStarting, const string &file) throw()
 {
 	string msg = "Download starting: " + file;
-	typedef Func2<PublicHubs, GtkStatusbar*, string> Func;
-	Func *func = new Func(this, &PublicHubs::setStatus_gui, statusMain, msg);
+	typedef Func2<PublicHubs, string, string> Func;
+	Func *func = new Func(this, &PublicHubs::setStatus_gui, "statusMain", msg);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
 void PublicHubs::on(FavoriteManagerListener::DownloadFailed, const string &file) throw()
 {
 	string msg = "Download failed: " + file;
-	typedef Func2<PublicHubs, GtkStatusbar*, string> Func;
-	Func *func = new Func(this, &PublicHubs::setStatus_gui, statusMain, msg);
+	typedef Func2<PublicHubs, string, string> Func;
+	Func *func = new Func(this, &PublicHubs::setStatus_gui, "statusMain", msg);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
 void PublicHubs::on(FavoriteManagerListener::DownloadFinished, const string &file) throw()
 {
 	string msg = "Download finished: " + file;
-	typedef Func2<PublicHubs, GtkStatusbar*, string> Func;
-	Func *f2 = new Func(this, &PublicHubs::setStatus_gui, statusMain, msg);
+	typedef Func2<PublicHubs, string, string> Func;
+	Func *f2 = new Func(this, &PublicHubs::setStatus_gui, "statusMain", msg);
 	WulforManager::get()->dispatchGuiFunc(f2);
 
 	pthread_mutex_lock(&hubLock);

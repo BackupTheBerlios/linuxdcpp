@@ -28,18 +28,16 @@ class BookEntry
 {
 	public:
 		BookEntry() {}
-		BookEntry(std::string title);
-		virtual ~BookEntry() {}
+		BookEntry(std::string title, std::string glade);
+		virtual ~BookEntry();
 
-		//only to be called by gui thread
+		GtkWidget *getWidget(std::string name);
 		virtual void applyCallback(GCallback closeCallback);
 		void setLabel_gui(std::string text);
 		void setBold_gui();
 		void unsetBold_gui();
 		GtkWidget *getTitle();
-		virtual GtkWidget *getWidget() = 0;
 		std::string getID();
-		GladeXML* getGladeXML(std::string file);
 
 	private:
 		std::string id;
@@ -49,6 +47,7 @@ class BookEntry
 		GtkLabel *label;
 		GtkTooltips *tips;
 		bool bold;
+		GladeXML *xml;
 };
 
 #else

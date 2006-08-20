@@ -40,15 +40,12 @@ class Hub:
 		Hub(std::string address);
 		~Hub();
 
-		// From BookEntry
-		GtkWidget *getWidget();
-
 		// Client functions
 		void connectClient_client(string address, string nick = "", string desc = "", string password = "");
 
 	private:
 		// GUI functions
-		void setStatus_gui(GtkStatusbar *status, std::string text);
+		void setStatus_gui(std::string statusBar, std::string text);
 		void findUser_gui(std::string nick, GtkTreeIter *iter);
 		void updateUser_gui(Identity id);
 		void removeUser_gui(std::string nick);
@@ -102,26 +99,16 @@ class Hub:
 		hash_map<std::string, Identity> idMap;
 		hash_map<std::string, GdkPixbuf *> userIcons;
 		Client *client;
-		bool usersUpdated, sorted;
-		GtkMenu *nickMenu;
-		GtkWidget *mainBox;
-		GtkPaned *nickPane;
-		GtkDialog *passwordDialog;
-		GtkEntry *passwordEntry;
-		GtkStatusbar *mainStatus, *usersStatus, *sharedStatus;
+		bool usersUpdated;
 		TreeView nickView;
 		GtkListStore *nickStore;
 		GtkTreeSelection *nickSelection;
-		GtkWidget *scrolledwindow2;
-		GtkTextView *chatText;
 		GtkTextBuffer *chatBuffer;
-		GtkScrolledWindow *chatScroll;
 		GtkTextMark *chatMark;
-		GtkEntry *chatEntry;
 		GtkEntryCompletion *completion;
 		gint oldType;
 		std::vector<std::string> history;
-		int historyIndex;
+		int historyIndex, sorted;
 		static const int maxLines = 1000;
 		static const int maxHistory = 20;
 };

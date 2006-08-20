@@ -21,45 +21,15 @@
 using namespace std;
 
 Hub::Hub(string address):
-	BookEntry("Hub: " + address)
+	BookEntry("Hub: " + address, "hub.glade")
 {
 	TimerManager::getInstance()->addListener(this);
 
-	GladeXML *xml = getGladeXML("hub.glade");
-
-	// Initialize mainbox
-	GtkWidget *window = glade_xml_get_widget(xml, "hubWindow");
-	mainBox = glade_xml_get_widget(xml, "hubBox");
-	gtk_widget_ref(mainBox);
-	gtk_container_remove(GTK_CONTAINER(window), mainBox);
-	gtk_widget_destroy(window);
-
-	// Get widgets from glade xml.
-	chatText = GTK_TEXT_VIEW(glade_xml_get_widget(xml, "chatText"));
-	nickPane = GTK_PANED(glade_xml_get_widget(xml, "pane"));
-	passwordDialog = GTK_DIALOG(glade_xml_get_widget(xml, "passwordDialog"));
-	passwordEntry = GTK_ENTRY(glade_xml_get_widget(xml, "passwordEntry"));
-	chatEntry = GTK_ENTRY(glade_xml_get_widget(xml, "chatEntry"));
-	chatText = GTK_TEXT_VIEW(glade_xml_get_widget(xml, "chatText"));
-	chatScroll = GTK_SCROLLED_WINDOW(glade_xml_get_widget(xml, "chatScroll"));
-	mainStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusMain"));
-	usersStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusUsers"));
-	sharedStatus = GTK_STATUSBAR(glade_xml_get_widget(xml, "statusShared"));
-	scrolledwindow2 = glade_xml_get_widget(xml, "scrolledwindow2");
-
-	gtk_dialog_set_alternative_button_order(passwordDialog, GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-	if (BOOLSETTING(USE_OEM_MONOFONT))
-	{
-		PangoFontDescription *font_desc;
-		font_desc = pango_font_description_from_string("Mono 10");
-		gtk_widget_modify_font(GTK_WIDGET(chatText), font_desc);
-		pango_font_description_free(font_desc);
-	}
-	int nickPanePosition = WulforSettingsManager::get()->getInt("nick-pane-position");
-	gtk_paned_set_position(nickPane, nickPanePosition);
+	// Configure the dialog
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("passwordDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	// Initialize nick treeview
-	nickView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "nickView")), true, "hub");
+	nickView.setView(GTK_TREE_VIEW(getWidget("nickView")), true, "hub");
 	nickView.insertColumn("Nick", G_TYPE_STRING, TreeView::PIXBUF_STRING, 100, "Icon");
 	nickView.insertColumn("Shared", G_TYPE_STRING, TreeView::STRING, 75);
 	nickView.insertColumn("Description", G_TYPE_STRING, TreeView::STRING, 75);
@@ -79,11 +49,17 @@ Hub::Hub(string address):
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(nickStore), GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID, GTK_SORT_ASCENDING);
 	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(nickView.get(), nickView.col("Nick")), TRUE);
 	gtk_tree_view_set_fixed_height_mode(nickView.get(), TRUE);
-	sorted = FALSE;
 
-	// Initialize chat
+	// Initialize the chat window
+	if (BOOLSETTING(USE_OEM_MONOFONT))
+	{
+		PangoFontDescription *font_desc;
+		font_desc = pango_font_description_from_string("Mono 10");
+		gtk_widget_modify_font(getWidget("chatText"), font_desc);
+		pango_font_description_free(font_desc);
+	}
 	chatBuffer = gtk_text_buffer_new(NULL);
-	gtk_text_view_set_buffer(chatText, chatBuffer);
+	gtk_text_view_set_buffer(GTK_TEXT_VIEW(getWidget("chatText")), chatBuffer);
 	GtkTextIter iter;
 	gtk_text_buffer_get_end_iter(chatBuffer, &iter);
 	chatMark = gtk_text_buffer_create_mark(chatBuffer, NULL, &iter, FALSE);
@@ -91,23 +67,14 @@ Hub::Hub(string address):
 	// Initialize nick completion
 	completion = gtk_entry_completion_new();
 	gtk_entry_completion_set_inline_completion(completion, FALSE);
-	gtk_entry_set_completion(chatEntry, completion);
+	gtk_entry_set_completion(GTK_ENTRY(getWidget("chatEntry")), completion);
 	g_object_unref(completion);
 	gtk_entry_completion_set_model(completion, GTK_TREE_MODEL(nickStore));
 	gtk_entry_completion_set_text_column(completion, nickView.col("Nick"));
 
-	// Initialize nick popup menu
-	nickMenu = GTK_MENU(glade_xml_get_widget(xml, "nickMenu"));
-	GtkWidget *browseItem = glade_xml_get_widget(xml, "browseItem");
-	g_signal_connect(G_OBJECT(browseItem), "activate", G_CALLBACK(onBrowseItemClicked_gui), (gpointer)this);
-	GtkWidget *msgItem = glade_xml_get_widget(xml, "msgItem");
-	g_signal_connect(G_OBJECT(msgItem), "activate", G_CALLBACK(onMsgItemClicked_gui), (gpointer)this);
-	GtkWidget *grantItem = glade_xml_get_widget(xml, "grantItem");
-	g_signal_connect(G_OBJECT(grantItem), "activate", G_CALLBACK(onGrantItemClicked_gui), (gpointer)this);
-
-	// Load icons for the nick list
-	string icon, path = WulforManager::get()->getPath() + "/pixmaps/";
-	icon = path + "normal.png";
+	// Load the icons for the nick list
+	string path = WulforManager::get()->getPath() + "/pixmaps/";
+	string icon = path + "normal.png";
 	userIcons["normal"] = gdk_pixbuf_new_from_file(icon.c_str(), NULL);
 	icon = path + "normal-op.png";
 	userIcons["normal-op"] = gdk_pixbuf_new_from_file(icon.c_str(), NULL);
@@ -124,18 +91,25 @@ Hub::Hub(string address):
 	icon = path + "dc++-fw-op.png";
 	userIcons["dc++-fw-op"] = gdk_pixbuf_new_from_file(icon.c_str(), NULL);
 
-	// Connect callbacks
-	g_signal_connect(chatEntry, "activate", G_CALLBACK(onSendMessage_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(nickView.get()), "button-press-event", G_CALLBACK(onNickListButtonPress_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(nickView.get()), "button-release-event", G_CALLBACK(onNickListButtonRelease_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(nickView.get()), "key-release-event", G_CALLBACK(onNickListKeyRelease_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(chatEntry), "key-press-event", G_CALLBACK(onEntryKeyPress_gui), (gpointer)this);
+	// Connect the signals to their callback functions.
+	g_signal_connect(nickView.get(), "button-press-event", G_CALLBACK(onNickListButtonPress_gui), (gpointer)this);
+	g_signal_connect(nickView.get(), "button-release-event", G_CALLBACK(onNickListButtonRelease_gui), (gpointer)this);
+	g_signal_connect(nickView.get(), "key-release-event", G_CALLBACK(onNickListKeyRelease_gui), (gpointer)this);
+	g_signal_connect(getWidget("chatEntry"), "activate", G_CALLBACK(onSendMessage_gui), (gpointer)this);
+	g_signal_connect(getWidget("chatEntry"), "key-press-event", G_CALLBACK(onEntryKeyPress_gui), (gpointer)this);
+	g_signal_connect(getWidget("browseItem"), "activate", G_CALLBACK(onBrowseItemClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("msgItem"), "activate", G_CALLBACK(onMsgItemClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("grantItem"), "activate", G_CALLBACK(onGrantItemClicked_gui), (gpointer)this);
 
-	gtk_widget_grab_focus(GTK_WIDGET(chatEntry));
+	gtk_widget_grab_focus(getWidget("chatEntry"));
+
+	int nickPanePosition = WulforSettingsManager::get()->getInt("nick-pane-position");
+	gtk_paned_set_position(GTK_PANED(getWidget("pane")), nickPanePosition);
 
 	client = NULL;
 	history.push_back("");
 	historyIndex = 0;
+	sorted = 0;
 }
 
 Hub::~Hub()
@@ -154,23 +128,18 @@ Hub::~Hub()
 	for (it = userIcons.begin(); it != userIcons.end(); it++)
 		g_object_unref(G_OBJECT(it->second));
 
-	int nickPanePosition = gtk_paned_get_position(nickPane);
+	int nickPanePosition = gtk_paned_get_position(GTK_PANED(getWidget("pane")));
 	WulforSettingsManager::get()->set("nick-pane-position", nickPanePosition);
 
-	gtk_widget_destroy(GTK_WIDGET(passwordDialog));
+	gtk_widget_destroy(GTK_WIDGET(GTK_DIALOG(getWidget("passwordDialog"))));
 }
 
-GtkWidget *Hub::getWidget()
-{
-	return mainBox;
-}
-
-void Hub::setStatus_gui(GtkStatusbar *status, string text)
+void Hub::setStatus_gui(string statusBar, string text)
 {
 	if (!text.empty())
 	{
-		gtk_statusbar_pop(status, 0);
-		gtk_statusbar_push(status, 0, text.c_str());
+		gtk_statusbar_pop(GTK_STATUSBAR(getWidget(statusBar)), 0);
+		gtk_statusbar_push(GTK_STATUSBAR(getWidget(statusBar)), 0, text.c_str());
 	}
 }
 
@@ -271,13 +240,12 @@ void Hub::getPassword_gui()
 {
 	gint ret;
 
-	gtk_widget_show_all(GTK_WIDGET(passwordDialog));
-	ret = gtk_dialog_run(passwordDialog);
-	gtk_widget_hide(GTK_WIDGET(passwordDialog));
+	ret = gtk_dialog_run(GTK_DIALOG(getWidget("passwordDialog")));
+	gtk_widget_hide(getWidget("passwordDialog"));
 
 	if (ret == GTK_RESPONSE_OK)
 	{
-		string password = gtk_entry_get_text(passwordEntry);
+		string password = gtk_entry_get_text(GTK_ENTRY(getWidget("passwordEntry")));
 		typedef Func1<Hub, string> F1;
 		F1 *func = new F1(this, &Hub::setPassword_client, password);
 		WulforManager::get()->dispatchClientFunc(func);
@@ -290,7 +258,7 @@ void Hub::addStatusMessage_gui(string message)
 {
 	if (!message.empty())
 	{
-		setStatus_gui(mainStatus, message);
+		setStatus_gui("statusMain", message);
 
 		if (BOOLSETTING(STATUS_IN_CHAT))
 		{
@@ -314,7 +282,7 @@ void Hub::addMessage_gui(string message)
 		line = "[" + Util::getShortTimeString() + "] ";
 	line += message + "\n";
 
-	adj = gtk_scrolled_window_get_vadjustment(chatScroll);
+	adj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(getWidget("chatScroll")));
 	setBottom = gtk_adjustment_get_value(adj) >= (adj->upper - adj->page_size);
 
 	gtk_text_buffer_get_end_iter(chatBuffer, &iter);
@@ -332,7 +300,7 @@ void Hub::addMessage_gui(string message)
 	{
 		gtk_text_buffer_get_end_iter(chatBuffer, &iter);
 		gtk_text_buffer_move_mark(chatBuffer, chatMark, &iter);
-		gtk_text_view_scroll_to_mark(chatText, chatMark, 0, FALSE, 0, 0);
+		gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(getWidget("chatText")), chatMark, 0, FALSE, 0, 0);
 	}
 
 	if (BOOLSETTING(BOLD_HUB))
@@ -484,10 +452,10 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
 		}
 		else if (command == "userlist")
 		{
-			if (GTK_WIDGET_VISIBLE(hub->scrolledwindow2))
-				gtk_widget_hide(hub->scrolledwindow2);
+			if (GTK_WIDGET_VISIBLE(hub->getWidget("scrolledwindow2")))
+				gtk_widget_hide(hub->getWidget("scrolledwindow2"));
 			else
-				gtk_widget_show_all(hub->scrolledwindow2);
+				gtk_widget_show_all(hub->getWidget("scrolledwindow2"));
 		}
 		else if (BOOLSETTING(SEND_UNKNOWN_COMMANDS))
 		{
@@ -538,8 +506,8 @@ gboolean Hub::onNickListButtonRelease_gui(GtkWidget *widget, GdkEventButton *eve
 		}
 		else if (event->button == 3 && event->type == GDK_BUTTON_RELEASE)
 		{
-			gtk_menu_popup(hub->nickMenu, NULL, NULL, NULL, NULL, 0, event->time);
-			gtk_widget_show_all(GTK_WIDGET(hub->nickMenu));
+			gtk_menu_popup(GTK_MENU(hub->getWidget("nickMenu")), NULL, NULL, NULL, NULL, 0, event->time);
+			gtk_widget_show_all(hub->getWidget("nickMenu"));
 		}
 	}
 
@@ -555,8 +523,8 @@ gboolean Hub::onNickListKeyRelease_gui(GtkWidget *widget, GdkEventKey *event, gp
 	{
 		if (event->keyval == GDK_Menu || (event->keyval == GDK_F10 && event->state & GDK_SHIFT_MASK))
 		{
-			gtk_menu_popup(hub->nickMenu, NULL, NULL, NULL, NULL, 0, event->time);
-			gtk_widget_show_all(GTK_WIDGET(hub->nickMenu));
+			gtk_menu_popup(GTK_MENU(hub->getWidget("nickMenu")), NULL, NULL, NULL, NULL, 0, event->time);
+			gtk_widget_show_all(hub->getWidget("nickMenu"));
 		}
 		else if (event->keyval == GDK_Return || event->keyval == GDK_KP_Enter)
 		{
@@ -907,7 +875,7 @@ void Hub::on(ClientListener::HubUpdated, Client *) throw()
 	F1 *func1 = new F1(this, &BookEntry::setLabel_gui, hubName);
 	WulforManager::get()->dispatchGuiFunc(func1);
 
-	F2 *func2 = new F2(WulforManager::get()->getMainWindow(), &MainWindow::modifyWindowItem, getWidget(), hubName);
+	F2 *func2 = new F2(WulforManager::get()->getMainWindow(), &MainWindow::modifyWindowItem, getWidget("mainBox"), hubName);
 	WulforManager::get()->dispatchGuiFunc(func2);
 }
 
@@ -993,8 +961,8 @@ void Hub::on(TimerManagerListener::Second, u_int32_t tics) throw()
 	{
 		string users = Util::toString(idMap.size()) + " Users";
 
-		typedef Func2<Hub, GtkStatusbar *, string> F2;
-		F2 *f2 = new F2(this, &Hub::setStatus_gui, usersStatus, users);
+		typedef Func2<Hub, string, string> F2;
+		F2 *f2 = new F2(this, &Hub::setStatus_gui, "statusUsers", users);
 		WulforManager::get()->dispatchGuiFunc(f2);
 
 		int64_t totalShared = 0;
@@ -1002,7 +970,7 @@ void Hub::on(TimerManagerListener::Second, u_int32_t tics) throw()
 		for (iter = idMap.begin(); iter != idMap.end(); iter++)
 			totalShared += iter->second.getBytesShared();
 
-		f2 = new F2(this, &Hub::setStatus_gui, sharedStatus, Util::formatBytes(totalShared));
+		f2 = new F2(this, &Hub::setStatus_gui, "statusShared", Util::formatBytes(totalShared));
 		WulforManager::get()->dispatchGuiFunc(f2);
 
 		usersUpdated = FALSE;
@@ -1010,16 +978,15 @@ void Hub::on(TimerManagerListener::Second, u_int32_t tics) throw()
 }
 
 /*
- * Sets the userlist to sorted at the first minute marker. Can't have it sorted when
+ * Sets the userlist to sorted at the 2nd minute marker. Can't have it sorted when
  * first joining since GTK+ is very slow when inserting many rows into a sorted GtkTreeView.
  */
 void Hub::on(TimerManagerListener::Minute, u_int32_t tics) throw()
 {
-	if (!sorted)
+	if (sorted == 2)
 	{
 		Func0<Hub> *f = new Func0<Hub>(this, &Hub::sortList_gui);
 		WulforManager::get()->dispatchGuiFunc(f);
-
-		sorted = TRUE;
 	}
+	sorted++;
 }

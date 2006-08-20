@@ -1,3 +1,9 @@
+2006-08-19 - Steven Sheehy
+* Fixed a large memory leak due to never unreferencing the GladeXML files.
+* Added the ability to retrieve a widget out of the xml at any point in the program,
+  which helped clean up the code immensely.
+* Temporary fix for the 100% CPU usage caused by sorting the hub user list in large hubs too soon.
+
 2006-08-17 - Steven Sheehy
 * Fixed search regression.
 

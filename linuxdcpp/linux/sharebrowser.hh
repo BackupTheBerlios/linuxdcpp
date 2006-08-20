@@ -36,9 +36,6 @@ class ShareBrowser:
 		ShareBrowser(User::Ptr user, std::string file);
 		~ShareBrowser();
 
-		// From BookEntry
-		GtkWidget *getWidget();
-
 		// GUI function
 		void setPosition_gui(std::string pos);
 
@@ -49,7 +46,7 @@ class ShareBrowser:
 		void buildFileDownloadMenu_gui();
 		void updateFiles_gui(DirectoryListing::Directory *dir);
 		void updateStatus_gui();
-		void setStatus_gui(GtkStatusbar *status, std::string msg);
+		void setStatus_gui(std::string statusBar, std::string msg);
 		void fileViewSelected_gui();
 		void downloadSelectedFiles_gui(std::string target);
 		void downloadSelectedDirs_gui(std::string target);
@@ -89,19 +86,10 @@ class ShareBrowser:
 		bool updateFileView;
 		int skipHits;
 		TreeView dirView, fileView;
-		GtkStatusbar *mainStatus, *itemsStatus, *sizeStatus, *filesStatus, *totalStatus;
 		GtkListStore *fileStore;
 		GtkTreeStore *dirStore;
 		GtkTreeSelection *fileSelection, *dirSelection;
-		GtkWidget *box;
-		GtkWidget *findDialog;
-		GtkEntry *findEntry;
-		GtkWidget *dirChooserDialog;
-		GtkButton *matchButton, *findButton, *nextButton;
 		GdkPixbuf *iconFile, *iconDirectory;
-		GtkMenu *fileMenu, *dirMenu, *fileDownloadMenu, *dirDownloadMenu;
-		hash_map<std::string, GtkWidget*> dirMenuItems;
-		hash_map<std::string, GtkWidget*> fileMenuItems;
 };
 
 #else

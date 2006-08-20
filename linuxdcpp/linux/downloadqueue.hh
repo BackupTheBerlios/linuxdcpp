@@ -43,9 +43,6 @@ public:
 	DownloadQueue();
 	~DownloadQueue ();
 
-	// From BookEntry
-	GtkWidget *getWidget();
-
 	void buildList_gui ();
 	void updateStatus_gui ();
 
@@ -57,20 +54,8 @@ public:
 	virtual void on(QueueManagerListener::StatusUpdated, QueueItem* aQI) throw() { updateFiles_gui (aQI); }
 
 private:
-	enum {
-		STATUS_FIRST,
-		STATUS_MAIN = STATUS_FIRST,
-		STATUS_ITEMS,
-		STATUS_FILE_SIZE,
-		STATUS_FILES,
-		STATUS_TOTAL_SIZE,
-		STATUS_LAST
-	};
-
 	class QueueItemInfo;
 
-	GtkWidget *mainBox;
-	vector<GtkWidget*> statusbar;
 	pthread_mutex_t queueLock;
 
 	// TreeView related stuff
@@ -86,13 +71,9 @@ private:
 	void file_popup_menu_gui (GdkEventButton *event, gpointer user_data);
 
 	// Set statusbar
-	void setStatus_gui (string text, int num);
+	void setStatus_gui(std::string text, std::string statusItem);
 
 	// Popup-Menus
-	GtkMenu *dirMenu, *fileMenu, *dirPriority, *filePriority;
-	GtkMenu *browseMenu, *pmMenu, *readdMenu, *removeMenu, *removeallMenu;
-	hash_map<std::string, GtkWidget *> dirItems;
-	hash_map<std::string, GtkWidget *> fileItems;
 	std::vector<GtkWidget*> browseItems;
 	std::vector<GtkWidget*> readdItems;
 	std::vector<GtkWidget*> pmItems;
@@ -227,7 +208,7 @@ private:
 					} 
 					catch(const Exception& e) 
 					{
-						q->setStatus_gui (e.getError (), STATUS_MAIN);
+						q->setStatus_gui(e.getError(), "statusMain");
 					}
 					break;
 				}

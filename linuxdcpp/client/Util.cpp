@@ -429,7 +429,7 @@ string Util::formatExactSize(int64_t aBytes) {
 #else
 		char buf[64];
 		snprintf(buf, sizeof(buf), "%'lld", aBytes);
-		return string(buf) + CSTRING(B);
+		return string(buf) + STRING(B);
 #endif
 }
 

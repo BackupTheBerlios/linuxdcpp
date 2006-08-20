@@ -38,16 +38,13 @@ class PublicHubs:
 		PublicHubs();
 		~PublicHubs();
 
-		// From BookEntry
-		GtkWidget *getWidget();
-
 		// Client functions
 		void downloadList_client();
 
 	private:
 		// GUI functions
 		void updateList_gui();
-		void setStatus_gui(GtkStatusbar *status, std::string text);
+		void setStatus_gui(std::string statusBar, std::string text);
 
 		// GUI callbacks
 		static gboolean onButtonPress_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
@@ -76,15 +73,9 @@ class PublicHubs:
 		pthread_mutex_t hubLock;
 		HubEntry::List hubs;
 		StringSearch filter;
-		GtkDialog *configureDialog;
-		GtkComboBox *comboBox;
-		GtkWidget *mainBox;
-		GtkEntry *filterEntry;
 		TreeView listsView, hubView;
 		GtkTreeSelection *hubSelection, *listsSelection;
 		GtkListStore *hubStore, *listsStore;
-		GtkStatusbar *statusMain, *statusHubs, *statusUsers;
-		GtkMenu *menu;
 		guint oldButton, oldType;
 };
 

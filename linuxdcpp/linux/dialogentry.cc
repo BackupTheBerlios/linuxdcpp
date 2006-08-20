@@ -24,19 +24,28 @@ using namespace std;
 
 int DialogEntry::responseID = GTK_RESPONSE_NONE;
 
-DialogEntry::DialogEntry(string id)
+DialogEntry::DialogEntry(string id, string glade)
 {
 	this->id = id;
+
+	string file = WulforManager::get()->getPath() + "/glade/" + glade;
+	xml = glade_xml_new(file.c_str(), NULL, NULL);
+
+	if (xml == NULL)
+		gtk_main_quit();
 }
 
-GtkWidget* DialogEntry::getDialog()
+DialogEntry::~DialogEntry()
 {
-	return dialog;
+	g_object_unref(xml);
 }
 
-void DialogEntry::setDialog(GtkWidget *d)
+GtkWidget* DialogEntry::getWidget(string name)
 {
-	dialog = d;
+	dcassert(!name.empty());
+	GtkWidget *widget = glade_xml_get_widget(xml, name.c_str());
+	dcassert(widget);
+	return widget;
 }
 
 string DialogEntry::getID()
@@ -56,16 +65,5 @@ int DialogEntry::getResponseID()
 
 void DialogEntry::applyCallback(GCallback closeCallback)
 {
-	g_signal_connect(G_OBJECT(dialog), "response", closeCallback, (gpointer)this);
-}
-
-GladeXML* DialogEntry::getGladeXML(string file)
-{
-	file = WulforManager::get()->getPath() + "/glade/" + file;
-	GladeXML *xml = glade_xml_new(file.c_str(), NULL, NULL);
-
-	if (xml == NULL)
-		gtk_main_quit();
-
-	return xml;
+	g_signal_connect(getWidget("dialog"), "response", closeCallback, (gpointer)this);
 }

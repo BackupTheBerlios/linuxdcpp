@@ -24,48 +24,31 @@
 using namespace std;
 
 PrivateMessage::PrivateMessage(User::Ptr user):
-	BookEntry("PM: " + WulforUtil::getNicks(user)),
+	BookEntry("PM: " + WulforUtil::getNicks(user), "privatemessage.glade"),
 	user(user)
 {
-	GladeXML *xml = getGladeXML("privatemessage.glade");
-
-	GtkWidget *window = glade_xml_get_widget(xml, "window");
-	box = glade_xml_get_widget(xml, "box");
-	gtk_widget_ref(box);
-	gtk_container_remove(GTK_CONTAINER(window), box);
-	gtk_widget_destroy(window);
-
-	GtkWidget *entry = glade_xml_get_widget(xml, "entry");
-	text = GTK_TEXT_VIEW(glade_xml_get_widget(xml, "text"));
-
+	// Intialize the chat window
 	if (SETTING(USE_OEM_MONOFONT))
 	{
 		PangoFontDescription *font_desc;
 		font_desc = pango_font_description_from_string("Mono 10");
-		gtk_widget_modify_font(GTK_WIDGET(text), font_desc);
+		gtk_widget_modify_font(getWidget("text"), font_desc);
 		pango_font_description_free(font_desc);
 	}
-
-	scroll = GTK_SCROLLED_WINDOW(glade_xml_get_widget(xml, "scroll"));
-
-	buffer = gtk_text_buffer_new(NULL);
-	gtk_text_view_set_buffer(text, buffer);
 	GtkTextIter iter;
+	buffer = gtk_text_buffer_new(NULL);
+	gtk_text_view_set_buffer(GTK_TEXT_VIEW(getWidget("text")), buffer);
 	gtk_text_buffer_get_end_iter(buffer, &iter);
 	mark = gtk_text_buffer_create_mark(buffer, NULL, &iter, FALSE);
 
-	g_signal_connect(G_OBJECT(entry), "activate", G_CALLBACK(onSendMessage_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(entry), "key-press-event", G_CALLBACK(onKeyPress_gui), (gpointer)this);
+	// Connect the signals to their callback functions.
+	g_signal_connect(G_OBJECT(getWidget("entry")), "activate", G_CALLBACK(onSendMessage_gui), (gpointer)this);
+	g_signal_connect(G_OBJECT(getWidget("entry")), "key-press-event", G_CALLBACK(onKeyPress_gui), (gpointer)this);
 
-	gtk_widget_grab_focus(entry);
+	gtk_widget_grab_focus(getWidget("entry"));
 
 	history.push_back("");
 	historyIndex = 0;
-}
-
-GtkWidget *PrivateMessage::getWidget()
-{
-	return box;
 }
 
 void PrivateMessage::addMessage_gui(string message)
@@ -97,7 +80,7 @@ void PrivateMessage::addLine_gui(string message)
 	bool setBottom;
 	string line = "";
 
-	adj = gtk_scrolled_window_get_vadjustment(scroll);
+	adj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(getWidget("scroll")));
 	setBottom = gtk_adjustment_get_value(adj) >= (adj->upper - adj->page_size);
 
 	if (BOOLSETTING(TIME_STAMPS))
@@ -119,7 +102,7 @@ void PrivateMessage::addLine_gui(string message)
 	{
 		gtk_text_buffer_get_end_iter(buffer, &iter);
 		gtk_text_buffer_move_mark(buffer, mark, &iter);
-		gtk_text_view_scroll_to_mark(text, mark, 0, FALSE, 0, 0);
+		gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(getWidget("text")), mark, 0, FALSE, 0, 0);
 	}
 
 	if (BOOLSETTING(BOLD_PM))

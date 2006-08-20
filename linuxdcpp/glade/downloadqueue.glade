@@ -3,7 +3,7 @@
 
 <glade-interface>
 
-<widget class="GtkWindow" id="downloadQueueWindow">
+<widget class="GtkWindow" id="window">
   <property name="width_request">640</property>
   <property name="height_request">480</property>
   <property name="visible">True</property>
@@ -21,7 +21,7 @@
   <property name="focus_on_map">True</property>
 
   <child>
-    <widget class="GtkVBox" id="downloadQueueBox">
+    <widget class="GtkVBox" id="mainBox">
       <property name="border_width">4</property>
       <property name="visible">True</property>
       <property name="homogeneous">False</property>

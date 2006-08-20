@@ -39,7 +39,6 @@ class Settings:
 
 	private:
 		// GUI functions
-		GtkWidget* widget(std::string name);
 		void addOption_gui(GtkListStore *store, std::string name, SettingsManager::IntSetting setting);
 		void initPersonal_gui();
 		void initConnection_gui();
@@ -95,7 +94,6 @@ class Settings:
 		void shareHidden_client(bool show);
 		void addShare_client(std::string path, std::string name);
 
-		GladeXML *xml;
 		GtkComboBox *connectionSpeedComboBox;
 		GtkListStore *downloadToStore, *publicListStore, *queueStore,
 			*shareStore, *appearanceStore, *colorStore, *windowStore1,

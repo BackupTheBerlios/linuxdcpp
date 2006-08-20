@@ -33,9 +33,6 @@ class FinishedTransfers:
 		FinishedTransfers(std::string title);
 		~FinishedTransfers();
 
-		// From BookEntry
-		GtkWidget *getWidget();
-
 	private:
 		// GUI functions
 		void updateList_gui(FinishedItem::List& list);
@@ -53,17 +50,12 @@ class FinishedTransfers:
 		virtual void on(FinishedManagerListener::AddedDl, FinishedItem* entry) throw();
 		virtual void on(FinishedManagerListener::AddedUl, FinishedItem* entry) throw();
 
-		GtkWidget *mainBox;
 		GtkListStore *transferStore;
 		TreeView transferView;
 		GtkTreeSelection *transferSelection;
-		GtkStatusbar *totalItems, *totalSize, *averageSpeed;
-		GtkDialog *openWithDialog;
-		GtkEntry *openWithEntry;
 		bool isUpload;
 		int items;
 		int64_t totalBytes, totalTime;
-		GtkMenu *menu;
 };
 
 #else

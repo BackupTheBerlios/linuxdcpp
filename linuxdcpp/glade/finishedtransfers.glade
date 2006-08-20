@@ -3,7 +3,7 @@
 
 <glade-interface>
 
-<widget class="GtkWindow" id="finishedTransfers">
+<widget class="GtkWindow" id="window">
   <property name="width_request">800</property>
   <property name="height_request">600</property>
   <property name="title" translatable="yes">FinishedTransfers</property>
@@ -19,7 +19,7 @@
   <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
 
   <child>
-    <widget class="GtkVBox" id="mBox">
+    <widget class="GtkVBox" id="mainBox">
       <property name="border_width">4</property>
       <property name="visible">True</property>
       <property name="homogeneous">False</property>

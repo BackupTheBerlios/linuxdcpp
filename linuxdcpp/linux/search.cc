@@ -22,58 +22,31 @@ bool Search::onlyOp = FALSE;
 GtkTreeModel* Search::searchEntriesModel = NULL;
 
 Search::Search():
-	BookEntry("Search")
+	BookEntry("Search", "search.glade")
 {
 	ClientManager::getInstance()->addListener(this);
 	SearchManager::getInstance()->addListener(this);
 
-	GladeXML *xml = getGladeXML("search.glade");
+	// Initialize the search entries combo box
+	if (searchEntriesModel == NULL)
+		searchEntriesModel = gtk_combo_box_get_model(GTK_COMBO_BOX(getWidget("comboboxentrySearch")));
+	gtk_combo_box_set_model(GTK_COMBO_BOX(getWidget("comboboxentrySearch")), searchEntriesModel);
+	searchEntry = gtk_bin_get_child(GTK_BIN(getWidget("comboboxentrySearch")));
 
-	// Initialize window
-	GtkWidget *window = glade_xml_get_widget(xml, "searchWindow");
-	mainBox = glade_xml_get_widget(xml, "mainBox");
-	gtk_widget_ref(mainBox);
-	gtk_container_remove(GTK_CONTAINER(window), mainBox);
-	gtk_widget_destroy(window);
-
-	// Get widgets from glade.
-	searchItems["Search"] = glade_xml_get_widget(xml, "comboboxentrySearch");
-	if (!searchEntriesModel)
-		searchEntriesModel = gtk_combo_box_get_model(GTK_COMBO_BOX(searchItems["Search"]));
-	gtk_combo_box_set_model(GTK_COMBO_BOX(searchItems["Search"]), searchEntriesModel);
-	searchItems["Entry"] = gtk_bin_get_child(GTK_BIN(searchItems["Search"]));
-	g_signal_connect(G_OBJECT(searchItems["Entry"]), "key-press-event", G_CALLBACK(onSearchEntryKeyPressed_gui), (gpointer)this);
-	searchItems["Difference"] = glade_xml_get_widget(xml, "comboboxSize");
-	searchItems["Size"] = glade_xml_get_widget(xml, "entrySize");
-	searchItems["Unit"] = glade_xml_get_widget(xml, "comboboxUnit");
-	searchItems["File type"] = glade_xml_get_widget(xml, "comboboxFile");
-	searchItems["Button"] = glade_xml_get_widget(xml, "buttonSearch");
-	g_signal_connect(G_OBJECT(searchItems["Button"]), "clicked", G_CALLBACK(onSearchButtonClicked_gui), (gpointer)this);
-	searchItems["Status1"] = glade_xml_get_widget(xml, "statusbar1");
-	searchItems["Status2"] = glade_xml_get_widget(xml, "statusbar2");
-	searchItems["Status3"] = glade_xml_get_widget(xml, "statusbar3");
-
-	// Initialize directory chooser dialog
-	dirChooserDialog = glade_xml_get_widget(xml, "dirChooserDialog");
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dirChooserDialog), SETTING(DOWNLOAD_DIRECTORY).c_str());
-	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dirChooserDialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	// Configure the dialog
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(getWidget("dirChooserDialog")), SETTING(DOWNLOAD_DIRECTORY).c_str());
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("dirChooserDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	// Initialize check button options.
-	searchItems["Slots"] = glade_xml_get_widget(xml, "checkbuttonSlots");
 	onlyFree = BOOLSETTING(SEARCH_ONLY_FREE_SLOTS);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(searchItems["Slots"]), onlyFree);
-	g_signal_connect(G_OBJECT(searchItems["Slots"]), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
-	searchItems["TTH"] = glade_xml_get_widget(xml, "checkbuttonTTH");
 	onlyTTH = BOOLSETTING(SEARCH_ONLY_TTH);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(searchItems["TTH"]), onlyTTH);
-	g_signal_connect(G_OBJECT(searchItems["TTH"]), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
-	searchItems["Op"] = glade_xml_get_widget(xml, "checkbuttonOp");
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(searchItems["Op"]), onlyOp);
-	g_signal_connect(G_OBJECT(searchItems["Op"]), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("checkbuttonSlots")), onlyFree);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("checkbuttonTTH")), onlyTTH);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("checkbuttonOp")), onlyOp);
 
-	gtk_combo_box_set_active(GTK_COMBO_BOX(searchItems["Difference"]), 1);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(searchItems["Unit"]), 2);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(searchItems["File type"]), 0);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(getWidget("comboboxSize")), 1);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(getWidget("comboboxUnit")), 2);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(getWidget("comboboxFile")), 0);
 
 	// Load icons
 	iconFile = gtk_icon_theme_load_icon(gtk_icon_theme_get_default(),
@@ -82,7 +55,7 @@ Search::Search():
 		GTK_STOCK_DIRECTORY, 16, (GtkIconLookupFlags)0, NULL);
 
 	// Initialize hub list treeview
-	hubView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "treeviewHubs")));
+	hubView.setView(GTK_TREE_VIEW(getWidget("treeviewHubs")));
 	hubView.insertColumn("Search", G_TYPE_BOOLEAN, TreeView::BOOL, -1);
 	hubView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, -1);
 	hubView.insertHiddenColumn("Url", G_TYPE_STRING);
@@ -95,12 +68,11 @@ Search::Search():
 	GtkTreeViewColumn *col = gtk_tree_view_get_column(hubView.get(), hubView.col("Search"));
 	GList *list = gtk_tree_view_column_get_cell_renderers(col);
 	GtkCellRenderer *renderer = (GtkCellRenderer *)g_list_nth_data(list, 0);
-	g_signal_connect(renderer, "toggled", G_CALLBACK(onToggledClicked_gui), (gpointer)this);
 	gtk_tree_view_column_add_attribute(col, renderer, "sensitive", hubView.col("Editable"));
 	g_list_free(list);
 
 	// Initialize search result treeview
-	resultView.setView(GTK_TREE_VIEW(glade_xml_get_widget(xml, "treeviewResult")), TRUE, "search");
+	resultView.setView(GTK_TREE_VIEW(getWidget("treeviewResult")), TRUE, "search");
 	resultView.insertColumn("Filename", G_TYPE_STRING, TreeView::PIXBUF_STRING, 250, "Icon");
 	resultView.insertColumn("Nick", G_TYPE_STRING, TreeView::STRING, 100);
 	resultView.insertColumn("Type", G_TYPE_STRING, TreeView::STRING, 50);
@@ -130,36 +102,26 @@ Search::Search():
 	resultView.setSortColumn_gui("Filename", "File Order");
 	gtk_tree_view_set_fixed_height_mode(resultView.get(), TRUE);
 
-	g_signal_connect(G_OBJECT(resultView.get()), "button-press-event", G_CALLBACK(onButtonPressed_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(resultView.get()), "button-release-event", G_CALLBACK(onButtonReleased_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(resultView.get()), "key-release-event", G_CALLBACK(onKeyReleased_gui), (gpointer)this);
-
-	// Initialize popup menu
-	mainMenu = GTK_MENU(glade_xml_get_widget(xml, "mainMenu"));
-	downloadMenu = GTK_MENU(glade_xml_get_widget(xml, "downloadMenu"));
-	downloadDirMenu = GTK_MENU(glade_xml_get_widget(xml, "downloadDirMenu"));
-	menuItems["Download"] = glade_xml_get_widget(xml, "downloadItem");
-	g_signal_connect(G_OBJECT(menuItems["Download"]), "activate", G_CALLBACK(onDownloadClicked_gui), (gpointer)this);
-	menuItems["DownloadTo"] = glade_xml_get_widget(xml, "downloadToItem");
-	menuItems["DownloadWholeDir"] = glade_xml_get_widget(xml, "downloadWholeDirItem");
-	g_signal_connect(G_OBJECT(menuItems["DownloadWholeDir"]), "activate", G_CALLBACK(onDownloadDirClicked_gui), (gpointer)this);
-	menuItems["DownloadWholeDirTo"] = glade_xml_get_widget(xml, "downloadWholeDirToItem");
-	menuItems["SearchByTTH"] = glade_xml_get_widget(xml, "searchByTTHItem");
-	g_signal_connect(G_OBJECT(menuItems["SearchByTTH"]), "activate", G_CALLBACK(onSearchByTTHClicked_gui), (gpointer)this);
-	menuItems["GetFileList"] = glade_xml_get_widget(xml, "getFileListItem");
-	g_signal_connect(G_OBJECT(menuItems["GetFileList"]), "activate", G_CALLBACK(onGetFileListClicked_gui), (gpointer)this);
-	menuItems["MatchQueue"] = glade_xml_get_widget(xml, "matchQueueItem");
-	g_signal_connect(G_OBJECT(menuItems["MatchQueue"]), "activate", G_CALLBACK(onMatchQueueClicked_gui), (gpointer)this);
-	menuItems["SendPrivateMessage"] = glade_xml_get_widget(xml, "sendPrivateMessageItem");
-	g_signal_connect(G_OBJECT(menuItems["SendPrivateMessage"]), "activate", G_CALLBACK(onPrivateMessageClicked_gui), (gpointer)this);
-	menuItems["AddToFavorites"] = glade_xml_get_widget(xml, "addToFavoritesItem");
-	g_signal_connect(G_OBJECT(menuItems["AddToFavorites"]), "activate", G_CALLBACK(onAddFavoriteUserClicked_gui), (gpointer)this);
-	menuItems["GrantExtraSlot"] = glade_xml_get_widget(xml, "grantExtraSlotItem");
-	g_signal_connect(G_OBJECT(menuItems["GrantExtraSlot"]), "activate", G_CALLBACK(onGrantExtraSlotClicked_gui), (gpointer)this);
-	menuItems["RemoveUserFromQueue"] = glade_xml_get_widget(xml, "removeUserFromQueueITem");
-	g_signal_connect(G_OBJECT(menuItems["RemoveUserFromQueue"]), "activate", G_CALLBACK(onRemoveUserFromQueueClicked_gui), (gpointer)this);
-	menuItems["Remove"] = glade_xml_get_widget(xml, "removeItem");
-	g_signal_connect(G_OBJECT(menuItems["Remove"]), "activate", G_CALLBACK(onRemoveClicked_gui), (gpointer)this);
+	// Connect the signals to their callback functions.
+	g_signal_connect(getWidget("checkbuttonSlots"), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
+	g_signal_connect(getWidget("checkbuttonTTH"), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
+	g_signal_connect(getWidget("checkbuttonOp"), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
+	g_signal_connect(renderer, "toggled", G_CALLBACK(onToggledClicked_gui), (gpointer)this);
+	g_signal_connect(resultView.get(), "button-press-event", G_CALLBACK(onButtonPressed_gui), (gpointer)this);
+	g_signal_connect(resultView.get(), "button-release-event", G_CALLBACK(onButtonReleased_gui), (gpointer)this);
+	g_signal_connect(resultView.get(), "key-release-event", G_CALLBACK(onKeyReleased_gui), (gpointer)this);
+	g_signal_connect(searchEntry, "key-press-event", G_CALLBACK(onSearchEntryKeyPressed_gui), (gpointer)this);
+	g_signal_connect(getWidget("buttonSearch"), "clicked", G_CALLBACK(onSearchButtonClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("downloadItem"), "activate", G_CALLBACK(onDownloadClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("downloadWholeDirItem"), "activate", G_CALLBACK(onDownloadDirClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("searchByTTHItem"), "activate", G_CALLBACK(onSearchByTTHClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("getFileListItem"), "activate", G_CALLBACK(onGetFileListClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("matchQueueItem"), "activate", G_CALLBACK(onMatchQueueClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("sendPrivateMessageItem"), "activate", G_CALLBACK(onPrivateMessageClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("addToFavoritesItem"), "activate", G_CALLBACK(onAddFavoriteUserClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("grantExtraSlotItem"), "activate", G_CALLBACK(onGrantExtraSlotClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("removeUserFromQueueITem"), "activate", G_CALLBACK(onRemoveUserFromQueueClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("removeItem"), "activate", G_CALLBACK(onRemoveClicked_gui), (gpointer)this);
 
 	initHubs_gui();
 }
@@ -168,7 +130,7 @@ Search::~Search()
 {
 	ClientManager::getInstance()->removeListener(this);
 	SearchManager::getInstance()->removeListener(this);
-	gtk_widget_destroy(dirChooserDialog);
+	gtk_widget_destroy(getWidget("dirChooserDialog"));
 	clearList_gui();
 
 	if (iconFile)
@@ -177,17 +139,12 @@ Search::~Search()
 		g_object_unref(iconDirectory);
 }
 
-GtkWidget *Search::getWidget()
-{
-	return mainBox;
-}
-
 void Search::putValue_gui(const string &str, int64_t size, SearchManager::SizeModes mode, SearchManager::TypeModes type)
 {
-	gtk_entry_set_text(GTK_ENTRY(searchItems["Entry"]), str.c_str());
-	gtk_entry_set_text(GTK_ENTRY(searchItems["Size"]), Util::toString(size).c_str());
-	gtk_combo_box_set_active(GTK_COMBO_BOX(searchItems["Difference"]), (int)mode);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(searchItems["File type"]), (int)type);
+	gtk_entry_set_text(GTK_ENTRY(searchEntry), str.c_str());
+	gtk_entry_set_text(GTK_ENTRY(getWidget("entrySize")), Util::toString(size).c_str());
+	gtk_combo_box_set_active(GTK_COMBO_BOX(getWidget("comboboxSize")), (int)mode);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(getWidget("comboboxFile")), (int)type);
 
 	search_gui();
 }
@@ -279,30 +236,30 @@ void Search::buildDownloadMenu_gui()
 		g_list_free(list);
 
 		if (result->getTTH())
-			gtk_widget_set_sensitive(menuItems["SearchByTTH"], TRUE);
+			gtk_widget_set_sensitive(getWidget("searchByTTHItem"), TRUE);
 		else
-			gtk_widget_set_sensitive(menuItems["SearchByTTH"], FALSE);
+			gtk_widget_set_sensitive(getWidget("searchByTTHItem"), FALSE);
 
-		gtk_widget_set_sensitive(menuItems["GetFileList"], TRUE);
-		gtk_widget_set_sensitive(menuItems["SendPrivateMessage"], TRUE);
-		gtk_widget_set_sensitive(menuItems["AddToFavorites"], TRUE);
-		gtk_widget_set_sensitive(menuItems["MatchQueue"], TRUE);
-		gtk_widget_set_sensitive(menuItems["GrantExtraSlot"], TRUE);
-		gtk_widget_set_sensitive(menuItems["RemoveUserFromQueue"], TRUE);
+		gtk_widget_set_sensitive(getWidget("getFileListItem"), TRUE);
+		gtk_widget_set_sensitive(getWidget("sendPrivateMessageItem"), TRUE);
+		gtk_widget_set_sensitive(getWidget("addToFavoritesItem"), TRUE);
+		gtk_widget_set_sensitive(getWidget("matchQueueItem"), TRUE);
+		gtk_widget_set_sensitive(getWidget("grantExtraSlotItem"), TRUE);
+		gtk_widget_set_sensitive(getWidget("removeUserFromQueueITem"), TRUE);
 	}
 	else
 	{
-		gtk_widget_set_sensitive(menuItems["SearchByTTH"], FALSE);
-		gtk_widget_set_sensitive(menuItems["GetFileList"], FALSE);
-		gtk_widget_set_sensitive(menuItems["SendPrivateMessage"], FALSE);
-		gtk_widget_set_sensitive(menuItems["AddToFavorites"], FALSE);
-		gtk_widget_set_sensitive(menuItems["MatchQueue"], FALSE);
-		gtk_widget_set_sensitive(menuItems["GrantExtraSlot"], FALSE);
-		gtk_widget_set_sensitive(menuItems["RemoveUserFromQueue"], FALSE);
+		gtk_widget_set_sensitive(getWidget("searchByTTHItem"), FALSE);
+		gtk_widget_set_sensitive(getWidget("getFileListItem"), FALSE);
+		gtk_widget_set_sensitive(getWidget("sendPrivateMessageItem"), FALSE);
+		gtk_widget_set_sensitive(getWidget("addToFavoritesItem"), FALSE);
+		gtk_widget_set_sensitive(getWidget("matchQueueItem"), FALSE);
+		gtk_widget_set_sensitive(getWidget("grantExtraSlotItem"), FALSE);
+		gtk_widget_set_sensitive(getWidget("removeUserFromQueueITem"), FALSE);
 	}
 
 	// Build "Download to..." submenu
-	gtk_container_foreach(GTK_CONTAINER(downloadMenu), (GtkCallback)gtk_widget_destroy, NULL);
+	gtk_container_foreach(GTK_CONTAINER(getWidget("downloadMenu")), (GtkCallback)gtk_widget_destroy, NULL);
 
 	StringPairList spl = FavoriteManager::getInstance()->getFavoriteDirs();
 	if (spl.size() > 0)
@@ -312,18 +269,18 @@ void Search::buildDownloadMenu_gui()
 			menuItem = gtk_menu_item_new_with_label(i->second.c_str());
 			g_object_set_data_full(G_OBJECT(menuItem), "fav", g_strdup(i->first.c_str()), g_free);
 			g_signal_connect(G_OBJECT(menuItem), "activate", G_CALLBACK(onDownloadFavoriteClicked_gui), (gpointer)this);
-			gtk_menu_shell_append(GTK_MENU_SHELL(downloadMenu), menuItem);
+			gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadMenu")), menuItem);
 		}
 		menuItem = gtk_separator_menu_item_new();
-		gtk_menu_shell_append(GTK_MENU_SHELL(downloadMenu), menuItem);
+		gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadMenu")), menuItem);
 	}
 
 	menuItem = gtk_menu_item_new_with_label("Browse...");
 	g_signal_connect(G_OBJECT(menuItem), "activate", G_CALLBACK(onDownloadToClicked_gui), (gpointer)this);
-	gtk_menu_shell_append(GTK_MENU_SHELL(downloadMenu), menuItem);
+	gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadMenu")), menuItem);
 
 	// Build "Download whole directory to..." submenu
-	gtk_container_foreach(GTK_CONTAINER(downloadDirMenu), (GtkCallback)gtk_widget_destroy, NULL);
+	gtk_container_foreach(GTK_CONTAINER(getWidget("downloadDirMenu")), (GtkCallback)gtk_widget_destroy, NULL);
 
 	spl.clear();
 	spl = FavoriteManager::getInstance()->getFavoriteDirs();
@@ -334,28 +291,28 @@ void Search::buildDownloadMenu_gui()
 			menuItem = gtk_menu_item_new_with_label(i->second.c_str());
 			g_object_set_data_full(G_OBJECT(menuItem), "fav", g_strdup(i->first.c_str()), g_free);
 			g_signal_connect(G_OBJECT(menuItem), "activate", G_CALLBACK(onDownloadFavoriteDirClicked_gui), (gpointer)this);
-			gtk_menu_shell_append(GTK_MENU_SHELL(downloadDirMenu), menuItem);
+			gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadDirMenu")), menuItem);
 		}
 		menuItem = gtk_separator_menu_item_new();
-		gtk_menu_shell_append(GTK_MENU_SHELL(downloadDirMenu), menuItem);
+		gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadDirMenu")), menuItem);
 	}
 
 	menuItem = gtk_menu_item_new_with_label("Browse...");
 	g_signal_connect(G_OBJECT(menuItem), "activate", G_CALLBACK(onDownloadDirToClicked_gui), (gpointer)this);
-	gtk_menu_shell_append(GTK_MENU_SHELL(downloadDirMenu), menuItem);
+	gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadDirMenu")), menuItem);
 }
 
 void Search::popupMenu_gui()
 {
 	buildDownloadMenu_gui();
-	gtk_menu_popup(mainMenu, NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
-	gtk_widget_show_all(GTK_WIDGET(mainMenu));
+	gtk_menu_popup(GTK_MENU(getWidget("mainMenu")), NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
+	gtk_widget_show_all(getWidget("mainMenu"));
 }
 
 void Search::setStatus_gui(string statusBar, string text)
 {
-	gtk_statusbar_pop(GTK_STATUSBAR(searchItems[statusBar]), 0);
-	gtk_statusbar_push(GTK_STATUSBAR(searchItems[statusBar]), 0, text.c_str());
+	gtk_statusbar_pop(GTK_STATUSBAR(getWidget(statusBar)), 0);
+	gtk_statusbar_push(GTK_STATUSBAR(getWidget(statusBar)), 0, text.c_str());
 }
 
 void Search::search_gui()
@@ -363,7 +320,7 @@ void Search::search_gui()
 	StringList clients;
 	GtkTreeIter iter;
 
-	string text = gtk_entry_get_text(GTK_ENTRY(searchItems["Entry"]));
+	string text = gtk_entry_get_text(GTK_ENTRY(searchEntry));
 	if (text.empty())
 		return;
 
@@ -378,9 +335,9 @@ void Search::search_gui()
 	if (clients.size() < 1)
 		return;
 
-	double lsize = Util::toDouble(gtk_entry_get_text(GTK_ENTRY(searchItems["Size"])));
+	double lsize = Util::toDouble(gtk_entry_get_text(GTK_ENTRY(getWidget("entrySize"))));
 
-	switch (gtk_combo_box_get_active(GTK_COMBO_BOX(searchItems["Unit"])))
+	switch (gtk_combo_box_get_active(GTK_COMBO_BOX(getWidget("comboboxUnit"))))
 	{
 		case 1:
 			lsize *= 1024.0;
@@ -404,11 +361,11 @@ void Search::search_gui()
 			text += *si + ' ';
 	text = text.substr(0, std::max(text.size(), static_cast<string::size_type>(1)) - 1);
 
-	SearchManager::SizeModes mode((SearchManager::SizeModes)gtk_combo_box_get_active(GTK_COMBO_BOX(searchItems["Difference"])));
+	SearchManager::SizeModes mode((SearchManager::SizeModes)gtk_combo_box_get_active(GTK_COMBO_BOX(getWidget("comboboxSize"))));
 	if (llsize == 0)
 		mode = SearchManager::SIZE_DONTCARE;
 
-	int ftype = gtk_combo_box_get_active(GTK_COMBO_BOX(searchItems["File type"]));
+	int ftype = gtk_combo_box_get_active(GTK_COMBO_BOX(getWidget("comboboxFile")));
 	isHash = (ftype == SearchManager::TYPE_TTH);
 
 	// Add new searches to the dropdown list
@@ -433,9 +390,9 @@ void Search::search_gui()
 
 	droppedResult = 0;
 	searchHits = 0;
-	setStatus_gui("Status1", "Searching for " + text + " ...");
-	setStatus_gui("Status2", "0 items");
-	setStatus_gui("Status3", "0 filtered");
+	setStatus_gui("statusbar1", "Searching for " + text + " ...");
+	setStatus_gui("statusbar2", "0 items");
+	setStatus_gui("statusbar3", "0 filtered");
 	setLabel_gui("Search: " + text);
 
 	if (SearchManager::getInstance()->okToSearch())
@@ -443,15 +400,15 @@ void Search::search_gui()
 		SearchManager::getInstance()->search(clients, text, llsize, (SearchManager::TypeModes)ftype, mode, "manual");
 
 		if (BOOLSETTING(CLEAR_SEARCH)) // Only clear if the search was sent.
-			gtk_entry_set_text(GTK_ENTRY(searchItems["Entry"]), "");
+			gtk_entry_set_text(GTK_ENTRY(searchEntry), "");
 	}
 	else
 	{
 		int32_t waitFor = SearchManager::getInstance()->timeToSearch();
 		string line = "Searching too soon, retry in " + Util::toString(waitFor) + " s";
-		setStatus_gui("Status1", line);
-		setStatus_gui("Status2", "");
-		setStatus_gui("Status3", "");
+		setStatus_gui("statusbar1", line);
+		setStatus_gui("statusbar2", "");
+		setStatus_gui("statusbar3", "");
 
 		///@todo: add a timer to change the status line(countdown).
 	}
@@ -541,7 +498,7 @@ void Search::addResult_gui(SearchResult *result)
 		-1);
 
 	++searchHits;
-	setStatus_gui("Status2", Util::toString(searchHits) + " items");
+	setStatus_gui("statusbar2", Util::toString(searchHits) + " items");
 
 	if (BOOLSETTING(BOLD_SEARCH))
 		setBold_gui();
@@ -609,7 +566,7 @@ gboolean Search::onSearchEntryKeyPressed_gui(GtkWidget *widget, GdkEventKey *eve
 	}
 	else if (event->keyval == GDK_Down || event->keyval == GDK_KP_Down)
 	{
-		gtk_combo_box_popup(GTK_COMBO_BOX(s->searchItems["Search"]));
+		gtk_combo_box_popup(GTK_COMBO_BOX(s->getWidget("comboboxentrySearch")));
 		return TRUE;
 	}
 
@@ -630,7 +587,7 @@ void Search::onButtonToggled_gui(GtkToggleButton *button, gpointer data)
 	gboolean valid;
 	SearchResult *result;
 
-	if (button == GTK_TOGGLE_BUTTON(s->searchItems["Slots"]))
+	if (button == GTK_TOGGLE_BUTTON(s->getWidget("checkbuttonSlots")))
 	{
 		s->onlyFree = gtk_toggle_button_get_active(button);
 		if (s->onlyFree != BOOLSETTING(SEARCH_ONLY_FREE_SLOTS))
@@ -650,7 +607,7 @@ void Search::onButtonToggled_gui(GtkToggleButton *button, gpointer data)
 			}
 		}
 	}
-	else if (button == GTK_TOGGLE_BUTTON(s->searchItems["TTH"]))
+	else if (button == GTK_TOGGLE_BUTTON(s->getWidget("checkbuttonTTH")))
 	{
 		s->onlyTTH = gtk_toggle_button_get_active(button);
 		if (s->onlyTTH != BOOLSETTING(SEARCH_ONLY_TTH))
@@ -792,8 +749,8 @@ void Search::onDownloadToClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	Search *s = (Search *)data;
 
-	gint response = gtk_dialog_run(GTK_DIALOG(s->dirChooserDialog));
-	gtk_widget_hide(s->dirChooserDialog);
+	gint response = gtk_dialog_run(GTK_DIALOG(s->getWidget("dirChooserDialog")));
+	gtk_widget_hide(s->getWidget("dirChooserDialog"));
 
 	if (response == GTK_RESPONSE_OK)
 	{
@@ -807,7 +764,7 @@ void Search::onDownloadToClicked_gui(GtkMenuItem *item, gpointer data)
 		GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
 		gint count = gtk_tree_selection_count_selected_rows(s->selection);
 
-		string target = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->dirChooserDialog));
+		string target = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
 		if (target[target.length() - 1] != PATH_SEPARATOR)
 			target += PATH_SEPARATOR;
 
@@ -885,8 +842,8 @@ void Search::onDownloadDirToClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	Search *s = (Search *)data;
 
-	gint response = gtk_dialog_run(GTK_DIALOG(s->dirChooserDialog));
-	gtk_widget_hide(s->dirChooserDialog);
+	gint response = gtk_dialog_run(GTK_DIALOG(s->getWidget("dirChooserDialog")));
+	gtk_widget_hide(s->getWidget("dirChooserDialog"));
 
 	if (response == GTK_RESPONSE_OK)
 	{
@@ -900,7 +857,7 @@ void Search::onDownloadDirToClicked_gui(GtkMenuItem *item, gpointer data)
 		GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
 		gint count = gtk_tree_selection_count_selected_rows(s->selection);
 
-		string target = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->dirChooserDialog));
+		string target = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
 		if (target[target.length() - 1] != PATH_SEPARATOR)
 			target += PATH_SEPARATOR;
 
@@ -1217,20 +1174,20 @@ void Search::on(SearchManagerListener::SR, SearchResult *result) throw()
 			{
 				droppedResult++;
 				typedef Func2<Search, string, string> F2;
-				F2 *func = new F2(this, &Search::setStatus_gui, "Status3", Util::toString(droppedResult) + " filtered");
+				F2 *func = new F2(this, &Search::setStatus_gui, "statusbar3", Util::toString(droppedResult) + " filtered");
 				WulforManager::get()->dispatchGuiFunc(func);
 				return;
 			}
 		}
 	}
 
-	// Reject results without free slots if selected, but always show directories
+	// Reject results without free slots or TTH (excluding directories) if selected
 	if ((onlyFree && result->getFreeSlots() < 1) ||
 		(onlyTTH && result->getTTH() == NULL && result->getType() != SearchResult::TYPE_DIRECTORY))
 	{
 		droppedResult++;
 		typedef Func2<Search, string, string> F2;
-		F2 *func = new F2(this, &Search::setStatus_gui, "Status3", Util::toString(droppedResult) + " filtered");
+		F2 *func = new F2(this, &Search::setStatus_gui, "statusbar3", Util::toString(droppedResult) + " filtered");
 		WulforManager::get()->dispatchGuiFunc(func);
 		return;
 	}
