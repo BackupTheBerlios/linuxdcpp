@@ -3,6 +3,7 @@ gui_files = [
 	'dialogentry.cc',
 	'downloadqueue.cc',
 	'eggtrayicon.c',
+	'entry.cc',
 	'favoritehubs.cc',
 	'finishedtransfers.cc',
 	'hashdialog.cc',

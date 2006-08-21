@@ -17,9 +17,10 @@
  */
 
 #include "privatemessage.hh"
-#include "wulformanager.hh"
 
-#include <algorithm>
+#include <client/ClientManager.h>
+#include <client/FavoriteManager.h>
+#include "wulformanager.hh"
 
 using namespace std;
 

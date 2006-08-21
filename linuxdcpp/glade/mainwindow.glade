@@ -43,7 +43,7 @@
 		<widget class="GtkMenu" id="menuitem1_menu">
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="open_file_list_1">
+		    <widget class="GtkImageMenuItem" id="openFileListMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Open file list</property>
 		      <property name="use_underline">True</property>
@@ -64,7 +64,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkMenuItem" id="open_own_list1">
+		    <widget class="GtkMenuItem" id="openOwnListMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Open own list</property>
 		      <property name="use_underline">True</property>
@@ -72,7 +72,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="refresh_file_list1">
+		    <widget class="GtkImageMenuItem" id="refreshFileListMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Refresh file list</property>
 		      <property name="use_underline">True</property>
@@ -93,7 +93,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkMenuItem" id="open_downloads_directory1">
+		    <widget class="GtkMenuItem" id="openDownloadsDirectoryMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Open downloads directory</property>
 		      <property name="use_underline">True</property>
@@ -107,7 +107,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="quick_connect1">
+		    <widget class="GtkImageMenuItem" id="quickConnectMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Quick connect</property>
 		      <property name="use_underline">True</property>
@@ -128,7 +128,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkMenuItem" id="follow_last_redirect1">
+		    <widget class="GtkMenuItem" id="followLastRedirectMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Follow last redirect</property>
 		      <property name="use_underline">True</property>
@@ -137,7 +137,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkMenuItem" id="reconnect1">
+		    <widget class="GtkMenuItem" id="reconnectMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Reconnect</property>
 		      <property name="use_underline">True</property>
@@ -152,7 +152,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="settings1">
+		    <widget class="GtkImageMenuItem" id="settingsMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label">gtk-preferences</property>
 		      <property name="use_stock">True</property>
@@ -167,7 +167,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="close1">
+		    <widget class="GtkImageMenuItem" id="closeMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label">gtk-close</property>
 		      <property name="use_stock">True</property>
@@ -176,7 +176,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="exit1">
+		    <widget class="GtkImageMenuItem" id="exitMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label">gtk-quit</property>
 		      <property name="use_stock">True</property>
@@ -198,7 +198,7 @@
 		<widget class="GtkMenu" id="menuitem2_menu">
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="public_hubs1">
+		    <widget class="GtkImageMenuItem" id="publicHubsMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Public Hubs</property>
 		      <property name="use_underline">True</property>
@@ -219,7 +219,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="download_queue1">
+		    <widget class="GtkImageMenuItem" id="downloadQueueMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Download Queue</property>
 		      <property name="use_underline">True</property>
@@ -240,7 +240,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="finished_downloads1">
+		    <widget class="GtkImageMenuItem" id="finishedDownloadsMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Finished Downloads</property>
 		      <property name="use_underline">True</property>
@@ -260,7 +260,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="finished_uploads1">
+		    <widget class="GtkImageMenuItem" id="finishedUploadsMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Finished Uploads</property>
 		      <property name="use_underline">True</property>
@@ -280,7 +280,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="favorite_hubs1">
+		    <widget class="GtkImageMenuItem" id="favoriteHubsMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Favorite Hubs</property>
 		      <property name="use_underline">True</property>
@@ -301,7 +301,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkMenuItem" id="favorite_users1">
+		    <widget class="GtkMenuItem" id="favoriteUsersMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Favorite Users</property>
 		      <property name="use_underline">True</property>
@@ -310,7 +310,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="search1">
+		    <widget class="GtkImageMenuItem" id="searchMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Search</property>
 		      <property name="use_underline">True</property>
@@ -331,7 +331,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkMenuItem" id="adl_search1">
+		    <widget class="GtkMenuItem" id="adlSearchMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">ADL Search</property>
 		      <property name="use_underline">True</property>
@@ -339,7 +339,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkMenuItem" id="search_spy1">
+		    <widget class="GtkMenuItem" id="searchSpyMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Search Spy</property>
 		      <property name="use_underline">True</property>
@@ -347,7 +347,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkMenuItem" id="network_statistics1">
+		    <widget class="GtkMenuItem" id="networkStatisticsMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Network Statistics</property>
 		      <property name="use_underline">True</property>
@@ -355,7 +355,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="indexing_progress1">
+		    <widget class="GtkImageMenuItem" id="indexingProgressMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Indexing Progress</property>
 		      <property name="use_underline">True</property>
@@ -403,7 +403,7 @@
 		<widget class="GtkMenu" id="help1_menu">
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="about">
+		    <widget class="GtkImageMenuItem" id="aboutMenuItem">
 		      <property name="visible">True</property>
 		      <property name="label">gtk-about</property>
 		      <property name="use_stock">True</property>

@@ -17,6 +17,7 @@
  */
 
 #include "hashdialog.hh"
+#include <client/HashManager.h>
 #include "wulformanager.hh"
 
 Hash::Hash() : DialogEntry("Hash", "hash.glade")

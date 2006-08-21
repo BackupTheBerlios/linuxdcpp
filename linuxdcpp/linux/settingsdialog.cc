@@ -17,6 +17,9 @@
  */
 
 #include "settingsdialog.hh"
+
+#include <client/FavoriteManager.h>
+#include <client/ShareManager.h>
 #include "wulformanager.hh"
 
 using namespace std;

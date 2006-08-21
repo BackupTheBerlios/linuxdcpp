@@ -18,6 +18,11 @@
 
 #include "search.hh"
 
+#include <client/ClientManager.h>
+#include <client/FavoriteManager.h>
+#include <client/StringTokenizer.h>
+#include "wulformanager.hh"
+
 bool Search::onlyOp = FALSE;
 GtkTreeModel* Search::searchEntriesModel = NULL;
 

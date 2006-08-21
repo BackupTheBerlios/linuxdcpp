@@ -19,22 +19,15 @@
 #ifndef WULFOR_SEARCH_HH
 #define WULFOR_SEARCH_HH
 
-#include "bookentry.hh"
-#include "treeview.hh"
-#include "wulformanager.hh"
-
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
-#include <client/Client.h>
-#include <client/ClientManagerListener.h>
-#include <client/CriticalSection.h>
-#include <client/FavoriteManager.h>
+#include <client/ClientManager.h>
 #include <client/QueueManager.h>
 #include <client/SearchManager.h>
-#include <client/StringTokenizer.h>
-#include <client/TimerManager.h>
 #include <client/User.h>
-#include <client/Util.h>
+
+#include "bookentry.hh"
+#include "treeview.hh"
 
 class Search:
 	public BookEntry,

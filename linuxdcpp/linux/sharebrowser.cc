@@ -18,6 +18,13 @@
 
 #include "sharebrowser.hh"
 
+#include <client/FavoriteManager.h>
+#include <client/ShareManager.h>
+#include "search.hh"
+#include "wulformanager.hh"
+
+using namespace std;
+
 ShareBrowser::ShareBrowser(User::Ptr user, std::string file):
 	BookEntry("List: " + WulforUtil::getNicks(user), "sharebrowser.glade"),
 	listing(user),
@@ -30,9 +37,9 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file):
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(getWidget("dirChooserDialog")), Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY)).c_str());
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("dirChooserDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
-	// Load icons
-	iconFile = gtk_icon_theme_load_icon(gtk_icon_theme_get_default(), GTK_STOCK_FILE, 16, (GtkIconLookupFlags) 0, NULL);
-	iconDirectory = gtk_icon_theme_load_icon(gtk_icon_theme_get_default(), GTK_STOCK_DIRECTORY, 16, (GtkIconLookupFlags) 0, NULL);
+	// Load the icons
+	iconFile = gtk_icon_theme_load_icon(gtk_icon_theme_get_default(), GTK_STOCK_FILE, 16, (GtkIconLookupFlags)0, NULL);
+	iconDirectory = gtk_icon_theme_load_icon(gtk_icon_theme_get_default(), GTK_STOCK_DIRECTORY, 16, (GtkIconLookupFlags)0, NULL);
 
 	// Initialize the file TreeView
 	fileView.setView(GTK_TREE_VIEW(getWidget("fileView")), true, "sharebrowser");
@@ -127,7 +134,6 @@ ShareBrowser::~ShareBrowser()
 
 void ShareBrowser::setPosition_gui(string pos)
 {
-	cout << "try to set path: " << pos << endl;
 }
 
 void ShareBrowser::buildDirs_gui(DirectoryListing::Directory::List dirs, GtkTreeIter *iter)
@@ -814,7 +820,7 @@ void ShareBrowser::onSearchAlternatesClicked_gui(GtkMenuItem *item, gpointer dat
 		if (fileOrder[0] == 'f')
 		{
 			file = (DirectoryListing::File *)ptr;
-			Search *s = WulforManager::get()->addSearch_gui();
+			Search *s = dynamic_cast<Search *>(WulforManager::get()->addSearch_gui());
 
 			if (file->getTTH())
 				s->putValue_gui(file->getTTH()->toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);

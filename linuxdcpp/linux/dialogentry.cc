@@ -17,40 +17,14 @@
  */
 
 #include "dialogentry.hh"
-#include "wulformanager.hh"
-#include <iostream>
 
 using namespace std;
 
 int DialogEntry::responseID = GTK_RESPONSE_NONE;
 
-DialogEntry::DialogEntry(string id, string glade)
+GtkWidget* DialogEntry::getContainer()
 {
-	this->id = id;
-
-	string file = WulforManager::get()->getPath() + "/glade/" + glade;
-	xml = glade_xml_new(file.c_str(), NULL, NULL);
-
-	if (xml == NULL)
-		gtk_main_quit();
-}
-
-DialogEntry::~DialogEntry()
-{
-	g_object_unref(xml);
-}
-
-GtkWidget* DialogEntry::getWidget(string name)
-{
-	dcassert(!name.empty());
-	GtkWidget *widget = glade_xml_get_widget(xml, name.c_str());
-	dcassert(widget);
-	return widget;
-}
-
-string DialogEntry::getID()
-{
-	return id;
+	return getWidget("dialog");
 }
 
 void DialogEntry::setResponseID(int responseID)

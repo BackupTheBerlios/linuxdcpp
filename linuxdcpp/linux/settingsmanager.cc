@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,20 +16,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "settingsmanager.hh"
+
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
+#include <client/File.h>
 #include <client/SimpleXML.h>
 #include <client/Util.h>
-#include <client/File.h>
-
-#include "settingsmanager.hh"
-#include "mainwindow.hh"
 
 using namespace std;
 
 WulforSettingsManager *WulforSettingsManager::ptr = NULL;
 
-WulforSettingsManager::WulforSettingsManager() {
+WulforSettingsManager::WulforSettingsManager()
+{
 	defaultInt["main-window-maximized"] = 0;
 	defaultInt["main-window-size-x"] = 800;
 	defaultInt["main-window-size-y"] = 600;
@@ -66,12 +66,15 @@ WulforSettingsManager::WulforSettingsManager() {
 	defaultString["fallback-encoding"] = "CP1252";
 }
 
-WulforSettingsManager *WulforSettingsManager::get() {
-	if (ptr == NULL) ptr = new WulforSettingsManager;
+WulforSettingsManager *WulforSettingsManager::get()
+{
+	if (ptr == NULL)
+		ptr = new WulforSettingsManager;
 	return ptr;
 }
 
-int WulforSettingsManager::getInt(std::string key) {
+int WulforSettingsManager::getInt(std::string key)
+{
 	dcassert(intMap.find(key) != intMap.end() || defaultInt.find(key) != defaultInt.end());
 
 	if (intMap.find(key) == intMap.end())
@@ -80,7 +83,8 @@ int WulforSettingsManager::getInt(std::string key) {
 		return intMap[key];
 }
 
-string WulforSettingsManager::getString(std::string key) {
+string WulforSettingsManager::getString(std::string key)
+{
 	dcassert(stringMap.find(key) != stringMap.end() || defaultString.find(key) != defaultString.end());
 
 	if (stringMap.find(key) == stringMap.end())
@@ -89,58 +93,65 @@ string WulforSettingsManager::getString(std::string key) {
 		return stringMap[key];
 }
 
-void WulforSettingsManager::set(std::string key, int value) {
+void WulforSettingsManager::set(std::string key, int value)
+{
 	intMap[key] = value;
 }
 
-void WulforSettingsManager::set(std::string key, string value) {
+void WulforSettingsManager::set(std::string key, string value)
+{
 	stringMap[key] = value;
 }
 
-void WulforSettingsManager::load() {
+void WulforSettingsManager::load()
+{
 	load(Util::getAppPath() + "LinuxDC++.xml");
 }
 
-void WulforSettingsManager::save() {
+void WulforSettingsManager::save()
+{
 	save(Util::getAppPath() + "LinuxDC++.xml");
 }
 
-void WulforSettingsManager::load(std::string fileName) {
-	try {
+void WulforSettingsManager::load(std::string fileName)
+{
+	try
+	{
 		SimpleXML xml;
-		
 		xml.fromXML(File(fileName, File::READ, File::OPEN).read());
-		
 		xml.resetCurrentChild();
-		
 		xml.stepIn();
-		
-		if (xml.findChild("Settings")) {
+
+		if (xml.findChild("Settings"))
+		{
 			xml.stepIn();
 
 			map<string, int>::iterator iit;
-			for (iit = defaultInt.begin(); iit != defaultInt.end(); iit++) {
+			for (iit = defaultInt.begin(); iit != defaultInt.end(); iit++)
+			{
 				if (xml.findChild(iit->first))
 					intMap[iit->first] = Util::toInt(xml.getChildData());
 				xml.resetCurrentChild();
 			}
 
 			map<string, string>::iterator sit;
-			for (sit = defaultString.begin(); sit != defaultString.end(); sit++) {
+			for (sit = defaultString.begin(); sit != defaultString.end(); sit++)
+			{
 				if(xml.findChild(sit->first))
 					stringMap[sit->first] = xml.getChildData();
 				xml.resetCurrentChild();
 			}
-			
+
 			xml.stepOut();
 		}
-	} catch(const Exception&) {
-		//...
+	}
+	catch(const Exception&)
+	{
 	}
 }
 
-void WulforSettingsManager::save(std::string fileName) {
-
+void WulforSettingsManager::save(std::string fileName)
+{
 	SimpleXML xml;
 	xml.addTag("LinuxDC++");
 	xml.stepIn();
@@ -148,26 +159,23 @@ void WulforSettingsManager::save(std::string fileName) {
 	xml.stepIn();
 
 	map<std::string, int>::iterator iit;
-	for (iit = intMap.begin(); iit != intMap.end(); iit++) {
-		if (iit->second != defaultInt[iit->first])
-		{
-			xml.addTag(iit->first, iit->second);
-			xml.addChildAttrib(string("type"), string("int"));
-		}
+	for (iit = intMap.begin(); iit != intMap.end(); ++iit)
+	{
+		xml.addTag(iit->first, iit->second);
+		xml.addChildAttrib(string("type"), string("int"));
 	}
 
 	map<std::string, std::string>::iterator sit;
-	for (sit = stringMap.begin(); sit != stringMap.end(); sit++) {
-		if (sit->second != defaultString[sit->first])
-		{
-			xml.addTag(sit->first, sit->second);
-			xml.addChildAttrib(string("type"), string("string"));
-		}
+	for (sit = stringMap.begin(); sit != stringMap.end(); ++sit)
+	{
+		xml.addTag(sit->first, sit->second);
+		xml.addChildAttrib(string("type"), string("string"));
 	}
 
 	xml.stepOut();
 
-	try {
+	try
+	{
 		File out(fileName + ".tmp", File::WRITE, File::CREATE | File::TRUNCATE);
 		BufferedOutputStream<false> f(&out);
 		f.write(SimpleXML::utf8Header);
@@ -176,8 +184,9 @@ void WulforSettingsManager::save(std::string fileName) {
 		out.close();
 		File::deleteFile(fileName);
 		File::renameFile(fileName + ".tmp", fileName);
-	} catch(const FileException&) {
-		// ...
+	}
+	catch (const FileException &)
+	{
 	}
 }
 

@@ -19,35 +19,29 @@
 #ifndef WULFOR_BOOK_ENTRY_HH
 #define WULFOR_BOOK_ENTRY_HH
 
-#include <gtk/gtk.h>
-#include <glade/glade.h>
-#include <gdk/gdkkeysyms.h>
-#include <string>
+#include "entry.hh"
 
-class BookEntry
+class BookEntry : public Entry
 {
 	public:
 		BookEntry() {}
 		BookEntry(std::string title, std::string glade);
-		virtual ~BookEntry();
-
-		GtkWidget *getWidget(std::string name);
+		virtual ~BookEntry() {}
 		virtual void applyCallback(GCallback closeCallback);
+		GtkWidget *getContainer();
+
 		void setLabel_gui(std::string text);
 		void setBold_gui();
 		void unsetBold_gui();
 		GtkWidget *getTitle();
-		std::string getID();
 
 	private:
-		std::string id;
 		std::string title;
 		GtkWidget *box, *eventBox;
 		GtkButton *button;
 		GtkLabel *label;
 		GtkTooltips *tips;
 		bool bold;
-		GladeXML *xml;
 };
 
 #else

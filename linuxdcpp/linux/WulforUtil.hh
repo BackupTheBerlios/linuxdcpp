@@ -19,15 +19,10 @@
 #ifndef WULFOR_UTIL_H
 #define WULFOR_UTIL_H
 
-#include <string>
-#include <vector>
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
-#include <client/Util.h>
 #include <client/CID.h>
 #include <client/User.h>
-
-#include <gtk/gtk.h>
 
 class WulforUtil
 {
@@ -37,7 +32,6 @@ class WulforUtil
 		static std::string windowsSeparator(const std::string &ps);
 		static std::string getNicks(const CID& cid);
 		static std::string getNicks(const User::Ptr& user);
-		/** @return Pair of hubnames as a string and a bool representing the user's online status */
 		static pair<std::string, bool> getHubNames(const CID& cid);
 		static pair<std::string, bool> getHubNames(const User::Ptr& user);
 };

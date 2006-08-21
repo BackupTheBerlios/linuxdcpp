@@ -19,50 +19,36 @@
 #ifndef WULFOR_MAIN_WINDOW_HH
 #define WULFOR_MAIN_WINDOW_HH
 
-#include <gtk/gtk.h>
-#include <glade/glade.h>
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-
-#include "func.hh"
-#include "settingsdialog.hh"
-#include "treeview.hh"
-#include "wulformanager.hh"
-
-#include <client/Client.h>
-#include <client/ConnectionManager.h>
+#include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
+#include <client/ConnectionManager.h>
 #include <client/DownloadManager.h>
-#include <client/Exception.h>
-#include <client/FavoriteManager.h>
 #include <client/LogManager.h>
 #include <client/QueueManager.h>
-#include <client/SearchManager.h>
-#include <client/SettingsManager.h>
-#include <client/Socket.h>
-#include <client/stdinc.h>
 #include <client/TimerManager.h>
 #include <client/UploadManager.h>
-#include <client/version.h>
 
-using namespace std;
+#include "entry.hh"
+#include "func.hh"
+#include "treeview.hh"
+#include "WulforUtil.hh"
 
 class MainWindow:
+	public Entry,
+	public ConnectionManagerListener,
+	public DownloadManagerListener,
+	public LogManagerListener,
 	public QueueManagerListener,
 	public TimerManagerListener,
-	public DownloadManagerListener,
-	public UploadManagerListener,
-	public ConnectionManagerListener,
-	public LogManagerListener
+	public UploadManagerListener
 {
 	public:
 		MainWindow();
 		~MainWindow();
 
-		GtkWindow *getWindow();
-		std::string getID() { return "Main Window"; }
+		// Inherited from Entry
+		GtkWidget *getContainer();
+		void applyCallback(GCallback closeCallback);
 
 		// GUI functions
 		void addPage_gui(GtkWidget *page, GtkWidget *label, bool raise = TRUE);
@@ -84,7 +70,7 @@ class MainWindow:
 		void createWindow_gui();
 		void createTrayIcon_gui();
 		void updateTrayToolTip_gui(std::string);
-		void setStatus_gui(GtkStatusbar *status, std::string text);
+		void setStatus_gui(std::string statusBar, std::string text);
 		void setStats_gui(std::string hub, std::string slot, 
 			std::string dTot, std::string uTot, std::string dl, std::string ul);
 		void addShareBrowser_gui(User::Ptr user, std::string listName, std::string searchString, bool useSetting);
@@ -222,24 +208,11 @@ class MainWindow:
 		int emptyStatusWidth;
 		TreeView transferView;
 		GtkWindow *window;
-		GtkPaned *transferPane;
-		GtkDialog *exitDialog, *connectDialog, *flistDialog, *aboutDialog;
-		GtkEntry *connectEntry;
-		GtkStatusbar *mainStatus, *hubStatus, *slotStatus, 
-			*dTotStatus, *uTotStatus, *dlStatus, *ulStatus;
-		GtkNotebook *book;
-		GtkWidget *popupMenu;
-		GtkWidget *filelist, *matchQueue, *privateMessage, *addToFavorites,
-			*grantExtraSlot, *removeUser, *forceAttempt, *closeConnection;
 		GtkListStore *transferStore;
 		GtkTreeSelection *transferSel;
 		GdkPixbuf *uploadPic, *downloadPic;
-		map<GtkWidget *, GtkWidget *> windowMenuItems;
-		GtkWidget *windowMenu;
-		GtkWidget *trayMenu;
 		GtkTooltips *trayToolTip;
 		GtkWidget *trayIcon;
-		GladeXML *xml;
 
 		// Convenience thing for the updateTransfer_gui function.
 		typedef Func1 <MainWindow, TransferItem *> UFunc;

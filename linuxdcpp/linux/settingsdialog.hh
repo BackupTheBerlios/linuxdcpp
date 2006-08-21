@@ -19,14 +19,12 @@
 #ifndef WULFOR_SETTINGS_DIALOG_HH
 #define WULFOR_SETTINGS_DIALOG_HH
 
-#include "dialogentry.hh"
-#include "treeview.hh"
-
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/SettingsManager.h>
-#include <client/FavoriteManager.h>
-#include <client/ShareManager.h>
+
+#include "dialogentry.hh"
+#include "treeview.hh"
 
 class Settings:
 	public DialogEntry

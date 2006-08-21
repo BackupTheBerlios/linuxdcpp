@@ -1,3 +1,8 @@
+2006-08-21 - Steven Sheehy
+* Created an Entry class and made MainWindow, BookEntry and DialogEntry subclasses of it.
+* WulforManager now deletes all of MainWindow's queued functions before closing the program.
+* Rearranged #includes to speed up re-compilations.
+
 2006-08-19 - Steven Sheehy
 * Fixed a large memory leak due to never unreferencing the GladeXML files.
 * Added the ability to retrieve a widget out of the xml at any point in the program,

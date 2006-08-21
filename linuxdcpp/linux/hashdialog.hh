@@ -19,12 +19,11 @@
 #ifndef WULFOR_HASH_HH
 #define WULFOR_HASH_HH
 
-#include "dialogentry.hh"
-
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
-#include <client/HashManager.h>
 #include <client/TimerManager.h>
+
+#include "dialogentry.hh"
 
 class Hash:
 	public DialogEntry,

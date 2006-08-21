@@ -66,13 +66,16 @@ string WulforUtil::getNicks(const User::Ptr& user)
 	return getNicks(user->getCID());
 }
 
+/*
+ * @return Pair of hubnames as a string and a bool representing the user's online status
+ */
 pair<string, bool> WulforUtil::getHubNames(const CID& cid)
 {
 	StringList hubs = ClientManager::getInstance()->getHubNames(cid);
 	if (hubs.empty())
-		return make_pair("Offline", FALSE);
+		return make_pair("Offline", false);
 	else
-		return make_pair(Util::toString(hubs), TRUE);
+		return make_pair(Util::toString(hubs), true);
 }
 
 pair<string, bool> WulforUtil::getHubNames(const User::Ptr& user)

@@ -19,16 +19,13 @@
 #ifndef WULFOR_PUBLIC_HUBS_HH
 #define WULFOR_PUBLIC_HUBS_HH
 
-#include <pthread.h>
-
-#include "bookentry.hh"
-#include "treeview.hh"
-#include "wulformanager.hh"
-
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/FavoriteManager.h>
 #include <client/StringSearch.h>
+
+#include "bookentry.hh"
+#include "treeview.hh"
 
 class PublicHubs:
 	public BookEntry,

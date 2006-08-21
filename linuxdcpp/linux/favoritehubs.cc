@@ -17,6 +17,7 @@
  */
 
 #include "favoritehubs.hh"
+#include "wulformanager.hh"
 
 FavoriteHubs::FavoriteHubs():
 	BookEntry("Favorite Hubs", "favoritehubs.glade")

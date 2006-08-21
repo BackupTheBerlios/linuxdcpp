@@ -19,13 +19,12 @@
 #ifndef WULFOR_FAVORITE_HUBS_HH
 #define WULFOR_FAVORITE_HUBS_HH
 
-#include "bookentry.hh"
-#include "treeview.hh"
-#include "wulformanager.hh"
-
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/FavoriteManager.h>
+
+#include "bookentry.hh"
+#include "treeview.hh"
 
 class FavoriteHubs:
 	public BookEntry,

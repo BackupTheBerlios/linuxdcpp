@@ -19,15 +19,12 @@
 #ifndef WULFOR_SHARE_BROWSER_HH
 #define WULFOR_SHARE_BROWSER_HH
 
-#include "bookentry.hh"
-#include "treeview.hh"
-#include "wulformanager.hh"
-
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/DirectoryListing.h>
-#include <client/Text.h>
-#include <client/User.h>
+
+#include "bookentry.hh"
+#include "treeview.hh"
 
 class ShareBrowser:
 	public BookEntry

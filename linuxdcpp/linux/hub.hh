@@ -19,17 +19,13 @@
 #ifndef WULFOR_HUB_HH
 #define WULFOR_HUB_HH
 
-#include "bookentry.hh"
-#include "settingsmanager.hh"
-#include "treeview.hh"
-#include "wulformanager.hh"
-
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/Client.h>
-#include <client/ClientManager.h>
 #include <client/TimerManager.h>
-#include <client/User.h>
+
+#include "bookentry.hh"
+#include "treeview.hh"
 
 class Hub:
 	public BookEntry,

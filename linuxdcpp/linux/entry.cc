@@ -16,27 +16,43 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef WULFOR_DIALOG_ENTRY_HH
-#define WULFOR_DIALOG_ENTRY_HH
-
 #include "entry.hh"
+#include <client/stdinc.h>
+#include <client/DCPlusPlus.h>
+#include <client/Util.h>
+#include "wulformanager.hh"
 
-class DialogEntry : public Entry
+using namespace std;
+
+Entry::Entry(string id, string glade)
 {
-	public:
-		DialogEntry() {}
-		DialogEntry(std::string id, std::string glade) : Entry(id, glade) {}
-		virtual ~DialogEntry() {}
+	// Special case: Allow search tab to have many tabs with the same title.
+	if (id == "Search")
+		this->id = id + Util::toString((long)this);
+	else
+		this->id = id;
 
-		GtkWidget *getContainer();
-		void setResponseID(int responseID);
-		static int getResponseID();
-		virtual void applyCallback(GCallback closeCallback);
+	// Load the Glade XML file
+	string file = WulforManager::get()->getPath() + "/glade/" + glade;
+	xml = glade_xml_new(file.c_str(), NULL, NULL);
+	if (xml == NULL)
+		gtk_main_quit();
+}
 
-	private:
-		static int responseID;
-};
+Entry::~Entry()
+{
+	g_object_unref(xml);
+}
 
-#else
-class DialogEntry;
-#endif
+GtkWidget *Entry::getWidget(string name) 
+{
+	dcassert(!name.empty());
+	GtkWidget *widget = glade_xml_get_widget(xml, name.c_str());
+	dcassert(widget);
+	return widget;
+}
+
+string Entry::getID()
+{
+	return id;
+}

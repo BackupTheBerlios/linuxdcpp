@@ -19,18 +19,12 @@
 #ifndef WULFOR_DOWNLOAD_QUEUE_HH
 #define WULFOR_DOWNLOAD_QUEUE_HH
 
-#include <iostream>
-#include <sstream>
-
-#include "bookentry.hh"
-#include "search.hh"
-#include "treeview.hh"
-#include "wulformanager.hh"
-
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/QueueManager.h>
-#include <client/User.h>
+
+#include "bookentry.hh"
+#include "treeview.hh"
 
 using namespace std;
 

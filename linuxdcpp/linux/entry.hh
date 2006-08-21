@@ -16,27 +16,32 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef WULFOR_DIALOG_ENTRY_HH
-#define WULFOR_DIALOG_ENTRY_HH
+#ifndef WULFOR_ENTRY_HH
+#define WULFOR_ENTRY_HH
 
-#include "entry.hh"
+#include <gtk/gtk.h>
+#include <glade/glade.h>
+#include <gdk/gdkkeysyms.h>
+#include <string>
 
-class DialogEntry : public Entry
+class Entry
 {
 	public:
-		DialogEntry() {}
-		DialogEntry(std::string id, std::string glade) : Entry(id, glade) {}
-		virtual ~DialogEntry() {}
+		Entry() {}
+		Entry(std::string id, std::string glade);
+		virtual ~Entry();
+		std::string getID();
+		virtual void applyCallback(GCallback closeCallback) = 0;
+		virtual GtkWidget *getContainer() = 0;
 
-		GtkWidget *getContainer();
-		void setResponseID(int responseID);
-		static int getResponseID();
-		virtual void applyCallback(GCallback closeCallback);
+	protected:
+		GtkWidget *getWidget(std::string name);
 
 	private:
-		static int responseID;
+		GladeXML *xml;
+		std::string id;
 };
 
 #else
-class DialogEntry;
+class Entry;
 #endif

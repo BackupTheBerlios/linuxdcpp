@@ -23,8 +23,6 @@
 #include <client/DCPlusPlus.h>
 #include <client/User.h>
 
-#include <vector>
-
 #include "bookentry.hh"
 
 class PrivateMessage:

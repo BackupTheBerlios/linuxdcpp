@@ -17,6 +17,7 @@
  */
 
 #include "publichubs.hh"
+#include "wulformanager.hh"
 
 using namespace std;
 

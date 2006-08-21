@@ -18,6 +18,10 @@
 
 #include "downloadqueue.hh"
 
+#include <client/ShareManager.h>
+#include "search.hh"
+#include "wulformanager.hh"
+
 DownloadQueue::DownloadQueue():
 	BookEntry("Download Queue", "downloadqueue.glade")
 {
@@ -390,7 +394,7 @@ void DownloadQueue::onSearchAlternatesClicked_gui (GtkMenuItem *item, gpointer u
 	if(!searchString.empty()) 
 	{
 		bool bigFile = (ii->getSize() > 10*1024*1024);
-		Search *s = WulforManager::get ()->addSearch_gui ();
+		Search *s = dynamic_cast<Search *>(WulforManager::get()->addSearch_gui());
 		if(bigFile)
 			s->putValue_gui(searchString, ii->getSize ()-1, SearchManager::SIZE_ATLEAST, ShareManager::getInstance()->getType(target));
 		else
@@ -417,7 +421,7 @@ void DownloadQueue::onSearchByTTHClicked_gui (GtkMenuItem *item, gpointer user_d
 		
 	QueueItemInfo *ii = q->fileView.getValue<gpointer,QueueItemInfo*>(&iter[0], "Info");
 		
-	Search *s = WulforManager::get ()->addSearch_gui ();
+	Search *s = dynamic_cast<Search *>(WulforManager::get()->addSearch_gui());
 	s->putValue_gui(ii->getTTH ()->toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
 }
 void DownloadQueue::onGetFileListClicked_gui (GtkMenuItem *item, gpointer user_data)

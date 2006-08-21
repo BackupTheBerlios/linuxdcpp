@@ -18,20 +18,12 @@
 
 #include "bookentry.hh"
 #include "wulformanager.hh"
-#include <client/stdinc.h>
-#include <client/DCPlusPlus.h>
-#include <client/Util.h>
 
 using namespace std;
 
-BookEntry::BookEntry(string title, string glade)
+BookEntry::BookEntry(string title, string glade):
+	Entry(title, glade)
 {
-	// Allow search tab to have many tabs with the same title.
-	if (title == "Search")
-		this->id = title + Util::toString((long)this);
-	else
-		this->id = title;
-
 	bold = FALSE;
 	box = gtk_hbox_new(FALSE, 5);
 
@@ -56,40 +48,20 @@ BookEntry::BookEntry(string title, string glade)
 
 	setLabel_gui(title);
 
-	// Load the Glade XML file
-	string file = WulforManager::get()->getPath() + "/glade/" + glade;
-	xml = glade_xml_new(file.c_str(), NULL, NULL);
-	if (xml == NULL)
-		gtk_main_quit();
-
 	// Get the GtkWindow and remove the box from it to use in GtkNotebook
-	gtk_widget_ref(getWidget("mainBox"));
-	gtk_container_remove(GTK_CONTAINER(getWidget("window")), getWidget("mainBox"));
+	gtk_widget_ref(getContainer());
+	gtk_container_remove(GTK_CONTAINER(getWidget(string("window"))), getContainer());
 	gtk_widget_destroy(getWidget("window"));
-
 }
 
-BookEntry::~BookEntry()
+GtkWidget* BookEntry::getContainer()
 {
-	g_object_unref(xml);
-}
-
-GtkWidget *BookEntry::getWidget(string name) 
-{
-	dcassert(!name.empty());
-	GtkWidget *widget = glade_xml_get_widget(xml, name.c_str());
-	dcassert(widget);
-	return widget;
+	return getWidget("mainBox");
 }
 
 GtkWidget *BookEntry::getTitle()
 {
 	return box;
-}
-
-std::string BookEntry::getID()
-{
-	return id;
 }
 
 void BookEntry::applyCallback(GCallback closeCallback)
@@ -108,7 +80,7 @@ void BookEntry::setLabel_gui(string text)
 
 void BookEntry::setBold_gui()
 {
-	if (!bold && WulforManager::get()->getMainWindow()->currentPage_gui() != getWidget("mainBox"))
+	if (!bold && WulforManager::get()->getMainWindow()->currentPage_gui() != getContainer())
 	{
 		char *markup = g_markup_printf_escaped("<b>%s</b>", title.c_str());
 		gtk_label_set_markup(label, markup);

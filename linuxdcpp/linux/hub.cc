@@ -18,6 +18,13 @@
 
 #include "hub.hh"
 
+#include <client/FavoriteManager.h>
+#include <client/HashManager.h>
+#include <client/ShareManager.h>
+#include "privatemessage.hh"
+#include "settingsmanager.hh"
+#include "wulformanager.hh"
+
 using namespace std;
 
 Hub::Hub(string address):
@@ -310,17 +317,24 @@ void Hub::addMessage_gui(string message)
 void Hub::addPrivateMessage_gui(Identity id, string msg)
 {
 	string nick = id.getNick();
+	BookEntry *entry;
 
 	if (id.getUser()->isOnline())
 	{
-		WulforManager::get()->addPrivMsg_gui(id.getUser(), !BOOLSETTING(POPUNDER_PM))->addMessage_gui(msg);
+		entry = WulforManager::get()->addPrivMsg_gui(id.getUser(), !BOOLSETTING(POPUNDER_PM));
+		dynamic_cast< ::PrivateMessage *>(entry)->addMessage_gui(msg);
 	}
 	else
 	{
 		if (BOOLSETTING(IGNORE_OFFLINE))
+		{
 			addStatusMessage_gui("Ignored private message from " + nick);
+		}
 		else
-			WulforManager::get()->addPrivMsg_gui(id.getUser(), !BOOLSETTING(POPUNDER_PM))->addMessage_gui(msg);
+		{
+			entry = WulforManager::get()->addPrivMsg_gui(id.getUser(), !BOOLSETTING(POPUNDER_PM));
+			dynamic_cast< ::PrivateMessage *>(entry)->addMessage_gui(msg);
+		}
 	}
 }
 

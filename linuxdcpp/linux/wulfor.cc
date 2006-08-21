@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -35,9 +35,9 @@ void callBack(void* x, const string& a)
 
 int main(int argc, char *argv[])
 {
-	//starts the dc++ client part
+	// Start the DC++ client core
 	startup(callBack, NULL);
-	
+
 	WulforSettingsManager::get()->load();
 	SettingsManager::getInstance()->load();
 	TimerManager::getInstance()->start();
@@ -47,7 +47,6 @@ int main(int argc, char *argv[])
 	gtk_init(&argc, &argv);
 	glade_init();
 
-	//wtf?
 	signal(SIGPIPE, SIG_IGN);
 
 	WulforManager::start();
@@ -57,12 +56,10 @@ int main(int argc, char *argv[])
 	WulforManager::stop();
 
 	WulforSettingsManager::get()->save();
+	delete WulforSettingsManager::get();
 
 	std::cout << "Shutting down..." << std::endl;
 	shutdown();
 
-	delete WulforSettingsManager::get();
-	delete WulforManager::get();
-	
 	return 0;
 }
