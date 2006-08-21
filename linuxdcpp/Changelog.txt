@@ -2,6 +2,7 @@
 * Created an Entry class and made MainWindow, BookEntry and DialogEntry subclasses of it.
 * WulforManager now deletes all of MainWindow's queued functions before closing the program.
 * Rearranged #includes to speed up re-compilations.
+* Fixed multiple selection regression in search tab.
 
 2006-08-19 - Steven Sheehy
 * Fixed a large memory leak due to never unreferencing the GladeXML files.

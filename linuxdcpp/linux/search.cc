@@ -240,7 +240,7 @@ void Search::buildDownloadMenu_gui()
 		gtk_tree_path_free(path);
 		g_list_free(list);
 
-		if (result->getTTH())
+		if (result && result->getTTH())
 			gtk_widget_set_sensitive(getWidget("searchByTTHItem"), TRUE);
 		else
 			gtk_widget_set_sensitive(getWidget("searchByTTHItem"), FALSE);
@@ -512,12 +512,14 @@ void Search::addResult_gui(SearchResult *result)
 void Search::clearList_gui()
 {
 	GtkTreeIter iter;
+	SearchResult *result = NULL;
 	GtkTreeModel *m = GTK_TREE_MODEL(resultStore);
 	gboolean valid = gtk_tree_model_get_iter_first(m, &iter);
 	while (valid)
 	{
-		SearchResult *result = resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
-		result->decRef();
+		result = resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+		if (result)
+			result->decRef();
 		valid = gtk_tree_model_iter_next(m, &iter);
 	}
 	gtk_list_store_clear(resultStore);
@@ -527,6 +529,17 @@ gboolean Search::onButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, g
 {
 	Search *s = (Search *)data;
 	s->oldEventType = event->type;
+
+	if (event->button == 3)
+	{
+		GtkTreePath *path;
+		if (gtk_tree_view_get_path_at_pos(s->resultView.get(), (gint)event->x, (gint)event->y, &path, NULL, NULL, NULL)
+			&& gtk_tree_selection_path_is_selected(s->selection, path))
+		{
+			gtk_tree_path_free(path);
+			return TRUE;
+		}
+	}
 	return FALSE;
 }
 
@@ -714,8 +727,11 @@ void Search::onDownloadClicked_gui(GtkMenuItem *item, gpointer data)
 		if (gtk_tree_model_get_iter(m, &iter, path))
 		{
 			result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
-			func = new F2(s, &Search::download_client, SETTING(DOWNLOAD_DIRECTORY), result);
-			WulforManager::get()->dispatchClientFunc(func);
+			if (result)
+			{
+				func = new F2(s, &Search::download_client, SETTING(DOWNLOAD_DIRECTORY), result);
+				WulforManager::get()->dispatchClientFunc(func);
+			}
 		}
 		gtk_tree_path_free(path);
 	}
@@ -742,8 +758,11 @@ void Search::onDownloadFavoriteClicked_gui(GtkMenuItem *item, gpointer data)
 		{
 			result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
 			fav = string((gchar *)g_object_get_data(G_OBJECT(item), "fav"));
-			func = new F2(s, &Search::download_client, fav, result);
-			WulforManager::get()->dispatchClientFunc(func);
+			if (result && !fav.empty())
+			{
+				func = new F2(s, &Search::download_client, fav, result);
+				WulforManager::get()->dispatchClientFunc(func);
+			}
 		}
 		gtk_tree_path_free(path);
 	}
@@ -779,8 +798,11 @@ void Search::onDownloadToClicked_gui(GtkMenuItem *item, gpointer data)
 			if (gtk_tree_model_get_iter(m, &iter, path))
 			{
 				result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
-				func = new F2(s, &Search::download_client, target, result);
-				WulforManager::get()->dispatchClientFunc(func);
+				if (result)
+				{
+					func = new F2(s, &Search::download_client, target, result);
+					WulforManager::get()->dispatchClientFunc(func);
+				}
 			}
 			gtk_tree_path_free(path);
 		}
@@ -807,8 +829,11 @@ void Search::onDownloadDirClicked_gui(GtkMenuItem *item, gpointer data)
 		if (gtk_tree_model_get_iter(m, &iter, path))
 		{
 			result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
-			func = new F2(s, &Search::downloadDir_client, SETTING(DOWNLOAD_DIRECTORY), result);
-			WulforManager::get()->dispatchClientFunc(func);
+			if (result)
+			{
+				func = new F2(s, &Search::downloadDir_client, SETTING(DOWNLOAD_DIRECTORY), result);
+				WulforManager::get()->dispatchClientFunc(func);
+			}
 		}
 		gtk_tree_path_free(path);
 	}
@@ -835,8 +860,12 @@ void Search::onDownloadFavoriteDirClicked_gui(GtkMenuItem *item, gpointer data)
 		{
 			result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
 			fav = (gchar *)g_object_get_data(G_OBJECT(item), "fav");
-			func = new F2(s, &Search::downloadDir_client, fav, result);
-			WulforManager::get()->dispatchClientFunc(func);
+
+			if (result && !fav.empty())
+			{
+				func = new F2(s, &Search::downloadDir_client, fav, result);
+				WulforManager::get()->dispatchClientFunc(func);
+			}
 		}
 		gtk_tree_path_free(path);
 	}
@@ -872,8 +901,11 @@ void Search::onDownloadDirToClicked_gui(GtkMenuItem *item, gpointer data)
 			if (gtk_tree_model_get_iter(m, &iter, path))
 			{
 				result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
-				func = new F2(s, &Search::downloadDir_client, target, result);
-				WulforManager::get()->dispatchClientFunc(func);
+				if (result)
+				{
+					func = new F2(s, &Search::downloadDir_client, target, result);
+					WulforManager::get()->dispatchClientFunc(func);
+				}
 			}
 			gtk_tree_path_free(path);
 		}
@@ -894,7 +926,7 @@ void Search::onSearchByTTHClicked_gui(GtkMenuItem *item, gpointer data)
 	{
 		SearchResult *result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
 
-		if (result->getTTH())
+		if (result && result->getTTH())
 			s->putValue_gui(result->getTTH()->toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
 	}
 
@@ -915,9 +947,12 @@ void Search::onGetFileListClicked_gui(GtkMenuItem *item, gpointer data)
 	{
 		SearchResult *result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
 
-		typedef Func2<Search, User::Ptr &, QueueItem::FileFlags> F2;
-		F2 *func = new F2(s, &Search::getFileList_client, result->getUser(), QueueItem::FLAG_CLIENT_VIEW);
-		WulforManager::get()->dispatchClientFunc(func);
+		if (result)
+		{
+			typedef Func2<Search, User::Ptr &, QueueItem::FileFlags> F2;
+			F2 *func = new F2(s, &Search::getFileList_client, result->getUser(), QueueItem::FLAG_CLIENT_VIEW);
+			WulforManager::get()->dispatchClientFunc(func);
+		}
 	}
 
 	gtk_tree_path_free(path);
@@ -937,9 +972,12 @@ void Search::onMatchQueueClicked_gui(GtkMenuItem *item, gpointer data)
 	{
 		SearchResult *result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
 
-		typedef Func2<Search, User::Ptr &, QueueItem::FileFlags> F2;
-		F2 *func = new F2(s, &Search::getFileList_client, result->getUser(), QueueItem::FLAG_MATCH_QUEUE);
-		WulforManager::get()->dispatchClientFunc(func);
+		if (result)
+		{
+			typedef Func2<Search, User::Ptr &, QueueItem::FileFlags> F2;
+			F2 *func = new F2(s, &Search::getFileList_client, result->getUser(), QueueItem::FLAG_MATCH_QUEUE);
+			WulforManager::get()->dispatchClientFunc(func);
+		}
 	}
 
 	gtk_tree_path_free(path);
@@ -958,7 +996,8 @@ void Search::onPrivateMessageClicked_gui(GtkMenuItem *item, gpointer data)
 	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(s->resultStore), &iter, path))
 	{
 		SearchResult *result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
-		WulforManager::get()->addPrivMsg_gui(result->getUser());
+		if (result)
+			WulforManager::get()->addPrivMsg_gui(result->getUser());
 	}
 
 	gtk_tree_path_free(path);
@@ -978,9 +1017,12 @@ void Search::onAddFavoriteUserClicked_gui(GtkMenuItem *item, gpointer data)
 	{
 		SearchResult *result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
 
-		typedef Func1<Search, User::Ptr &> F1;
-		F1 *func = new F1(s, &Search::addFavUser_client, result->getUser());
-		WulforManager::get()->dispatchClientFunc(func);
+		if (result)
+		{
+			typedef Func1<Search, User::Ptr &> F1;
+			F1 *func = new F1(s, &Search::addFavUser_client, result->getUser());
+			WulforManager::get()->dispatchClientFunc(func);
+		}
 	}
 
 	gtk_tree_path_free(path);
@@ -1000,9 +1042,12 @@ void Search::onGrantExtraSlotClicked_gui(GtkMenuItem *item, gpointer data)
 	{
 		SearchResult *result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
 
-		typedef Func1<Search, User::Ptr &> F1;
-		F1 *func = new F1(s, &Search::grantSlot_client, result->getUser());
-		WulforManager::get()->dispatchClientFunc(func);
+		if (result)
+		{
+			typedef Func1<Search, User::Ptr &> F1;
+			F1 *func = new F1(s, &Search::grantSlot_client, result->getUser());
+			WulforManager::get()->dispatchClientFunc(func);
+		}
 	}
 
 	gtk_tree_path_free(path);
@@ -1022,9 +1067,12 @@ void Search::onRemoveUserFromQueueClicked_gui(GtkMenuItem *item, gpointer data)
 	{
 		SearchResult *result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
 
-		typedef Func1<Search, User::Ptr &> F1;
-		F1 *func = new F1(s, &Search::removeSource_client, result->getUser());
-		WulforManager::get()->dispatchClientFunc(func);
+		if (result)
+		{
+			typedef Func1<Search, User::Ptr &> F1;
+			F1 *func = new F1(s, &Search::removeSource_client, result->getUser());
+			WulforManager::get()->dispatchClientFunc(func);
+		}
 	}
 
 	gtk_tree_path_free(path);
@@ -1046,7 +1094,8 @@ void Search::onRemoveClicked_gui(GtkMenuItem *item, gpointer data)
 		if (gtk_tree_model_get_iter(m, &iter, path))
 		{
 			SearchResult *result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
-			result->decRef();
+			if (result)
+				result->decRef();
 			gtk_list_store_remove(s->resultStore, &iter);
 		}
 		gtk_tree_path_free(path);
@@ -1158,9 +1207,7 @@ void Search::on(ClientManagerListener::ClientDisconnected, Client *client) throw
 
 void Search::on(SearchManagerListener::SR, SearchResult *result) throw()
 {
-	dcassert(result);
-
-	if (searchlist.empty())
+	if (searchlist.empty() || result == NULL)
 		return;
 
 	if (isHash)
