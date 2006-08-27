@@ -18,13 +18,13 @@
 
 #include "wulformanager.hh"
 
+#include <iostream>
 #include "downloadqueue.hh"
 #include "favoritehubs.hh"
 #include "finishedtransfers.hh"
 #include "func.hh"
 #include "hashdialog.hh"
 #include "hub.hh"
-#include "prefix.hh"
 #include "privatemessage.hh"
 #include "publichubs.hh"
 #include "search.hh"
@@ -72,6 +72,16 @@ WulforManager::WulforManager()
 	pthread_create(&guiThread, NULL, &threadFunc_gui, (void *)this);
 
 	mainWin = NULL;
+
+	// Determine path to data files
+	path = string(_DATADIR) + PATH_SEPARATOR_STR + "ldcpp";
+
+	struct stat s;
+	if (stat(path.c_str(), &s) == -1)
+	{
+		cerr << path << " is inaccessible, falling back to current directory instead.\n";
+		path = ".";
+	}
 }
 
 WulforManager::~WulforManager()
@@ -299,14 +309,7 @@ void WulforManager::onCloseDialogEntry_gui(GtkDialog *dialog, gint response, gpo
 
 string WulforManager::getPath()
 {
-#ifdef _DATADIR
-	string ret = string(_DATADIR) + PATH_SEPARATOR_STR + "ldcpp";
-#else
-	char *temp = br_extract_dir(SELFPATH);
-	string ret = string(temp);
-	free(temp);
-#endif
-	return ret;
+	return path;
 }
 
 BookEntry *WulforManager::getBookEntry_gui(string id, bool raise)

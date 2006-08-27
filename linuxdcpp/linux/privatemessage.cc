@@ -43,8 +43,8 @@ PrivateMessage::PrivateMessage(User::Ptr user):
 	mark = gtk_text_buffer_create_mark(buffer, NULL, &iter, FALSE);
 
 	// Connect the signals to their callback functions.
-	g_signal_connect(G_OBJECT(getWidget("entry")), "activate", G_CALLBACK(onSendMessage_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(getWidget("entry")), "key-press-event", G_CALLBACK(onKeyPress_gui), (gpointer)this);
+	g_signal_connect(getWidget("entry"), "activate", G_CALLBACK(onSendMessage_gui), (gpointer)this);
+	g_signal_connect(getWidget("entry"), "key-press-event", G_CALLBACK(onKeyPress_gui), (gpointer)this);
 
 	gtk_widget_grab_focus(getWidget("entry"));
 

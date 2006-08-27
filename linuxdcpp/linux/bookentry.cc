@@ -66,7 +66,7 @@ GtkWidget *BookEntry::getTitle()
 
 void BookEntry::applyCallback(GCallback closeCallback)
 {
-	g_signal_connect(G_OBJECT(button), "clicked", closeCallback, (gpointer)this);
+	g_signal_connect(button, "clicked", closeCallback, (gpointer)this);
 }
 
 void BookEntry::setLabel_gui(string text)

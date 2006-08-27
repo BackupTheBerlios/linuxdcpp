@@ -99,6 +99,7 @@ void Settings::saveSettings()
 		sm->set(SettingsManager::SOCKS_SERVER, gtk_entry_get_text(GTK_ENTRY(getWidget("socksIPEntry"))));
 		sm->set(SettingsManager::SOCKS_USER, gtk_entry_get_text(GTK_ENTRY(getWidget("socksUserEntry"))));
 		sm->set(SettingsManager::SOCKS_PASSWORD, gtk_entry_get_text(GTK_ENTRY(getWidget("socksPassEntry"))));
+		sm->set(SettingsManager::SOCKS_RESOLVE, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("socksCheckButton"))));
 
 		port = Util::toInt(gtk_entry_get_text(GTK_ENTRY(getWidget("socksPortEntry"))));
 		if (port > 0 && port <= 65535)
@@ -305,11 +306,11 @@ void Settings::initPersonal_gui()
 void Settings::initConnection_gui()
 {
 	// Incoming
-	g_signal_connect(G_OBJECT(getWidget("activeRadioButton")), "toggled", G_CALLBACK(onInDirect_gui), (gpointer)this);
+	g_signal_connect(getWidget("activeRadioButton"), "toggled", G_CALLBACK(onInDirect_gui), (gpointer)this);
 	///@todo Uncomment when implemented
-	//g_signal_connect(G_OBJECT(getWidget("upnpRadioButton"), "toggled", G_CALLBACK(onInFW_UPnP_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(getWidget("portForwardRadioButton")), "toggled", G_CALLBACK(onInFW_NAT_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(getWidget("passiveRadioButton")), "toggled", G_CALLBACK(onInPassive_gui), (gpointer)this);
+	//g_signal_connect(getWidget("upnpRadioButton"), "toggled", G_CALLBACK(onInFW_UPnP_gui), (gpointer)this);
+	g_signal_connect(getWidget("portForwardRadioButton"), "toggled", G_CALLBACK(onInFW_NAT_gui), (gpointer)this);
+	g_signal_connect(getWidget("passiveRadioButton"), "toggled", G_CALLBACK(onInPassive_gui), (gpointer)this);
 	gtk_entry_set_text(GTK_ENTRY(getWidget("ipEntry")), SETTING(EXTERNAL_IP).c_str());
 	gtk_entry_set_text(GTK_ENTRY(getWidget("tcpEntry")), Util::toString(SETTING(TCP_PORT)).c_str());
 	gtk_entry_set_text(GTK_ENTRY(getWidget("udpEntry")), Util::toString(SETTING(UDP_PORT)).c_str());
@@ -332,8 +333,8 @@ void Settings::initConnection_gui()
 	}
 
 	// Outgoing
-	g_signal_connect(G_OBJECT(getWidget("outDirectRadioButton")), "toggled", G_CALLBACK(onOutDirect_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(getWidget("socksRadioButton")), "toggled", G_CALLBACK(onSocks5_gui), (gpointer)this);
+	g_signal_connect(getWidget("outDirectRadioButton"), "toggled", G_CALLBACK(onOutDirect_gui), (gpointer)this);
+	g_signal_connect(getWidget("socksRadioButton"), "toggled", G_CALLBACK(onSocks5_gui), (gpointer)this);
 	gtk_entry_set_text(GTK_ENTRY(getWidget("socksIPEntry")), SETTING(SOCKS_SERVER).c_str());
 	gtk_entry_set_text(GTK_ENTRY(getWidget("socksUserEntry")), SETTING(SOCKS_USER).c_str());
 	gtk_entry_set_text(GTK_ENTRY(getWidget("socksPortEntry")), Util::toString(SETTING(SOCKS_PORT)).c_str());
@@ -355,13 +356,13 @@ void Settings::initConnection_gui()
 void Settings::initDownloads_gui()
 {
 	{ // Downloads
-		g_signal_connect(G_OBJECT(getWidget("finishedDownloadsButton")), "clicked", G_CALLBACK(onBrowseFinished_gui), (gpointer)this);
-		g_signal_connect(G_OBJECT(getWidget("unfinishedDownloadsButton")), "clicked", G_CALLBACK(onBrowseUnfinished_gui), (gpointer)this);
-		g_signal_connect(G_OBJECT(getWidget("publicHubsButton")), "clicked", G_CALLBACK(onPublicHubs_gui), (gpointer)this);
-		g_signal_connect(G_OBJECT(getWidget("publicHubsDialogAddButton")), "clicked", G_CALLBACK(onPublicAdd_gui), (gpointer)this);
-		g_signal_connect(G_OBJECT(getWidget("publicHubsDialogUpButton")), "clicked", G_CALLBACK(onPublicMoveUp_gui), (gpointer)this);
-		g_signal_connect(G_OBJECT(getWidget("publicHubsDialogDownButton")), "clicked", G_CALLBACK(onPublicMoveDown_gui), (gpointer)this);
-		g_signal_connect(G_OBJECT(getWidget("publicHubsDialogRemoveButton")), "clicked", G_CALLBACK(onPublicRemove_gui), (gpointer)this);
+		g_signal_connect(getWidget("finishedDownloadsButton"), "clicked", G_CALLBACK(onBrowseFinished_gui), (gpointer)this);
+		g_signal_connect(getWidget("unfinishedDownloadsButton"), "clicked", G_CALLBACK(onBrowseUnfinished_gui), (gpointer)this);
+		g_signal_connect(getWidget("publicHubsButton"), "clicked", G_CALLBACK(onPublicHubs_gui), (gpointer)this);
+		g_signal_connect(getWidget("publicHubsDialogAddButton"), "clicked", G_CALLBACK(onPublicAdd_gui), (gpointer)this);
+		g_signal_connect(getWidget("publicHubsDialogUpButton"), "clicked", G_CALLBACK(onPublicMoveUp_gui), (gpointer)this);
+		g_signal_connect(getWidget("publicHubsDialogDownButton"), "clicked", G_CALLBACK(onPublicMoveDown_gui), (gpointer)this);
+		g_signal_connect(getWidget("publicHubsDialogRemoveButton"), "clicked", G_CALLBACK(onPublicRemove_gui), (gpointer)this);
 
 		gtk_entry_set_text(GTK_ENTRY(getWidget("finishedDownloadsEntry")), SETTING(DOWNLOAD_DIRECTORY).c_str());
 		gtk_entry_set_text(GTK_ENTRY(getWidget("unfinishedDownloadsEntry")), SETTING(TEMP_DOWNLOAD_DIRECTORY).c_str());
@@ -384,8 +385,8 @@ void Settings::initDownloads_gui()
 	}
 
 	{ // Download to
-		g_signal_connect(G_OBJECT(getWidget("favoriteAddButton")), "clicked", G_CALLBACK(onAddFavorite_gui), (gpointer)this);
-		g_signal_connect(G_OBJECT(getWidget("favoriteRemoveButton")), "clicked", G_CALLBACK(onRemoveFavorite_gui), (gpointer)this);
+		g_signal_connect(getWidget("favoriteAddButton"), "clicked", G_CALLBACK(onAddFavorite_gui), (gpointer)this);
+		g_signal_connect(getWidget("favoriteRemoveButton"), "clicked", G_CALLBACK(onRemoveFavorite_gui), (gpointer)this);
 		downloadToView.setView(GTK_TREE_VIEW(getWidget("favoriteTreeView")));
 		downloadToView.insertColumn("Favorite Name", G_TYPE_STRING, TreeView::STRING, -1);
 		downloadToView.insertColumn("Directory", G_TYPE_STRING, TreeView::STRING, -1);
@@ -393,7 +394,7 @@ void Settings::initDownloads_gui()
 		downloadToStore = gtk_list_store_newv(downloadToView.getColCount(), downloadToView.getGTypes());
 		gtk_tree_view_set_model(downloadToView.get(), GTK_TREE_MODEL(downloadToStore));
 		g_object_unref(downloadToStore);
-		g_signal_connect(G_OBJECT(downloadToView.get()), "button-release-event", G_CALLBACK(onFavoriteButtonReleased_gui), (gpointer)this);
+		g_signal_connect(downloadToView.get(), "button-release-event", G_CALLBACK(onFavoriteButtonReleased_gui), (gpointer)this);
 		gtk_widget_set_sensitive(getWidget("favoriteRemoveButton"), FALSE);
 
 		GtkTreeIter iter;
@@ -455,9 +456,9 @@ void Settings::initDownloads_gui()
 
 void Settings::initSharing_gui()
 {
-	g_signal_connect(G_OBJECT(getWidget("shareHiddenCheckButton")), "toggled", G_CALLBACK(onShareHiddenPressed_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(getWidget("sharedAddButton")), "clicked", G_CALLBACK(onAddShare_gui), (gpointer)this);
-	g_signal_connect(G_OBJECT(getWidget("sharedRemoveButton")), "clicked", G_CALLBACK(onRemoveShare_gui), (gpointer)this);
+	g_signal_connect(getWidget("shareHiddenCheckButton"), "toggled", G_CALLBACK(onShareHiddenPressed_gui), (gpointer)this);
+	g_signal_connect(getWidget("sharedAddButton"), "clicked", G_CALLBACK(onAddShare_gui), (gpointer)this);
+	g_signal_connect(getWidget("sharedRemoveButton"), "clicked", G_CALLBACK(onRemoveShare_gui), (gpointer)this);
 
 	shareView.setView(GTK_TREE_VIEW(getWidget("sharedTreeView")));
 	shareView.insertColumn("Virtual Name", G_TYPE_STRING, TreeView::STRING, -1);
@@ -469,7 +470,7 @@ void Settings::initSharing_gui()
 	gtk_tree_view_set_model(shareView.get(), GTK_TREE_MODEL(shareStore));
 	g_object_unref(shareStore);
 	shareView.setSortColumn_gui("Size", "Real Size");
-	g_signal_connect(G_OBJECT(shareView.get()), "button-release-event", G_CALLBACK(onShareButtonReleased_gui), (gpointer)this);
+	g_signal_connect(shareView.get(), "button-release-event", G_CALLBACK(onShareButtonReleased_gui), (gpointer)this);
 	gtk_widget_set_sensitive(getWidget("sharedRemoveButton"), FALSE);
 
 	GtkTreeIter iter;
@@ -532,10 +533,10 @@ void Settings::initAppearance_gui()
 
 	{ // Colors and sounds
 		///@todo uncomment when implemented
-		//g_signal_connect(G_OBJECT(getWidget("appearanceColor"), "clicked", G_CALLBACK(onWinColorClicked_gui), (gpointer)this);
-		//g_signal_connect(G_OBJECT(getWidget("upColor"), "clicked", G_CALLBACK(onUpColorClicked_gui), (gpointer)this);
-		//g_signal_connect(G_OBJECT(getWidget("downColor"), "clicked", G_CALLBACK(onDownColorClicked_gui), (gpointer)this);
-		//g_signal_connect(G_OBJECT(getWidget("textStyle"), "clicked", G_CALLBACK(onTextStyleClicked_gui), (gpointer)this);
+		//g_signal_connect(getWidget("appearanceColor"), "clicked", G_CALLBACK(onWinColorClicked_gui), (gpointer)this);
+		//g_signal_connect(getWidget("upColor"), "clicked", G_CALLBACK(onUpColorClicked_gui), (gpointer)this);
+		//g_signal_connect(getWidget("downColor"), "clicked", G_CALLBACK(onDownColorClicked_gui), (gpointer)this);
+		//g_signal_connect(getWidget("textStyle"), "clicked", G_CALLBACK(onTextStyleClicked_gui), (gpointer)this);
 		//gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("soundPMReceivedCheckButton")), BOOLSETTING(PRIVATE_MESSAGE_BEEP));
 		//gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("soundPMWindowCheckButton")), BOOLSETTING(PRIVATE_MESSAGE_BEEP_OPEN));
 		gtk_widget_set_sensitive(getWidget("appearanceColor"), FALSE);
@@ -651,28 +652,28 @@ void Settings::initAppearance_gui()
 
 void Settings::initLog_gui()
 {
-	g_signal_connect(G_OBJECT(getWidget("logBrowseButton")), "clicked", G_CALLBACK(onLogBrowseClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("logBrowseButton"), "clicked", G_CALLBACK(onLogBrowseClicked_gui), (gpointer)this);
 	gtk_entry_set_text(GTK_ENTRY(getWidget("logDirectoryEntry")), SETTING(LOG_DIRECTORY).c_str());
 
-	g_signal_connect(G_OBJECT(getWidget("logMainCheckButton")), "toggled", G_CALLBACK(onLogMainClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("logMainCheckButton"), "toggled", G_CALLBACK(onLogMainClicked_gui), (gpointer)this);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("logMainCheckButton")), BOOLSETTING(LOG_MAIN_CHAT));
 	gtk_entry_set_text(GTK_ENTRY(getWidget("logMainEntry")), SETTING(LOG_FORMAT_MAIN_CHAT).c_str());
 	gtk_widget_set_sensitive(getWidget("logMainLabel"), BOOLSETTING(LOG_MAIN_CHAT));
 	gtk_widget_set_sensitive(getWidget("logMainEntry"), BOOLSETTING(LOG_MAIN_CHAT));
 
-	g_signal_connect(G_OBJECT(getWidget("logPrivateCheckButton")), "toggled", G_CALLBACK(onLogPrivateClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("logPrivateCheckButton"), "toggled", G_CALLBACK(onLogPrivateClicked_gui), (gpointer)this);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("logPrivateCheckButton")), BOOLSETTING(LOG_PRIVATE_CHAT));
 	gtk_entry_set_text(GTK_ENTRY(getWidget("logPrivateEntry")), SETTING(LOG_FORMAT_PRIVATE_CHAT).c_str());
 	gtk_widget_set_sensitive(getWidget("logPrivateLabel"), BOOLSETTING(LOG_PRIVATE_CHAT));
 	gtk_widget_set_sensitive(getWidget("logPrivateEntry"), BOOLSETTING(LOG_PRIVATE_CHAT));
 
-	g_signal_connect(G_OBJECT(getWidget("logDownloadsCheckButton")), "toggled", G_CALLBACK(onLogDownloadClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("logDownloadsCheckButton"), "toggled", G_CALLBACK(onLogDownloadClicked_gui), (gpointer)this);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("logDownloadsCheckButton")), BOOLSETTING(LOG_DOWNLOADS));
 	gtk_entry_set_text(GTK_ENTRY(getWidget("logDownloadsEntry")), SETTING(LOG_FORMAT_POST_DOWNLOAD).c_str());
 	gtk_widget_set_sensitive(getWidget("logDownloadsLabel"), BOOLSETTING(LOG_DOWNLOADS));
 	gtk_widget_set_sensitive(getWidget("logDownloadsEntry"), BOOLSETTING(LOG_DOWNLOADS));
 
-	g_signal_connect(G_OBJECT(getWidget("logUploadsCheckButton")), "toggled", G_CALLBACK(onLogUploadClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("logUploadsCheckButton"), "toggled", G_CALLBACK(onLogUploadClicked_gui), (gpointer)this);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("logUploadsCheckButton")), BOOLSETTING(LOG_UPLOADS));
 	gtk_entry_set_text(GTK_ENTRY(getWidget("logUploadsEntry")), SETTING(LOG_FORMAT_POST_UPLOAD).c_str());
 	gtk_widget_set_sensitive(getWidget("logUploadsLabel"), BOOLSETTING(LOG_UPLOADS));

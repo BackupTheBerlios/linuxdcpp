@@ -1,30 +1,15 @@
-###########################################################################
-#
-#	This is the ldcpp construction file. To use it type scons
-#	Specify arguments with scons arg=value. Argumens:
-#
-#      debug=1:                Compile the program with debug information
-#      release=1:              Compile the program with optimizations
-#      profile=1:              Compile the program with profiling information
-#                              (Don't use unless you know what it does).
-#      PREFIX="path":          Compile the program with PREFIX as the root
-#                              for installation.
-#                              eg. PREFIX=/usr/local -> ldcpp goes into
-#                              PREFIX/bin/ and other files into PREFIX/share/
-#      BINDIR="path":          Place the program (ldcpp executable) in BINDIR
-#                              defaults to PREFIX/bin/
-#      DATADIR="path":          Place the glade and pixmap files under DATADIR
-#                              defaults to PREFIX/share/
-#      DOCDIR="path":          Place the program docs into DOCDIR
-#                              defaults to PREFIX/share/doc/
-#      FAKE_ROOT="path":       Make scons install ldcpp under a fake root
-#                              (for gentoo ebuilds)
-#
-###########################################################################
+# -*- coding: utf-8 -*-
 
-import os, commands, string
+import os
+import commands
+import string
 
-# Define the functions that check for dependencies.
+EnsureSConsVersion(0, 96)
+
+
+# ----------------------------------------------------------------------
+# Function definitions
+# ----------------------------------------------------------------------
 
 def CheckPKGConfig(context):
      context.Message('Checking for pkg-config... ')
@@ -48,46 +33,74 @@ def CheckCXXVersion(context, name, major, minor):
 		or (string.atoi(ret[0]) > major)):
 			retval = 1
 	except ValueError:
-		print "Oops! No C++ compiler found!"
+		print "No C++ compiler found!"
 
 	context.Result(retval)
 	return retval
 
 
-# Initialize the environment and configure variables
+# ----------------------------------------------------------------------
+# Command-line options
+# ----------------------------------------------------------------------
 
-env = Environment(ENV = os.environ)
+# Parameters are only sticky from scons -> scons install, otherwise they're cleared.
+if COMMAND_LINE_TARGETS.count('install') == 1:
+	opts = Options('build/sconf/scache.conf')
+else:
+	opts = Options()
+
+opts.AddOptions(
+	BoolOption('debug', 'Compile the program with debug information', 0),
+	BoolOption('release', 'Compile the program with optimizations', 0),
+	BoolOption('profile', 'Compile the program with profiling information', 0),
+	PathOption('PREFIX', 'Compile the program with PREFIX as the root for installation', '/usr/local'),
+	('FAKE_ROOT', 'Make scons install ldcpp under a fake root (for gentoo ebuilds)', '')
+)
+
+
+# ----------------------------------------------------------------------
+# Initialization
+# ----------------------------------------------------------------------
+
+env = Environment(ENV = os.environ, options = opts)
 
 conf = Configure(env,
-	custom_tests = {'CheckPKGConfig' : CheckPKGConfig, 'CheckPKG' : CheckPKG, 'CheckCXXVersion' : CheckCXXVersion},
+	custom_tests =
+	{
+		'CheckPKGConfig' : CheckPKGConfig,
+		'CheckPKG' : CheckPKG,
+		'CheckCXXVersion' : CheckCXXVersion
+	},
 	conf_dir = 'build/sconf',
 	log_file = 'build/sconf/config.log')
 
-conf.env.SConsignFile('build/sconf/.sconsign')
+if os.environ.has_key('CXX'):
+	env['CXX'] = os.environ['CXX']
+
+if os.environ.has_key('CXXFLAGS'):
+	env['CXXFLAGS'] = os.environ['CXXFLAGS']
+
+env.SConsignFile('build/sconf/.sconsign')
+opts.Save('build/sconf/scache.conf', env)
+Help(opts.GenerateHelpText(env))
 
 
-# Check for dependencies
+# ----------------------------------------------------------------------
+# Dependencies
+# ----------------------------------------------------------------------
 
-# This looks up the CXX enviroment variable so that people can specify
-# what g++ to use on the command line (eg. prompt:> CXX=foo scons)
-cxx = conf.env.Dictionary()['CXX']
-if not conf.CheckCXXVersion(cxx, 3, 4):
-	if WhereIs('g++-3.4') != None:
-		print 'Found g++-3.4'
-		cxx = 'g++-3.4'
-	else:
-	     print 'Compiler version check failed. g++ 3.4 or later is needed'
-	     Exit(1)
+if not conf.CheckCXXVersion(env['CXX'], 3, 4):
+	print 'Compiler version check failed. g++ 3.4 or later is needed'
+	Exit(1)
 
 # Add support for compiler caches to speed-up compilation.
-if os.popen('distcc 2> /dev/null').read():
-	cxx = 'distcc ' + cxx
+if conf.TryAction(Action('distcc'))[0]:
+	env.Prepend(CXX = 'distcc ')
 	print 'Enabling distcc...'
-if os.popen('ccache 2> /dev/null').read():
-	cxx = 'ccache ' + cxx
-	print 'Enabling ccache...'
 
-conf.env.Replace(CXX = cxx)
+if conf.TryAction(Action('ccache'))[0]:
+	env.Prepend(CXX = 'ccache ')
+	print 'Enabling ccache...'
 
 if not conf.CheckPKGConfig():
      print 'pkg-config not found.'
@@ -138,47 +151,35 @@ if not conf.CheckLibWithHeader('bz2', 'bzlib.h', 'c'):
 	Exit(1)
 
 env = conf.Finish()
-env.Append(CXXFLAGS = ['-I.', '-D_GNU_SOURCE', '-DENABLE_BINRELOC', '-D_FILE_OFFSET_BITS=64'])
 
 
-# Allow additional CXXFLAGS to be specified by looking at the environment variable.
-try:
-	env.Append(CXXFLAGS = os.environ['CXXFLAGS'])
-except KeyError:
-	pass
+# ----------------------------------------------------------------------
+# Compile and link flags
+# ----------------------------------------------------------------------
 
+env.Append(CXXFLAGS = ['-I.', '-D_GNU_SOURCE', '-D_FILE_OFFSET_BITS=64'])
 
-# Parse command line parameters
-
-debug = ARGUMENTS.get('debug', 0)
-if int(debug):
+if env['debug']:
 	env.Append(CXXFLAGS = '-g -ggdb -D_DEBUG -Wall')
 	env.Append(LDFLAGS = '-g -ggdb')
 
-release = ARGUMENTS.get('release', 0)
-if int(release):
+if env['release']:
 	env.Append(CXXFLAGS = '-O3')
 
-profile = ARGUMENTS.get('profile', 0)
-if int(profile):
+if env['profile']:
 	env.Append(CXXFLAGS = '-pg')
 	env.Append(LDFLAGS= '-pg')
 
-prefix = ARGUMENTS.get('PREFIX','')
-root = ARGUMENTS.get('FAKE_ROOT','')
-bindir = ARGUMENTS.get('BINDIR', prefix + '/bin')
-datadir = ARGUMENTS.get('DATADIR', prefix + '/share')
-docdir = ARGUMENTS.get('DOCDIR', prefix + '/share/doc')
-if str(prefix):
-	env.Append(CXXFLAGS = '-D_PREFIX=\'\"' + prefix + '\"\'')
-	env.Append(CXXFLAGS = '-D_DATADIR=\'\"' + datadir + '\"\'')
-_dir = root
-
-
-# Build the executable
+if env['PREFIX']:
+	env.Append(CXXFLAGS = '-D_DATADIR=\'\"' + env['PREFIX'] + '/share' + '\"\'')
 
 env.ParseConfig('pkg-config --libs libglade-2.0')
 env.ParseConfig('pkg-config --libs gthread-2.0')
+
+
+# ----------------------------------------------------------------------
+# Build
+# ----------------------------------------------------------------------
 
 build = env.Program(target = 'ldcpp', source = [
 	SConscript('client/SConstruct', exports='env', build_dir='build/client', duplicate=0),
@@ -186,7 +187,9 @@ build = env.Program(target = 'ldcpp', source = [
 Default(build)
 
 
-# Install the executable and data files
+# ----------------------------------------------------------------------
+# Install
+# ----------------------------------------------------------------------
 
 glade_files = [
 	'glade/downloadqueue.glade',
@@ -231,12 +234,7 @@ text_files = [
 	'License.txt',
 	'Readme.txt']
 
-env.Install(dir = _dir + datadir + '/ldcpp/glade', source = glade_files)
-env.Install(dir = _dir + datadir + '/ldcpp/pixmaps', source = pixmap_files)
-env.Install(dir = _dir + docdir + '/ldcpp', source = text_files)
-env.Install(dir = _dir + bindir, source = 'ldcpp')
-
-env.Alias('install',[_dir + datadir + '/ldcpp/glade',
-	_dir + datadir + '/ldcpp/pixmaps',
-	_dir + docdir + '/ldcpp',
-	_dir + bindir])
+env.Alias('install', env.Install(dir = env['FAKE_ROOT'] + env['PREFIX'] + '/share' + '/ldcpp/glade', source = glade_files))
+env.Alias('install', env.Install(dir = env['FAKE_ROOT'] + env['PREFIX'] + '/share' + '/ldcpp/pixmaps', source = pixmap_files))
+env.Alias('install', env.Install(dir = env['FAKE_ROOT'] + env['PREFIX'] + '/share/doc' + '/ldcpp', source = text_files))
+env.Alias('install', env.Install(dir = env['FAKE_ROOT'] + env['PREFIX'] + '/bin', source = 'ldcpp'))

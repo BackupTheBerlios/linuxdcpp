@@ -273,7 +273,7 @@ void Search::buildDownloadMenu_gui()
 		{
 			menuItem = gtk_menu_item_new_with_label(i->second.c_str());
 			g_object_set_data_full(G_OBJECT(menuItem), "fav", g_strdup(i->first.c_str()), g_free);
-			g_signal_connect(G_OBJECT(menuItem), "activate", G_CALLBACK(onDownloadFavoriteClicked_gui), (gpointer)this);
+			g_signal_connect(menuItem, "activate", G_CALLBACK(onDownloadFavoriteClicked_gui), (gpointer)this);
 			gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadMenu")), menuItem);
 		}
 		menuItem = gtk_separator_menu_item_new();
@@ -281,7 +281,7 @@ void Search::buildDownloadMenu_gui()
 	}
 
 	menuItem = gtk_menu_item_new_with_label("Browse...");
-	g_signal_connect(G_OBJECT(menuItem), "activate", G_CALLBACK(onDownloadToClicked_gui), (gpointer)this);
+	g_signal_connect(menuItem, "activate", G_CALLBACK(onDownloadToClicked_gui), (gpointer)this);
 	gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadMenu")), menuItem);
 
 	// Build "Download whole directory to..." submenu
@@ -295,7 +295,7 @@ void Search::buildDownloadMenu_gui()
 		{
 			menuItem = gtk_menu_item_new_with_label(i->second.c_str());
 			g_object_set_data_full(G_OBJECT(menuItem), "fav", g_strdup(i->first.c_str()), g_free);
-			g_signal_connect(G_OBJECT(menuItem), "activate", G_CALLBACK(onDownloadFavoriteDirClicked_gui), (gpointer)this);
+			g_signal_connect(menuItem, "activate", G_CALLBACK(onDownloadFavoriteDirClicked_gui), (gpointer)this);
 			gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadDirMenu")), menuItem);
 		}
 		menuItem = gtk_separator_menu_item_new();
@@ -303,7 +303,7 @@ void Search::buildDownloadMenu_gui()
 	}
 
 	menuItem = gtk_menu_item_new_with_label("Browse...");
-	g_signal_connect(G_OBJECT(menuItem), "activate", G_CALLBACK(onDownloadDirToClicked_gui), (gpointer)this);
+	g_signal_connect(menuItem, "activate", G_CALLBACK(onDownloadDirToClicked_gui), (gpointer)this);
 	gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadDirMenu")), menuItem);
 }
 

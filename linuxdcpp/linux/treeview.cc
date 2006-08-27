@@ -112,7 +112,7 @@ void TreeView::finalize()
 
 		colMenuItems[col.title] = gtk_check_menu_item_new_with_label(col.title.c_str());
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(colMenuItems[col.title]), col.visible);
-		g_signal_connect(G_OBJECT(colMenuItems[col.title]), "activate", G_CALLBACK(toggleColumnVisibility), (gpointer)this);
+		g_signal_connect(colMenuItems[col.title], "activate", G_CALLBACK(toggleColumnVisibility), (gpointer)this);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), colMenuItems[col.title]);
 
 		if (!col.visible)
@@ -244,7 +244,7 @@ void TreeView::addColumn_gui(Column column)
 	 * Breaks GTK+ API, but is the only way to attach a signal to a gtktreeview column header. See GTK bug #141937.
 	 * @todo: Replace when GTK adds a way to add a signal to the entire header (remove visibleColumns var, too).
 	 */
-	g_signal_connect(G_OBJECT(col->button), "button-release-event", G_CALLBACK(popupMenu_gui), (gpointer)this);
+	g_signal_connect(col->button, "button-release-event", G_CALLBACK(popupMenu_gui), (gpointer)this);
 }
 
 void TreeView::setSortColumn_gui(string column, string sortColumn)

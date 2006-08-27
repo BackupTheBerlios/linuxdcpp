@@ -1,3 +1,14 @@
+2006-08-27 - Steven Sheehy
+* Removed binreloc/prefix.hh. It now uses the prefix it was compiled with
+  (/usr/local by default) and if it's not found, uses the current dir instead.
+* Specifying PREFIX for both scons and scons install is no longer needed, it is
+  carried over to scons install automatically.
+* Scons now ensures scons version is at least 0.96.
+* Scons now shows the available ldcpp command-line parameters with "scons --help".
+* Removed ability to specify BINDIR, DOCDIR and DATADIR separately from PREFIX (wouldn't work w/ above changes).
+* More SConstruct cleanup.
+* Fixed another issue with SOCKS5 setting.
+
 2006-08-21 - Steven Sheehy
 * Created an Entry class and made MainWindow, BookEntry and DialogEntry subclasses of it.
 * WulforManager now deletes all of MainWindow's queued functions before closing the program.

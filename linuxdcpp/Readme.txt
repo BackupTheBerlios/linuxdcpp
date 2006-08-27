@@ -20,14 +20,15 @@ http://openfacts.berlios.de/index-en.phtml?title=Ldcpp_Manual
 
 Dependencies:
 -------------
-Gtk+ 2.6
-libglade 2.4
-libgnome (Required by libglade on some systems it seems)
+scons >= 0.96
+pkg-config
+g++ >= 3.4
+gtk+-2.0 >= 2.6
+gthread-2.0 >= 2.4
+libglade-2.0 >= 2.4
 pthread
 zlib
 libbz2
-scons
-g++ >= 3.4 (Yes, this is REQUIRED for successful compilation!)
 
 
 Compiling:

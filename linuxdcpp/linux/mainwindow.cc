@@ -309,7 +309,7 @@ void MainWindow::applyCallback(GCallback closeCallback)
 void MainWindow::appendWindowItem(GtkWidget *page, string title)
 {
 	GtkWidget *menuItem = gtk_menu_item_new_with_label(title.c_str());
-	g_signal_connect(G_OBJECT(menuItem), "activate", G_CALLBACK(onRaisePage_gui), (gpointer)page);
+	g_signal_connect(menuItem, "activate", G_CALLBACK(onRaisePage_gui), (gpointer)page);
 	gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("windowMenu")), menuItem);
 	gtk_widget_show_all(getWidget("windowMenu"));
 	g_object_set_data(G_OBJECT(page), "menuItem", menuItem);

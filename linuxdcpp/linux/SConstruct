@@ -9,7 +9,6 @@ gui_files = [
 	'hashdialog.cc',
 	'hub.cc',
 	'mainwindow.cc',
-	'prefix.cc',
 	'privatemessage.cc',
 	'publichubs.cc',
 	'search.cc',
@@ -23,7 +22,7 @@ gui_files = [
 
 Import('env')
 
-# Get the cflags. We copy the env since so we don't want to add these flags globally.
+# Get the cflags. We copy the env since so we don't want to add these flags globally (scons bug?)
 env_gui = env.Copy()
 env_gui.ParseConfig('pkg-config --cflags libglade-2.0')
 env_gui.ParseConfig('pkg-config --cflags gthread-2.0')

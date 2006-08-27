@@ -88,6 +88,7 @@ class WulforManager
 
 		static WulforManager *manager;
 		MainWindow *mainWin;
+		std::string path;
 		std::vector<FuncBase *> guiFuncs;
 		std::vector<FuncBase *> clientFuncs;
 		hash_map<std::string, BookEntry *> bookEntries;
