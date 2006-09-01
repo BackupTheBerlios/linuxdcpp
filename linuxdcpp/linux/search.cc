@@ -414,8 +414,6 @@ void Search::search_gui()
 		setStatus_gui("statusbar1", line);
 		setStatus_gui("statusbar2", "");
 		setStatus_gui("statusbar3", "");
-
-		///@todo: add a timer to change the status line(countdown).
 	}
 }
 

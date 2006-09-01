@@ -74,7 +74,7 @@ WulforManager::WulforManager()
 	mainWin = NULL;
 
 	// Determine path to data files
-	path = string(_DATADIR) + PATH_SEPARATOR_STR + "ldcpp";
+	path = string(_DATADIR) + PATH_SEPARATOR_STR + "linuxdcpp";
 
 	struct stat s;
 	if (stat(path.c_str(), &s) == -1)
@@ -333,7 +333,6 @@ void WulforManager::insertBookEntry_gui(BookEntry *entry, bool raise)
 
 	entry->applyCallback(G_CALLBACK(onCloseBookEntry_gui));
 	mainWin->addPage_gui(entry->getContainer(), entry->getTitle(), raise);
-	gtk_widget_unref(entry->getContainer());
 
 	pthread_mutex_lock(&bookEntryLock);
 	bookEntries[entry->getID()] = entry;

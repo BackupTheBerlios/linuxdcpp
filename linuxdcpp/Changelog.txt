@@ -1,3 +1,13 @@
+2006-09-01 - Steven Sheehy
+* Changed binary name and data path from ldcpp to linuxdcpp to satisfy package maintainers.
+  !!IMPORTANT!! - run "scons -c install" to remove all the old files before compiling.
+* Fixed an issue with including system CXXFLAGS (thanks naga).
+* Made tabs open more smoothly.
+* Tabs are now reorderable (activated only if gtk >= 2.10).
+* Fixed core not being able to delete files.xml*.bz2 on shutdown.
+* Fixed an issue with the font being too small in sharebrowser buttons.
+* Made sharebrowser more similar to DC++ (thanks dorian).
+
 2006-08-27 - Steven Sheehy
 * Removed binreloc/prefix.hh. It now uses the prefix it was compiled with
   (/usr/local by default) and if it's not found, uses the current dir instead.

@@ -144,31 +144,6 @@ public:
 
 	static void initialize();
 
-	/**
-	 * Get the path to the application executable. 
-	 * This is mainly intended for use on Windows.
-	 *
-	 * @return Path to executable file.
-	 */
-	static string getAppPath() { return appPath; }
-
-	static string getAppName() {
-#ifdef _WIN32
-		TCHAR buf[MAX_PATH+1];
-		DWORD x = GetModuleFileName(NULL, buf, MAX_PATH);
-		return Text::wideToUtf8(wstring(buf, x));
-#else // _WIN32
-		char buf[PATH_MAX + 1];
-		int n;
-		n = readlink("/proc/self/exe", buf, PATH_MAX);
-		if (n == -1) {
-				return emptyString;
-			}
-		buf[n] = '\0';
-		return string(buf);
-#endif // _WIN32
-	}	
-
 	/** Path of temporary storage */
 	static string getTempPath() {
 #ifdef _WIN32
@@ -179,9 +154,6 @@ public:
 		return "/tmp/";
 #endif
 	}
-
-	/** Path of resource directory */
-	static string getDataPath();
 
 	/** Path of configuration files */
 	static string getConfigPath();

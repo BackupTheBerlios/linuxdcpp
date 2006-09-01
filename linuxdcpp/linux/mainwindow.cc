@@ -110,7 +110,7 @@ void MainWindow::createWindow_gui()
 	window = GTK_WINDOW(getWidget("mainWindow"));
 
 	// Load icons. We need to do this in the code and not in the .glade file,
-	// otherwise we won't always find the images using binreloc
+	// otherwise we won't always find the images.
 	string file, path = WulforManager::get()->getPath() + "/pixmaps/";
 
 	// Set the toolbar and transfer view icons.
@@ -276,17 +276,18 @@ void MainWindow::createWindow_gui()
  */
 void MainWindow::createTrayIcon_gui()
 {
-	GtkWidget *trayBox, *trayImage;
-	string iconPath;
-
-	trayIcon = GTK_WIDGET(egg_tray_icon_new("Linux DC++"));
-	trayBox = gtk_event_box_new();
-	iconPath = WulforManager::get()->getPath() + "/pixmaps/linuxdcpp-icon.png";
-	trayImage = gtk_image_new_from_file(iconPath.c_str());
+	string iconPath = WulforManager::get()->getPath() + "/pixmaps/linuxdcpp-icon.png";
 	trayToolTip = gtk_tooltips_new();
 
+#if GTK_CHECK_VERSION(2, 10, 0)
+	trayIcon = GTK_WIDGET(gtk_status_icon_new_from_file(iconPath.c_str()));
+#else
+	trayIcon = GTK_WIDGET(egg_tray_icon_new("Linux DC++"));
+	GtkWidget *trayBox = gtk_event_box_new();
+	GtkWidget *trayImage = gtk_image_new_from_file(iconPath.c_str());
 	gtk_container_add(GTK_CONTAINER(trayBox), trayImage);
 	gtk_container_add(GTK_CONTAINER(trayIcon), trayBox);
+#endif
 
 	g_signal_connect(getWidget("quitTrayItem"), "activate", G_CALLBACK(quitClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("toggleInterfaceItem"), "activate", G_CALLBACK(onToggleWindowVisibility_gui), (gpointer)this);
@@ -672,8 +673,8 @@ void MainWindow::autoConnect_client()
 			else
 				nick = entry->getNick();
 
-			func = new F4(this, &MainWindow::openHub_gui, entry->getServer(),
-				nick, entry->getUserDescription(), entry->getPassword());
+			func = new F4(this, &MainWindow::openHub_gui, entry->getServer(), nick,
+				entry->getUserDescription(), entry->getPassword());
 			WulforManager::get()->dispatchGuiFunc(func);
 		}
 	}
@@ -786,30 +787,26 @@ void MainWindow::addPage_gui(GtkWidget *page, GtkWidget *label, bool raise)
 
 	if (raise)
 		gtk_notebook_set_current_page(GTK_NOTEBOOK(getWidget("book")), -1);
+
+#if GTK_CHECK_VERSION(2, 10, 0)
+	gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(getWidget("book")), page, TRUE);
+#endif
 }
 
 void MainWindow::removePage_gui(GtkWidget *page)
 {
-	for (int i = 0; i < gtk_notebook_get_n_pages(GTK_NOTEBOOK(getWidget("book"))); i++)
-	{
-		if (page == gtk_notebook_get_nth_page(GTK_NOTEBOOK(getWidget("book")), i))
-		{
-			gtk_notebook_remove_page(GTK_NOTEBOOK(getWidget("book")), i);
-			return;
-		}
-	}
+	int num = gtk_notebook_page_num(GTK_NOTEBOOK(getWidget("book")), page);
+
+	if (num != -1)
+		gtk_notebook_remove_page(GTK_NOTEBOOK(getWidget("book")), num);
 }
 
 void MainWindow::raisePage_gui(GtkWidget *page)
 {
-	for (int i = 0; i < gtk_notebook_get_n_pages(GTK_NOTEBOOK(getWidget("book"))); i++)
-	{
-		if (page == gtk_notebook_get_nth_page(GTK_NOTEBOOK(getWidget("book")), i))
-		{
-			gtk_notebook_set_current_page(GTK_NOTEBOOK(getWidget("book")), i);
-			return;
-		}
-	}
+	int num = gtk_notebook_page_num(GTK_NOTEBOOK(getWidget("book")), page);
+
+	if (num != -1)
+		gtk_notebook_set_current_page(GTK_NOTEBOOK(getWidget("book")), num);
 }
 
 GtkWidget *MainWindow::currentPage_gui()

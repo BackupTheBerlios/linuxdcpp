@@ -63,7 +63,7 @@ WulforSettingsManager::WulforSettingsManager()
 	defaultString["sharebrowser-order"] = "";
 	defaultString["sharebrowser-width"] = "";
 	defaultString["sharebrowser-visibility"] = "";
-	defaultString["fallback-encoding"] = "CP1252";
+	defaultString["default-charset"] = "CP1252";
 }
 
 WulforSettingsManager *WulforSettingsManager::get()
@@ -105,12 +105,12 @@ void WulforSettingsManager::set(std::string key, string value)
 
 void WulforSettingsManager::load()
 {
-	load(Util::getAppPath() + "LinuxDC++.xml");
+	load(Util::getConfigPath() + "LinuxDC++.xml");
 }
 
 void WulforSettingsManager::save()
 {
-	save(Util::getAppPath() + "LinuxDC++.xml");
+	save(Util::getConfigPath() + "LinuxDC++.xml");
 }
 
 void WulforSettingsManager::load(std::string fileName)

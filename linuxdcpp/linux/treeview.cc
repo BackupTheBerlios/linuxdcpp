@@ -33,7 +33,7 @@ TreeView::~TreeView()
 	if (!name.empty() && name != "main")
 		saveSettings();
 	if (gtypes)
-		delete gtypes;
+		delete [] gtypes;
 }
 
 void TreeView::setView(GtkTreeView *view)

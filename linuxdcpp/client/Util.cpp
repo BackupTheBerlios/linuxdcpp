@@ -56,7 +56,6 @@ string Util::awayMsg;
 time_t Util::awayTime;
 
 Util::CountryList Util::countries;
-string Util::appPath;
 
 static void sgenrand(unsigned long seed);
 
@@ -78,27 +77,17 @@ void Util::initialize() {
 	sgenrand((unsigned long)time(NULL));
 
 #ifdef _WIN32
-	TCHAR buf[MAX_PATH+1];
-	GetModuleFileName(NULL, buf, MAX_PATH);
-	appPath = Text::fromT(buf);
-	appPath.erase(appPath.rfind('\\') + 1);
 
 #if _MSC_VER == 1400
 	_set_invalid_parameter_handler(reinterpret_cast<_invalid_parameter_handler>(invalidParameterHandler));
 #endif
 
-#else // _WIN32
-	char* home = getenv("HOME");
-	if (home) {
-		appPath = Text::fromT(home);
-		appPath += "/.dc++/";
-	}
 #endif // _WIN32
 
 	try {
 		// This product includes GeoIP data created by MaxMind, available from http://maxmind.com/
 		// Updates at http://www.maxmind.com/app/geoip_country
-		string file = Util::getDataPath() + "GeoIpCountryWhois.csv";
+		string file = Util::getConfigPath() + "GeoIpCountryWhois.csv";
 		string data = File(file, File::READ, File::OPEN).read();
 
 		const char* start = data.c_str();
@@ -140,30 +129,16 @@ void Util::initialize() {
 
 string Util::getConfigPath() {
 #ifdef _WIN32
-		return getAppPath();
+	TCHAR buf[MAX_PATH+1];
+	GetModuleFileName(NULL, buf, MAX_PATH);
+	string appPath = Text::fromT(buf);
+	appPath.erase(appPath.rfind('\\') + 1);
+	return appPath;
 #else
-		char* home = getenv("HOME");
-		if (home) {
-#ifdef __APPLE__
-/// @todo Verify this for apple?
-			return string(home) + "/Library/Application Support/Mac DC++/";
-#else
-			return string(home) + "/.dc++/";
-#endif // __APPLE__
-		}
-		return emptyString;
-#endif // _WIN32
-}
-
-string Util::getDataPath() {
-#ifdef _WIN32
-	return getAppPath();
-#else
-	// This probably ought to be /usr/share/*...
 	char* home = getenv("HOME");
 	if (home) {
 #ifdef __APPLE__
-		/// @todo Verify this for apple?
+/// @todo Verify this for apple?
 		return string(home) + "/Library/Application Support/Mac DC++/";
 #else
 		return string(home) + "/.dc++/";

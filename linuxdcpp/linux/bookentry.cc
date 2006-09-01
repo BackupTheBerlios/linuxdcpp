@@ -47,11 +47,6 @@ BookEntry::BookEntry(string title, string glade):
 	gtk_widget_show_all(box);
 
 	setLabel_gui(title);
-
-	// Get the GtkWindow and remove the box from it to use in GtkNotebook
-	gtk_widget_ref(getContainer());
-	gtk_container_remove(GTK_CONTAINER(getWidget(string("window"))), getContainer());
-	gtk_widget_destroy(getWidget("window"));
 }
 
 GtkWidget* BookEntry::getContainer()

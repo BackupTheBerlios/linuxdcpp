@@ -635,13 +635,15 @@ void Hub::connectClient_client(string address, string nick, string desc, string 
 	dcassert(client == NULL);
 	client = ClientManager::getInstance()->getClient(address);
 
-	if (nick.empty())
-		client->getMyIdentity().setNick(SETTING(NICK));
-	else
+	if (!nick.empty())
 		client->getMyIdentity().setNick(nick);
-
+	else
+		client->getMyIdentity().setNick(SETTING(NICK));
+ 
 	if (!desc.empty())
 		client->getMyIdentity().setDescription(desc);
+	else
+		client->getMyIdentity().setDescription(SETTING(DESCRIPTION));
 
 	client->addListener(this);
 	client->setPassword(password);

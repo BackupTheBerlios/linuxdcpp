@@ -76,23 +76,6 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file):
 	g_object_unref(dirStore);
 	dirSelection = gtk_tree_view_get_selection(dirView.get());
 
-	// Set the buttons text to small so that the statusbar isn't too high.
-	// This can't be set with glade, needs to be done in code.
-	GtkLabel *label;
-	label = GTK_LABEL(gtk_bin_get_child(GTK_BIN(getWidget("matchButton"))));
-	gtk_label_set_markup(label, "<span size=\"x-small\">Match Queue</span>");
-	label = GTK_LABEL(gtk_bin_get_child(GTK_BIN(getWidget("findButton"))));
-	gtk_label_set_markup(label, "<span size=\"x-small\">Find</span>");
-	label = GTK_LABEL(gtk_bin_get_child(GTK_BIN(getWidget("nextButton"))));
-	gtk_label_set_markup(label, "<span size=\"x-small\">Next</span>");
-
-	// Set the buttons in statusbar to same height as statusbar
-	GtkRequisition statusReq;
-	gtk_widget_size_request(getWidget("mainStatus"), &statusReq);
-	gtk_widget_set_size_request(getWidget("matchButton"), -1, statusReq.height);
-	gtk_widget_set_size_request(getWidget("findButton"), -1, statusReq.height);
-	gtk_widget_set_size_request(getWidget("nextButton"), -1, statusReq.height);
-
 	// Connect the signals to their callback functions.
 	g_signal_connect(fileView.get(), "button-press-event", G_CALLBACK(onButtonPressed_gui), (gpointer)this);
 	g_signal_connect(fileView.get(), "button-release-event", G_CALLBACK(onFileButtonReleased_gui), (gpointer)this);
@@ -117,7 +100,22 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file):
 		setStatus_gui("mainStatus", "Unable to load file list: " + e.getError());
 	}
 
-	buildDirs_gui(listing.getRoot()->directories, NULL);
+	// Set name of root entry to user nick.
+	listing.getRoot()->setName(WulforUtil::getNicks(user));
+	
+	// Add entries to dir tree view starting with the root entry.
+	buildDirs_gui(listing.getRoot(), NULL);
+
+	// Expand root entry of dir tree view.
+	GtkTreePath *path = gtk_tree_path_new_first();
+	gtk_tree_view_expand_row(dirView.get(), path, 0);
+	gtk_tree_view_set_cursor(dirView.get(), path, NULL, FALSE);
+	gtk_tree_path_free(path);
+
+	// Show entries of root in file view. fileView isn't realized yet so we have to queue it for later.
+	typedef Func1<ShareBrowser, DirectoryListing::Directory *> F1;
+	WulforManager::get()->dispatchGuiFunc(new F1(this, &ShareBrowser::updateFiles_gui, listing.getRoot()));
+
 	updateStatus_gui();
 }
 
@@ -136,39 +134,35 @@ void ShareBrowser::setPosition_gui(string pos)
 {
 }
 
-void ShareBrowser::buildDirs_gui(DirectoryListing::Directory::List dirs, GtkTreeIter *iter)
+void ShareBrowser::buildDirs_gui(DirectoryListing::Directory *dir, GtkTreeIter *iter)
 {
 	DirectoryListing::Directory::Iter it;
 	DirectoryListing::File::Iter file;
 	GtkTreeIter newIter;
 
-	std::sort(dirs.begin(), dirs.end(), DirectoryListing::Directory::DirSort());
+	gtk_tree_store_append(dirStore, &newIter, iter);
 
-	for (it = dirs.begin(); it != dirs.end(); it++)
+	// Add the name and check if it is utf-8.
+	if (listing.getUtf8())
+		gtk_tree_store_set(dirStore, &newIter, dirView.col("Dir"), dir->getName().c_str(), -1);
+	else
+		gtk_tree_store_set(dirStore, &newIter, dirView.col("Dir"), Text::acpToUtf8(dir->getName()).c_str(), -1);
+
+	gtk_tree_store_set(dirStore, &newIter,
+		dirView.col("DL Dir"), (gpointer)dir,
+		dirView.col("Icon"), iconDirectory,
+		-1);
+
+	for (file = dir->files.begin(); file != dir->files.end(); ++file)
 	{
-		gtk_tree_store_append(dirStore, &newIter, iter);
-
-		// Add the name and check if it is utf-8.
-		if (listing.getUtf8())
-			gtk_tree_store_set(dirStore, &newIter, dirView.col("Dir"), (*it)->getName().c_str(), -1);
-		else
-			gtk_tree_store_set(dirStore, &newIter, dirView.col("Dir"), Text::acpToUtf8((*it)->getName()).c_str(), -1);
-
-		gtk_tree_store_set(dirStore, &newIter,
-			dirView.col("DL Dir"), (gpointer)*it,
-			dirView.col("Icon"), iconDirectory,
-			-1);
-
-		std::sort((*it)->files.begin(), (*it)->files.end(), DirectoryListing::File::FileSort());
-		for (file = (*it)->files.begin(); file != (*it)->files.end(); file++)
-		{
-			shareItems++;
-			shareSize += (*file)->getSize();
-		}
-
-		buildDirs_gui((*it)->directories, &newIter);
+		shareItems++;
+		shareSize += (*file)->getSize();
 	}
 
+	// Recursive call for all subdirs of current dir.
+	std::sort(dir->directories.begin(), dir->directories.end(), DirectoryListing::Directory::DirSort());
+	for (it = dir->directories.begin(); it != dir->directories.end(); ++it)
+		buildDirs_gui(*it, &newIter);
 }
 
 void ShareBrowser::buildDirDownloadMenu_gui()

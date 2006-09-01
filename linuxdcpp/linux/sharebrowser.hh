@@ -38,7 +38,7 @@ class ShareBrowser:
 
 	private:
 		// GUI functions
-		void buildDirs_gui(DirectoryListing::Directory::List dir, GtkTreeIter *iter);
+		void buildDirs_gui(DirectoryListing::Directory *dir, GtkTreeIter *iter);
 		void buildDirDownloadMenu_gui();
 		void buildFileDownloadMenu_gui();
 		void updateFiles_gui(DirectoryListing::Directory *dir);

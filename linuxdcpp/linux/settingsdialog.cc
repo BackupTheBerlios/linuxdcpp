@@ -273,7 +273,7 @@ void Settings::saveSettings()
 		sm->set(SettingsManager::BIND_ADDRESS, string(gtk_entry_get_text(GTK_ENTRY(getWidget("bindAddressEntry")))));
 		sm->set(SettingsManager::SOCKET_IN_BUFFER, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("socketReadSpinButton")))));
 		sm->set(SettingsManager::SOCKET_OUT_BUFFER, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("socketWriteSpinButton")))));
-		WSET("fallback-encoding", Text::acpToUtf8(string(gtk_entry_get_text(GTK_ENTRY(getWidget("encodingEntry"))))));
+		WSET("default-charset", Text::acpToUtf8(string(gtk_entry_get_text(GTK_ENTRY(getWidget("encodingEntry"))))));
 	}
 
 	sm->save();
@@ -745,7 +745,7 @@ void Settings::initAdvanced_gui()
 		gtk_entry_set_text(GTK_ENTRY(getWidget("bindAddressEntry")), SETTING(BIND_ADDRESS).c_str());
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("socketReadSpinButton")), (double)SETTING(SOCKET_IN_BUFFER));
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("socketWriteSpinButton")), (double)SETTING(SOCKET_OUT_BUFFER));
-		gtk_entry_set_text(GTK_ENTRY(getWidget("encodingEntry")), WGETS("fallback-encoding").c_str());
+		gtk_entry_set_text(GTK_ENTRY(getWidget("encodingEntry")), WGETS("default-charset").c_str());
 	}
 }
 

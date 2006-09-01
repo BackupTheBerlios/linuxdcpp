@@ -54,7 +54,7 @@ opts.AddOptions(
 	BoolOption('release', 'Compile the program with optimizations', 0),
 	BoolOption('profile', 'Compile the program with profiling information', 0),
 	PathOption('PREFIX', 'Compile the program with PREFIX as the root for installation', '/usr/local'),
-	('FAKE_ROOT', 'Make scons install ldcpp under a fake root (for gentoo ebuilds)', '')
+	('FAKE_ROOT', 'Make scons install linuxdcpp under a fake root (for gentoo ebuilds)', '')
 )
 
 
@@ -78,7 +78,7 @@ if os.environ.has_key('CXX'):
 	env['CXX'] = os.environ['CXX']
 
 if os.environ.has_key('CXXFLAGS'):
-	env['CXXFLAGS'] = os.environ['CXXFLAGS']
+	env['CXXFLAGS'] = os.environ['CXXFLAGS'].split()
 
 env.SConsignFile('build/sconf/.sconsign')
 opts.Save('build/sconf/scache.conf', env)
@@ -157,11 +157,11 @@ env = conf.Finish()
 # Compile and link flags
 # ----------------------------------------------------------------------
 
-env.Append(CXXFLAGS = ['-I.', '-D_GNU_SOURCE', '-D_FILE_OFFSET_BITS=64'])
+env.Append(CXXFLAGS = Split('-I. -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64'))
 
 if env['debug']:
-	env.Append(CXXFLAGS = '-g -ggdb -D_DEBUG -Wall')
-	env.Append(LDFLAGS = '-g -ggdb')
+	env.Append(CXXFLAGS = Split('-g -ggdb -D_DEBUG -Wall'))
+	env.Append(LDFLAGS = Split('-g -ggdb'))
 
 if env['release']:
 	env.Append(CXXFLAGS = '-O3')
@@ -181,7 +181,7 @@ env.ParseConfig('pkg-config --libs gthread-2.0')
 # Build
 # ----------------------------------------------------------------------
 
-build = env.Program(target = 'ldcpp', source = [
+build = env.Program(target = 'linuxdcpp', source = [
 	SConscript('client/SConstruct', exports='env', build_dir='build/client', duplicate=0),
 	SConscript('linux/SConstruct', exports='env', build_dir='build/gui', duplicate=0)])
 Default(build)
@@ -234,7 +234,7 @@ text_files = [
 	'License.txt',
 	'Readme.txt']
 
-env.Alias('install', env.Install(dir = env['FAKE_ROOT'] + env['PREFIX'] + '/share' + '/ldcpp/glade', source = glade_files))
-env.Alias('install', env.Install(dir = env['FAKE_ROOT'] + env['PREFIX'] + '/share' + '/ldcpp/pixmaps', source = pixmap_files))
-env.Alias('install', env.Install(dir = env['FAKE_ROOT'] + env['PREFIX'] + '/share/doc' + '/ldcpp', source = text_files))
-env.Alias('install', env.Install(dir = env['FAKE_ROOT'] + env['PREFIX'] + '/bin', source = 'ldcpp'))
+env.Alias('install', env.Install(dir = env['FAKE_ROOT'] + env['PREFIX'] + '/share/linuxdcpp/glade', source = glade_files))
+env.Alias('install', env.Install(dir = env['FAKE_ROOT'] + env['PREFIX'] + '/share/linuxdcpp/pixmaps', source = pixmap_files))
+env.Alias('install', env.Install(dir = env['FAKE_ROOT'] + env['PREFIX'] + '/share/doc/linuxdcpp', source = text_files))
+env.Alias('install', env.Install(dir = env['FAKE_ROOT'] + env['PREFIX'] + '/bin', source = 'linuxdcpp'))
