@@ -21,6 +21,7 @@
 
 #include "Text.h"
 #include <glib.h>
+#include "../linux/settingsmanager.hh"
 
 char Text::asciiLower[128];
 wchar_t Text::lower[65536];
@@ -269,7 +270,7 @@ string Text::acpToUtf8(const string& str) throw()
 	gchar *utf8CString = g_filename_to_utf8(str.c_str(), -1, NULL, NULL, NULL);
 	if (utf8CString == NULL)
 	{
-		utf8CString = g_convert_with_fallback(str.c_str(), -1, "UTF-8", "?", "", NULL, NULL, NULL);
+		utf8CString = g_convert(str.c_str(), -1, "UTF-8", WGETS("default-charset").c_str(), NULL, NULL, NULL);
 		if (utf8CString == NULL)
 			return utf8String;
 	}
