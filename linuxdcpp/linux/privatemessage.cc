@@ -42,6 +42,9 @@ PrivateMessage::PrivateMessage(User::Ptr user):
 	gtk_text_buffer_get_end_iter(buffer, &iter);
 	mark = gtk_text_buffer_create_mark(buffer, NULL, &iter, FALSE);
 
+	if (BOOLSETTING(PRIVATE_MESSAGE_BEEP_OPEN))
+		gdk_beep();
+
 	// Connect the signals to their callback functions.
 	g_signal_connect(getWidget("entry"), "activate", G_CALLBACK(onSendMessage_gui), (gpointer)this);
 	g_signal_connect(getWidget("entry"), "key-press-event", G_CALLBACK(onKeyPress_gui), (gpointer)this);
@@ -108,6 +111,14 @@ void PrivateMessage::addLine_gui(string message)
 
 	if (BOOLSETTING(BOLD_PM))
 		setBold_gui();
+
+	if (BOOLSETTING(PRIVATE_MESSAGE_BEEP))
+	{
+		MainWindow *mw = WulforManager::get()->getMainWindow();
+		GdkWindowState state = gdk_window_get_state(mw->getContainer()->window);
+	 	if ((state & GDK_WINDOW_STATE_ICONIFIED) || mw->currentPage_gui() != getContainer())
+			gdk_beep();
+	}
 }
 
 void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)

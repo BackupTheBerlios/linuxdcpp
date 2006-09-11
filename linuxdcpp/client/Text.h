@@ -39,7 +39,10 @@ class Text {
 public:
 	static void initialize();
 
-	static string& acpToUtf8(const string& str, string& tmp) throw();
+	static string& acpToUtf8(const string& str, string& tmp) throw() {
+		tmp = acpToUtf8(str);
+		return tmp;
+	}
 	static string acpToUtf8(const string& str) throw();
 
 	static wstring& acpToWide(const string& str, wstring& tmp) throw();
@@ -48,7 +51,10 @@ public:
 		return acpToWide(str, tmp);
 	}
 
-	static string& utf8ToAcp(const string& str, string& tmp) throw();
+	static string& utf8ToAcp(const string& str, string& tmp) throw() {
+		tmp = utf8ToAcp(str);
+		return tmp;
+	}
 	static string utf8ToAcp(const string& str) throw();
 
 	static wstring& utf8ToWide(const string& str, wstring& tmp) throw();
@@ -107,7 +113,10 @@ public:
 	}
 	static wstring& toLower(const wstring& str, wstring& tmp) throw();
 	static string toLower(const string& str) throw();
-	static string& toLower(const string& str, string& tmp) throw();
+	static string& toLower(const string& str, string& tmp) throw() {
+		tmp = toLower(str);
+		return tmp;
+	}
 
 private:
 	static char asciiLower[128];

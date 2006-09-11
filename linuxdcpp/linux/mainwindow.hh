@@ -117,6 +117,8 @@ class MainWindow:
 		static void switchPage_gui(GtkNotebook *notebook, GtkNotebookPage *page, guint num, gpointer data);
 		static void onTrayIconClicked_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static void onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data);
+		static gboolean onKeyPressed_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
+		static gboolean onButtonPressPage_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 
 		// Client callbacks
 		virtual void on(TimerManagerListener::Second, u_int32_t ticks) throw();
@@ -157,6 +159,7 @@ class MainWindow:
 				MASK_SIZE = 1 << 5,
 				MASK_SPEED = 1 << 6,
 				MASK_PROGRESS = 1 << 7,
+				MASK_IP = 1 << 8
 			} Mask;
 
 			bool isSet(Mask m) { return updateMask & m; }
@@ -174,6 +177,7 @@ class MainWindow:
 			void setSize(int64_t size) { this->size = size; updateMask |= MASK_SIZE; }
 			void setSpeed(int64_t speed) { this->speed = speed; updateMask |= MASK_SPEED; }
 			void setProgress(int progress) { this->progress = progress; updateMask |= MASK_PROGRESS; }
+			void setIp(std::string ip) { this->ip = ip; updateMask |= MASK_IP; }
 
 			u_int32_t updateMask;
 			User::Ptr user;
@@ -189,6 +193,7 @@ class MainWindow:
 			int64_t size;
 			int64_t speed;
 			int progress;
+			std::string ip;
 			bool failed;
 		};
 

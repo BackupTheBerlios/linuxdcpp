@@ -139,9 +139,7 @@ private:
 		}
 
 		virtual int run();
-#ifdef _WIN32
 		bool fastHash(const string& fname, u_int8_t* buf, TigerTree& tth, int64_t size, CRC32Filter* xcrc32);
-#endif
 		void getStats(string& curFile, int64_t& bytesLeft, size_t& filesLeft) {
 			Lock l(cs);
 			curFile = currentFile;

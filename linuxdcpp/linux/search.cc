@@ -162,7 +162,7 @@ void Search::initHubs_gui()
 	Client::List& clients = clientMgr->getClients();
 
 	Client *client;
-	for (Client::List::iterator it = clients.begin(); it != clients.end(); it++)
+	for (Client::List::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
 		client = *it;
 		if (client->isConnected())

@@ -258,11 +258,13 @@ ConnectionManager::Server::Server(bool secure_, short port, const string& ip /* 
 static const u_int32_t POLL_TIMEOUT = 250;
 
 int ConnectionManager::Server::run() throw() {
-	while(!die) {
-		if(sock.wait(POLL_TIMEOUT, Socket::WAIT_READ) == Socket::WAIT_READ) {
-			ConnectionManager::getInstance()->accept(sock, secure);
+	try {
+		while(!die) {
+			if(sock.wait(POLL_TIMEOUT, Socket::WAIT_READ) == Socket::WAIT_READ) {
+				ConnectionManager::getInstance()->accept(sock, secure);
+			}
 		}
-	}
+	} catch(const Exception&) {}
 	return 0;
 }
 

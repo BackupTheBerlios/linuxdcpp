@@ -84,7 +84,7 @@ ShareManager::~ShareManager() {
 	DIR* dir = opendir(Util::getConfigPath().c_str());
 	if (dir) {
 		while (struct dirent* ent = readdir(dir)) {
-			if (fnmatch("files*.xml.bz2", ent->d_name, 0) == 0) {
+			if (fnmatch("files?*.xml.bz2", ent->d_name, 0) == 0) {
 					File::deleteFile(Util::getConfigPath() + ent->d_name);	
 				}
 		}

@@ -121,12 +121,12 @@ void Text::wcToUtf8(wchar_t c, string& str) {
 		str += (char)c;
 	}
 }
-
+/*
 string& Text::acpToUtf8(const string& str, string& tmp) throw() {
 	wstring wtmp;
 	return wideToUtf8(acpToWide(str, wtmp), tmp);
 }
-
+*/
 wstring& Text::acpToWide(const string& str, wstring& tmp) throw() {
 	if(str.empty())
 		return tmp;
@@ -213,12 +213,12 @@ bool Text::validateUtf8(const string& str) throw() {
 	}
 	return true;
 }
-
+/*
 string& Text::utf8ToAcp(const string& str, string& tmp) throw() {
 	wstring wtmp;
 	return wideToAcp(utf8ToWide(str, wtmp), tmp);
 }
-
+*/
 wstring& Text::utf8ToWide(const string& str, wstring& tgt) throw() {
 	tgt.reserve(str.length());
 	string::size_type n = str.length();
@@ -244,7 +244,7 @@ wstring& Text::toLower(const wstring& str, wstring& tmp) throw() {
 	}
 	return tmp;
 }
-
+/*
 string& Text::toLower(const string& str, string& tmp) throw() {
 	if(str.empty())
 		return tmp;
@@ -263,7 +263,7 @@ string& Text::toLower(const string& str, string& tmp) throw() {
 	}
 	return tmp;
 }
-
+*/
 string Text::acpToUtf8(const string& str) throw()
 {
 	std::string utf8String;
@@ -282,7 +282,12 @@ string Text::acpToUtf8(const string& str) throw()
 string Text::utf8ToAcp(const string& str) throw()
 {
 	std::string acpString;
-	gchar *acpCString = g_filename_from_utf8(str.c_str(), -1, NULL, NULL, NULL);
+	gchar *acpCString;
+	if (g_getenv("G_FILENAME_ENCODING") != NULL)
+		acpCString = g_filename_from_utf8(str.c_str(), -1, NULL, NULL, NULL);
+	else
+		acpCString = g_convert(str.c_str(), -1, WGETS("default-charset").c_str(), "UTF-8", NULL, NULL, NULL);
+
 	if (acpCString == NULL)
 		return acpString;
 	acpString = string(acpCString);

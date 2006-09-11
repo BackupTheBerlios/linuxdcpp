@@ -28,7 +28,7 @@
 #include <iostream>
 #include <signal.h>
 
-void callBack(void* x, const string& a)
+void callBack(void* x, const std::string& a)
 {
 	std::cout << "Loading: " << a << std::endl;
 }

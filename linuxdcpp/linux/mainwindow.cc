@@ -181,6 +181,7 @@ void MainWindow::createWindow_gui()
 	transferView.insertColumn("Filename", G_TYPE_STRING, TreeView::STRING, 200);
 	transferView.insertColumn("Size", G_TYPE_STRING, TreeView::STRING, 175);
 	transferView.insertColumn("Path", G_TYPE_STRING, TreeView::STRING, 200);
+	transferView.insertColumn("IP", G_TYPE_STRING, TreeView::STRING, 175);
 	transferView.insertHiddenColumn("Icon", GDK_TYPE_PIXBUF);
 	transferView.insertHiddenColumn("TransferItem", G_TYPE_POINTER);
 	transferView.insertHiddenColumn("Progress", G_TYPE_INT);
@@ -206,6 +207,7 @@ void MainWindow::createWindow_gui()
 
 	// Connect the signals to their callback functions.
 	g_signal_connect(window, "delete-event", G_CALLBACK(deleteWindow_gui), (gpointer)this);
+	g_signal_connect(window, "key-press-event", G_CALLBACK(onKeyPressed_gui), (gpointer)this);
 	g_signal_connect(getWidget("getFileListItem"), "activate", G_CALLBACK(onGetFileListClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("matchQueueItem"), "activate", G_CALLBACK(onMatchQueueClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("sendPrivateMessageItem"), "activate", G_CALLBACK(onPrivateMessageClicked_gui), (gpointer)this);
@@ -244,7 +246,7 @@ void MainWindow::createWindow_gui()
 
 	// Load window state and position from settings manager
 	WulforSettingsManager *sm = WulforSettingsManager::get();
-	int posX =  sm->getInt("main-window-pos-x");
+	int posX = sm->getInt("main-window-pos-x");
 	int posY = sm->getInt("main-window-pos-y");
 	int sizeX = sm->getInt("main-window-size-x");
 	int sizeY = sm->getInt("main-window-size-y");
@@ -279,15 +281,11 @@ void MainWindow::createTrayIcon_gui()
 	string iconPath = WulforManager::get()->getPath() + "/pixmaps/linuxdcpp-icon.png";
 	trayToolTip = gtk_tooltips_new();
 
-#if GTK_CHECK_VERSION(2, 10, 0)
-	trayIcon = GTK_WIDGET(gtk_status_icon_new_from_file(iconPath.c_str()));
-#else
 	trayIcon = GTK_WIDGET(egg_tray_icon_new("Linux DC++"));
 	GtkWidget *trayBox = gtk_event_box_new();
 	GtkWidget *trayImage = gtk_image_new_from_file(iconPath.c_str());
 	gtk_container_add(GTK_CONTAINER(trayBox), trayImage);
 	gtk_container_add(GTK_CONTAINER(trayIcon), trayBox);
-#endif
 
 	g_signal_connect(getWidget("quitTrayItem"), "activate", G_CALLBACK(quitClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("toggleInterfaceItem"), "activate", G_CALLBACK(onToggleWindowVisibility_gui), (gpointer)this);
@@ -370,7 +368,7 @@ gboolean MainWindow::transferClicked_gui(GtkWidget *widget, GdkEventButton *even
 
 void MainWindow::popup_gui(GtkWidget *menu, GdkEventButton *event)
 {
-    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL,
+	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL,
 		event ? event->button : 0,
 		gdk_event_get_time((GdkEvent*)event));
 	gtk_widget_show_all(menu);
@@ -378,20 +376,21 @@ void MainWindow::popup_gui(GtkWidget *menu, GdkEventButton *event)
 
 User::Ptr MainWindow::getSelectedTransfer_gui()
 {
-	GtkTreeModel *m = GTK_TREE_MODEL(transferStore);
-	GList *list = gtk_tree_selection_get_selected_rows(transferSel, &m);
+	GList *list = gtk_tree_selection_get_selected_rows(transferSel, NULL);
 	GtkTreePath *path = (GtkTreePath*)g_list_nth_data(list, 0);
 	GtkTreeIter iter;
-	TransferItem *item;
+	User::Ptr user = NULL;
 
-	if (!gtk_tree_model_get_iter(m, &iter, path))
-		return NULL;
+	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(transferStore), &iter, path))
+	{
+		TransferItem *item = transferView.getValue<gpointer, TransferItem*>(&iter, "TransferItem");
+		user = item->user;
+	}
 
 	gtk_tree_path_free(path);
 	g_list_free(list);
 
-	item = transferView.getValue<gpointer, TransferItem*>(&iter, "TransferItem");
-	return item->user;
+	return user;
 }
 
 void MainWindow::onGetFileListClicked_gui(GtkMenuItem *item, gpointer data)
@@ -703,15 +702,16 @@ void MainWindow::startSocket_client()
 		{
 			ConnectionManager::getInstance()->listen();
 		}
-		catch(const Exception& e)
+		catch (const Exception &e)
 		{
 			cerr << "StartSocket (tcp): Caught \"" << e.getError() << "\"" << endl;
 		}
+
 		try
 		{
 			SearchManager::getInstance()->listen();
 		}
-		catch(const Exception& e)
+		catch (const Exception &e)
 		{
 			cerr << "StartSocket (udp): Caught \"" << e.getError() << "\"" << endl;
 		}
@@ -784,6 +784,7 @@ void MainWindow::addShareBrowser_gui(User::Ptr user, string listName, string sea
 void MainWindow::addPage_gui(GtkWidget *page, GtkWidget *label, bool raise)
 {
 	gtk_notebook_append_page(GTK_NOTEBOOK(getWidget("book")), page, label);
+	g_signal_connect(label, "button-press-event", G_CALLBACK(onButtonPressPage_gui), (gpointer)this);
 
 	if (raise)
 		gtk_notebook_set_current_page(GTK_NOTEBOOK(getWidget("book")), -1);
@@ -960,13 +961,16 @@ void MainWindow::updateTransfer_gui(TransferItem *item)
 	if (item->isSet(TransferItem::MASK_SPEED) && item->speed >= 0)
 	{
 		gtk_list_store_set(transferStore, &iter,
-			transferView.col("Speed"),  Util::formatBytes(item->speed).append("/s").c_str(),
+			transferView.col("Speed"), Util::formatBytes(item->speed).append("/s").c_str(),
 			transferView.col("Speed Order"), item->speed,
 			-1);
 	}
 
 	if (item->isSet(TransferItem::MASK_PROGRESS) && item->progress >= 0 && item->progress <= 100)
 		gtk_list_store_set(transferStore, &iter, transferView.col("Progress"), item->progress, -1);
+
+	if (item->isSet(TransferItem::MASK_IP) && !item->ip.empty())
+		gtk_list_store_set(transferStore, &iter, transferView.col("IP"), item->ip.c_str(), -1);
 }
 
 void MainWindow::removeTransfer_gui(TransferItem *item)
@@ -1115,6 +1119,7 @@ void MainWindow::on(DownloadManagerListener::Starting, Download *dl) throw()
 	item->setStatus("Download starting...");
 	item->setSize(dl->getSize());
 	item->setSortOrder("d" + item->nicks + item->hubs);
+	item->setIp(dl->getUserConnection()->getRemoteIp());
 
 	UFunc *func = new UFunc(this, &MainWindow::updateTransfer_gui, item);
 	WulforManager::get()->dispatchGuiFunc(func);
@@ -1209,6 +1214,7 @@ void MainWindow::on(UploadManagerListener::Starting, Upload *ul) throw()
 	item->setStatus("Upload starting...");
 	item->setSize(ul->getSize());
 	item->setSortOrder("u" + item->nicks + item->hubs);
+	item->setIp(ul->getUserConnection()->getRemoteIp());
 
 	UFunc *func = new UFunc(this, &MainWindow::updateTransfer_gui, item);
 	WulforManager::get()->dispatchGuiFunc(func);
@@ -1311,4 +1317,62 @@ void MainWindow::onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data)
 void MainWindow::updateTrayToolTip_gui(string toolTip)
 {
 	gtk_tooltips_set_tip(trayToolTip, trayIcon, toolTip.c_str(), NULL);
+}
+
+gboolean MainWindow::onKeyPressed_gui(GtkWidget *widget, GdkEventKey *event, gpointer data)
+{
+	MainWindow *mw = (MainWindow *)data;
+	GtkNotebook *book = GTK_NOTEBOOK(mw->getWidget("book"));
+
+	if (event->state & GDK_CONTROL_MASK)
+	{
+		if ((event->state & GDK_SHIFT_MASK && event->keyval == GDK_ISO_Left_Tab) || event->keyval == GDK_Left)
+		{
+			if (gtk_notebook_get_current_page(book) == 0)
+				gtk_notebook_set_current_page(book, -1);
+			else
+				gtk_notebook_prev_page(book);
+
+			return TRUE;
+		}
+		else if (event->keyval == GDK_Tab || event->keyval == GDK_Right)
+		{
+			if (gtk_notebook_get_n_pages(book) - 1 == gtk_notebook_get_current_page(book))
+				gtk_notebook_set_current_page(book, 0);
+			else
+				gtk_notebook_next_page(book);
+
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
+gboolean MainWindow::onButtonPressPage_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+	MainWindow *mw = (MainWindow *)data;
+
+	if (event->button == 2)
+	{
+		GtkNotebook *book = GTK_NOTEBOOK(mw->getWidget("book"));
+		GtkWidget *entryWidget;
+
+		for (int i = 0; i < gtk_notebook_get_n_pages(book); i++)
+		{
+			entryWidget = gtk_notebook_get_nth_page(book, i);
+			if (gtk_notebook_get_tab_label(book, entryWidget) == widget)
+			{
+				BookEntry *entry = (BookEntry *)g_object_get_data(G_OBJECT(entryWidget), "entry");
+
+				if (entry)
+					WulforManager::get()->deleteBookEntry_gui(entry);
+
+				break;
+			}
+		}
+		return TRUE;
+	}
+
+	return FALSE;
 }

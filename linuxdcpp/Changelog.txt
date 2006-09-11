@@ -1,3 +1,15 @@
+2006-09-11 - Steven Sheehy
+* Middle click on tab now closes it.
+* Ctrl+shift+tab/ctrl+left-arrow navigates left and ctrl+tab/ctrl+right-arrow
+  navigates right between tabs (thanks Bart Vullings).
+* Added an IP column in the transfer view (thanks Bart Vullings).
+* Fixed a socket-related crash in the core.
+* Added an experimental fast-hashing algorithm (thanks Markus Lindqvist).
+* Fixed the core from regenerating files.xml.bz2 upon startup (thanks dorian).
+* Tweaked the character encoding functions a bit (thanks dorian).
+* Replaced the non-working public hub list with an ADC list.
+* Implemented the "beep on private message" option (thanks Rimas Kudelis).
+
 2006-09-01 - Steven Sheehy
 * Changed binary name and data path from ldcpp to linuxdcpp to satisfy package maintainers.
   !!IMPORTANT!! - run "scons -c install" to remove all the old files before compiling.

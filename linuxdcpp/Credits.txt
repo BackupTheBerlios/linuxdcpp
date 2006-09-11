@@ -26,6 +26,7 @@ Fredrik Ullner
 Mikael Eman
 Rimas Kudelis
 dorian
+Bart Vullings
 
 DC++:
 -----

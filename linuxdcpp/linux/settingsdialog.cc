@@ -174,9 +174,9 @@ void Settings::saveSettings()
 		{ // Colors and sounds
 			// Colors - not implemented
 
-			// Sounds - not implemented
-			//sm->set(SettingsManager::PRIVATE_MESSAGE_BEEP, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("soundPMReceivedCheckButton"))));
-			//sm->set(SettingsManager::PRIVATE_MESSAGE_BEEP_OPEN, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("soundPMWindowCheckButton"))));
+			// Sounds
+			sm->set(SettingsManager::PRIVATE_MESSAGE_BEEP, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("soundPMReceivedCheckButton"))));
+			sm->set(SettingsManager::PRIVATE_MESSAGE_BEEP_OPEN, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("soundPMWindowCheckButton"))));
 
 			// Tab bolding
 			m = GTK_TREE_MODEL(colorStore);
@@ -537,14 +537,12 @@ void Settings::initAppearance_gui()
 		//g_signal_connect(getWidget("upColor"), "clicked", G_CALLBACK(onUpColorClicked_gui), (gpointer)this);
 		//g_signal_connect(getWidget("downColor"), "clicked", G_CALLBACK(onDownColorClicked_gui), (gpointer)this);
 		//g_signal_connect(getWidget("textStyle"), "clicked", G_CALLBACK(onTextStyleClicked_gui), (gpointer)this);
-		//gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("soundPMReceivedCheckButton")), BOOLSETTING(PRIVATE_MESSAGE_BEEP));
-		//gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("soundPMWindowCheckButton")), BOOLSETTING(PRIVATE_MESSAGE_BEEP_OPEN));
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("soundPMReceivedCheckButton")), BOOLSETTING(PRIVATE_MESSAGE_BEEP));
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("soundPMWindowCheckButton")), BOOLSETTING(PRIVATE_MESSAGE_BEEP_OPEN));
 		gtk_widget_set_sensitive(getWidget("appearanceColor"), FALSE);
 		gtk_widget_set_sensitive(getWidget("upColor"), FALSE);
 		gtk_widget_set_sensitive(getWidget("downColor"), FALSE);
 		gtk_widget_set_sensitive(getWidget("textStyle"), FALSE);
-		gtk_widget_set_sensitive(getWidget("soundPMReceivedCheckButton"), FALSE);
-		gtk_widget_set_sensitive(getWidget("soundPMWindowCheckButton"), FALSE);
 
 		colorView.setView(GTK_TREE_VIEW(getWidget("tabBoldingTreeView")));
 		colorView.insertColumn("Use", G_TYPE_BOOLEAN, TreeView::BOOL, -1);
