@@ -565,39 +565,49 @@ bool HashManager::Hasher::fastHash(const string& filename, u_int8_t* , TigerTree
 	void *buf = 0;
 
 	u_int32_t lastRead = GET_TICK();
-	while(pos < size) {
-		size_read = std::min(size_left, BUF_SIZE);
-		buf = mmap(0, size_read, PROT_READ, MAP_SHARED, fd, pos);
-		if(buf == MAP_FAILED) {
-			close(fd);
-			return false;
-		}
+	while(pos <= size) {
+		if(size_left > 0) {
+			size_read = std::min(size_left, BUF_SIZE);
+			buf = mmap(0, size_read, PROT_READ, MAP_SHARED, fd, pos);
+			if(buf == MAP_FAILED) {
+				close(fd);
+				return false;
+			}
 
-		madvise(buf, size_read, MADV_SEQUENTIAL | MADV_WILLNEED);
+			madvise(buf, size_read, MADV_SEQUENTIAL | MADV_WILLNEED);
 
-		if(SETTING(MAX_HASH_SPEED) > 0) {
-			u_int32_t now = GET_TICK();
-			u_int32_t minTime = size_read * 1000LL / (SETTING(MAX_HASH_SPEED) * 1024LL * 1024LL);
-			if(lastRead + minTime > now) {
-				u_int32_t diff = now - lastRead;
-				Thread::sleep(minTime - diff);
-			} 
-			lastRead = lastRead + minTime;
+			if(SETTING(MAX_HASH_SPEED) > 0) {
+				u_int32_t now = GET_TICK();
+				u_int32_t minTime = size_read * 1000LL / (SETTING(MAX_HASH_SPEED) * 1024LL * 1024LL);
+				if(lastRead + minTime > now) {
+					u_int32_t diff = now - lastRead;
+					Thread::sleep(minTime - diff);
+				} 
+				lastRead = lastRead + minTime;
+			} else {
+				lastRead = GET_TICK();
+			}
 		} else {
-			lastRead = GET_TICK();
+			size_read = 0;
 		}
 
 		tth.update(buf, size_read);
 		if(xcrc32)
 			(*xcrc32)(buf, size_read);
-		munmap(buf, size_read);
 		{
 			Lock l(cs);
 			currentSize = max(static_cast<u_int64_t>(currentSize - size_read), static_cast<u_int64_t>(0));
 		}
+
+		if(size_left == 0) {
+			break;
+		}
+
+		munmap(buf, size_read);
 		pos += size_read;
 		size_left -= size_read;
 	}
+	close(fd);
 	return true;
 }
 
