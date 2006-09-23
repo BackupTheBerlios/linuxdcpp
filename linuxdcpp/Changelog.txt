@@ -1,13 +1,14 @@
 2006-09-23 - Steven Sheehy
 * The transfer, nicklist, sharebrowser & dl queue panes now stay the same
   size when resizing the window (thanks dorian).
-* Added the ability to add extra sources from search popup (thanks Bart Vullings). (re-check this)
+* Added the ability to add extra sources from search popup (thanks Bart Vullings).
 * Fixed a BSD issue with the new fast-hash routine.
 * Download queue cleanup:
 	* Fixed potential GUI deadlocks.
 	* Fixed memory leaks.
 	* Combined "Search for alternates" & "Search by TTH" options.
 	* Fixed "Re-add source" item.
+	* Added keyboard events.
 
 2006-09-18 - Steven Sheehy
 * Fixed the new fast-hashing algorithm from crashing on zero byte files.
