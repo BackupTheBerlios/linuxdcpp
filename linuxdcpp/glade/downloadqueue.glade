@@ -10,7 +10,7 @@
   <property name="spacing">4</property>
 
   <child>
-    <widget class="GtkHPaned" id="hpaned1">
+    <widget class="GtkHPaned" id="pane">
       <property name="visible">True</property>
       <property name="can_focus">True</property>
       <property name="position">200</property>
@@ -40,7 +40,7 @@
 	</widget>
 	<packing>
 	  <property name="shrink">True</property>
-	  <property name="resize">False</property>
+	  <property name="resize">True</property>
 	</packing>
       </child>
 
@@ -113,7 +113,7 @@
 
       <child>
 	<widget class="GtkStatusbar" id="statusFileSize">
-	  <property name="width_request">99</property>
+	  <property name="width_request">120</property>
 	  <property name="visible">True</property>
 	  <property name="has_resize_grip">False</property>
 	</widget>
@@ -139,7 +139,7 @@
 
       <child>
 	<widget class="GtkStatusbar" id="statusTotalSize">
-	  <property name="width_request">100</property>
+	  <property name="width_request">120</property>
 	  <property name="visible">True</property>
 	  <property name="has_resize_grip">False</property>
 	</widget>
@@ -256,14 +256,6 @@
     <widget class="GtkMenuItem" id="searchForAlternatesItem">
       <property name="visible">True</property>
       <property name="label" translatable="yes">Search for alternates</property>
-      <property name="use_underline">True</property>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkMenuItem" id="searchByTTHItem">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Search by TTH</property>
       <property name="use_underline">True</property>
     </widget>
   </child>

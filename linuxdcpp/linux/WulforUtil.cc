@@ -82,3 +82,14 @@ pair<string, bool> WulforUtil::getHubNames(const User::Ptr& user)
 {
 	return getHubNames(user->getCID());
 }
+
+string WulforUtil::getTextFromMenu(GtkMenuItem *item)
+{
+	string text;
+	GtkWidget *child = gtk_bin_get_child(GTK_BIN(item));
+
+	if (child && GTK_IS_LABEL(child))
+		text = gtk_label_get_text(GTK_LABEL(child));
+
+	return text;
+}

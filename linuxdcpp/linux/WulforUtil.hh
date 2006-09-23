@@ -19,6 +19,7 @@
 #ifndef WULFOR_UTIL_H
 #define WULFOR_UTIL_H
 
+#include <gtk/gtk.h>
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/CID.h>
@@ -34,6 +35,7 @@ class WulforUtil
 		static std::string getNicks(const User::Ptr& user);
 		static pair<std::string, bool> getHubNames(const CID& cid);
 		static pair<std::string, bool> getHubNames(const User::Ptr& user);
+		static string getTextFromMenu(GtkMenuItem *item);
 };
 
 #endif

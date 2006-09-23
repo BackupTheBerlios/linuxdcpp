@@ -550,12 +550,12 @@ cleanup:
 	return ok;
 }
 
-#else // _WIN32
+#else // !_WIN32
 
 static const int64_t BUF_SIZE = 0x1000000 - (0x1000000 % getpagesize());
 
 bool HashManager::Hasher::fastHash(const string& filename, u_int8_t* , TigerTree& tth, int64_t size, CRC32Filter* xcrc32) {
-	int fd = open(filename.c_str(), O_RDONLY | O_LARGEFILE);
+	int fd = open(filename.c_str(), O_RDONLY);
 	if(fd == -1)
 		return false;
 
@@ -599,7 +599,7 @@ bool HashManager::Hasher::fastHash(const string& filename, u_int8_t* , TigerTree
 			currentSize = max(static_cast<u_int64_t>(currentSize - size_read), static_cast<u_int64_t>(0));
 		}
 
-		if(size_left == 0) {
+		if(size_left <= 0) {
 			break;
 		}
 

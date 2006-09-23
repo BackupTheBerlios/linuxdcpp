@@ -119,6 +119,7 @@ class MainWindow:
 		static void onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data);
 		static gboolean onKeyPressed_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
 		static gboolean onButtonPressPage_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static void onPaneRealized_gui(GtkWidget *pane, gpointer data);
 
 		// Client callbacks
 		virtual void on(TimerManagerListener::Second, u_int32_t ticks) throw();

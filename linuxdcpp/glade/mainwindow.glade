@@ -612,7 +612,7 @@
 
 	  <child>
 	    <widget class="GtkVPaned" id="pane">
-	      <property name="visible">True</property>
+	      <property name="visible">False</property>
 	      <property name="can_focus">True</property>
 
 	      <child>
@@ -674,7 +674,7 @@
 		</widget>
 		<packing>
 		  <property name="shrink">False</property>
-		  <property name="resize">False</property>
+		  <property name="resize">True</property>
 		</packing>
 	      </child>
 

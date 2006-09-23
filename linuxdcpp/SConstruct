@@ -89,6 +89,10 @@ Help(opts.GenerateHelpText(env))
 # Dependencies
 # ----------------------------------------------------------------------
 
+if not env['CXX']:
+	print 'CXX env variable is not set, attempting to use g++'
+	env['CXX'] = 'g++'
+
 if not conf.CheckCXXVersion(env['CXX'], 3, 4):
 	print 'Compiler version check failed. g++ 3.4 or later is needed'
 	Exit(1)

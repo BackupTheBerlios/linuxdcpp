@@ -37,6 +37,9 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file):
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(getWidget("dirChooserDialog")), Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY)).c_str());
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("dirChooserDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
+	// Set the pane position
+	gtk_paned_set_position(GTK_PANED(getWidget("pane")), WGETI("sharebrowser-pane-position"));
+
 	// Load the icons
 	iconFile = gtk_icon_theme_load_icon(gtk_icon_theme_get_default(), GTK_STOCK_FILE, 16, (GtkIconLookupFlags)0, NULL);
 	iconDirectory = gtk_icon_theme_load_icon(gtk_icon_theme_get_default(), GTK_STOCK_DIRECTORY, 16, (GtkIconLookupFlags)0, NULL);
@@ -121,6 +124,10 @@ ShareBrowser::ShareBrowser(User::Ptr user, std::string file):
 
 ShareBrowser::~ShareBrowser()
 {
+	// Save the pane position
+	int panePosition = gtk_paned_get_position(GTK_PANED(getWidget("pane")));
+	WSET("sharebrowser-pane-position", panePosition);
+
 	if (iconFile)
 		g_object_unref(iconFile);
 	if (iconDirectory)

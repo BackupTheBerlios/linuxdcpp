@@ -125,7 +125,7 @@ Search::Search():
 	g_signal_connect(getWidget("sendPrivateMessageItem"), "activate", G_CALLBACK(onPrivateMessageClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("addToFavoritesItem"), "activate", G_CALLBACK(onAddFavoriteUserClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("grantExtraSlotItem"), "activate", G_CALLBACK(onGrantExtraSlotClicked_gui), (gpointer)this);
-	g_signal_connect(getWidget("removeUserFromQueueITem"), "activate", G_CALLBACK(onRemoveUserFromQueueClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("removeUserFromQueueItem"), "activate", G_CALLBACK(onRemoveUserFromQueueClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("removeItem"), "activate", G_CALLBACK(onRemoveClicked_gui), (gpointer)this);
 
 	initHubs_gui();
@@ -227,20 +227,18 @@ void Search::removeHub_gui(string url)
 void Search::buildDownloadMenu_gui()
 {
 	GtkWidget *menuItem;
+	GtkTreeIter iter;
+	SearchResult *result = NULL;
+	GList *list = gtk_tree_selection_get_selected_rows(selection, NULL);
+	GtkTreePath *path = (GtkTreePath *)g_list_nth_data(list, 0);
+	int count = gtk_tree_selection_count_selected_rows(selection);
 
-	if (gtk_tree_selection_count_selected_rows(selection) == 1)
+	if (count == 1)
 	{
-		GtkTreeIter iter;
-		SearchResult *result = NULL;
-		GList *list = gtk_tree_selection_get_selected_rows(selection, NULL);
-		GtkTreePath *path = (GtkTreePath *)g_list_nth_data(list, 0);
-
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(resultStore), &iter, path))
 			result = resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
-		gtk_tree_path_free(path);
-		g_list_free(list);
 
-		if (result && result->getTTH())
+		if (result->getTTH())
 			gtk_widget_set_sensitive(getWidget("searchByTTHItem"), TRUE);
 		else
 			gtk_widget_set_sensitive(getWidget("searchByTTHItem"), FALSE);
@@ -250,9 +248,9 @@ void Search::buildDownloadMenu_gui()
 		gtk_widget_set_sensitive(getWidget("addToFavoritesItem"), TRUE);
 		gtk_widget_set_sensitive(getWidget("matchQueueItem"), TRUE);
 		gtk_widget_set_sensitive(getWidget("grantExtraSlotItem"), TRUE);
-		gtk_widget_set_sensitive(getWidget("removeUserFromQueueITem"), TRUE);
+		gtk_widget_set_sensitive(getWidget("removeUserFromQueueItem"), TRUE);
 	}
-	else
+	else if (count > 1)
 	{
 		gtk_widget_set_sensitive(getWidget("searchByTTHItem"), FALSE);
 		gtk_widget_set_sensitive(getWidget("getFileListItem"), FALSE);
@@ -260,12 +258,13 @@ void Search::buildDownloadMenu_gui()
 		gtk_widget_set_sensitive(getWidget("addToFavoritesItem"), FALSE);
 		gtk_widget_set_sensitive(getWidget("matchQueueItem"), FALSE);
 		gtk_widget_set_sensitive(getWidget("grantExtraSlotItem"), FALSE);
-		gtk_widget_set_sensitive(getWidget("removeUserFromQueueITem"), FALSE);
+		gtk_widget_set_sensitive(getWidget("removeUserFromQueueItem"), FALSE);
 	}
 
 	// Build "Download to..." submenu
 	gtk_container_foreach(GTK_CONTAINER(getWidget("downloadMenu")), (GtkCallback)gtk_widget_destroy, NULL);
 
+	// Add favorite download directories
 	StringPairList spl = FavoriteManager::getInstance()->getFavoriteDirs();
 	if (spl.size() > 0)
 	{
@@ -280,9 +279,64 @@ void Search::buildDownloadMenu_gui()
 		gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadMenu")), menuItem);
 	}
 
+	// Add Browse item
 	menuItem = gtk_menu_item_new_with_label("Browse...");
 	g_signal_connect(menuItem, "activate", G_CALLBACK(onDownloadToClicked_gui), (gpointer)this);
 	gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadMenu")), menuItem);
+
+	// Add queued file's with the same TTH/size.
+	TTHValue *tth = NULL;
+	string firstTTH, ext;
+	int64_t size;
+	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(resultStore), &iter, path))
+	{
+		result = resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+		if (result->getType() == SearchResult::TYPE_FILE)
+		{
+			tth = result->getTTH();
+			firstTTH = tth->toBase32();
+			size = result->getSize();
+			ext = Util::getFileExt(result->getFile());
+		}
+	}
+	gtk_tree_path_free(path);
+
+	for (int i = 1; i < count; i++)
+	{
+		path = (GtkTreePath *)g_list_nth_data(list, i);
+		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(resultStore), &iter, path))
+		{
+			result = resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+			if (tth && (result->getType() == SearchResult::TYPE_DIRECTORY || firstTTH != result->getTTH()->toBase32()))
+				tth = NULL;
+			if (size > -1 && (result->getType() == SearchResult::TYPE_DIRECTORY || size != result->getSize()))
+				size = -1;
+		}
+		gtk_tree_path_free(path);
+	}
+	g_list_free(list);
+
+	StringList targets;
+	if (tth != NULL)
+	{
+		QueueManager::getInstance()->getTargetsByRoot(targets, *tth);
+	}
+	else if (size > -1)
+	{
+		QueueManager::getInstance()->getTargetsBySize(targets, size, ext);
+	}
+
+	if (targets.size() > static_cast<size_t>(0))
+	{
+		menuItem = gtk_separator_menu_item_new();
+		gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadMenu")), menuItem);
+		for (StringIter i = targets.begin(); i != targets.end(); ++i)
+		{
+			menuItem = gtk_menu_item_new_with_label(i->c_str());
+			g_signal_connect(menuItem, "activate", G_CALLBACK(onDownloadToMatchClicked_gui), (gpointer)this);
+			gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadMenu")), menuItem);
+		}
+	}
 
 	// Build "Download whole directory to..." submenu
 	gtk_container_foreach(GTK_CONTAINER(getWidget("downloadDirMenu")), (GtkCallback)gtk_widget_destroy, NULL);
@@ -531,11 +585,13 @@ gboolean Search::onButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, g
 	if (event->button == 3)
 	{
 		GtkTreePath *path;
-		if (gtk_tree_view_get_path_at_pos(s->resultView.get(), (gint)event->x, (gint)event->y, &path, NULL, NULL, NULL)
-			&& gtk_tree_selection_path_is_selected(s->selection, path))
+		if (gtk_tree_view_get_path_at_pos(s->resultView.get(), (gint)event->x, (gint)event->y, &path, NULL, NULL, NULL))
 		{
+			bool selected = gtk_tree_selection_path_is_selected(s->selection, path);
 			gtk_tree_path_free(path);
-			return TRUE;
+
+			if (selected)
+				return TRUE;
 		}
 	}
 	return FALSE;
@@ -807,6 +863,12 @@ void Search::onDownloadToClicked_gui(GtkMenuItem *item, gpointer data)
 		g_list_free(list);
 	}
 }
+
+void Search::onDownloadToMatchClicked_gui(GtkMenuItem *item, gpointer data){	Search *s = (Search *)data;	GtkTreeIter iter;	GtkTreePath *path;	SearchResult *result;	typedef Func2<Search, string, SearchResult *> F2;	F2 *func;	GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);	int count = gtk_tree_selection_count_selected_rows(s->selection);	GtkTreeModel *m = GTK_TREE_MODEL(s->resultStore);	string fileName = WulforUtil::getTextFromMenu(item);
+	for (int i = 0; i < count; i++)	{		path = (GtkTreePath *)g_list_nth_data(list, i);		if (gtk_tree_model_get_iter(m, &iter, path))		{			result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+			if (result)
+			{				func = new F2(s, &Search::addSource_client, fileName, result);				WulforManager::get()->dispatchClientFunc(func);
+			}		}		gtk_tree_path_free(path);	}	g_list_free(list);}
 
 void Search::onDownloadDirClicked_gui(GtkMenuItem *item, gpointer data)
 {
@@ -1140,6 +1202,21 @@ void Search::downloadDir_client(string target, SearchResult *result)
 		else
 		{
 			QueueManager::getInstance()->addDirectory(result->getFile(), result->getUser(), target);
+		}
+	}
+	catch (const Exception&)
+	{
+	}
+}
+
+void Search::addSource_client(string source, SearchResult *result)
+{
+	try
+	{
+		if (result->getType() == SearchResult::TYPE_FILE)
+		{
+			QueueManager::getInstance()->add(source, result->getSize(), result->getTTH(),
+				result->getUser(), result->getFileName(), result->getUtf8());
 		}
 	}
 	catch (const Exception&)

@@ -31,10 +31,10 @@ PrivateMessage::PrivateMessage(User::Ptr user):
 	// Intialize the chat window
 	if (SETTING(USE_OEM_MONOFONT))
 	{
-		PangoFontDescription *font_desc;
-		font_desc = pango_font_description_from_string("Mono 10");
-		gtk_widget_modify_font(getWidget("text"), font_desc);
-		pango_font_description_free(font_desc);
+		PangoFontDescription *fontDesc = pango_font_description_new();
+		pango_font_description_set_family(fontDesc, "Mono");
+		gtk_widget_modify_font(getWidget("text"), fontDesc);
+		pango_font_description_free(fontDesc);
 	}
 	GtkTextIter iter;
 	buffer = gtk_text_buffer_new(NULL);

@@ -96,8 +96,6 @@ PublicHubs::PublicHubs():
 	g_signal_connect(hubView.get(), "key-release-event", G_CALLBACK(onKeyRelease_gui), (gpointer)this);
 	g_signal_connect(getWidget("favMenuItem"), "activate", G_CALLBACK(onAddFav_gui), (gpointer)this);
 
-	pthread_mutex_init(&hubLock, NULL);
-
 	if (favMan->isDownloading())
 		setStatus_gui("statusMain", "Downloading hub list");
 }
@@ -105,15 +103,12 @@ PublicHubs::PublicHubs():
 PublicHubs::~PublicHubs()
 {
 	FavoriteManager::getInstance()->removeListener(this);
-	pthread_mutex_destroy(&hubLock);
 	gtk_widget_destroy(getWidget("configureDialog"));
 }
 
 void PublicHubs::downloadList_client()
 {
-	pthread_mutex_lock(&hubLock);
 	hubs = FavoriteManager::getInstance()->getPublicHubs();
-	pthread_mutex_unlock(&hubLock);
 
 	if (hubs.empty())
 		FavoriteManager::getInstance()->refresh();
@@ -138,7 +133,6 @@ void PublicHubs::updateList_gui()
 	gtk_tree_sortable_get_sort_column_id(GTK_TREE_SORTABLE(hubStore), &sortColumn, &sortType);
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(hubStore), GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID, sortType);
 
-	pthread_mutex_lock(&hubLock);
 	for (i = hubs.begin(); i != hubs.end(); i++)
 	{
 		if (filter.getPattern().empty() || filter.match(i->getName()) ||
@@ -156,7 +150,6 @@ void PublicHubs::updateList_gui()
 			numHubs++;
 		}
 	}
-	pthread_mutex_unlock(&hubLock);
 
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(hubStore), sortColumn, sortType);
 
@@ -418,9 +411,7 @@ void PublicHubs::on(FavoriteManagerListener::DownloadFinished, const string &fil
 	Func *f2 = new Func(this, &PublicHubs::setStatus_gui, "statusMain", msg);
 	WulforManager::get()->dispatchGuiFunc(f2);
 
-	pthread_mutex_lock(&hubLock);
 	hubs = FavoriteManager::getInstance()->getPublicHubs();
-	pthread_mutex_unlock(&hubLock);
 
 	Func0<PublicHubs> *f0 = new Func0<PublicHubs>(this, &PublicHubs::updateList_gui);
 	WulforManager::get()->dispatchGuiFunc(f0);

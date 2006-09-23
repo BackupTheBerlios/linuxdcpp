@@ -60,10 +60,10 @@ Hub::Hub(string address):
 	// Initialize the chat window
 	if (BOOLSETTING(USE_OEM_MONOFONT))
 	{
-		PangoFontDescription *font_desc;
-		font_desc = pango_font_description_from_string("Mono 10");
-		gtk_widget_modify_font(getWidget("chatText"), font_desc);
-		pango_font_description_free(font_desc);
+		PangoFontDescription *fontDesc = pango_font_description_new();
+		pango_font_description_set_family(fontDesc, "Mono");
+		gtk_widget_modify_font(getWidget("chatText"), fontDesc);
+		pango_font_description_free(fontDesc);
 	}
 	chatBuffer = gtk_text_buffer_new(NULL);
 	gtk_text_view_set_buffer(GTK_TEXT_VIEW(getWidget("chatText")), chatBuffer);
@@ -639,7 +639,7 @@ void Hub::connectClient_client(string address, string nick, string desc, string 
 		client->getMyIdentity().setNick(nick);
 	else
 		client->getMyIdentity().setNick(SETTING(NICK));
- 
+
 	if (!desc.empty())
 		client->getMyIdentity().setDescription(desc);
 	else

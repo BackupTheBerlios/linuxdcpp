@@ -37,6 +37,8 @@ WulforSettingsManager::WulforSettingsManager()
 	defaultInt["main-window-pos-y"] = 100;
 	defaultInt["transfer-pane-position"] = 300;
 	defaultInt["nick-pane-position"] = 500;
+	defaultInt["downloadqueue-pane-position"] = 200;
+	defaultInt["sharebrowser-pane-position"] = 200;
 	defaultInt["show-tray-icon"] = 1;
 	defaultInt["use-stock-icons"] = 0;
 	defaultString["downloadqueue-order"] = "";
@@ -95,30 +97,24 @@ string WulforSettingsManager::getString(std::string key)
 
 void WulforSettingsManager::set(std::string key, int value)
 {
+	dcassert(defaultInt.find(key) != defaultInt.end());
 	intMap[key] = value;
 }
 
 void WulforSettingsManager::set(std::string key, string value)
 {
+	dcassert(defaultString.find(key) != defaultString.end());
 	stringMap[key] = value;
 }
 
 void WulforSettingsManager::load()
 {
-	load(Util::getConfigPath() + "LinuxDC++.xml");
-}
+	string file = Util::getConfigPath() + "LinuxDC++.xml";
 
-void WulforSettingsManager::save()
-{
-	save(Util::getConfigPath() + "LinuxDC++.xml");
-}
-
-void WulforSettingsManager::load(std::string fileName)
-{
 	try
 	{
 		SimpleXML xml;
-		xml.fromXML(File(fileName, File::READ, File::OPEN).read());
+		xml.fromXML(File(file, File::READ, File::OPEN).read());
 		xml.resetCurrentChild();
 		xml.stepIn();
 
@@ -145,13 +141,15 @@ void WulforSettingsManager::load(std::string fileName)
 			xml.stepOut();
 		}
 	}
-	catch(const Exception&)
+	catch (const Exception&)
 	{
 	}
 }
 
-void WulforSettingsManager::save(std::string fileName)
+void WulforSettingsManager::save()
 {
+	string file = Util::getConfigPath() + "LinuxDC++.xml";
+
 	SimpleXML xml;
 	xml.addTag("LinuxDC++");
 	xml.stepIn();
@@ -176,17 +174,16 @@ void WulforSettingsManager::save(std::string fileName)
 
 	try
 	{
-		File out(fileName + ".tmp", File::WRITE, File::CREATE | File::TRUNCATE);
+		File out(file + ".tmp", File::WRITE, File::CREATE | File::TRUNCATE);
 		BufferedOutputStream<false> f(&out);
 		f.write(SimpleXML::utf8Header);
 		xml.toXML(&f);
 		f.flush();
 		out.close();
-		File::deleteFile(fileName);
-		File::renameFile(fileName + ".tmp", fileName);
+		File::deleteFile(file);
+		File::renameFile(file + ".tmp", file);
 	}
 	catch (const FileException &)
 	{
 	}
 }
-

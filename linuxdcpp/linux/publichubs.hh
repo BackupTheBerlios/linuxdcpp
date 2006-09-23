@@ -67,7 +67,6 @@ class PublicHubs:
 		virtual void on(FavoriteManagerListener::DownloadFailed, const std::string &file) throw();
 		virtual void on(FavoriteManagerListener::DownloadFinished, const std::string &file) throw();
 
-		pthread_mutex_t hubLock;
 		HubEntry::List hubs;
 		StringSearch filter;
 		TreeView listsView, hubView;

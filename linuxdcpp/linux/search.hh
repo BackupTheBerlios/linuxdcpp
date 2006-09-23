@@ -64,6 +64,7 @@ class Search:
 		static void onDownloadClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onDownloadFavoriteClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onDownloadToClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onDownloadToMatchClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onDownloadDirClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onDownloadFavoriteDirClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onDownloadDirToClicked_gui(GtkMenuItem *item, gpointer data);
@@ -79,6 +80,7 @@ class Search:
 		// Client functions
 		void download_client(std::string target, SearchResult *result);
 		void downloadDir_client(std::string target, SearchResult *result);
+		void addSource_client(std::string source, SearchResult *result);
 		void getFileList_client(User::Ptr &user, QueueItem::FileFlags flags);
 		void addFavUser_client(User::Ptr &user);
 		void grantSlot_client(User::Ptr &user);

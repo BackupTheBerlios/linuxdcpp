@@ -36,8 +36,6 @@ class WulforSettingsManager
 		void set(std::string key, int value);
 		void set(std::string key, std::string value);
 
-		void load(std::string fileName);
-		void save(std::string fileName);
 		void load();
 		void save();
 

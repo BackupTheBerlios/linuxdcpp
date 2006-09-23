@@ -243,6 +243,7 @@ void MainWindow::createWindow_gui()
 	g_signal_connect(getWidget("refreshFileListMenuItem"), "activate", G_CALLBACK(refreshFileList_gui), (gpointer)this);
 	g_signal_connect(getWidget("book"), "switch-page", G_CALLBACK(switchPage_gui), (gpointer)this);
 	g_signal_connect(transferView.get(), "button-press-event", G_CALLBACK(transferClicked_gui), (gpointer)this);
+	g_signal_connect_after(getWidget("pane"), "realize", G_CALLBACK(onPaneRealized_gui), (gpointer)this);
 
 	// Load window state and position from settings manager
 	WulforSettingsManager *sm = WulforSettingsManager::get();
@@ -250,13 +251,11 @@ void MainWindow::createWindow_gui()
 	int posY = sm->getInt("main-window-pos-y");
 	int sizeX = sm->getInt("main-window-size-x");
 	int sizeY = sm->getInt("main-window-size-y");
-	int transferPanePosition = sm->getInt("transfer-pane-position");
 
 	gtk_window_move(window, posX, posY);
 	gtk_window_resize(window, sizeX, sizeY);
 	if (sm->getInt("main-window-maximized"))
 		gtk_window_maximize(window);
-	gtk_paned_set_position(GTK_PANED(getWidget("pane")), transferPanePosition);
 
 	GtkWidget *dummy;
 	GtkRequisition req;
@@ -1288,8 +1287,7 @@ void MainWindow::onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data)
 {
 	MainWindow *mw = (MainWindow *)data;
 	GtkWindow *win = mw->window;
-	GtkPaned *pane = GTK_PANED(mw->getWidget("pane"));
-	static int x, y, panePos;
+	static int x, y;
 	static bool isMaximized, isIconified;
 
 	if (GTK_WIDGET_VISIBLE(win))
@@ -1299,7 +1297,6 @@ void MainWindow::onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data)
 		state = gdk_window_get_state(GTK_WIDGET(win)->window);
 		isMaximized = (state & GDK_WINDOW_STATE_MAXIMIZED);
 		isIconified = (state & GDK_WINDOW_STATE_ICONIFIED);
-		panePos = gtk_paned_get_position(pane);
 		gtk_widget_hide_all(GTK_WIDGET(win));
 	}
 	else
@@ -1307,9 +1304,6 @@ void MainWindow::onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data)
 		gtk_window_move(win, x, y);
 		if (isMaximized) gtk_window_maximize(win);
 		if (isIconified) gtk_window_iconify(win);
-		///@todo: fix row below.
-		//It seems like it doesn't get the correct window size if it is maximized
-		gtk_paned_set_position(pane, panePos);
 		gtk_widget_show_all(GTK_WIDGET(win));
 	}
 }
@@ -1375,4 +1369,9 @@ gboolean MainWindow::onButtonPressPage_gui(GtkWidget *widget, GdkEventButton *ev
 	}
 
 	return FALSE;
+}
+
+void MainWindow::onPaneRealized_gui(GtkWidget *pane, gpointer data)
+{
+	gtk_paned_set_position(GTK_PANED(pane), WGETI("transfer-pane-position"));
 }

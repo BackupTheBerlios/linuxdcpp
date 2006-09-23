@@ -658,7 +658,7 @@ TTH</property>
   </child>
 
   <child>
-    <widget class="GtkMenuItem" id="removeUserFromQueueITem">
+    <widget class="GtkMenuItem" id="removeUserFromQueueItem">
       <property name="visible">True</property>
       <property name="label" translatable="yes">Remove user from queue</property>
       <property name="use_underline">True</property>
