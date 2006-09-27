@@ -25,6 +25,7 @@
 #include <client/ShareManager.h>
 #include "eggtrayicon.h"
 #include "sharebrowser.hh"
+#include "hub.hh"
 #include "wulformanager.hh"
 
 using namespace std;
@@ -162,7 +163,6 @@ void MainWindow::createWindow_gui()
 	// Disable un-implemented menu items.
 	gtk_widget_set_sensitive(getWidget("openDownloadsDirectoryMenuItem"), FALSE);
 	gtk_widget_set_sensitive(getWidget("followLastRedirectMenuItem"), FALSE);
-	gtk_widget_set_sensitive(getWidget("reconnectMenuItem"), FALSE);
 	gtk_widget_set_sensitive(getWidget("favoriteUsersMenuItem"), FALSE);
 	gtk_widget_set_sensitive(getWidget("adlSearchMenuItem"), FALSE);
 	gtk_widget_set_sensitive(getWidget("searchSpyMenuItem"), FALSE);
@@ -234,6 +234,7 @@ void MainWindow::createWindow_gui()
 	g_signal_connect(getWidget("finishedUploadsMenuItem"), "activate", G_CALLBACK(finishedULclicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("favHubs"), "clicked", G_CALLBACK(favHubsClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("favoriteHubsMenuItem"), "activate", G_CALLBACK(favHubsClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("reconnectMenuItem"), "activate", G_CALLBACK(reconnectClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("closeMenuItem"), "activate", G_CALLBACK(closeClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("exitMenuItem"), "activate", G_CALLBACK(quitClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("quit"), "clicked", G_CALLBACK(quitClicked_gui), (gpointer)this);
@@ -512,6 +513,23 @@ void MainWindow::connectClicked_gui(GtkWidget *widget, gpointer data)
 void MainWindow::favHubsClicked_gui(GtkWidget *widget, gpointer data)
 {
 	WulforManager::get()->addFavoriteHubs_gui();
+}
+
+void MainWindow::reconnectClicked_gui(GtkWidget *widget, gpointer data)
+{
+	MainWindow *mw = (MainWindow *)data;
+	GtkWidget *entryWidget = mw->currentPage_gui();
+
+	if (entryWidget)
+	{
+		BookEntry *entry = (BookEntry *)g_object_get_data(G_OBJECT(entryWidget), "entry");
+
+		if (entry && entry->getID().substr(0, 5) == "Hub: ")
+		{
+			Func0<Hub> *func = new Func0<Hub>(dynamic_cast<Hub *>(entry), &Hub::reconnect_client);
+			WulforManager::get()->dispatchClientFunc(func);
+		}
+	}
 }
 
 void MainWindow::pubHubsClicked_gui(GtkWidget *widget, gpointer data)

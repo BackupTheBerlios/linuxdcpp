@@ -298,9 +298,25 @@
   </child>
 
   <child>
+    <widget class="GtkMenuItem" id="matchItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Match queue</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
     <widget class="GtkMenuItem" id="msgItem">
       <property name="visible">True</property>
       <property name="label" translatable="yes">Private message</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="favoriteUserItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Add to favorites</property>
       <property name="use_underline">True</property>
     </widget>
   </child>
@@ -312,6 +328,15 @@
       <property name="use_underline">True</property>
     </widget>
   </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="removeUserItem">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Remove user from queue</property>
+      <property name="use_underline">True</property>
+    </widget>
+  </child>
+
 </widget>
 
 </glade-interface>

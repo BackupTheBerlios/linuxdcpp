@@ -38,6 +38,7 @@ class Hub:
 
 		// Client functions
 		void connectClient_client(string address, string nick = "", string desc = "", string password = "");
+		void reconnect_client();
 
 	private:
 		// GUI functions
@@ -59,14 +60,17 @@ class Hub:
 		static gboolean onNickListKeyRelease_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
 		static gboolean onEntryKeyPress_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
 		static void onBrowseItemClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onMatchItemClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onMsgItemClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onGrantItemClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onRemoveUserItemClicked_gui(GtkMenuItem *item, gpointer data);
 
 		// Client functions
 		void setPassword_client(std::string password);
 		void sendMessage_client(std::string message);
-		void getFileList_client(std::string nick);
+		void getFileList_client(std::string nick, bool match);
 		void grantSlot_client(std::string nick);
+		void removeUserFromQueue_client(std::string nick);
 		void redirect_client(std::string address);
 		void rebuildHashData_client();
 		void refreshFileList_client();

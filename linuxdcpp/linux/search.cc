@@ -133,10 +133,10 @@ Search::Search():
 
 Search::~Search()
 {
+	clearList_gui();
 	ClientManager::getInstance()->removeListener(this);
 	SearchManager::getInstance()->removeListener(this);
 	gtk_widget_destroy(getWidget("dirChooserDialog"));
-	clearList_gui();
 
 	if (iconFile)
 		g_object_unref(iconFile);
@@ -156,12 +156,11 @@ void Search::putValue_gui(const string &str, int64_t size, SearchManager::SizeMo
 
 void Search::initHubs_gui()
 {
-	ClientManager* clientMgr = ClientManager::getInstance();
-	clientMgr->lock();
+	ClientManager::getInstance()->lock();
 
-	Client::List& clients = clientMgr->getClients();
+	Client::List& clients = ClientManager::getInstance()->getClients();
 
-	Client *client;
+	Client *client = NULL;
 	for (Client::List::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
 		client = *it;
@@ -169,7 +168,7 @@ void Search::initHubs_gui()
 			addHub_gui(client->getHubName(), client->getHubUrl(), client->getMyIdentity().isOp());
 	}
 
-	clientMgr->unlock();
+	ClientManager::getInstance()->unlock();
 }
 
 void Search::addHub_gui(string name, string url, bool op)

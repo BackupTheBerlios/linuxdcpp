@@ -989,30 +989,16 @@ void DownloadQueue::removeDir_gui(string path)
 		return;
 }
 
-void DownloadQueue::removeFile_gui(string target)
+void DownloadQueue::removeFile_gui(string path)
 {
-	string path = Util::getFilePath(target);
-	if (dirFileMap.find(path) == dirFileMap.end())
-		return;
-	for (vector<QueueItem *>::iterator it = dirFileMap[path].begin(); it != dirFileMap[path].end(); )
+	if (dirFileMap.find(path) != dirFileMap.end())
 	{
-		if ((*it)->getTarget() == target)
-		{
-			queueSize-=(*it)->getSize();
-			queueItems--;
-			if (fileMap.find(target) != fileMap.end())
-				fileMap.erase(fileMap.find(target));
-			dirFileMap[path].erase(it);
-			break;
-		}
-		else
-			it++;
-	}
-	if (dirFileMap[path].empty())
-		removeDir_gui(path);
+		if (dirFileMap[path].empty())
+			removeDir_gui(path);
 
-	update_gui();
-	updateStatus_gui();
+		update_gui();
+		updateStatus_gui();
+	}
 }
 
 void DownloadQueue::addItem_gui(QueueItem *item)
@@ -1067,7 +1053,23 @@ void DownloadQueue::on(QueueManagerListener::Moved, QueueItem *item) throw()
 
 void DownloadQueue::on(QueueManagerListener::Removed, QueueItem *item) throw()
 {
-	WulforManager::get()->dispatchGuiFunc(new Func1<DownloadQueue, string>(this, &DownloadQueue::removeFile_gui, item->getTarget()));
+	string path = Util::getFilePath(item->getTarget());
+
+	if (dirFileMap.find(path) != dirFileMap.end())
+	{
+		for (vector<QueueItem *>::iterator it = dirFileMap[path].begin(); it != dirFileMap[path].end(); ++it)
+		{
+			if (*it == item)
+			{
+				queueSize -= (*it)->getSize();
+				queueItems--;
+				dirFileMap[path].erase(it);
+				break;
+			}
+		}
+	}
+
+	WulforManager::get()->dispatchGuiFunc(new Func1<DownloadQueue, string>(this, &DownloadQueue::removeFile_gui, path));
 	if (BOOLSETTING(BOLD_QUEUE))
 		WulforManager::get()->dispatchGuiFunc(new Func0<DownloadQueue>(this, &DownloadQueue::setBold_gui));
 }

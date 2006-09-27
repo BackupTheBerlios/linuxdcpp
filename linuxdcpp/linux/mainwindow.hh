@@ -103,6 +103,7 @@ class MainWindow:
 		static void dlQueueClicked_gui(GtkWidget *widget, gpointer data);
 		static void settingsClicked_gui(GtkWidget *widget, gpointer data);
 		static void favHubsClicked_gui(GtkWidget *widget, gpointer data);
+		static void reconnectClicked_gui(GtkWidget *widget, gpointer data);
 		static void searchClicked_gui(GtkWidget *widget, gpointer data);
 		static void hashClicked_gui(GtkWidget *widget, gpointer data);
 		static void closeClicked_gui(GtkWidget *widget, gpointer data);

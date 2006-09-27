@@ -1,8 +1,13 @@
+2006-09-27 - Steven Sheehy
+* Fixed crashing regression in download queue.
+* Added "Match queue" and "Remove from queue" options to userlist popup menu.
+* Added reconnect hub option (File->Reconnect or Ctrl+R).
+
 2006-09-23 - Steven Sheehy
 * The transfer, nicklist, sharebrowser & dl queue panes now stay the same
   size when resizing the window (thanks dorian).
 * Added the ability to add extra sources from search popup (thanks Bart Vullings).
-* Fixed a BSD issue with the new fast-hash routine.
+* Fixed a BSD compile issue with the new fast-hash routine.
 * Download queue cleanup:
 	* Fixed potential GUI deadlocks.
 	* Fixed memory leaks.

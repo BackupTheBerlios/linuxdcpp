@@ -105,9 +105,11 @@ Hub::Hub(string address):
 	g_signal_connect(getWidget("chatEntry"), "activate", G_CALLBACK(onSendMessage_gui), (gpointer)this);
 	g_signal_connect(getWidget("chatEntry"), "key-press-event", G_CALLBACK(onEntryKeyPress_gui), (gpointer)this);
 	g_signal_connect(getWidget("browseItem"), "activate", G_CALLBACK(onBrowseItemClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("matchItem"), "activate", G_CALLBACK(onMatchItemClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("msgItem"), "activate", G_CALLBACK(onMsgItemClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("grantItem"), "activate", G_CALLBACK(onGrantItemClicked_gui), (gpointer)this);
 
+	gtk_widget_set_sensitive(getWidget("favoriteUserItem"), FALSE); // Not implemented yet
 	gtk_widget_grab_focus(getWidget("chatEntry"));
 
 	int nickPanePosition = WulforSettingsManager::get()->getInt("nick-pane-position");
@@ -424,8 +426,9 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
 		}
 		else if (command == "getlist")
 		{
-			func = new F1(hub, &Hub::getFileList_client, param);
-			WulforManager::get()->dispatchClientFunc(func);
+			typedef Func2<Hub, string, bool> F2;
+			F2 *f2 = new F2(hub, &Hub::getFileList_client, param, FALSE);
+			WulforManager::get()->dispatchClientFunc(f2);
 		}
 		else if (command == "grant")
 		{
@@ -509,8 +512,8 @@ gboolean Hub::onNickListButtonRelease_gui(GtkWidget *widget, GdkEventButton *eve
 		{
 			string nick = hub->nickView.getString(&iter, "Nick");
 
-			typedef Func1<Hub, string> F1;
-			F1 *func = new F1(hub, &Hub::getFileList_client, nick);
+			typedef Func2<Hub, string, bool> F2;
+			F2 *func = new F2(hub, &Hub::getFileList_client, nick, FALSE);
 			WulforManager::get()->dispatchClientFunc(func);
 		}
 		else if (event->button == 2 && event->type == GDK_BUTTON_RELEASE)
@@ -544,8 +547,8 @@ gboolean Hub::onNickListKeyRelease_gui(GtkWidget *widget, GdkEventKey *event, gp
 		{
 			string nick = hub->nickView.getString(&iter, "Nick");
 
-			typedef Func1<Hub, string> F1;
-			F1 *func = new F1(hub, &Hub::getFileList_client, nick);
+			typedef Func2<Hub, string, bool> F2;
+			F2 *func = new F2(hub, &Hub::getFileList_client, nick, FALSE);
 			WulforManager::get()->dispatchClientFunc(func);
 		}
 	}
@@ -596,8 +599,24 @@ void Hub::onBrowseItemClicked_gui(GtkMenuItem *item, gpointer data)
 	{
 		string nick = hub->nickView.getString(&iter, "Nick");
 
-		typedef Func1<Hub, string> F1;
-		F1 *func = new F1(hub, &Hub::getFileList_client, nick);
+		typedef Func2<Hub, string, bool> F2;
+		F2 *func = new F2(hub, &Hub::getFileList_client, nick, FALSE);
+		WulforManager::get()->dispatchClientFunc(func);
+	}
+}
+
+void Hub::onMatchItemClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Hub *hub = (Hub *)data;
+	GtkTreeIter iter;
+	string nick;
+
+	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
+	{
+		string nick = hub->nickView.getString(&iter, "Nick");
+
+		typedef Func2<Hub, string, bool> F2;
+		F2 *func = new F2(hub, &Hub::getFileList_client, nick, TRUE);
 		WulforManager::get()->dispatchClientFunc(func);
 	}
 }
@@ -626,6 +645,22 @@ void Hub::onGrantItemClicked_gui(GtkMenuItem *item, gpointer data)
 
 		typedef Func1<Hub, string> F1;
 		F1 *func = new F1(hub, &Hub::grantSlot_client, nick);
+		WulforManager::get()->dispatchClientFunc(func);
+	}
+}
+
+void Hub::onRemoveUserItemClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Hub *hub = (Hub *)data;
+	GtkTreeIter iter;
+	string nick;
+
+	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
+	{
+		string nick = hub->nickView.getString(&iter, "Nick");
+
+		typedef Func1<Hub, string> F1;
+		F1 *func = new F1(hub, &Hub::removeUserFromQueue_client, nick);
 		WulforManager::get()->dispatchClientFunc(func);
 	}
 }
@@ -665,7 +700,7 @@ void Hub::sendMessage_client(string message)
 		client->hubMessage(message);
 }
 
-void Hub::getFileList_client(string nick)
+void Hub::getFileList_client(string nick, bool match)
 {
 	string message;
 
@@ -673,11 +708,15 @@ void Hub::getFileList_client(string nick)
 	{
 		try
 		{
-			QueueManager::getInstance()->addList(idMap[nick].getUser(), QueueItem::FLAG_CLIENT_VIEW);
+			if (match)
+				QueueManager::getInstance()->addList(idMap[nick].getUser(), QueueItem::FLAG_MATCH_QUEUE);
+			else
+				QueueManager::getInstance()->addList(idMap[nick].getUser(), QueueItem::FLAG_CLIENT_VIEW);
 		}
 		catch (const Exception& e)
 		{
 			message = e.getError();
+			LogManager::getInstance()->message(message);
 		}
 	}
 	else
@@ -707,6 +746,12 @@ void Hub::grantSlot_client(string nick)
 	typedef Func1<Hub, string> F1;
 	F1 *func = new F1(this, &Hub::addStatusMessage_gui, message);
 	WulforManager::get()->dispatchGuiFunc(func);
+}
+
+void Hub::removeUserFromQueue_client(std::string nick)
+{
+	if (idMap.find(nick) != idMap.end())
+		QueueManager::getInstance()->removeSource(idMap[nick].getUser(), QueueItem::Source::FLAG_REMOVED);
 }
 
 void Hub::redirect_client(string address)
@@ -778,6 +823,18 @@ void Hub::addAsFavorite_client()
 	{
 		func = new F1(this, &Hub::addStatusMessage_gui, "Favorite hub already exists");
 		WulforManager::get()->dispatchGuiFunc(func);
+	}
+}
+
+void Hub::reconnect_client()
+{
+	Func0<Hub> *func = new Func0<Hub>(this, &Hub::clearNickList_gui);
+	WulforManager::get()->dispatchGuiFunc(func);
+
+	if (client)
+	{
+		client->disconnect(FALSE);
+		client->connect();
 	}
 }
 

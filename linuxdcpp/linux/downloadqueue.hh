@@ -48,7 +48,7 @@ class DownloadQueue:
 		void update_gui();
 		void addItem_gui(QueueItem *item);
 		void updateItem_gui(QueueItem *item, bool add);
-		void removeFile_gui(std::string target);
+		void removeFile_gui(std::string path);
 		void removeDir_gui(std::string path);
 		int countFiles_gui(std::string path);
 		void addDir_gui(std::string path, GtkTreeIter *row, std::string &current);
