@@ -80,7 +80,7 @@ Search::Search():
 	resultView.setView(GTK_TREE_VIEW(getWidget("treeviewResult")), TRUE, "search");
 	resultView.insertColumn("Filename", G_TYPE_STRING, TreeView::PIXBUF_STRING, 250, "Icon");
 	resultView.insertColumn("Nick", G_TYPE_STRING, TreeView::STRING, 100);
-	resultView.insertColumn("Type", G_TYPE_STRING, TreeView::STRING, 50);
+	resultView.insertColumn("Type", G_TYPE_STRING, TreeView::STRING, 65);
 	resultView.insertColumn("Size", G_TYPE_STRING, TreeView::STRING, 80);
 	resultView.insertColumn("Path", G_TYPE_STRING, TreeView::STRING, 100);
 	resultView.insertColumn("Slots", G_TYPE_STRING, TreeView::STRING, 50);
@@ -129,6 +129,8 @@ Search::Search():
 	g_signal_connect(getWidget("removeItem"), "activate", G_CALLBACK(onRemoveClicked_gui), (gpointer)this);
 
 	initHubs_gui();
+
+	gtk_widget_grab_focus(getWidget("comboboxentrySearch"));
 }
 
 Search::~Search()
@@ -285,45 +287,49 @@ void Search::buildDownloadMenu_gui()
 
 	// Add queued file's with the same TTH/size.
 	TTHValue *tth = NULL;
+	int64_t size = -1;
 	string firstTTH, ext;
-	int64_t size;
-	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(resultStore), &iter, path))
-	{
-		result = resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
-		if (result->getType() == SearchResult::TYPE_FILE)
-		{
-			tth = result->getTTH();
-			firstTTH = tth->toBase32();
-			size = result->getSize();
-			ext = Util::getFileExt(result->getFile());
-		}
-	}
-	gtk_tree_path_free(path);
 
-	for (int i = 1; i < count; i++)
+	for (int i = 0; i < count; i++)
 	{
 		path = (GtkTreePath *)g_list_nth_data(list, i);
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(resultStore), &iter, path))
 		{
 			result = resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
-			if (tth && (result->getType() == SearchResult::TYPE_DIRECTORY || firstTTH != result->getTTH()->toBase32()))
+
+			if (i == 0 && result->getType() == SearchResult::TYPE_FILE)
+			{
+				tth = result->getTTH();
+				if (tth)
+					firstTTH = tth->toBase32();
+				size = result->getSize();
+				ext = Util::getFileExt(result->getFile());
+			}
+			else if (result->getType() == SearchResult::TYPE_DIRECTORY)
+			{
 				tth = NULL;
-			if (size > -1 && (result->getType() == SearchResult::TYPE_DIRECTORY || size != result->getSize()))
 				size = -1;
+			}
+			else
+			{
+				if (!firstTTH.empty() && result->getTTH() && firstTTH != result->getTTH()->toBase32())
+					tth = NULL;
+				if (size > -1 && size != result->getSize())
+					size = -1;
+			}
 		}
 		gtk_tree_path_free(path);
+
+		if (tth == NULL && size < 0)
+			break;
 	}
 	g_list_free(list);
 
 	StringList targets;
-	if (tth != NULL)
-	{
+	if (tth)
 		QueueManager::getInstance()->getTargetsByRoot(targets, *tth);
-	}
 	else if (size > -1)
-	{
 		QueueManager::getInstance()->getTargetsBySize(targets, size, ext);
-	}
 
 	if (targets.size() > static_cast<size_t>(0))
 	{

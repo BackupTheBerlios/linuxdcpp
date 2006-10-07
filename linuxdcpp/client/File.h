@@ -248,12 +248,13 @@ public:
 		if(mode & TRUNCATE) {
 			m |= O_TRUNC;
 		}
+
 		h = open(aFileName.c_str(), m, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 		if(h == -1)
 			throw FileException("Could not open " + filename);
 	}	
 
-	u_int32_t getLastModified() {
+	u_int32_t getLastModified() throw() {
 		struct stat s;
 		if (::fstat(h, &s) == -1)
 			return 0;
@@ -261,7 +262,7 @@ public:
 		return (u_int32_t)s.st_mtime;
 	}
 
-	bool isOpen() { return h != -1; }
+	bool isOpen() throw() { return h != -1; }
 
 	virtual void close() throw() {
 		if(h != -1) {
@@ -270,7 +271,7 @@ public:
 		}
 	}
 
-	virtual int64_t getSize() throw(FileException) {
+	virtual int64_t getSize() throw() {
 		struct stat s;
 		if(::fstat(h, &s) == -1)
 			return -1;
@@ -278,13 +279,21 @@ public:
 		return (int64_t)s.st_size;
 	}
 
-	virtual int64_t getPos() throw(FileException) {
-		return (int64_t) lseek(h, 0, SEEK_CUR);
+	virtual int64_t getPos() throw() {
+		return (int64_t)lseek(h, 0, SEEK_CUR);
 	}
 
-	virtual void setPos(int64_t pos) throw(FileException) { lseek(h, (off_t)pos, SEEK_SET); }
-	virtual void setEndPos(int64_t pos) throw(FileException) { lseek(h, (off_t)pos, SEEK_END); }
-	virtual void movePos(int64_t pos) throw(FileException) { lseek(h, (off_t)pos, SEEK_CUR); }
+	virtual void setPos(int64_t pos) throw() {
+		lseek(h, (off_t)pos, SEEK_SET);
+	}
+
+	virtual void setEndPos(int64_t pos) throw() {
+		lseek(h, (off_t)pos, SEEK_END);
+	}
+
+	virtual void movePos(int64_t pos) throw() {
+		lseek(h, (off_t)pos, SEEK_CUR);
+	}
 
 	virtual size_t read(void* buf, size_t& len) throw(FileException) {
 		ssize_t x = ::read(h, buf, len);
@@ -305,11 +314,11 @@ public:
 
 	// some ftruncate implementations can't extend files like SetEndOfFile,
 	// not sure if the client code needs this...
-	int extendFile(int64_t len) {
+	int extendFile(int64_t len) throw() {
 		char zero;
 
-		if ( (lseek(h,(off_t) len,SEEK_SET) != -1) && (::write(h,&zero,1) != -1) ) {
-			ftruncate(h,(off_t)len);
+		if(lseek(h, (off_t)len, SEEK_SET) != -1 && ::write(h, &zero, 1) != -1) {
+			ftruncate(h, (off_t)len);
 			return 1;
 		}
 		return -1;
@@ -320,13 +329,13 @@ public:
 		int64_t eof;
 		int ret;
 
-		pos = (int64_t) lseek(h,0,SEEK_CUR);
-		eof = (int64_t) lseek(h,0,SEEK_END);
+		pos = (int64_t)lseek(h, 0, SEEK_CUR);
+		eof = (int64_t)lseek(h, 0, SEEK_END);
 		if (eof < pos) 
 			ret = extendFile(pos);
 		else
-			ret = ftruncate(h,(off_t)pos);
-		lseek(h,(off_t)pos,SEEK_SET);
+			ret = ftruncate(h, (off_t)pos);
+		lseek(h, (off_t)pos, SEEK_SET);
 		if (ret == -1)
 			throw FileException(Util::translateError(errno) + " " + filename);
 	}
@@ -338,28 +347,32 @@ public:
 		setPos(pos);		
 	}
 
-	virtual size_t flush() throw(Exception) {
-		if(fsync(h) == -1)
+	virtual size_t flush() throw(FileException) {
+		if(isOpen() && fsync(h) == -1)
 			throw FileException(Util::translateError(errno) + " " + filename);
 		return 0;
 	}
 
-	static void deleteFile(const string& aFileName) throw() { ::unlink(aFileName.c_str()); }
+	static void deleteFile(const string& aFileName) throw() {
+		::unlink(aFileName.c_str());
+	}
 
-	/* ::rename seems to have problems when source and target is on different partitions
-       from "man 2 rename"
-       EXDEV  oldpath  and  newpath are not on the same mounted filesystem.  (Linux permits a
-       filesystem to be mounted at multiple points, but rename(2) does not
-       work across different mount points, even if the same filesystem is mounted on both.)
-    */
-	static void renameFile(const string& source, const string& target) throw() {
+	/*
+	 * ::rename seems to have problems when source and target is on different partitions
+	 * from "man 2 rename":
+	 * EXDEV oldpath and newpath are not on the same mounted filesystem. (Linux permits a
+	 * filesystem to be mounted at multiple points, but rename(2) does not
+	 * work across different mount points, even if the same filesystem is mounted on both.)
+	 */
+	static void renameFile(const string& source, const string& target) throw(FileException) {
 		int ret = ::rename(source.c_str(), target.c_str());
-		if ( ( ret != 0 ) && ( errno == EXDEV ) ) {
-          copyFile(source.c_str(), target.c_str());
-          deleteFile(source.c_str());
-        } else if (ret != 0)
-             throw FileException(source.c_str() + Util::translateError(errno));
-    }
+		if(ret != 0 && errno == EXDEV) {
+			copyFile(source.c_str(), target.c_str());
+			deleteFile(source.c_str());
+		} else if(ret != 0) {
+			throw FileException(source.c_str() + Util::translateError(errno));
+		}
+	}
 
 	// This doesn't assume all bytes are written in one write call, it is a bit safer
 	static void copyFile(const string& source, const string& target) throw(FileException) { 
@@ -369,9 +382,9 @@ public:
 		File src(source, File::READ, 0);
 		File dst(target, File::WRITE, File::CREATE | File::TRUNCATE);
 
-		while ( src.read((char*)buffer, count) > 0) {
+		while(src.read((char*)buffer, count) > 0) {
 			char* p = (char*)buffer;
-			while (count  > 0) {
+			while(count > 0) {
 				size_t ret = dst.write(p, count);
 				p += ret;
 				count -= ret;
@@ -380,7 +393,7 @@ public:
 		}
 	}
 
-	static int64_t getSize(const string& aFileName) {
+	static int64_t getSize(const string& aFileName) throw() {
 		struct stat s;
 		if(stat(aFileName.c_str(), &s) == -1)
 			return -1;
@@ -388,15 +401,14 @@ public:
 		return s.st_size;
 	}
 
-	static void ensureDirectory(const string& aFile) {
+	static void ensureDirectory(const string& aFile) throw() {
 		string acp = Text::utf8ToAcp(aFile);
 		string::size_type start = 0;
-		while( (start = aFile.find_first_of(L'/', start)) != string::npos) {
-			mkdir(aFile.substr(0, start+1).c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
+		while( (start = acp.find_first_of('/', start)) != string::npos) {
+			mkdir(acp.substr(0, start+1).c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
 			start++;
 		}
 	}
-
 
 #endif // _WIN32
 
@@ -420,7 +432,9 @@ public:
 		return read((u_int32_t)sz);
 	}
 
-	void write(const string& aString) throw(FileException) { write((void*)aString.data(), aString.size()); }
+	void write(const string& aString) throw(FileException) {
+		write((void*)aString.data(), aString.size());
+	}
 
 protected:
 #ifdef _WIN32

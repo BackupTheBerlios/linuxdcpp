@@ -133,7 +133,7 @@ void WulforManager::deleteMainWindow()
 			clientFuncs.erase(fIt);
 		}
 		else
-			fIt++;
+			++fIt;
 	}
 	pthread_mutex_unlock(&clientQueueLock);
 
@@ -147,7 +147,7 @@ void WulforManager::deleteMainWindow()
 			guiFuncs.erase(fIt);
 		}
 		else
-			fIt++;
+			++fIt;
 	}
 	pthread_mutex_unlock(&guiQueueLock);
 
@@ -360,7 +360,7 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry)
 			clientFuncs.erase(fIt);
 		}
 		else
-			fIt++;
+			++fIt;
 	}
 	pthread_mutex_unlock(&clientQueueLock);
 
@@ -374,7 +374,7 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry)
 			guiFuncs.erase(fIt);
 		}
 		else
-			fIt++;
+			++fIt;
 	}
 	pthread_mutex_unlock(&guiQueueLock);
 
@@ -449,7 +449,7 @@ void WulforManager::deleteDialogEntry_gui(DialogEntry *entry)
 			clientFuncs.erase(it);
 		}
 		else
-			it++;
+			++it;
 	}
 	pthread_mutex_unlock(&clientQueueLock);
 
@@ -463,7 +463,7 @@ void WulforManager::deleteDialogEntry_gui(DialogEntry *entry)
 			guiFuncs.erase(it);
 		}
 		else
-			it++;
+			++it;
 	}
 	pthread_mutex_unlock(&guiQueueLock);
 

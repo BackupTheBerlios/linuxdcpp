@@ -31,7 +31,7 @@ FavoriteHubs::FavoriteHubs():
 	// Initialize favorite hub list treeview
 	GtkTreeView *view = GTK_TREE_VIEW(getWidget("favoriteView"));
 	favoriteView.setView(view, TRUE, "favoritehubs");
-	favoriteView.insertColumn("Auto Connect", G_TYPE_BOOLEAN, TreeView::BOOL, 95);
+	favoriteView.insertColumn("Auto Connect", G_TYPE_BOOLEAN, TreeView::BOOL, 100);
 	favoriteView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, 150);
 	favoriteView.insertColumn("Description", G_TYPE_STRING, TreeView::STRING, 250);
 	favoriteView.insertColumn("Nick", G_TYPE_STRING, TreeView::STRING, 100);

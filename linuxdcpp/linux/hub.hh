@@ -22,15 +22,13 @@
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/Client.h>
-#include <client/TimerManager.h>
 
 #include "bookentry.hh"
 #include "treeview.hh"
 
 class Hub:
 	public BookEntry,
-	public ClientListener,
-	public TimerManagerListener
+	public ClientListener
 {
 	public:
 		Hub(std::string address);
@@ -43,7 +41,7 @@ class Hub:
 	private:
 		// GUI functions
 		void setStatus_gui(std::string statusBar, std::string text);
-		void findUser_gui(std::string nick, GtkTreeIter *iter);
+		bool findUser_gui(std::string nick, GtkTreeIter *iter);
 		void updateUser_gui(Identity id);
 		void removeUser_gui(std::string nick);
 		void clearNickList_gui();
@@ -51,7 +49,6 @@ class Hub:
 		void addMessage_gui(std::string message);
 		void addStatusMessage_gui(std::string message);
 		void addPrivateMessage_gui(Identity id, std::string message);
-		void sortList_gui();
 
 		// GUI callbacks
 		static void onSendMessage_gui(GtkEntry *entry, gpointer data);
@@ -93,13 +90,10 @@ class Hub:
 			const OnlineUser &to, const OnlineUser &replyTo, const string &message) throw();
 		virtual void on(ClientListener::NickTaken, Client *) throw();
 		virtual void on(ClientListener::SearchFlood, Client *, const string &message) throw();
-		virtual void on(TimerManagerListener::Second, u_int32_t tics) throw();
-		virtual void on(TimerManagerListener::Minute, u_int32_t tics) throw();
 
 		hash_map<std::string, Identity> idMap;
 		hash_map<std::string, GdkPixbuf *> userIcons;
 		Client *client;
-		bool usersUpdated;
 		TreeView nickView;
 		GtkListStore *nickStore;
 		GtkTreeSelection *nickSelection;
@@ -108,9 +102,10 @@ class Hub:
 		GtkEntryCompletion *completion;
 		gint oldType;
 		std::vector<std::string> history;
-		int historyIndex, sorted;
+		int historyIndex;
 		static const int maxLines = 1000;
 		static const int maxHistory = 20;
+		int64_t totalShared;
 };
 
 #else

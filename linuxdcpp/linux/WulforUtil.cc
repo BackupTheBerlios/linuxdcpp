@@ -41,7 +41,7 @@ vector<int> WulforUtil::splitString(const string &str, const string &delimiter)
 string WulforUtil::linuxSeparator(const string &ps)
 {
 	string str = ps;
-	for (string::iterator it = str.begin(); it != str.end(); it++)
+	for (string::iterator it = str.begin(); it != str.end(); ++it)
 		if ((*it) == '\\')
 			(*it) = '/';
 	return str;
@@ -50,7 +50,7 @@ string WulforUtil::linuxSeparator(const string &ps)
 string WulforUtil::windowsSeparator(const string &ps)
 {
 	string str = ps;
-	for (string::iterator it = str.begin(); it != str.end(); it++)
+	for (string::iterator it = str.begin(); it != str.end(); ++it)
 		if ((*it) == '/')
 			(*it) = '\\';
 	return str;

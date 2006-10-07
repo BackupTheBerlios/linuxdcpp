@@ -86,6 +86,7 @@ class MainWindow:
 		void transferComplete_client(Transfer *t);
 		void refreshFileList_client();
 		void openOwnList_client();
+		void forceAttempt_client(const User::Ptr &user);
 
 		// GUI Callbacks
 		static gboolean transferClicked_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);

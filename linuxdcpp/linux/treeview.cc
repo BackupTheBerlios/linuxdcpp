@@ -171,7 +171,7 @@ GType* TreeView::getGTypes()
 
 void TreeView::addColumn_gui(Column column)
 {
-	GtkTreeViewColumn *col;
+	GtkTreeViewColumn *col = NULL;
 	GtkCellRenderer *renderer;
 
 	switch (column.type)
@@ -217,6 +217,9 @@ void TreeView::addColumn_gui(Column column)
 				renderer, "text", column.id, "value", TreeView::col(column.linkedCol), NULL);
 			break;
 	};
+
+	if (!col)
+		return;
 
 	// If columns are too small, they can't be manipulated
 	if (column.width >= 20)
@@ -287,7 +290,7 @@ gboolean TreeView::popupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpoin
 void TreeView::toggleColumnVisibility(GtkMenuItem *item, gpointer data)
 {
 	TreeView *tv = (TreeView*)data;
-	GtkTreeViewColumn *column;
+	GtkTreeViewColumn *column = NULL;
 	gboolean visible;
 	SortedColIter iter;
 	string title = string(gtk_label_get_text(GTK_LABEL(gtk_bin_get_child(GTK_BIN(item)))));
@@ -299,6 +302,9 @@ void TreeView::toggleColumnVisibility(GtkMenuItem *item, gpointer data)
 		if (string(gtk_tree_view_column_get_title(column)) == title)
 			break;
 	}
+
+	if (!column)
+		return;
 
 	visible = !gtk_tree_view_column_get_visible(column);
 

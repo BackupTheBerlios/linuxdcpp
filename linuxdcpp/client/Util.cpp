@@ -403,7 +403,7 @@ string Util::formatExactSize(int64_t aBytes) {
 		return Text::fromT(buf);
 #else
 		char buf[64];
-		snprintf(buf, sizeof(buf), "%'lld", aBytes);
+		snprintf(buf, sizeof(buf), "%'lld", static_cast<long long int>(aBytes));
 		return string(buf) + STRING(B);
 #endif
 }

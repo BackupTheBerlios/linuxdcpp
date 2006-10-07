@@ -30,8 +30,6 @@ using namespace std;
 Hub::Hub(string address):
 	BookEntry("Hub: " + address, "hub.glade")
 {
-	TimerManager::getInstance()->addListener(this);
-
 	// Configure the dialog
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("passwordDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
@@ -39,10 +37,10 @@ Hub::Hub(string address):
 	nickView.setView(GTK_TREE_VIEW(getWidget("nickView")), true, "hub");
 	nickView.insertColumn("Nick", G_TYPE_STRING, TreeView::PIXBUF_STRING, 100, "Icon");
 	nickView.insertColumn("Shared", G_TYPE_STRING, TreeView::STRING, 75);
-	nickView.insertColumn("Description", G_TYPE_STRING, TreeView::STRING, 75);
+	nickView.insertColumn("Description", G_TYPE_STRING, TreeView::STRING, 85);
 	nickView.insertColumn("Tag", G_TYPE_STRING, TreeView::STRING, 100);
-	nickView.insertColumn("Connection", G_TYPE_STRING, TreeView::STRING, 75);
-	nickView.insertColumn("eMail", G_TYPE_STRING, TreeView::STRING, 100);
+	nickView.insertColumn("Connection", G_TYPE_STRING, TreeView::STRING, 85);
+	nickView.insertColumn("eMail", G_TYPE_STRING, TreeView::STRING, 90);
 	nickView.insertHiddenColumn("Shared Bytes", G_TYPE_INT64);
 	nickView.insertHiddenColumn("Icon", GDK_TYPE_PIXBUF);
 	nickView.insertHiddenColumn("Nick Order", G_TYPE_STRING);
@@ -53,7 +51,7 @@ Hub::Hub(string address):
 	nickSelection = gtk_tree_view_get_selection(nickView.get());
 	nickView.setSortColumn_gui("Nick", "Nick Order");
 	nickView.setSortColumn_gui("Shared", "Shared Bytes");
-	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(nickStore), GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID, GTK_SORT_ASCENDING);
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(nickStore), nickView.col("Nick Order"), GTK_SORT_ASCENDING);
 	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(nickView.get(), nickView.col("Nick")), TRUE);
 	gtk_tree_view_set_fixed_height_mode(nickView.get(), TRUE);
 
@@ -118,13 +116,11 @@ Hub::Hub(string address):
 	client = NULL;
 	history.push_back("");
 	historyIndex = 0;
-	sorted = 0;
+	totalShared = 0;
 }
 
 Hub::~Hub()
 {
-	TimerManager::getInstance()->removeListener(this);
-
 	if (client)
 	{
 		client->removeListener(this);
@@ -134,7 +130,7 @@ Hub::~Hub()
 	}
 
 	hash_map<string, GdkPixbuf *>::iterator it;
-	for (it = userIcons.begin(); it != userIcons.end(); it++)
+	for (it = userIcons.begin(); it != userIcons.end(); ++it)
 		g_object_unref(G_OBJECT(it->second));
 
 	int nickPanePosition = gtk_paned_get_position(GTK_PANED(getWidget("pane")));
@@ -152,20 +148,23 @@ void Hub::setStatus_gui(string statusBar, string text)
 	}
 }
 
-void Hub::findUser_gui(string nick, GtkTreeIter *iter)
+bool Hub::findUser_gui(string nick, GtkTreeIter *iter)
 {
-	dcassert(idMap.find(nick) != idMap.end());
-
-	GtkTreeModel *m = GTK_TREE_MODEL(nickStore);
-	gboolean valid = gtk_tree_model_get_iter_first(m, iter);
-
-	while (valid)
+	if (idMap.find(nick) != idMap.end())
 	{
-		if (nick == nickView.getString(iter, "Nick"))
-			valid = FALSE;
-		else
+		GtkTreeModel *m = GTK_TREE_MODEL(nickStore);
+		gboolean valid = gtk_tree_model_get_iter_first(m, iter);
+
+		while (valid)
+		{
+			if (nick == nickView.getString(iter, "Nick"))
+				return TRUE;
+
 			valid = gtk_tree_model_iter_next(m, iter);
+		}
 	}
+
+	return FALSE;
 }
 
 
@@ -181,27 +180,11 @@ void Hub::updateUser_gui(Identity id)
 	string connection = id.getConnection();
 	string email = id.getEmail();
 
-
-	if (idMap.find(nick) != idMap.end())
-	{
-		findUser_gui(nick, &iter);
-	}
-	else
-	{
-		gtk_list_store_append(nickStore, &iter);
-		idMap[nick] = id;
-
-		if (BOOLSETTING(SHOW_JOINS) || (BOOLSETTING(FAV_SHOW_JOINS) &&
-			FavoriteManager::getInstance()->isFavoriteUser(id.getUser())))
-		{
-			addStatusMessage_gui(nick + " has joined");
-		}
-	}
-
 	if (id.getUser()->isSet(User::DCPLUSPLUS))
 		icon = "dc++";
 	else
 		icon = "normal";
+
 	if (id.getUser()->isSet(User::PASSIVE))
 		icon += "-fw";
 
@@ -211,31 +194,66 @@ void Hub::updateUser_gui(Identity id)
 		nickOrder = "o" + nick;
 	}
 	else
+	{
 		nickOrder = "u" + nick;
+	}
 
-	gtk_list_store_set(nickStore, &iter,
-		nickView.col("Nick"), nick.c_str(),
-		nickView.col("Shared"), Util::formatBytes(shared).c_str(),
-		nickView.col("Description"), description.c_str(),
-		nickView.col("Tag"), tag.c_str(),
-		nickView.col("Connection"), connection.c_str(),
-		nickView.col("eMail"), email.c_str(),
-		nickView.col("Shared Bytes"), shared,
-		nickView.col("Icon"), userIcons[icon],
-		nickView.col("Nick Order"), nickOrder.c_str(),
-		-1);
+	if (findUser_gui(nick, &iter))
+	{
+		totalShared += shared - idMap[nick].getBytesShared();
+		idMap[nick] = id;
 
-	usersUpdated = TRUE;
+		gtk_list_store_set(nickStore, &iter,
+			nickView.col("Nick"), nick.c_str(),
+			nickView.col("Shared"), Util::formatBytes(shared).c_str(),
+			nickView.col("Description"), description.c_str(),
+			nickView.col("Tag"), tag.c_str(),
+			nickView.col("Connection"), connection.c_str(),
+			nickView.col("eMail"), email.c_str(),
+			nickView.col("Shared Bytes"), shared,
+			nickView.col("Icon"), userIcons[icon],
+			nickView.col("Nick Order"), nickOrder.c_str(),
+			-1);
+	}
+	else
+	{
+		idMap[nick] = id;
+		totalShared += shared;
+
+		if (BOOLSETTING(SHOW_JOINS) || (BOOLSETTING(FAV_SHOW_JOINS) &&
+			FavoriteManager::getInstance()->isFavoriteUser(id.getUser())))
+		{
+			addStatusMessage_gui(nick + " has joined");
+		}
+
+		gtk_list_store_insert_with_values(nickStore, &iter, idMap.size(),
+			nickView.col("Nick"), nick.c_str(),
+			nickView.col("Shared"), Util::formatBytes(shared).c_str(),
+			nickView.col("Description"), description.c_str(),
+			nickView.col("Tag"), tag.c_str(),
+			nickView.col("Connection"), connection.c_str(),
+			nickView.col("eMail"), email.c_str(),
+			nickView.col("Shared Bytes"), shared,
+			nickView.col("Icon"), userIcons[icon],
+			nickView.col("Nick Order"), nickOrder.c_str(),
+			-1);
+	}
+
+	setStatus_gui("statusUsers", Util::toString(idMap.size()) + " Users");
+	setStatus_gui("statusShared", Util::formatBytes(totalShared));
 }
 
 void Hub::removeUser_gui(string nick)
 {
-	if (idMap.find(nick) != idMap.end())
+	GtkTreeIter iter;
+
+	if (findUser_gui(nick, &iter))
 	{
-		GtkTreeIter iter;
-		findUser_gui(nick, &iter);
+		totalShared -= idMap[nick].getBytesShared();
 		gtk_list_store_remove(nickStore, &iter);
 		idMap.erase(nick);
+		setStatus_gui("statusUsers", Util::toString(idMap.size()) + " Users");
+		setStatus_gui("statusShared", Util::formatBytes(totalShared));
 	}
 }
 
@@ -243,6 +261,9 @@ void Hub::clearNickList_gui()
 {
 	gtk_list_store_clear(nickStore);
 	idMap.clear();
+	totalShared = 0;
+	setStatus_gui("statusUsers", "0 Users");
+	setStatus_gui("statusShared", Util::formatBytes(totalShared));
 }
 
 void Hub::getPassword_gui()
@@ -338,17 +359,6 @@ void Hub::addPrivateMessage_gui(Identity id, string msg)
 			dynamic_cast< ::PrivateMessage *>(entry)->addMessage_gui(msg);
 		}
 	}
-}
-
-void Hub::sortList_gui()
-{
-	gint sortColumn;
-	GtkSortType sortType;
-
-	gtk_tree_sortable_get_sort_column_id(GTK_TREE_SORTABLE(nickStore), &sortColumn, &sortType);
-
-	if (sortColumn == GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID)
-		gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(nickStore), nickView.col("Nick Order"), sortType);
 }
 
 void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
@@ -878,7 +888,7 @@ void Hub::on(ClientListener::UsersUpdated, Client *, const OnlineUser::List &lis
 	typedef Func1<Hub, Identity> F1;
 	F1 *func;
 
-	for (OnlineUser::List::const_iterator it = list.begin(); it != list.end(); it++)
+	for (OnlineUser::List::const_iterator it = list.begin(); it != list.end(); ++it)
 	{
 		id = (*it)->getIdentity();
 		if (!id.isHidden())
@@ -1026,40 +1036,4 @@ void Hub::on(ClientListener::SearchFlood, Client *, const string &msg) throw()
 	typedef Func1<Hub, string> F1;
 	F1 *func = new F1(this, &Hub::addStatusMessage_gui, "Search spam from " + msg);
 	WulforManager::get()->dispatchGuiFunc(func);
-}
-
-void Hub::on(TimerManagerListener::Second, u_int32_t tics) throw()
-{
-	if (usersUpdated)
-	{
-		string users = Util::toString(idMap.size()) + " Users";
-
-		typedef Func2<Hub, string, string> F2;
-		F2 *f2 = new F2(this, &Hub::setStatus_gui, "statusUsers", users);
-		WulforManager::get()->dispatchGuiFunc(f2);
-
-		int64_t totalShared = 0;
-		hash_map<string, Identity>::const_iterator iter;
-		for (iter = idMap.begin(); iter != idMap.end(); iter++)
-			totalShared += iter->second.getBytesShared();
-
-		f2 = new F2(this, &Hub::setStatus_gui, "statusShared", Util::formatBytes(totalShared));
-		WulforManager::get()->dispatchGuiFunc(f2);
-
-		usersUpdated = FALSE;
-	}
-}
-
-/*
- * Sets the userlist to sorted at the 2nd minute marker. Can't have it sorted when
- * first joining since GTK+ is very slow when inserting many rows into a sorted GtkTreeView.
- */
-void Hub::on(TimerManagerListener::Minute, u_int32_t tics) throw()
-{
-	if (sorted == 2)
-	{
-		Func0<Hub> *f = new Func0<Hub>(this, &Hub::sortList_gui);
-		WulforManager::get()->dispatchGuiFunc(f);
-	}
-	sorted++;
 }

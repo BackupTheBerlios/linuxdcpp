@@ -123,7 +123,7 @@ void WulforSettingsManager::load()
 			xml.stepIn();
 
 			map<string, int>::iterator iit;
-			for (iit = defaultInt.begin(); iit != defaultInt.end(); iit++)
+			for (iit = defaultInt.begin(); iit != defaultInt.end(); ++iit)
 			{
 				if (xml.findChild(iit->first))
 					intMap[iit->first] = Util::toInt(xml.getChildData());
@@ -131,7 +131,7 @@ void WulforSettingsManager::load()
 			}
 
 			map<string, string>::iterator sit;
-			for (sit = defaultString.begin(); sit != defaultString.end(); sit++)
+			for (sit = defaultString.begin(); sit != defaultString.end(); ++sit)
 			{
 				if(xml.findChild(sit->first))
 					stringMap[sit->first] = xml.getChildData();

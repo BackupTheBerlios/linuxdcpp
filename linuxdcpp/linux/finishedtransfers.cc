@@ -47,6 +47,7 @@ FinishedTransfers::FinishedTransfers(std::string title):
 	g_object_unref(transferStore);
 	transferSelection = gtk_tree_view_get_selection(transferView.get());
 	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(transferView.get(), transferView.col("Time")), TRUE);
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(transferStore), transferView.col("Time"), GTK_SORT_ASCENDING);
 	gtk_tree_view_set_fixed_height_mode(transferView.get(), TRUE);
 
 	// Connect the signals to their callback functions.

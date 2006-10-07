@@ -176,10 +176,10 @@ void MainWindow::createWindow_gui()
 		transferView.insertColumn("Status", G_TYPE_STRING, TreeView::PROGRESS, 250, "Progress");
 	else
 		transferView.insertColumn("Status", G_TYPE_STRING, TreeView::STRING, 250);
-	transferView.insertColumn("Time Left", G_TYPE_STRING, TreeView::STRING, 75);
-	transferView.insertColumn("Speed", G_TYPE_STRING, TreeView::STRING, 175);
+	transferView.insertColumn("Time Left", G_TYPE_STRING, TreeView::STRING, 85);
+	transferView.insertColumn("Speed", G_TYPE_STRING, TreeView::STRING, 125);
 	transferView.insertColumn("Filename", G_TYPE_STRING, TreeView::STRING, 200);
-	transferView.insertColumn("Size", G_TYPE_STRING, TreeView::STRING, 175);
+	transferView.insertColumn("Size", G_TYPE_STRING, TreeView::STRING, 125);
 	transferView.insertColumn("Path", G_TYPE_STRING, TreeView::STRING, 200);
 	transferView.insertColumn("IP", G_TYPE_STRING, TreeView::STRING, 175);
 	transferView.insertHiddenColumn("Icon", GDK_TYPE_PIXBUF);
@@ -456,6 +456,8 @@ void MainWindow::onForceAttemptClicked_gui(GtkMenuItem *menuItem, gpointer data)
 	TransferItem *item;
 	GList *list = gtk_tree_selection_get_selected_rows(mw->transferSel, NULL);
 	gint count = gtk_tree_selection_count_selected_rows(mw->transferSel);
+	typedef Func1<MainWindow, const User::Ptr &> F1;
+	F1 *func;
 
 	for (int i = 0; i < count; i++)
 	{
@@ -463,12 +465,18 @@ void MainWindow::onForceAttemptClicked_gui(GtkMenuItem *menuItem, gpointer data)
 		if (gtk_tree_model_get_iter(m, &iter, path))
 		{
 			item = mw->transferView.getValue<gpointer, TransferItem*>(&iter, "TransferItem");
-			ClientManager::getInstance()->connect(item->user);
+			func = new F1(mw, &MainWindow::forceAttempt_client, item->user);
+			WulforManager::get()->dispatchClientFunc(func);
 			gtk_list_store_set(mw->transferStore, &iter, mw->transferView.col("Status"), "Connecting (forced)...", -1);
 		}
 		gtk_tree_path_free(path);
 	}
 	g_list_free(list);
+}
+
+void MainWindow::forceAttempt_client(const User::Ptr &user)
+{
+	ClientManager::getInstance()->connect(user);
 }
 
 void MainWindow::onCloseConnectionClicked_gui(GtkMenuItem *menuItem, gpointer data)

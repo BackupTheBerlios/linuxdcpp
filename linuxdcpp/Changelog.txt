@@ -1,3 +1,10 @@
+2006-10-07 - Steven Sheehy
+* Fixed sorting of nick list (thanks Razzloss).
+* Fixed shared total in some hubs from erroneously reporting 0 B (thanks Razzloss).
+* Fixed a crash in search when right-clicking non-tth files.
+* Fixed "Thrown: FileException: Bad file descriptor" errors in debug mode.
+* Cleaned up and fixed a few other issues with client/File.h code.
+
 2006-09-27 - Steven Sheehy
 * Fixed crashing regression in download queue.
 * Added "Match queue" and "Remove from queue" options to userlist popup menu.

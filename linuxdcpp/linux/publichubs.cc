@@ -62,7 +62,7 @@ PublicHubs::PublicHubs():
 	g_list_free(l);
  	StringList list = favMan->getHubLists();
 	GtkTreeIter iter;
-	for (StringList::iterator it = list.begin(); it != list.end(); it++)
+	for (StringList::iterator it = list.begin(); it != list.end(); ++it)
 	{
 		gtk_list_store_append(listsStore, &iter);
 		gtk_list_store_set(listsStore, &iter, 0, it->c_str(), -1);
