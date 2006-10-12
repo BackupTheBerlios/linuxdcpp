@@ -603,7 +603,6 @@ void Hub::onBrowseItemClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	Hub *hub = (Hub *)data;
 	GtkTreeIter iter;
-	string nick;
 
 	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
 	{
@@ -619,7 +618,6 @@ void Hub::onMatchItemClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	Hub *hub = (Hub *)data;
 	GtkTreeIter iter;
-	string nick;
 
 	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
 	{
@@ -647,7 +645,6 @@ void Hub::onGrantItemClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	Hub *hub = (Hub *)data;
 	GtkTreeIter iter;
-	string nick;
 
 	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
 	{
@@ -663,7 +660,6 @@ void Hub::onRemoveUserItemClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	Hub *hub = (Hub *)data;
 	GtkTreeIter iter;
-	string nick;
 
 	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
 	{
