@@ -1,3 +1,11 @@
+2006-10-12 - Steven Sheehy
+* Added usernames to chat logs (thanks Fredrik Ullner).
+* Added more columns to public hubs (thanks Fredrik Ullner).
+* Added dynamic filtering of local results to search (thanks Razzloss).
+* Cleaned the source of carriage returns.
+* Closing a tab now switches to previously selected tab (thanks dorian).
+* Removed useless "Max tab rows" setting.
+
 2006-10-07 - Steven Sheehy
 * Fixed sorting of nick list (thanks Razzloss).
 * Fixed shared total in some hubs from erroneously reporting 0 B (thanks Razzloss).

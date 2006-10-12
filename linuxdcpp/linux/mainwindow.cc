@@ -56,6 +56,9 @@ MainWindow::~MainWindow()
 	UploadManager::getInstance()->removeListener(this);
 	ConnectionManager::getInstance()->removeListener(this);
 
+	GList *list = (GList *)g_object_get_data(G_OBJECT(getWidget("book")), "page-rotation-list");
+	g_list_free(list);
+
 	// Save window state and position
 	int posX, posY, sizeX, sizeY, transferPanePosition;
 	int state = 1;
@@ -204,6 +207,7 @@ void MainWindow::createWindow_gui()
 	// All notebooks created in glade need one page.
 	// In our case, this is just a placeholder, so we remove it.
 	gtk_notebook_remove_page(GTK_NOTEBOOK(getWidget("book")), -1);
+	g_object_set_data(G_OBJECT(getWidget("book")), "page-rotation-list", NULL);
 
 	// Connect the signals to their callback functions.
 	g_signal_connect(window, "delete-event", G_CALLBACK(deleteWindow_gui), (gpointer)this);
@@ -671,6 +675,11 @@ void MainWindow::switchPage_gui(GtkNotebook *notebook, GtkNotebookPage *page, gu
 
 	if (entry)
 		entry->unsetBold_gui();
+
+	GList *list = (GList *)g_object_get_data(G_OBJECT(notebook), "page-rotation-list");
+	list = g_list_remove(list, (gpointer)child);
+	list = g_list_prepend(list, (gpointer)child);
+	g_object_set_data(G_OBJECT(notebook), "page-rotation-list", (gpointer)list);
 }
 
 void MainWindow::openHub_gui(string server, string nick, string desc, string password)
@@ -821,10 +830,27 @@ void MainWindow::addPage_gui(GtkWidget *page, GtkWidget *label, bool raise)
 
 void MainWindow::removePage_gui(GtkWidget *page)
 {
-	int num = gtk_notebook_page_num(GTK_NOTEBOOK(getWidget("book")), page);
+	GtkNotebook *book = GTK_NOTEBOOK(getWidget("book"));
+	int num = gtk_notebook_page_num(book, page);
 
 	if (num != -1)
-		gtk_notebook_remove_page(GTK_NOTEBOOK(getWidget("book")), num);
+	{
+		GList *list = (GList *)g_object_get_data(G_OBJECT(book), "page-rotation-list");
+		list = g_list_remove(list, (gpointer)page);
+		g_object_set_data(G_OBJECT(book), "page-rotation-list", (gpointer)list);
+
+		// if removing the current page, switch to the previous page in the rotation list
+		if (num == gtk_notebook_get_current_page(book))
+		{
+			GList *prev = g_list_first(list);
+			if (prev != NULL)
+			{
+				gint childNum = gtk_notebook_page_num(book, GTK_WIDGET(prev->data));
+				gtk_notebook_set_current_page(book, childNum);
+			}
+		}
+		gtk_notebook_remove_page(book, num);
+	}
 }
 
 void MainWindow::raisePage_gui(GtkWidget *page)

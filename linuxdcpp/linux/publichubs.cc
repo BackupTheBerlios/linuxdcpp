@@ -37,7 +37,14 @@ PublicHubs::PublicHubs():
 	hubView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, 200);
 	hubView.insertColumn("Description", G_TYPE_STRING, TreeView::STRING, 350);
 	hubView.insertColumn("Users", G_TYPE_INT, TreeView::INT, 75);
-	hubView.insertColumn("Address", G_TYPE_STRING, TreeView::STRING, 100);
+	hubView.insertColumn("Address", G_TYPE_STRING, TreeView::STRING, 110);
+	hubView.insertColumn("Country", G_TYPE_STRING, TreeView::STRING, 100);
+	hubView.insertColumn("Shared", G_TYPE_STRING, TreeView::STRING, 70);
+	hubView.insertColumn("Min Share", G_TYPE_STRING, TreeView::STRING, 80);
+	hubView.insertColumn("Min Slots", G_TYPE_INT, TreeView::INT, 70);
+	hubView.insertColumn("Max Hubs", G_TYPE_INT, TreeView::INT, 80);
+	hubView.insertColumn("Max Users", G_TYPE_INT, TreeView::INT, 80);
+	hubView.insertColumn("Rating", G_TYPE_STRING, TreeView::STRING, 70);
 	hubView.finalize();
 	hubStore = gtk_list_store_newv(hubView.getColCount(), hubView.getGTypes());
 	gtk_tree_view_set_model(hubView.get(), GTK_TREE_MODEL(hubStore));
@@ -144,6 +151,13 @@ void PublicHubs::updateList_gui()
 				hubView.col("Description"), i->getDescription().c_str(),
 				hubView.col("Users"), i->getUsers(),
 				hubView.col("Address"), i->getServer().c_str(),
+				hubView.col("Country"), i->getCountry().c_str(),
+				hubView.col("Shared"), Util::formatBytes(i->getShared()).c_str(),
+				hubView.col("Min Share"), Util::formatBytes(i->getMinShare()).c_str(), 
+				hubView.col("Min Slots"), i->getMinSlots(),
+				hubView.col("Max Hubs"), i->getMaxHubs(),
+				hubView.col("Max Users"), i->getMaxUsers(),
+				hubView.col("Rating"), i->getRating().c_str(),
 				-1);
 
 			numUsers += i->getUsers();

@@ -58,11 +58,12 @@ GtkTreeView *TreeView::get()
 /*
  * We can't use getValue() for strings since it would cause a memory leak.
  */
-string TreeView::getString(GtkTreeIter *i, string column)
+string TreeView::getString(GtkTreeIter *i, string column, GtkTreeModel *m)
 {
+	if (m == NULL)
+		m = gtk_tree_view_get_model(view);
 	string value;
 	gchar* temp;
-	GtkTreeModel *m = gtk_tree_view_get_model(view);
 	dcassert(gtk_tree_model_get_column_type(m, col(column)) == G_TYPE_STRING);
 	gtk_tree_model_get(m, i, col(column), &temp, -1);
 	dcassert(temp != NULL);

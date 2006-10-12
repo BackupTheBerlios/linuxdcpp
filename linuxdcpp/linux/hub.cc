@@ -971,7 +971,7 @@ void Hub::on(ClientListener::Message, Client *, const OnlineUser &from, const st
 		if (BOOLSETTING(LOG_MAIN_CHAT))
 		{
 			StringMap params;
-			params["message"] = message;
+			params["message"] = line;
 			client->getHubIdentity().getParams(params, "hub", false);
 			params["hubURL"] = client->getHubUrl();
 			client->getMyIdentity().getParams(params, "my", true);

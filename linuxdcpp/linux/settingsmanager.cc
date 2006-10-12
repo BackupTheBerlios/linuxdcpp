@@ -71,7 +71,7 @@ WulforSettingsManager::WulforSettingsManager()
 WulforSettingsManager *WulforSettingsManager::get()
 {
 	if (ptr == NULL)
-		ptr = new WulforSettingsManager;
+		ptr = new WulforSettingsManager();
 	return ptr;
 }
 

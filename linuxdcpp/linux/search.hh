@@ -58,6 +58,8 @@ class Search:
 		static gboolean onButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
 		static gboolean onSearchEntryKeyPressed_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
+		static gboolean searchFilterFunc_gui(GtkTreeModel *model, GtkTreeIter *iter, gpointer data);
+		static void onComboBoxChanged_gui(GtkWidget *widget, gpointer data);
 		static void onSearchButtonClicked_gui(GtkWidget *widget, gpointer data);
 		static void onButtonToggled_gui(GtkToggleButton *button, gpointer data);
 		static void onToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
@@ -95,15 +97,21 @@ class Search:
 		TreeView hubView, resultView;
 		GtkListStore *hubStore;
 		GtkListStore *resultStore;
+		GtkTreeModel *searchFilterModel;
+		GtkTreeModel *sortedFilterModel;
 		GtkTreeSelection *selection;
-		GtkWidget *searchEntry;
 		GdkEventType oldEventType;
-		GdkPixbuf *iconFile, *iconDirectory;
-		int droppedResult, searchHits;
-		bool isHash, onlyFree, onlyTTH;
-		static bool onlyOp;
+		GtkWidget *searchEntry;
 		TStringList searchlist;
 		static GtkTreeModel *searchEntriesModel;
+		GdkPixbuf *iconFile;
+		GdkPixbuf *iconDirectory;
+		int droppedResult;
+		int searchHits;
+		bool isHash;
+		bool onlyFree;
+		bool onlyTTH;
+		static bool onlyOp;
 };
 
 #else
