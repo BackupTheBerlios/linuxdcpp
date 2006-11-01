@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,11 +20,8 @@
 #define WULFOR_TREE_VIEW_HH
 
 #include <gtk/gtk.h>
-#include <string>
-#include <vector>
-#include <map>
-#include "settingsmanager.hh"
-#include "WulforUtil.hh"
+#include <client/stdinc.h>
+#include <client/DCPlusPlus.h>
 
 class TreeView
 {
@@ -44,21 +41,21 @@ class TreeView
 		TreeView();
 		~TreeView();
 		void setView(GtkTreeView *view);
-		void setView(GtkTreeView *view, bool padding, const string &name = "");
+		void setView(GtkTreeView *view, bool padding, const std::string &name = "");
 		GtkTreeView *get();
-		void insertColumn(const std::string &title, const GType &gtype, const columnType type, const int width, const string &linkedCol = "");
+		void insertColumn(const std::string &title, const GType &gtype, const columnType type, const int width, const std::string &linkedCol = "");
 		void insertHiddenColumn(const std::string &title, const GType &gtype);
 		void finalize();
 		int getColCount();
 		int getRowCount();
 		GType* getGTypes();
-		void setSortColumn_gui(std::string column, std::string sortColumn);
+		void setSortColumn_gui(const std::string &column, const std::string &sortColumn);
 		int col(const std::string &title);
 		void saveSettings();
-		string getString(GtkTreeIter *i, std::string column, GtkTreeModel *m = NULL);
+		std::string getString(GtkTreeIter *i, const std::string &column, GtkTreeModel *m = NULL);
 
 		template<class T, class C>
-		C getValue(GtkTreeIter *i, std::string column, GtkTreeModel *m = NULL)
+		C getValue(GtkTreeIter *i, const std::string &column, GtkTreeModel *m = NULL)
 		{
 			if (m == NULL)
 				m = gtk_tree_view_get_model(view);
@@ -68,7 +65,7 @@ class TreeView
 			return C(value);
 		}
 		template<class T>
-		T getValue(GtkTreeIter *i, std::string column, GtkTreeModel *m = NULL)
+		T getValue(GtkTreeIter *i, const std::string &column, GtkTreeModel *m = NULL)
 		{
 			if (m == NULL)
 				m = gtk_tree_view_get_model(view);
@@ -83,9 +80,9 @@ class TreeView
 		{
 			public:
 				Column() {};
-				Column(std::string title, int id, GType gtype, TreeView::columnType type, int width, std::string linkedCol = "") :
+				Column(const std::string &title, int id, GType gtype, TreeView::columnType type, int width, const std::string &linkedCol = "") :
 					title(title), id(id), gtype(gtype), type(type), width(width), pos(id), linkedCol(linkedCol), visible(true) {};
-				Column(std::string title, int id, GType gtype) :
+				Column(const std::string &title, int id, GType gtype) :
 					title(title), id(id), gtype(gtype) {};
 				std::string title;
 				int id;

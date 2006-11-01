@@ -30,7 +30,7 @@ class ShareBrowser:
 	public BookEntry
 {
 	public:
-		ShareBrowser(User::Ptr user, std::string file);
+		ShareBrowser(User::Ptr user, const std::string &file);
 		~ShareBrowser();
 
 		// GUI function
@@ -45,8 +45,8 @@ class ShareBrowser:
 		void updateStatus_gui();
 		void setStatus_gui(std::string statusBar, std::string msg);
 		void fileViewSelected_gui();
-		void downloadSelectedFiles_gui(std::string target);
-		void downloadSelectedDirs_gui(std::string target);
+		void downloadSelectedFiles_gui(const std::string &target);
+		void downloadSelectedDirs_gui(const std::string &target);
 		void filePopupMenu_gui();
 		void dirPopupMenu_gui();
 		void find_gui();

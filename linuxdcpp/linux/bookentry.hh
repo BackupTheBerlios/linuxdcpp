@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -25,7 +25,7 @@ class BookEntry : public Entry
 {
 	public:
 		BookEntry() {}
-		BookEntry(std::string title, std::string glade);
+		BookEntry(const std::string &title, const std::string &glade);
 		virtual ~BookEntry() {}
 		virtual void applyCallback(GCallback closeCallback);
 		GtkWidget *getContainer();

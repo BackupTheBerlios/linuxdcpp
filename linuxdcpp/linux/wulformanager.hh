@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,6 +26,7 @@
 
 #include "bookentry.hh"
 #include "dialogentry.hh"
+#include "func.hh"
 #include "mainwindow.hh"
 
 class WulforManager
@@ -45,13 +46,14 @@ class WulforManager
 
 		// BookEntry functions
 		BookEntry *addPublicHubs_gui();
-		BookEntry *addHub_gui(std::string address, std::string nick="", std::string desc="", std::string password="");
+		BookEntry *addHub_gui(const std::string &address, const std::string &nick = "",
+			const std::string &desc = "", const std::string &password = "");
 		BookEntry *addPrivMsg_gui(User::Ptr user, bool raise = TRUE);
 		BookEntry *addDownloadQueue_gui();
 		BookEntry *addFavoriteHubs_gui();
 		BookEntry *addSearch_gui();
-		BookEntry *addShareBrowser_gui(User::Ptr user, std::string file, bool raise = TRUE);
-		BookEntry *addFinishedTransfers_gui(std::string title);
+		BookEntry *addShareBrowser_gui(User::Ptr user, const std::string &file, bool raise = TRUE);
+		BookEntry *addFinishedTransfers_gui(const std::string &title);
 		void deleteBookEntry_gui(BookEntry *entry);
 
 		// DialogEntry functions
@@ -64,12 +66,12 @@ class WulforManager
 		void deleteMainWindow();
 
 		// BookEntry functions
-		BookEntry *getBookEntry_gui(std::string id, bool raise = TRUE);
+		BookEntry *getBookEntry_gui(const std::string &id, bool raise = TRUE);
 		void insertBookEntry_gui(BookEntry *entry, bool raise = TRUE);
 		void deleteAllBookEntries();
 
 		// DialogEntry functions
-		DialogEntry *getDialogEntry_gui(std::string id);
+		DialogEntry *getDialogEntry_gui(const std::string &id);
 		void insertDialogEntry_gui(DialogEntry *entry);
 		void hideDialogEntry_gui(DialogEntry *entry);
 		void deleteDialogEntry_gui(DialogEntry *entry);

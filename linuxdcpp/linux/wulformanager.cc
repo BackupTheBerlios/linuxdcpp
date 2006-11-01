@@ -22,7 +22,6 @@
 #include "downloadqueue.hh"
 #include "favoritehubs.hh"
 #include "finishedtransfers.hh"
-#include "func.hh"
 #include "hashdialog.hh"
 #include "hub.hh"
 #include "privatemessage.hh"
@@ -30,6 +29,7 @@
 #include "search.hh"
 #include "settingsdialog.hh"
 #include "sharebrowser.hh"
+#include "WulforUtil.hh"
 
 using namespace std;
 
@@ -312,7 +312,7 @@ string WulforManager::getPath()
 	return path;
 }
 
-BookEntry *WulforManager::getBookEntry_gui(string id, bool raise)
+BookEntry *WulforManager::getBookEntry_gui(const string &id, bool raise)
 {
 	BookEntry *ret = NULL;
 
@@ -401,7 +401,7 @@ void WulforManager::deleteAllBookEntries()
 		deleteBookEntry_gui(bookEntries.begin()->second);
 }
 
-DialogEntry* WulforManager::getDialogEntry_gui(string id)
+DialogEntry* WulforManager::getDialogEntry_gui(const string &id)
 {
 	DialogEntry *ret = NULL;
 
@@ -520,7 +520,7 @@ BookEntry *WulforManager::addFavoriteHubs_gui()
 	return favHubs;
 }
 
-BookEntry *WulforManager::addHub_gui(string address, string nick, string desc, string password)
+BookEntry *WulforManager::addHub_gui(const string &address, const string &nick, const string &desc, const string &password)
 {
 	BookEntry *entry = getBookEntry_gui("Hub: " + address);
 	if (entry) return entry;
@@ -548,7 +548,7 @@ BookEntry *WulforManager::addPrivMsg_gui(User::Ptr user, bool raise)
 	return privMsg;
 }
 
-BookEntry *WulforManager::addShareBrowser_gui(User::Ptr user, string file, bool raise)
+BookEntry *WulforManager::addShareBrowser_gui(User::Ptr user, const string &file, bool raise)
 {
 	BookEntry *entry = getBookEntry_gui("List: " + WulforUtil::getNicks(user));
 	if (entry) return entry;
@@ -567,7 +567,7 @@ BookEntry *WulforManager::addSearch_gui()
 	return s;
 }
 
-BookEntry *WulforManager::addFinishedTransfers_gui(string title)
+BookEntry *WulforManager::addFinishedTransfers_gui(const string &title)
 {
 	BookEntry *entry = getBookEntry_gui(title);
 	if (entry) return entry;

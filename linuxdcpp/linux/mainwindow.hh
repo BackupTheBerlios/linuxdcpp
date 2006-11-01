@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -29,9 +29,7 @@
 #include <client/UploadManager.h>
 
 #include "entry.hh"
-#include "func.hh"
 #include "treeview.hh"
-#include "WulforUtil.hh"
 
 class MainWindow:
 	public Entry,
@@ -51,45 +49,56 @@ class MainWindow:
 		void applyCallback(GCallback closeCallback);
 
 		// GUI functions
-		void addPage_gui(GtkWidget *page, GtkWidget *label, bool raise = TRUE);
-		void removePage_gui(GtkWidget *page);
-		void raisePage_gui(GtkWidget *page);
-		GtkWidget *currentPage_gui();
-		void appendWindowItem(GtkWidget *page, std::string title);
-		void removeWindowItem(GtkWidget *page);
-		void modifyWindowItem(GtkWidget *page, std::string title);
 		void autoOpen_gui();
+		void addPage_gui(GtkWidget *page, GtkWidget *label, bool raise = TRUE);
+		GtkWidget *currentPage_gui();
+		void raisePage_gui(GtkWidget *page);
+		void removePage_gui(GtkWidget *page);
+		void appendWindowItem(GtkWidget *page, const std::string &title);
+		void modifyWindowItem(GtkWidget *page, std::string title);
+		void removeWindowItem(GtkWidget *page);
 
 		// Client functions
 		void autoConnect_client();
 
 	private:
-		class TransferItem;
-
 		// GUI functions
-		void createWindow_gui();
 		void createTrayIcon_gui();
 		void updateTrayToolTip_gui(std::string);
 		void setStatus_gui(std::string statusBar, std::string text);
-		void setStats_gui(std::string hub, std::string slot, 
+		void setStats_gui(std::string hub, std::string slot,
 			std::string dTot, std::string uTot, std::string dl, std::string ul);
 		void addShareBrowser_gui(User::Ptr user, std::string listName, std::string searchString, bool useSetting);
-		void openHub_gui(string server, string nick, string desc, string password);
-		User::Ptr getSelectedTransfer_gui();
-		void popup_gui(GtkWidget *menu, GdkEventButton *event);
-		void insertTransfer_gui(TransferItem *item);
-		void updateTransfer_gui(TransferItem *item);
-		void removeTransfer_gui(TransferItem *item);
-
-		// Client functions
-		void startSocket_client();
-		void transferComplete_client(Transfer *t);
-		void refreshFileList_client();
-		void openOwnList_client();
-		void forceAttempt_client(const User::Ptr &user);
+		void openHub_gui(std::string server, std::string nick, std::string desc, std::string password);
+		bool findTransfer_gui(const std::string &cid, bool download, GtkTreeIter *iter);
+		void updateTransfer_gui(StringMap params, bool download);
+		void removeTransfer_gui(std::string cid, bool download);
 
 		// GUI Callbacks
-		static gboolean transferClicked_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean onDeleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data);
+		static gboolean onKeyPressed_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
+		static gboolean onButtonPressPage_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean onTransferButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean onTransferButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static void onRaisePage_gui(GtkMenuItem *item, gpointer data);
+		static void onPageSwitched_gui(GtkNotebook *notebook, GtkNotebookPage *page, guint num, gpointer data);
+		static void onPaneRealized_gui(GtkWidget *pane, gpointer data);
+		static void onConnectClicked_gui(GtkWidget *widget, gpointer data);
+		static void onFavoriteHubsClicked_gui(GtkWidget *widget, gpointer data);
+		static void onPublicHubsClicked_gui(GtkWidget *widget, gpointer data);
+		static void onPreferencesClicked_gui(GtkWidget *widget, gpointer data);
+		static void onHashClicked_gui(GtkWidget *widget, gpointer data);
+		static void onSearchClicked_gui(GtkWidget *widget, gpointer data);
+		static void onDownloadQueueClicked_gui(GtkWidget *widget, gpointer data);
+		static void onFinishedDownloadsClicked_gui(GtkWidget *widget, gpointer data);
+		static void onFinishedUploadsClicked_gui(GtkWidget *widget, gpointer data);
+		static void onQuitClicked_gui(GtkWidget *widget, gpointer data);
+		static void onOpenFileListClicked_gui(GtkWidget *widget, gpointer data);
+		static void onOpenOwnListClicked_gui(GtkWidget *widget, gpointer data);
+		static void onRefreshFileListClicked_gui(GtkWidget *widget, gpointer data);
+		static void onReconnectClicked_gui(GtkWidget *widget, gpointer data);
+		static void onCloseClicked_gui(GtkWidget *widget, gpointer data);
+		static void onAboutClicked_gui(GtkWidget *widget, gpointer data);
 		static void onGetFileListClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onMatchQueueClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onPrivateMessageClicked_gui(GtkMenuItem *item, gpointer data);
@@ -98,34 +107,23 @@ class MainWindow:
 		static void onRemoveUserFromQueueClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onForceAttemptClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onCloseConnectionClicked_gui(GtkMenuItem *item, gpointer data);
-		static void onRaisePage_gui(GtkMenuItem *item, gpointer data);
-		static void connectClicked_gui(GtkWidget *widget, gpointer data);
-		static void pubHubsClicked_gui(GtkWidget *widget, gpointer data);
-		static void dlQueueClicked_gui(GtkWidget *widget, gpointer data);
-		static void settingsClicked_gui(GtkWidget *widget, gpointer data);
-		static void favHubsClicked_gui(GtkWidget *widget, gpointer data);
-		static void reconnectClicked_gui(GtkWidget *widget, gpointer data);
-		static void searchClicked_gui(GtkWidget *widget, gpointer data);
-		static void hashClicked_gui(GtkWidget *widget, gpointer data);
-		static void closeClicked_gui(GtkWidget *widget, gpointer data);
-		static void quitClicked_gui(GtkWidget *widget, gpointer data);
-		static void aboutClicked_gui(GtkWidget *widget, gpointer data);
-		static void finishedDLclicked_gui(GtkWidget *widget, gpointer data);
-		static void finishedULclicked_gui(GtkWidget *widget, gpointer data);
-		static void openFileList_gui(GtkWidget *widget, gpointer data);
-		static void openOwnList_gui(GtkWidget *widget, gpointer data);
-		static void refreshFileList_gui(GtkWidget *widget, gpointer data);
-		static gboolean deleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data);
-		static void switchPage_gui(GtkNotebook *notebook, GtkNotebookPage *page, guint num, gpointer data);
 		static void onTrayIconClicked_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static void onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data);
-		static gboolean onKeyPressed_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
-		static gboolean onButtonPressPage_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
-		static void onPaneRealized_gui(GtkWidget *pane, gpointer data);
+
+		// Client functions
+		void startSocket_client();
+		void openOwnList_client();
+		void refreshFileList_client();
+		void getFileList_client(std::string cid);
+		void matchQueue_client(std::string cid);
+		void addFavoriteUser_client(std::string cid);
+		void grantExtraSlot_client(std::string cid);
+		void removeUserFromQueue_client(std::string cid);
+		void forceAttempt_client(std::string cid);
+		void closeConnection_client(std::string cid, bool download);
+		void transferComplete_client(Transfer *t);
 
 		// Client callbacks
-		virtual void on(TimerManagerListener::Second, u_int32_t ticks) throw();
-		virtual void on(QueueManagerListener::Finished, QueueItem *item, int64_t avSpeed) throw();
 		virtual void on(ConnectionManagerListener::Added, ConnectionQueueItem *item) throw();
 		virtual void on(ConnectionManagerListener::Removed, ConnectionQueueItem *item) throw();
 		virtual void on(ConnectionManagerListener::Failed, ConnectionQueueItem *item, const string &reason) throw();
@@ -137,93 +135,19 @@ class MainWindow:
 		virtual void on(UploadManagerListener::Starting, Upload *ul) throw();
 		virtual void on(UploadManagerListener::Tick, const Upload::List &list) throw();
 		virtual void on(UploadManagerListener::Complete, Upload *ul) throw();
-		virtual void on(LogManagerListener::Message, time_t t, const string& m) throw();
+		virtual void on(LogManagerListener::Message, time_t t, const std::string &m) throw();
+		virtual void on(QueueManagerListener::Finished, QueueItem *item, int64_t avSpeed) throw();
+		virtual void on(TimerManagerListener::Second, u_int32_t ticks) throw();
 
-		class TransferItem
-		{
-			public:
-			TransferItem(const User::Ptr& user, bool isDownload)
-			{
-				this->user = user;
-				this->isDownload = isDownload;
-				nicks = WulforUtil::getNicks(user);
-				hubs = WulforUtil::getHubNames(user).first;
-				failed = FALSE;
-				updateMask = 0;
-			}
-
-			typedef enum
-			{
-				MASK_FILE = 1 << 0,
-				MASK_PATH = 1 << 1,
-				MASK_STATUS = 1 << 2,
-				MASK_TIME = 1 << 3,
-				MASK_SORT_ORDER = 1 << 4,
-				MASK_SIZE = 1 << 5,
-				MASK_SPEED = 1 << 6,
-				MASK_PROGRESS = 1 << 7,
-				MASK_IP = 1 << 8
-			} Mask;
-
-			bool isSet(Mask m) { return updateMask & m; }
-			void setFile(std::string file) { this->file = file; updateMask |= MASK_FILE; }
-			void setPath(std::string path) { this->path = path; updateMask |= MASK_PATH; }
-			void setStatus(std::string status, bool failed = FALSE)
-			{
-				if (!this->failed)
-					this->status = status;
-				this->failed = failed;
-				updateMask |= MASK_STATUS;
-			}
-			void setTime(std::string time) { this->time = time; updateMask |= MASK_TIME; }
-			void setSortOrder(std::string sortOrder) { this->sortOrder = sortOrder; updateMask |= MASK_SORT_ORDER; }
-			void setSize(int64_t size) { this->size = size; updateMask |= MASK_SIZE; }
-			void setSpeed(int64_t speed) { this->speed = speed; updateMask |= MASK_SPEED; }
-			void setProgress(int progress) { this->progress = progress; updateMask |= MASK_PROGRESS; }
-			void setIp(std::string ip) { this->ip = ip; updateMask |= MASK_IP; }
-
-			u_int32_t updateMask;
-			User::Ptr user;
-			bool isDownload;
-			GtkTreeRowReference *rowRef;
-			std::string file;
-			std::string path;
-			std::string nicks;
-			std::string hubs;
-			std::string status;
-			std::string time;
-			std::string sortOrder;
-			int64_t size;
-			int64_t speed;
-			int progress;
-			std::string ip;
-			bool failed;
-		};
-
-		typedef pair<User::Ptr, bool> UserID;
-		struct HashPair
-		{
-			// User::Ptr hash is copied from client/User.h
-			size_t operator() (const UserID u) const
-			{
-				return ((size_t)(&(*(u.first))))/sizeof(User) * 23 + u.second;
-			}
-		};
-		hash_map<UserID, TransferItem *, HashPair> transferMap;
-		TransferItem* getTransferItem(UserID id);
-
-		int64_t lastUpdate, lastUp, lastDown;
-		int emptyStatusWidth;
-		TreeView transferView;
 		GtkWindow *window;
+		TreeView transferView;
 		GtkListStore *transferStore;
-		GtkTreeSelection *transferSel;
+		GtkTreeSelection *transferSelection;
 		GdkPixbuf *uploadPic, *downloadPic;
 		GtkTooltips *trayToolTip;
 		GtkWidget *trayIcon;
-
-		// Convenience thing for the updateTransfer_gui function.
-		typedef Func1 <MainWindow, TransferItem *> UFunc;
+		int64_t lastUpdate, lastUp, lastDown;
+		int emptyStatusWidth;
 };
 
 #else

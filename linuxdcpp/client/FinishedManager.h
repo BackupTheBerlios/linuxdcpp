@@ -89,6 +89,7 @@ public:
 
 	void remove(FinishedItem *item, bool upload = false);
 	void removeAll(bool upload = false);
+	FinishedItem* getFinishedItem(string aTarget, bool upload = false);
 private:
 	friend class Singleton<FinishedManager>;
 	

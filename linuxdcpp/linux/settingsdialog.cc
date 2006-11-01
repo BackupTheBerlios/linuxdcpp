@@ -20,6 +20,7 @@
 
 #include <client/FavoriteManager.h>
 #include <client/ShareManager.h>
+#include "settingsmanager.hh"
 #include "wulformanager.hh"
 
 using namespace std;
@@ -278,11 +279,11 @@ void Settings::saveSettings()
 	sm->save();
 }
 
-void Settings::addOption_gui(GtkListStore *store, string name, SettingsManager::IntSetting setting)
+void Settings::addOption_gui(GtkListStore *store, const string &name, SettingsManager::IntSetting setting)
 {
 	GtkTreeIter iter;
 	gtk_list_store_append(store, &iter);
-	gtk_list_store_set(store, &iter, 0, SettingsManager::getInstance()->get(setting), 1, name.c_str(), 2, setting,  -1);
+	gtk_list_store_set(store, &iter, 0, SettingsManager::getInstance()->get(setting), 1, name.c_str(), 2, setting, -1);
 }
 
 void Settings::initPersonal_gui()
@@ -1059,12 +1060,12 @@ gboolean Settings::onFavoriteButtonReleased_gui(GtkWidget *widget, GdkEventButto
 void Settings::onQueueToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data)
 {
 	Settings *s = (Settings *)data;
-  	GtkTreeIter iter;
+	GtkTreeIter iter;
 
-  	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(s->queueStore), &iter, path))
-  	{
+	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(s->queueStore), &iter, path))
+	{
 		gboolean fixed = s->queueView.getValue<gboolean>(&iter,"Use");
-  		gtk_list_store_set(s->queueStore, &iter, s->queueView.col("Use"), !fixed, -1);
+		gtk_list_store_set(s->queueStore, &iter, s->queueView.col("Use"), !fixed, -1);
 	}
 }
 
@@ -1156,24 +1157,24 @@ gboolean Settings::onShareHiddenPressed_gui(GtkToggleButton *togglebutton, gpoin
 void Settings::onAppearanceToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data)
 {
 	Settings *s = (Settings *)data;
-  	GtkTreeIter iter;
+	GtkTreeIter iter;
 
-  	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(s->appearanceStore), &iter, path))
-  	{
+	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(s->appearanceStore), &iter, path))
+	{
 		gboolean fixed = s->appearanceView.getValue<gboolean>(&iter,"Use");
-  		gtk_list_store_set(s->appearanceStore, &iter, s->appearanceView.col("Use"), !fixed, -1);
+		gtk_list_store_set(s->appearanceStore, &iter, s->appearanceView.col("Use"), !fixed, -1);
 	}
 }
 
 void Settings::onColorToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data)
 {
 	Settings *s = (Settings *)data;
-  	GtkTreeIter iter;
+	GtkTreeIter iter;
 
-  	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(s->colorStore), &iter, path))
-  	{
+	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(s->colorStore), &iter, path))
+	{
 		gboolean fixed = s->colorView.getValue<gboolean>(&iter, "Use");
-  		gtk_list_store_set(s->colorStore, &iter, s->colorView.col("Use"), !fixed, -1);
+		gtk_list_store_set(s->colorStore, &iter, s->colorView.col("Use"), !fixed, -1);
 	}
 }
 
@@ -1266,12 +1267,12 @@ void Settings::onLogUploadClicked_gui(GtkToggleButton *button, gpointer data)
 void Settings::onAdvancedToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data)
 {
 	Settings *s = (Settings *)data;
-  	GtkTreeIter iter;
+	GtkTreeIter iter;
 
-  	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(s->advancedStore), &iter, path))
-  	{
+	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(s->advancedStore), &iter, path))
+	{
 		gboolean fixed = s->advancedView.getValue<gboolean>(&iter, "Use");
-  		gtk_list_store_set(s->advancedStore, &iter, s->advancedView.col("Use"), !fixed, -1);
+		gtk_list_store_set(s->advancedStore, &iter, s->advancedView.col("Use"), !fixed, -1);
 	}
 }
 

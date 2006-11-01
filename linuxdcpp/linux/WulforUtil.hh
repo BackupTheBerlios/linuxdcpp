@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -33,9 +33,9 @@ class WulforUtil
 		static std::string windowsSeparator(const std::string &ps);
 		static std::string getNicks(const CID& cid);
 		static std::string getNicks(const User::Ptr& user);
-		static pair<std::string, bool> getHubNames(const CID& cid);
-		static pair<std::string, bool> getHubNames(const User::Ptr& user);
-		static string getTextFromMenu(GtkMenuItem *item);
+		static std::string getHubNames(const CID& cid);
+		static std::string getHubNames(const User::Ptr& user);
+		static std::string getTextFromMenu(GtkMenuItem *item);
 };
 
 #endif

@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -28,14 +28,14 @@ class Entry
 {
 	public:
 		Entry() {}
-		Entry(std::string id, std::string glade);
+		Entry(const std::string &id, const std::string &glade);
 		virtual ~Entry();
 		std::string getID();
 		virtual void applyCallback(GCallback closeCallback) = 0;
 		virtual GtkWidget *getContainer() = 0;
 
 	protected:
-		GtkWidget *getWidget(std::string name);
+		GtkWidget *getWidget(const std::string &name);
 
 	private:
 		GladeXML *xml;

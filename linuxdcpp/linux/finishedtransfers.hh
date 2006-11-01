@@ -19,36 +19,45 @@
 #ifndef WULFOR_FINISHED_TRANSFERS
 #define WULFOR_FINISHED_TRANSFERS
 
-#include "bookentry.hh"
-#include "func.hh"
-#include "wulformanager.hh"
-
+#include <client/stdinc.h>
+#include <client/DCPlusPlus.h>
 #include <client/FinishedManager.h>
+#include "bookentry.hh"
+#include "treeview.hh"
 
 class FinishedTransfers:
 	public BookEntry,
 	public FinishedManagerListener
 {
 	public:
-		FinishedTransfers(std::string title);
+		FinishedTransfers(const std::string &title);
 		~FinishedTransfers();
 
 	private:
 		// GUI functions
-		void updateList_gui(FinishedItem::List& list);
-		void addEntry_gui(FinishedItem *entry);
+		void addItem_gui(StringMap params);
+		void removeItem_gui(std::string target);
 		void updateStatus_gui();
 
 		// GUI callbacks
-		static gboolean onPopupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean onButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
+		static gboolean onButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
+		static void onOpenWith_gui(GtkMenuItem *item, gpointer data);
 		static void onRemoveItems_gui(GtkMenuItem *item, gpointer data);
 		static void onRemoveAll_gui(GtkMenuItem *item, gpointer data);
-		static void onOpenWith_gui(GtkMenuItem *item, gpointer data);
+
+		// Client functions
+		void initializeList_client();
+		StringMap getFinishedParams_client(FinishedItem *item);
+		void remove_client(std::string target);
+		void removeAll_client();
 
 		// Client callbacks
-		virtual void on(FinishedManagerListener::AddedDl, FinishedItem* entry) throw();
-		virtual void on(FinishedManagerListener::AddedUl, FinishedItem* entry) throw();
+		virtual void on(FinishedManagerListener::AddedDl, FinishedItem *item) throw();
+		virtual void on(FinishedManagerListener::AddedUl, FinishedItem *item) throw();
+		virtual void on(FinishedManagerListener::RemovedDl, FinishedItem *item) throw();
+		virtual void on(FinishedManagerListener::RemovedUl, FinishedItem *item) throw();
 
 		GtkListStore *transferStore;
 		TreeView transferView;

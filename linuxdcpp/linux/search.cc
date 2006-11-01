@@ -20,8 +20,10 @@
 
 #include <client/ClientManager.h>
 #include <client/FavoriteManager.h>
+#include <client/ShareManager.h>
 #include <client/StringTokenizer.h>
 #include "wulformanager.hh"
+#include "WulforUtil.hh"
 
 bool Search::onlyOp = FALSE;
 GtkTreeModel* Search::searchEntriesModel = NULL;
@@ -113,6 +115,7 @@ Search::Search():
 	gtk_tree_view_set_fixed_height_mode(resultView.get(), TRUE);
 
 	// Connect the signals to their callback functions.
+	g_signal_connect(getWidget("checkbuttonFilter"), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
 	g_signal_connect(getWidget("checkbuttonSlots"), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
 	g_signal_connect(getWidget("checkbuttonTTH"), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
 	g_signal_connect(getWidget("checkbuttonOp"), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
@@ -142,7 +145,6 @@ Search::Search():
 	initHubs_gui();
 
 	gtk_widget_grab_focus(getWidget("comboboxentrySearch"));
-
 }
 
 Search::~Search()
@@ -428,11 +430,11 @@ void Search::search_gui()
 
 	clearList_gui();
 	int64_t llsize = static_cast<int64_t>(lsize);
-	searchlist = StringTokenizer<tstring>(text, ' ').getTokens();
+	searchlist = StringTokenizer<string>(text, ' ').getTokens();
 
 	// Strip out terms beginning with -
 	text.clear();
-	for (TStringList::const_iterator si = searchlist.begin(); si != searchlist.end(); ++si)
+	for (StringList::const_iterator si = searchlist.begin(); si != searchlist.end(); ++si)
 		if ((*si)[0] != '-')
 			text += *si + ' ';
 	text = text.substr(0, std::max(text.size(), static_cast<string::size_type>(1)) - 1);
@@ -693,7 +695,7 @@ void Search::onButtonToggled_gui(GtkToggleButton *button, gpointer data)
 		if (s->onlyTTH != BOOLSETTING(SEARCH_ONLY_TTH))
 			SettingsManager::getInstance()->set(SettingsManager::SEARCH_ONLY_TTH, s->onlyTTH);
 	}
-	else
+	else if (button == GTK_TOGGLE_BUTTON(s->getWidget("checkbuttonOp")))
 	{
 		onlyOp = gtk_toggle_button_get_active(button);
 		GtkTreeIter iter;
@@ -1406,10 +1408,9 @@ gboolean Search::searchFilterFunc_gui(GtkTreeModel *model, GtkTreeIter *iter, gp
 		}
 	}
 
-	// Filter based on file type (currently only directory works, rest are impractical).
 	int type = gtk_combo_box_get_active(GTK_COMBO_BOX(s->getWidget("comboboxFile")));
-	if (type == SearchManager::TYPE_DIRECTORY && result->getType() != SearchResult::TYPE_DIRECTORY)
-			return FALSE;
+	if (type != SearchManager::TYPE_ANY && type != ShareManager::getInstance()->getType(filename))
+		return FALSE;
 
 	return TRUE;
 }

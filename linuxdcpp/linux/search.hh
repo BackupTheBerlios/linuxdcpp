@@ -24,7 +24,6 @@
 #include <client/ClientManager.h>
 #include <client/QueueManager.h>
 #include <client/SearchManager.h>
-#include <client/User.h>
 
 #include "bookentry.hh"
 #include "treeview.hh"

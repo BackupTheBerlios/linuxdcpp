@@ -162,17 +162,18 @@ env = conf.Finish()
 # ----------------------------------------------------------------------
 
 env.Append(CXXFLAGS = Split('-I. -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64'))
+env.Append(LINKFLAGS = ['-Wl,--as-needed'])
 
 if env['debug']:
 	env.Append(CXXFLAGS = Split('-g -ggdb -D_DEBUG -Wall'))
-	env.Append(LDFLAGS = Split('-g -ggdb'))
+	env.Append(LINKFLAGS = Split('-g -ggdb -Wall'))
 
 if env['release']:
 	env.Append(CXXFLAGS = '-O3')
 
 if env['profile']:
 	env.Append(CXXFLAGS = '-pg')
-	env.Append(LDFLAGS= '-pg')
+	env.Append(LINKFLAGS= '-pg')
 
 if env['PREFIX']:
 	env.Append(CXXFLAGS = '-D_DATADIR=\'\"' + env['PREFIX'] + '/share' + '\"\'')

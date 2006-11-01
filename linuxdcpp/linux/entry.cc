@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -24,7 +24,7 @@
 
 using namespace std;
 
-Entry::Entry(string id, string glade)
+Entry::Entry(const string &id, const string &glade)
 {
 	// Special case: Allow search tab to have many tabs with the same title.
 	if (id == "Search")
@@ -44,7 +44,7 @@ Entry::~Entry()
 	g_object_unref(xml);
 }
 
-GtkWidget *Entry::getWidget(string name) 
+GtkWidget *Entry::getWidget(const string &name)
 {
 	dcassert(!name.empty());
 	GtkWidget *widget = glade_xml_get_widget(xml, name.c_str());

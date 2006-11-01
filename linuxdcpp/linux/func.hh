@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -132,7 +132,7 @@ class Func3: public FuncBase {
 template<class c, typename p1, typename p2, typename p3, typename p4>
 class Func4: public FuncBase {
 	public:
-		Func4(c *obj, void (c::*func)(p1, p2, p3, p4), 
+		Func4(c *obj, void (c::*func)(p1, p2, p3, p4),
 			p1 param1, p2 param2, p3 param3, p4 param4):
 			_param1(param1),
 			_param2(param2),
@@ -164,7 +164,7 @@ class Func4: public FuncBase {
 template<class c, typename p1, typename p2, typename p3, typename p4, typename p5>
 class Func5: public FuncBase {
 	public:
-		Func5(c *obj, void (c::*func)(p1, p2, p3, p4, p5), 
+		Func5(c *obj, void (c::*func)(p1, p2, p3, p4, p5),
 			p1 param1, p2 param2, p3 param3, p4 param4, p5 param5):
 			_param1(param1),
 			_param2(param2),
@@ -198,7 +198,7 @@ class Func5: public FuncBase {
 template<class c, typename p1, typename p2, typename p3, typename p4, typename p5, typename p6>
 class Func6: public FuncBase {
 	public:
-		Func6(c *obj, void (c::*func)(p1, p2, p3, p4, p5, p6), 
+		Func6(c *obj, void (c::*func)(p1, p2, p3, p4, p5, p6),
 			p1 param1, p2 param2, p3 param3, p4 param4, p5 param5, p6 param6):
 			_param1(param1),
 			_param2(param2),
@@ -235,7 +235,7 @@ class Func6: public FuncBase {
 template<class c, typename p1, typename p2, typename p3, typename p4, typename p5, typename p6, typename p7>
 class Func7: public FuncBase {
 	public:
-		Func7(c *obj, void (c::*func)(p1, p2, p3, p4, p5, p6, p7), 
+		Func7(c *obj, void (c::*func)(p1, p2, p3, p4, p5, p6, p7),
 			p1 param1, p2 param2, p3 param3, p4 param4, p5 param5, p6 param6, p7 param7):
 			_param1(param1),
 			_param2(param2),
@@ -270,12 +270,12 @@ class Func7: public FuncBase {
 		p7 _param7;
 };
 
-template<class c, typename p1, typename p2, typename p3, typename p4, 
+template<class c, typename p1, typename p2, typename p3, typename p4,
 	typename p5, typename p6, typename p7, typename p8>
 class Func8: public FuncBase {
 	public:
-		Func8(c *obj, void (c::*func)(p1, p2, p3, p4, p5, p6, p7, p8), 
-			p1 param1, p2 param2, p3 param3, p4 param4, p5 param5, p6 param6, 
+		Func8(c *obj, void (c::*func)(p1, p2, p3, p4, p5, p6, p7, p8),
+			p1 param1, p2 param2, p3 param3, p4 param4, p5 param5, p6 param6,
 			p7 param7, p8 param8):
 			_param1(param1),
 			_param2(param2),
@@ -291,7 +291,7 @@ class Func8: public FuncBase {
 		}
 
 		void call() {
-			(*obj.*func)(_param1, _param2, _param3, _param4, _param5, _param6, 
+			(*obj.*func)(_param1, _param2, _param3, _param4, _param5, _param6,
 				_param7, _param8);
 		}
 
@@ -313,11 +313,11 @@ class Func8: public FuncBase {
 		p8 _param8;
 };
 
-template<class c, typename p1, typename p2, typename p3, typename p4, 
+template<class c, typename p1, typename p2, typename p3, typename p4,
 	typename p5, typename p6, typename p7, typename p8, typename p9>
 class Func9: public FuncBase {
 	public:
-		Func9(c *obj, void (c::*func)(p1, p2, p3, p4, p5, p6, p7, p8, p9), 
+		Func9(c *obj, void (c::*func)(p1, p2, p3, p4, p5, p6, p7, p8, p9),
 			p1 param1, p2 param2, p3 param3, p4 param4, p5 param5, p6 param6,
 			p7 param7, p8 param8, p9 param9):
 			_param1(param1),

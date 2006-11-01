@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -25,7 +25,7 @@ class DialogEntry : public Entry
 {
 	public:
 		DialogEntry() {}
-		DialogEntry(std::string id, std::string glade) : Entry(id, glade) {}
+		DialogEntry(const std::string &id, const std::string &glade) : Entry(id, glade) {}
 		virtual ~DialogEntry() {}
 
 		GtkWidget *getContainer();

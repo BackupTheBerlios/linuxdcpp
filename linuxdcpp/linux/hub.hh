@@ -31,7 +31,7 @@ class Hub:
 	public ClientListener
 {
 	public:
-		Hub(std::string address);
+		Hub(const std::string &address);
 		~Hub();
 
 		// Client functions
@@ -41,7 +41,7 @@ class Hub:
 	private:
 		// GUI functions
 		void setStatus_gui(std::string statusBar, std::string text);
-		bool findUser_gui(std::string nick, GtkTreeIter *iter);
+		bool findUser_gui(const std::string &nick, GtkTreeIter *iter);
 		void updateUser_gui(Identity id);
 		void removeUser_gui(std::string nick);
 		void clearNickList_gui();

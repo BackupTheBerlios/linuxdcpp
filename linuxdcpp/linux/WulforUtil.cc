@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,7 +23,8 @@ vector<int> WulforUtil::splitString(const string &str, const string &delimiter)
 {
 	string::size_type loc, len, pos = 0;
 	vector<int> array;
-	if (!str.empty())
+
+	if (!str.empty() && !delimiter.empty())
 	{
 		while ((loc = str.find(delimiter, pos)) != string::npos)
 		{
@@ -36,7 +37,6 @@ vector<int> WulforUtil::splitString(const string &str, const string &delimiter)
 	}
 	return array;
 }
-
 
 string WulforUtil::linuxSeparator(const string &ps)
 {
@@ -66,19 +66,16 @@ string WulforUtil::getNicks(const User::Ptr& user)
 	return getNicks(user->getCID());
 }
 
-/*
- * @return Pair of hubnames as a string and a bool representing the user's online status
- */
-pair<string, bool> WulforUtil::getHubNames(const CID& cid)
+string WulforUtil::getHubNames(const CID& cid)
 {
 	StringList hubs = ClientManager::getInstance()->getHubNames(cid);
 	if (hubs.empty())
-		return make_pair("Offline", false);
+		return "Offline";
 	else
-		return make_pair(Util::toString(hubs), true);
+		return Util::toString(hubs);
 }
 
-pair<string, bool> WulforUtil::getHubNames(const User::Ptr& user)
+string WulforUtil::getHubNames(const User::Ptr& user)
 {
 	return getHubNames(user->getCID());
 }

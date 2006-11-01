@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,6 +18,9 @@
 
 #include "treeview.hh"
 #include <iostream>
+#include "settingsmanager.hh"
+#include "WulforUtil.hh"
+
 using namespace std;
 
 TreeView::TreeView()
@@ -58,7 +61,7 @@ GtkTreeView *TreeView::get()
 /*
  * We can't use getValue() for strings since it would cause a memory leak.
  */
-string TreeView::getString(GtkTreeIter *i, string column, GtkTreeModel *m)
+string TreeView::getString(GtkTreeIter *i, const string &column, GtkTreeModel *m)
 {
 	if (m == NULL)
 		m = gtk_tree_view_get_model(view);
@@ -189,8 +192,8 @@ void TreeView::addColumn_gui(Column column)
 			gtk_tree_view_column_set_alignment(col, 1.0);
 			break;
 		case BOOL:
-  			renderer = gtk_cell_renderer_toggle_new();
-  			col = gtk_tree_view_column_new_with_attributes(column.title.c_str(), renderer, "active", column.pos, NULL);
+			renderer = gtk_cell_renderer_toggle_new();
+			col = gtk_tree_view_column_new_with_attributes(column.title.c_str(), renderer, "active", column.pos, NULL);
 			break;
 		case PIXBUF:
 			col = gtk_tree_view_column_new_with_attributes(column.title.c_str(),
@@ -251,7 +254,7 @@ void TreeView::addColumn_gui(Column column)
 	g_signal_connect(col->button, "button-release-event", G_CALLBACK(popupMenu_gui), (gpointer)this);
 }
 
-void TreeView::setSortColumn_gui(string column, string sortColumn)
+void TreeView::setSortColumn_gui(const string &column, const string &sortColumn)
 {
 	GtkTreeViewColumn *gtkColumn;
 	gtkColumn = gtk_tree_view_get_column(view, col(column));
@@ -336,8 +339,8 @@ void TreeView::restoreSettings()
 	columnWidth = WulforUtil::splitString(WGETS(name + "-width"), ",");
 	columnVisibility = WulforUtil::splitString(WGETS(name + "-visibility"), ",");
 
-	if (!columnOrder.empty() && columnOrder.size() == columns.size() && 
-		!columnWidth.empty() && columnWidth.size() == columns.size() && 
+	if (!columnOrder.empty() && columnOrder.size() == columns.size() &&
+		!columnWidth.empty() && columnWidth.size() == columns.size() &&
 		!columnVisibility.empty() && columnVisibility.size() == columns.size())
 	{
 		for (ColIter iter = columns.begin(); iter != columns.end(); iter++)

@@ -27,7 +27,7 @@
 
 using namespace std;
 
-Hub::Hub(string address):
+Hub::Hub(const string &address):
 	BookEntry("Hub: " + address, "hub.glade")
 {
 	// Configure the dialog
@@ -148,7 +148,7 @@ void Hub::setStatus_gui(string statusBar, string text)
 	}
 }
 
-bool Hub::findUser_gui(string nick, GtkTreeIter *iter)
+bool Hub::findUser_gui(const string &nick, GtkTreeIter *iter)
 {
 	if (idMap.find(nick) != idMap.end())
 	{
@@ -447,7 +447,7 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
 		}
 		else if (command == "help")
 		{
-			hub->addStatusMessage_gui("Available commands: /away <message>, /back, /clear, /close, /favorite, " \
+			hub->addStatusMessage_gui("Available commands: /away <message>, /back, /clear, /close, /favorite, "\
 				 "/getlist <nick>, /grant <nick>, /help, /join <address>, /pm <nick>, /rebuild, /refresh, /userlist");
 		}
 		else if (command == "join" && !param.empty())

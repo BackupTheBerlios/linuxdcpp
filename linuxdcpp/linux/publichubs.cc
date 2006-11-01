@@ -153,7 +153,7 @@ void PublicHubs::updateList_gui()
 				hubView.col("Address"), i->getServer().c_str(),
 				hubView.col("Country"), i->getCountry().c_str(),
 				hubView.col("Shared"), Util::formatBytes(i->getShared()).c_str(),
-				hubView.col("Min Share"), Util::formatBytes(i->getMinShare()).c_str(), 
+				hubView.col("Min Share"), Util::formatBytes(i->getMinShare()).c_str(),
 				hubView.col("Min Slots"), i->getMinSlots(),
 				hubView.col("Max Hubs"), i->getMaxHubs(),
 				hubView.col("Max Users"), i->getMaxUsers(),

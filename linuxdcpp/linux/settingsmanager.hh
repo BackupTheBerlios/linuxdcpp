@@ -31,10 +31,10 @@ class WulforSettingsManager
 	public:
 		static WulforSettingsManager *get();
 
-		int getInt(std::string key);
-		std::string getString(std::string key);
-		void set(std::string key, int value);
-		void set(std::string key, std::string value);
+		int getInt(const std::string &key);
+		std::string getString(const std::string &key);
+		void set(const std::string &key, int value);
+		void set(const std::string &key, const std::string &value);
 
 		void load();
 		void save();

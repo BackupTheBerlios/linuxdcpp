@@ -17,8 +17,9 @@
  */
 
 #include "finishedtransfers.hh"
+#include "wulformanager.hh"
 
-FinishedTransfers::FinishedTransfers(std::string title):
+FinishedTransfers::FinishedTransfers(const string &title):
 	BookEntry(title, "finishedtransfers.glade"),
 	items(0),
 	totalBytes(0),
@@ -40,7 +41,8 @@ FinishedTransfers::FinishedTransfers(std::string title):
 	transferView.insertColumn("Speed", G_TYPE_STRING, TreeView::STRING, 100);
 	transferView.insertColumn("CRC Checked", G_TYPE_STRING, TreeView::STRING, 100);
 	transferView.insertHiddenColumn("Target", G_TYPE_STRING);
-	transferView.insertHiddenColumn("FinishedItem", G_TYPE_POINTER);
+	transferView.insertHiddenColumn("Chunk Size", G_TYPE_INT64);
+	transferView.insertHiddenColumn("Elapsed Time", G_TYPE_INT64);
 	transferView.finalize();
 	transferStore = gtk_list_store_newv(transferView.getColCount(), transferView.getGTypes());
 	gtk_tree_view_set_model(transferView.get(), GTK_TREE_MODEL(transferStore));
@@ -49,18 +51,20 @@ FinishedTransfers::FinishedTransfers(std::string title):
 	gtk_tree_view_column_set_sort_indicator(gtk_tree_view_get_column(transferView.get(), transferView.col("Time")), TRUE);
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(transferStore), transferView.col("Time"), GTK_SORT_ASCENDING);
 	gtk_tree_view_set_fixed_height_mode(transferView.get(), TRUE);
+	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(transferView.get()), GTK_SELECTION_MULTIPLE);
 
 	// Connect the signals to their callback functions.
 	g_signal_connect(getWidget("openWithItem"), "activate", G_CALLBACK(onOpenWith_gui), (gpointer)this);
 	g_signal_connect(getWidget("removeItem"), "activate", G_CALLBACK(onRemoveItems_gui), (gpointer)this);
 	g_signal_connect(getWidget("removeAllItem"), "activate", G_CALLBACK(onRemoveAll_gui), (gpointer)this);
-	g_signal_connect(transferView.get(), "button-release-event", G_CALLBACK(onPopupMenu_gui), (gpointer)this);
+	g_signal_connect(transferView.get(), "button-press-event", G_CALLBACK(onButtonPressed_gui), (gpointer)this);
+	g_signal_connect(transferView.get(), "button-release-event", G_CALLBACK(onButtonReleased_gui), (gpointer)this);
 	g_signal_connect(transferView.get(), "key-release-event", G_CALLBACK(onKeyReleased_gui), (gpointer)this);
 
-	// Update the list of finished items.
 	isUpload = (getID() == string("Finished Uploads")) ? TRUE : FALSE;
-	updateList_gui(FinishedManager::getInstance()->lockList(isUpload));
-	FinishedManager::getInstance()->unlockList();
+
+	Func0<FinishedTransfers> *func = new Func0<FinishedTransfers>(this, &FinishedTransfers::initializeList_client);
+	WulforManager::get()->dispatchClientFunc(func);
 }
 
 FinishedTransfers::~FinishedTransfers()
@@ -69,90 +73,29 @@ FinishedTransfers::~FinishedTransfers()
 	gtk_widget_destroy(getWidget("openWithDialog"));
 }
 
-gboolean FinishedTransfers::onPopupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
-{
-	FinishedTransfers *ft = (FinishedTransfers *)data;
-
-	if (event->button == 3 && gtk_tree_selection_get_selected(ft->transferSelection, NULL, NULL))
-	{
-		gtk_menu_popup(GTK_MENU(ft->getWidget("menu")), NULL, NULL, NULL, NULL, event->button, event->time);
-		gtk_widget_show_all(ft->getWidget("menu"));
-	}
-	return FALSE;
-}
-
-gboolean FinishedTransfers::onKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data)
-{
-	FinishedTransfers *ft = (FinishedTransfers *)data;
-
-	if (event->keyval == GDK_Return || event->keyval == GDK_KP_Enter)
-		onOpenWith_gui(NULL, data);
-	else if (event->keyval == GDK_Delete || event->keyval == GDK_BackSpace)
-		onRemoveItems_gui(NULL, data);
-	else if (event->keyval == GDK_Menu || (event->keyval == GDK_F10 && event->state & GDK_SHIFT_MASK))
-	{
-		gtk_menu_popup(GTK_MENU(ft->getWidget("menu")), NULL, NULL, NULL, NULL, 1, event->time);
-		gtk_widget_show_all(ft->getWidget("menu"));
-	}
-	return FALSE;
-}
-
-void FinishedTransfers::onRemoveItems_gui(GtkMenuItem *item, gpointer data)
-{
-	FinishedTransfers *ft = (FinishedTransfers *)data;
-	GtkTreeIter iter;
-	FinishedItem *entry;
-
-	if (gtk_tree_selection_get_selected(ft->transferSelection, NULL, &iter))
-	{
-		entry = ft->transferView.getValue<gpointer, FinishedItem *>(&iter, "FinishedItem");
-
-		ft->totalBytes -= entry->getChunkSize();
-		ft->totalTime -= entry->getMilliSeconds();
-		ft->items--;
-		FinishedManager::getInstance()->remove(entry, ft->isUpload);
-		gtk_list_store_remove(ft->transferStore, &iter);
-		ft->updateStatus_gui();
-	}
-}
-
-void FinishedTransfers::onRemoveAll_gui(GtkMenuItem *item, gpointer data)
-{
-	FinishedTransfers *ft = (FinishedTransfers *)data;
-
-	FinishedManager::getInstance()->removeAll(ft->isUpload);
-	gtk_list_store_clear(ft->transferStore);
-	ft->totalBytes = 0;
-	ft->totalTime = 0;
-	ft->items = 0;
-	ft->updateStatus_gui();
-}
-
-void FinishedTransfers::updateList_gui(FinishedItem::List& list)
-{
-	for (FinishedItem::List::const_iterator iter = list.begin(); iter != list.end(); iter++)
-		addEntry_gui(*iter);
-}
-
-void FinishedTransfers::addEntry_gui(FinishedItem *entry)
+void FinishedTransfers::addItem_gui(StringMap params)
 {
 	GtkTreeIter iter;
 	gtk_list_store_append(transferStore, &iter);
-	gtk_list_store_set(transferStore, &iter,
-		transferView.col("Filename"), Util::getFileName(entry->getTarget()).c_str(),
-		transferView.col("Time"), Util::formatTime("%Y-%m-%d %H:%M:%S", entry->getTime()).c_str(),
-		transferView.col("Path"), Util::getFilePath(entry->getTarget()).c_str(),
-		transferView.col("Nick"), entry->getUser().c_str(),
-		transferView.col("Hub"), entry->getHub().c_str(),
-		transferView.col("Size"), Util::formatBytes(entry->getSize()).c_str(),
-		transferView.col("Speed"), (Util::formatBytes(entry->getAvgSpeed()) + "/s").c_str(),
-		transferView.col("CRC Checked"), entry->getCrc32Checked() ? "Yes" : "No",
-		transferView.col("Target"), entry->getTarget().c_str(),
-		transferView.col("FinishedItem"), (gpointer)entry,
-		-1);
 
-	totalBytes += entry->getChunkSize();
-	totalTime += entry->getMilliSeconds();
+	for (StringMap::const_iterator it = params.begin(); it != params.end(); ++it)
+	{
+		if (it->first == "Chunk Size")
+		{
+			int64_t size = Util::toInt64(it->second);
+			totalBytes += size;
+			gtk_list_store_set(transferStore, &iter, transferView.col(it->first), size, -1);
+		}
+		else if (it->first == "Elapsed Time")
+		{
+			int64_t time = Util::toInt64(it->second);
+			totalTime += time;
+			gtk_list_store_set(transferStore, &iter, transferView.col(it->first), time, -1);
+		}
+		else if (!it->second.empty())
+			gtk_list_store_set(transferStore, &iter, transferView.col(it->first), it->second.c_str(), -1);
+	}
+
 	items++;
 	updateStatus_gui();
 
@@ -163,52 +106,253 @@ void FinishedTransfers::addEntry_gui(FinishedItem *entry)
 void FinishedTransfers::updateStatus_gui()
 {
 	string status = Util::toString(items) + " Items";
+	string size = Util::formatBytes(totalBytes);
+	string speed = Util::formatBytes((totalTime > 0) ? totalBytes * ((int64_t)1000) / totalTime : 0) + "/s";
+
 	gtk_statusbar_push(GTK_STATUSBAR(getWidget("totalItems")), 0, status.c_str());
-	gtk_statusbar_push(GTK_STATUSBAR(getWidget("totalSize")), 0, Text::utf8ToAcp(Util::formatBytes(totalBytes)).c_str());
-	gtk_statusbar_push(GTK_STATUSBAR(getWidget("averageSpeed")), 0, Text::utf8ToAcp(Util::formatBytes((totalTime > 0) ? totalBytes * ((int64_t)1000) / totalTime : 0) + "/s").c_str());
+	gtk_statusbar_push(GTK_STATUSBAR(getWidget("totalSize")), 0, size.c_str());
+	gtk_statusbar_push(GTK_STATUSBAR(getWidget("averageSpeed")), 0, speed.c_str());
+}
+
+gboolean FinishedTransfers::onButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+	FinishedTransfers *ft = (FinishedTransfers *)data;
+
+	if (event->button == 3)
+	{
+		GtkTreePath *path;
+		if (gtk_tree_view_get_path_at_pos(ft->transferView.get(), (gint)event->x, (gint)event->y, &path, NULL, NULL, NULL))
+		{
+			bool selected = gtk_tree_selection_path_is_selected(ft->transferSelection, path);
+			gtk_tree_path_free(path);
+
+			if (selected)
+				return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
+gboolean FinishedTransfers::onButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+	FinishedTransfers *ft = (FinishedTransfers *)data;
+	int count = gtk_tree_selection_count_selected_rows(ft->transferSelection);
+
+	if (event->button == 3 && count > 0)
+	{
+		gtk_menu_popup(GTK_MENU(ft->getWidget("menu")), NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
+		gtk_widget_show_all(ft->getWidget("menu"));
+	}
+
+	return FALSE;
+}
+
+gboolean FinishedTransfers::onKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data)
+{
+	FinishedTransfers *ft = (FinishedTransfers *)data;
+	int count = gtk_tree_selection_count_selected_rows(ft->transferSelection);
+
+	if (count > 0)
+	{
+		if (event->keyval == GDK_Return || event->keyval == GDK_KP_Enter)
+		{
+			onOpenWith_gui(NULL, data);
+		}
+		else if (event->keyval == GDK_Delete || event->keyval == GDK_BackSpace)
+		{
+			onRemoveItems_gui(NULL, data);
+		}
+		else if (event->keyval == GDK_Menu || (event->keyval == GDK_F10 && event->state & GDK_SHIFT_MASK))
+		{
+			gtk_menu_popup(GTK_MENU(ft->getWidget("menu")), NULL, NULL, NULL, NULL, 1, event->time);
+			gtk_widget_show_all(ft->getWidget("menu"));
+		}
+	}
+
+	return FALSE;
 }
 
 void FinishedTransfers::onOpenWith_gui(GtkMenuItem *item, gpointer data)
 {
 	FinishedTransfers *ft = (FinishedTransfers *)data;
-	GtkTreeIter iter;
-	string command;
-	string target;
-	int ret;
+	int count = gtk_tree_selection_count_selected_rows(ft->transferSelection);
 
-	ret = gtk_dialog_run(GTK_DIALOG(ft->getWidget("openWithDialog")));
+	if (count <= 0)
+		return;
+
+	int ret = gtk_dialog_run(GTK_DIALOG(ft->getWidget("openWithDialog")));
 	gtk_widget_hide(ft->getWidget("openWithDialog"));
 
 	if (ret == GTK_RESPONSE_OK)
 	{
-		command = gtk_entry_get_text(GTK_ENTRY(ft->getWidget("openWithEntry")));
-		gtk_tree_selection_get_selected(ft->transferSelection, NULL, &iter);
-		target = ft->transferView.getString(&iter, "Target");
+		string target;
+		string command = gtk_entry_get_text(GTK_ENTRY(ft->getWidget("openWithEntry")));
+		GtkTreeIter iter;
+		GtkTreePath *path;
+		GList *list = gtk_tree_selection_get_selected_rows(ft->transferSelection, NULL);
 
-		if (!command.empty() && !target.empty())
+		for (int i = 0; i < count; i++)
 		{
-			command += Text::utf8ToAcp(" \"" + target + "\"");
-			g_spawn_command_line_async(command.c_str(), NULL);
+			path = (GtkTreePath *)g_list_nth_data(list, i);
+			if (gtk_tree_model_get_iter(GTK_TREE_MODEL(ft->transferStore), &iter, path))
+			{
+				target = ft->transferView.getString(&iter, "Target");
+				if (!command.empty() && !target.empty())
+				{
+					target = command + Text::utf8ToAcp(" \"" + target + "\"");
+					g_spawn_command_line_async(target.c_str(), NULL);
+				}
+			}
+			gtk_tree_path_free(path);
 		}
+		g_list_free(list);
 	}
 }
 
-void FinishedTransfers::on(FinishedManagerListener::AddedDl, FinishedItem *entry) throw()
+void FinishedTransfers::onRemoveItems_gui(GtkMenuItem *item, gpointer data)
 {
-	if (!isUpload)
+	FinishedTransfers *ft = (FinishedTransfers *)data;
+	string target;
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	GList *list = gtk_tree_selection_get_selected_rows(ft->transferSelection, NULL);
+	int count = gtk_tree_selection_count_selected_rows(ft->transferSelection);
+	typedef Func1<FinishedTransfers, string> F1;
+	F1 *func;
+
+	for (int i = 0; i < count; i++)
 	{
-		typedef Func1<FinishedTransfers, FinishedItem *> F1;
-		F1 *f1 = new F1(this, &FinishedTransfers::addEntry_gui, entry);
-		WulforManager::get()->dispatchGuiFunc(f1);
+		path = (GtkTreePath *)g_list_nth_data(list, i);
+		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(ft->transferStore), &iter, path))
+		{
+			target = ft->transferView.getString(&iter, "Target");
+
+			func = new F1(ft, &FinishedTransfers::remove_client, target);
+			WulforManager::get()->dispatchClientFunc(func);
+		}
+		gtk_tree_path_free(path);
+	}
+	g_list_free(list);
+
+	ft->updateStatus_gui();
+}
+
+void FinishedTransfers::removeItem_gui(string target)
+{
+	GtkTreeIter iter;
+	GtkTreeModel *m = GTK_TREE_MODEL(transferStore);
+	bool valid = gtk_tree_model_get_iter_first(m, &iter);
+
+	while (valid)
+	{
+		if (target == transferView.getString(&iter, "Target"))
+		{
+			totalBytes -= transferView.getValue<gint64>(&iter, "Chunk Size");
+			totalTime -= transferView.getValue<gint64>(&iter, "Elapsed Time");
+			items--;
+			gtk_list_store_remove(transferStore, &iter);
+			break;
+		}
+		valid = gtk_tree_model_iter_next(m, &iter);
 	}
 }
 
-void FinishedTransfers::on(FinishedManagerListener::AddedUl, FinishedItem *entry) throw()
+void FinishedTransfers::onRemoveAll_gui(GtkMenuItem *item, gpointer data)
 {
-	if (isUpload)
+	FinishedTransfers *ft = (FinishedTransfers *)data;
+
+	gtk_list_store_clear(ft->transferStore);
+	ft->totalBytes = 0;
+	ft->totalTime = 0;
+	ft->items = 0;
+	ft->updateStatus_gui();
+
+	typedef Func0<FinishedTransfers> F0;
+	F0 *func = new F0(ft, &FinishedTransfers::removeAll_client);
+	WulforManager::get()->dispatchClientFunc(func);
+}
+
+void FinishedTransfers::initializeList_client()
+{
+	StringMap params;
+	typedef Func1<FinishedTransfers, StringMap> F1;
+	F1 *func;
+	const FinishedItem::List &list = FinishedManager::getInstance()->lockList(isUpload);
+
+	for (FinishedItem::List::const_iterator it = list.begin(); it != list.end(); ++it)
 	{
-		typedef Func1<FinishedTransfers, FinishedItem *> F1;
-		F1 *f1 = new F1(this, &FinishedTransfers::addEntry_gui, entry);
-		WulforManager::get()->dispatchGuiFunc(f1);
+		params.clear();
+		params = getFinishedParams_client(*it);
+		func = new F1(this, &FinishedTransfers::addItem_gui, params);
+		WulforManager::get()->dispatchGuiFunc(func);
 	}
+
+	FinishedManager::getInstance()->unlockList();
+
+	WulforManager::get()->dispatchGuiFunc(new Func0<FinishedTransfers>(this, &FinishedTransfers::updateStatus_gui));
+}
+
+StringMap FinishedTransfers::getFinishedParams_client(FinishedItem *item)
+{
+	StringMap params;
+
+	params["Filename"] = Util::getFileName(item->getTarget());
+	params["Time"] = Util::formatTime("%Y-%m-%d %H:%M:%S", item->getTime());
+	params["Path"] = Util::getFilePath(item->getTarget());
+	params["Nick"] = item->getUser();
+	params["Hub"] = item->getHub();
+	params["Size"] = Util::formatBytes(item->getSize());
+	params["Speed"] = Util::formatBytes(item->getAvgSpeed()) + "/s";
+	params["CRC Checked"] = item->getCrc32Checked() ? "Yes" : "No";
+	params["Target"] = item->getTarget();
+	params["Chunk Size"] = Util::toString(item->getChunkSize());
+	params["Elapsed Time"] = Util::toString(item->getMilliSeconds());
+
+	return params;
+}
+
+void FinishedTransfers::remove_client(std::string target)
+{
+	FinishedItem *item = FinishedManager::getInstance()->getFinishedItem(target, isUpload);
+
+	if (item)
+		FinishedManager::getInstance()->remove(item, isUpload);
+}
+
+void FinishedTransfers::removeAll_client()
+{
+	FinishedManager::getInstance()->removeAll(isUpload);
+}
+
+void FinishedTransfers::on(FinishedManagerListener::AddedDl, FinishedItem *item) throw()
+{
+	StringMap params = getFinishedParams_client(item);
+
+	typedef Func1<FinishedTransfers, StringMap> F1;
+	F1 *func = new F1(this, &FinishedTransfers::addItem_gui, params);
+	WulforManager::get()->dispatchGuiFunc(func);
+}
+
+void FinishedTransfers::on(FinishedManagerListener::AddedUl, FinishedItem *item) throw()
+{
+	StringMap params = getFinishedParams_client(item);
+
+	typedef Func1<FinishedTransfers, StringMap> F1;
+	F1 *func = new F1(this, &FinishedTransfers::addItem_gui, params);
+	WulforManager::get()->dispatchGuiFunc(func);
+}
+
+void FinishedTransfers::on(FinishedManagerListener::RemovedDl, FinishedItem *item) throw()
+{
+	typedef Func1<FinishedTransfers, string> F1;
+	F1 *func = new F1(this, &FinishedTransfers::removeItem_gui, item->getTarget());
+	WulforManager::get()->dispatchGuiFunc(func);
+}
+
+void FinishedTransfers::on(FinishedManagerListener::RemovedUl, FinishedItem *item) throw()
+{
+	typedef Func1<FinishedTransfers, string> F1;
+	F1 *func = new F1(this, &FinishedTransfers::removeItem_gui, item->getTarget());
+	WulforManager::get()->dispatchGuiFunc(func);
 }

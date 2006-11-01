@@ -129,7 +129,7 @@ SettingsManager::SettingsManager()
 	setDefault(POPUP_OFFLINE, false);
 	setDefault(LIST_DUPES, true);
 	setDefault(BUFFER_SIZE, 64);
-	setDefault(HUBLIST_SERVERS, "http://www.hublist.org/PublicHubList.xml.bz2;http://home.bandicoot.nl/adchublist.xml.bz2");
+	setDefault(HUBLIST_SERVERS, "http://www.hublist.org/PublicHubList.xml.bz2;http://home.bandicoot.nl/adchublist.xml.bz2;http://dchublist.com/hublist.xml.bz2");
 	setDefault(DOWNLOAD_SLOTS, 3);
 	setDefault(MAX_DOWNLOAD_SPEED, 0);
 	setDefault(LOG_DIRECTORY, Util::getConfigPath() + "Logs" PATH_SEPARATOR_STR);

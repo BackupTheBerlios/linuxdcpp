@@ -21,6 +21,7 @@
 #include <client/ClientManager.h>
 #include <client/FavoriteManager.h>
 #include "wulformanager.hh"
+#include "WulforUtil.hh"
 
 using namespace std;
 
@@ -77,7 +78,7 @@ void PrivateMessage::addStatusMessage_gui(string message)
 	addLine_gui("*** " + message);
 }
 
-void PrivateMessage::addLine_gui(string message)
+void PrivateMessage::addLine_gui(const string &message)
 {
 	GtkTextIter iter;
 	GtkAdjustment *adj;

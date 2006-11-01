@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -36,11 +36,11 @@ class FavoriteHubs:
 
 	private:
 		// GUI functions
-		void updateList_gui();
-		void addEntry_gui(const FavoriteHubEntry *entry);
-		void removeEntry_gui(const FavoriteHubEntry *entry);
-		void showErrorDialog_gui(std::string description);
-		void connect_gui(GtkTreeIter iter);
+		void addEntry_gui(StringMap params);
+		void editEntry_gui(StringMap &params, GtkTreeIter *iter);
+		void removeEntry_gui(std::string address);
+		void showErrorDialog_gui(const std::string &description);
+		void connect_gui(GtkTreeIter *iter);
 		void popupMenu_gui();
 
 		// GUI callbacks
@@ -54,10 +54,12 @@ class FavoriteHubs:
 		static void onToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
 
 		// Client functions
-		void addEntry_client(const FavoriteHubEntry entry);
-		void editEntry_client(FavoriteHubEntry *oldEntry, const FavoriteHubEntry newEntry);
-		void removeEntry_client(FavoriteHubEntry *entry);
-		void setConnect_client(FavoriteHubEntry *entry, bool active);
+		void initializeList_client();
+		StringMap getFavHubParams_client(const FavoriteHubEntry *entry);
+		void addEntry_client(StringMap params);
+		void editEntry_client(string address, StringMap params);
+		void removeEntry_client(string address);
+		void setConnect_client(string address, bool active);
 
 		// Client callbacks
 		virtual void on(FavoriteManagerListener::FavoriteAdded, const FavoriteHubEntry *entry) throw();

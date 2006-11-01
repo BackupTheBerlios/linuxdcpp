@@ -21,11 +21,13 @@
 #include <client/FavoriteManager.h>
 #include <client/ShareManager.h>
 #include "search.hh"
+#include "settingsmanager.hh"
 #include "wulformanager.hh"
+#include "WulforUtil.hh"
 
 using namespace std;
 
-ShareBrowser::ShareBrowser(User::Ptr user, std::string file):
+ShareBrowser::ShareBrowser(User::Ptr user, const std::string &file):
 	BookEntry("List: " + WulforUtil::getNicks(user), "sharebrowser.glade"),
 	listing(user),
 	shareSize(0),
@@ -332,9 +334,9 @@ void ShareBrowser::updateFiles_gui(DirectoryListing::Directory *dir)
 void ShareBrowser::updateStatus_gui()
 {
 	string items, files, size, total;
-
 	files = "Files: " + Util::toString(shareItems);
 	total = "Total: " + Util::formatBytes(shareSize);
+
 	if (gtk_tree_selection_get_selected(dirSelection, NULL, NULL))
 	{
 		items = "Items: " + Util::toString(currentItems);
@@ -395,7 +397,7 @@ void ShareBrowser::fileViewSelected_gui()
 	g_list_free(list);
 }
 
-void ShareBrowser::downloadSelectedFiles_gui(string target)
+void ShareBrowser::downloadSelectedFiles_gui(const string &target)
 {
 	gpointer ptr;
 	string fileOrder;
@@ -448,7 +450,7 @@ void ShareBrowser::downloadSelectedFiles_gui(string target)
 	g_list_free(list);
 }
 
-void ShareBrowser::downloadSelectedDirs_gui(string target)
+void ShareBrowser::downloadSelectedDirs_gui(const string &target)
 {
 	DirectoryListing::Directory *dir;
 	GtkTreeIter iter;
@@ -481,7 +483,7 @@ void ShareBrowser::dirPopupMenu_gui()
  * Searches the directories iteratively for the requested pattern. Uses a pre-order
  * traversal method, with the exception that it searches the parent's dir name first.
  * Instead of keeping track of the last directory its search ended at, it counts
- * the number of matches and re-searches the listing, skipping matches until it 
+ * the number of matches and re-searches the listing, skipping matches until it
  * reaches the newest one. Slightly slower, but simpler.
  */
 void ShareBrowser::find_gui()
@@ -747,11 +749,17 @@ void ShareBrowser::onDownloadToClicked_gui(GtkMenuItem *item, gpointer data)
 
 	if (response == GTK_RESPONSE_OK)
 	{
-		string path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(sb->getWidget("dirChooserDialog")));
-		if (path[path.length() - 1] != PATH_SEPARATOR)
-			path += PATH_SEPARATOR;
+		string path;
+		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(sb->getWidget("dirChooserDialog")));
+		if (temp)
+		{
+			path = string(temp);
+			g_free(temp);
+			if (path[path.length() - 1] != PATH_SEPARATOR)
+				path += PATH_SEPARATOR;
 
-		sb->downloadSelectedFiles_gui(path);
+			sb->downloadSelectedFiles_gui(path);
+		}
 	}
 }
 

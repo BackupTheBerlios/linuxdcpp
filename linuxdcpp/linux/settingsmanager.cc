@@ -31,11 +31,11 @@ WulforSettingsManager *WulforSettingsManager::ptr = NULL;
 WulforSettingsManager::WulforSettingsManager()
 {
 	defaultInt["main-window-maximized"] = 0;
-	defaultInt["main-window-size-x"] = 800;
-	defaultInt["main-window-size-y"] = 600;
+	defaultInt["main-window-size-x"] = 880;
+	defaultInt["main-window-size-y"] = 725;
 	defaultInt["main-window-pos-x"] = 100;
 	defaultInt["main-window-pos-y"] = 100;
-	defaultInt["transfer-pane-position"] = 300;
+	defaultInt["transfer-pane-position"] = 482;
 	defaultInt["nick-pane-position"] = 500;
 	defaultInt["downloadqueue-pane-position"] = 200;
 	defaultInt["sharebrowser-pane-position"] = 200;
@@ -75,7 +75,7 @@ WulforSettingsManager *WulforSettingsManager::get()
 	return ptr;
 }
 
-int WulforSettingsManager::getInt(std::string key)
+int WulforSettingsManager::getInt(const string &key)
 {
 	dcassert(intMap.find(key) != intMap.end() || defaultInt.find(key) != defaultInt.end());
 
@@ -85,7 +85,7 @@ int WulforSettingsManager::getInt(std::string key)
 		return intMap[key];
 }
 
-string WulforSettingsManager::getString(std::string key)
+string WulforSettingsManager::getString(const string &key)
 {
 	dcassert(stringMap.find(key) != stringMap.end() || defaultString.find(key) != defaultString.end());
 
@@ -95,13 +95,13 @@ string WulforSettingsManager::getString(std::string key)
 		return stringMap[key];
 }
 
-void WulforSettingsManager::set(std::string key, int value)
+void WulforSettingsManager::set(const string &key, int value)
 {
 	dcassert(defaultInt.find(key) != defaultInt.end());
 	intMap[key] = value;
 }
 
-void WulforSettingsManager::set(std::string key, string value)
+void WulforSettingsManager::set(const string &key, const string &value)
 {
 	dcassert(defaultString.find(key) != defaultString.end());
 	stringMap[key] = value;

@@ -38,7 +38,7 @@ class PrivateMessage:
 
 	private:
 		// GUI functions
-		void addLine_gui(std::string line);
+		void addLine_gui(const std::string &line);
 
 		// GUI callbacks
 		static void onSendMessage_gui(GtkEntry *entry, gpointer data);

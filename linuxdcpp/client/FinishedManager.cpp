@@ -62,6 +62,22 @@ void FinishedManager::removeAll(bool upload /* = false */) {
 		fire(FinishedManagerListener::RemovedAllUl());
 }
 
+FinishedItem* FinishedManager::getFinishedItem(string aTarget, bool upload)
+{
+	FinishedItem *item = NULL;
+	{
+		Lock l(cs);
+		FinishedItem::List *listptr = upload ? &uploads : &downloads;
+		for(FinishedItem::Iter i = listptr->begin(); i != listptr->end(); ++i) {
+			if(Util::stricmp((*i)->getTarget(), aTarget) == 0) {
+				item = *i;
+				break;
+			}
+		}
+	}
+	return item;
+}
+
 void FinishedManager::on(DownloadManagerListener::Complete, Download* d) throw()
 {
 	if(!d->isSet(Download::FLAG_TREE_DOWNLOAD) && (!d->isSet(Download::FLAG_USER_LIST) || BOOLSETTING(LOG_FILELIST_TRANSFERS))) {

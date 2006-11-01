@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,7 +21,7 @@
 
 using namespace std;
 
-BookEntry::BookEntry(string title, string glade):
+BookEntry::BookEntry(const string &title, const string &glade):
 	Entry(title, glade)
 {
 	bold = FALSE;
@@ -67,7 +67,7 @@ void BookEntry::applyCallback(GCallback closeCallback)
 void BookEntry::setLabel_gui(string text)
 {
 	gtk_tooltips_set_tip(tips, eventBox, text.c_str(), text.c_str());
-	if (text.size() > 20) 
+	if (text.size() > 20)
 		text = text.substr(0, 17) + "...";
 	gtk_label_set_text(label, text.c_str());
 	title = text;

@@ -37,7 +37,7 @@ class Settings:
 
 	private:
 		// GUI functions
-		void addOption_gui(GtkListStore *store, std::string name, SettingsManager::IntSetting setting);
+		void addOption_gui(GtkListStore *store, const std::string &name, SettingsManager::IntSetting setting);
 		void initPersonal_gui();
 		void initConnection_gui();
 		void initDownloads_gui();

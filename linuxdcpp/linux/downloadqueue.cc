@@ -20,7 +20,9 @@
 
 #include <client/ShareManager.h>
 #include "search.hh"
+#include "settingsmanager.hh"
 #include "wulformanager.hh"
+#include "WulforUtil.hh"
 
 DownloadQueue::DownloadQueue():
 	BookEntry("Download Queue", "downloadqueue.glade")
@@ -129,6 +131,7 @@ void DownloadQueue::buildDynamicMenu_gui()
 
 			for (SourceIter it = item->getSources().begin(); it != item->getSources().end(); ++it)
 			{
+				if (!*it) break;
 				name = WulforUtil::getNicks((*it)->getUser());
 				showOtherMenus = TRUE;
 
@@ -773,6 +776,7 @@ void DownloadQueue::updateItem_gui(QueueItem *item, bool add)
 
 	for (SourceIter it = item->getSources().begin(); it != item->getSources().end(); ++it)
 	{
+		if (!*it) return;
 		if (tmp.size() > 0)
 			tmp += ", ";
 

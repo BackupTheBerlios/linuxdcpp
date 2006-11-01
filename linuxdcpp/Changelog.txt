@@ -1,3 +1,17 @@
+2006-11-01 - Steven Sheehy
+* Improved search filtering.
+* Removed unimplemented menu options (and won't be implementing in the future).
+* Fixed pixmaps/normal.png (thanks UrkeMMI).
+* Removed duplicate gthread-2.0 cflags.
+* Reduced linking dependencies (thanks Pavlov Konstantin).
+* Added a new public hub list (since hublist.org is down).
+* Decoupled the gui & client functions in Favorite Hubs, Finished Transfers & transferview.
+    Translation: less segmentation faults, less temporary gui freezes, cleaner code.
+* Fixed a few password bugs in Favorite Hubs.
+* Added multiple selection capability to Finished Transfers & transferview.
+* Rewrote transferview to clean it up & fix updating issues (thanks Razzloss).
+* Changed a large number of string parameters to const refererences to improve efficiency.
+
 2006-10-12 - Steven Sheehy
 * Added usernames to chat logs (thanks Fredrik Ullner).
 * Added more columns to public hubs (thanks Fredrik Ullner).
