@@ -329,30 +329,42 @@ void FinishedTransfers::on(FinishedManagerListener::AddedDl, FinishedItem *item)
 {
 	StringMap params = getFinishedParams_client(item);
 
-	typedef Func1<FinishedTransfers, StringMap> F1;
-	F1 *func = new F1(this, &FinishedTransfers::addItem_gui, params);
-	WulforManager::get()->dispatchGuiFunc(func);
+	if (!isUpload)
+	{
+		typedef Func1<FinishedTransfers, StringMap> F1;
+		F1 *func = new F1(this, &FinishedTransfers::addItem_gui, params);
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
 }
 
 void FinishedTransfers::on(FinishedManagerListener::AddedUl, FinishedItem *item) throw()
 {
 	StringMap params = getFinishedParams_client(item);
 
-	typedef Func1<FinishedTransfers, StringMap> F1;
-	F1 *func = new F1(this, &FinishedTransfers::addItem_gui, params);
-	WulforManager::get()->dispatchGuiFunc(func);
+	if (isUpload)
+	{
+		typedef Func1<FinishedTransfers, StringMap> F1;
+		F1 *func = new F1(this, &FinishedTransfers::addItem_gui, params);
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
 }
 
 void FinishedTransfers::on(FinishedManagerListener::RemovedDl, FinishedItem *item) throw()
 {
-	typedef Func1<FinishedTransfers, string> F1;
-	F1 *func = new F1(this, &FinishedTransfers::removeItem_gui, item->getTarget());
-	WulforManager::get()->dispatchGuiFunc(func);
+	if (!isUpload)
+	{
+		typedef Func1<FinishedTransfers, string> F1;
+		F1 *func = new F1(this, &FinishedTransfers::removeItem_gui, item->getTarget());
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
 }
 
 void FinishedTransfers::on(FinishedManagerListener::RemovedUl, FinishedItem *item) throw()
 {
-	typedef Func1<FinishedTransfers, string> F1;
-	F1 *func = new F1(this, &FinishedTransfers::removeItem_gui, item->getTarget());
-	WulforManager::get()->dispatchGuiFunc(func);
+	if (isUpload)
+	{
+		typedef Func1<FinishedTransfers, string> F1;
+		F1 *func = new F1(this, &FinishedTransfers::removeItem_gui, item->getTarget());
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
 }

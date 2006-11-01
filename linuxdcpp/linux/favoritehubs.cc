@@ -63,7 +63,9 @@ FavoriteHubs::FavoriteHubs():
 	g_signal_connect(favoriteView.get(), "button-release-event", G_CALLBACK(onButtonReleased_gui), (gpointer)this);
 	g_signal_connect(favoriteView.get(), "key-release-event", G_CALLBACK(onKeyReleased_gui), (gpointer)this);
 
-	WulforManager::get()->dispatchClientFunc(new Func0<FavoriteHubs>(this, &FavoriteHubs::initializeList_client));
+	// Faster without queuing it, but we may need to change it back in the future.
+	//WulforManager::get()->dispatchClientFunc(new Func0<FavoriteHubs>(this, &FavoriteHubs::initializeList_client));
+	initializeList_client();
 }
 
 FavoriteHubs::~FavoriteHubs()
@@ -354,8 +356,10 @@ void FavoriteHubs::initializeList_client()
 	{
 		params.clear();
 		params = getFavHubParams_client(*i);
-		func = new F1(this, &FavoriteHubs::addEntry_gui, params);
-		WulforManager::get()->dispatchGuiFunc(func);
+		// Faster without queuing it, but we may need to change it back in the future.
+		//func = new F1(this, &FavoriteHubs::addEntry_gui, params);
+		//WulforManager::get()->dispatchGuiFunc(func);
+		addEntry_gui(params);
 	}
 }
 
