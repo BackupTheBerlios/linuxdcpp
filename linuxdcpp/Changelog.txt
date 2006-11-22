@@ -1,3 +1,10 @@
+2006-11-22 - Steven Sheehy
+* Disallowed hashing of sockets, device files, or named pipes.
+* Decoupled hashing dialog.
+* Added a bit more error-checking to SConstruct.
+* Fixed close connection regression.
+* Added multiple selection capability to nick list (thanks Jussi Peltola).
+
 2006-11-01 - Steven Sheehy
 * Improved search filtering.
 * Removed unimplemented menu options (and won't be implementing in the future).
@@ -5,8 +12,8 @@
 * Removed duplicate gthread-2.0 cflags.
 * Reduced linking dependencies (thanks Pavlov Konstantin).
 * Added a new public hub list (since hublist.org is down).
-* Decoupled the gui & client functions in Favorite Hubs, Finished Transfers & transferview.
-    Translation: less segmentation faults, less temporary gui freezes, cleaner code.
+* Decoupled the gui & client functions in Favorite Hubs, Finished Transfers & transferview
+  (translation: less segmentation faults, less temporary gui freezes, cleaner code).
 * Fixed a few password bugs in Favorite Hubs.
 * Added multiple selection capability to Finished Transfers & transferview.
 * Rewrote transferview to clean it up & fix updating issues (thanks Razzloss).

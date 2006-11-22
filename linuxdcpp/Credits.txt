@@ -28,6 +28,7 @@ Rimas Kudelis
 dorian
 Bart Vullings
 Razzloss
+Jussi Peltola
 
 DC++:
 -----

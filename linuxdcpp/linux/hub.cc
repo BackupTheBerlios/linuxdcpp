@@ -49,6 +49,7 @@ Hub::Hub(const string &address):
 	gtk_tree_view_set_model(nickView.get(), GTK_TREE_MODEL(nickStore));
 	g_object_unref(nickStore);
 	nickSelection = gtk_tree_view_get_selection(nickView.get());
+	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(nickView.get()), GTK_SELECTION_MULTIPLE);
 	nickView.setSortColumn_gui("Nick", "Nick Order");
 	nickView.setSortColumn_gui("Shared", "Shared Bytes");
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(nickStore), nickView.col("Nick Order"), GTK_SORT_ASCENDING);
@@ -508,28 +509,35 @@ gboolean Hub::onNickListButtonPress_gui(GtkWidget *widget, GdkEventButton *event
 	if (event->type == GDK_BUTTON_PRESS || event->type == GDK_2BUTTON_PRESS)
 		hub->oldType = event->type;
 
+	if (event->button == 3)
+	{
+		GtkTreePath *path;
+		if (gtk_tree_view_get_path_at_pos(hub->nickView.get(), (gint)event->x, (gint)event->y, &path, NULL, NULL, NULL))
+		{
+			bool selected = gtk_tree_selection_path_is_selected(hub->nickSelection, path);
+			gtk_tree_path_free(path);
+
+			if (selected)
+				return TRUE;
+		}
+	}
+
 	return FALSE;
 }
 
 gboolean Hub::onNickListButtonRelease_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
 	Hub *hub = (Hub *)data;
-	GtkTreeIter iter;
 
-	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
+	if (gtk_tree_selection_count_selected_rows(hub->nickSelection) > 0)
 	{
 		if (event->button == 1 && hub->oldType == GDK_2BUTTON_PRESS)
 		{
-			string nick = hub->nickView.getString(&iter, "Nick");
-
-			typedef Func2<Hub, string, bool> F2;
-			F2 *func = new F2(hub, &Hub::getFileList_client, nick, FALSE);
-			WulforManager::get()->dispatchClientFunc(func);
+			hub->onBrowseItemClicked_gui(NULL, data);
 		}
 		else if (event->button == 2 && event->type == GDK_BUTTON_RELEASE)
 		{
-			string nick = hub->nickView.getString(&iter, "Nick");
-			WulforManager::get()->addPrivMsg_gui(hub->idMap[nick].getUser());
+			hub->onMsgItemClicked_gui(NULL, data);
 		}
 		else if (event->button == 3 && event->type == GDK_BUTTON_RELEASE)
 		{
@@ -546,7 +554,7 @@ gboolean Hub::onNickListKeyRelease_gui(GtkWidget *widget, GdkEventKey *event, gp
 	Hub *hub = (Hub *)data;
 	GtkTreeIter iter;
 
-	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
+	if (gtk_tree_selection_count_selected_rows(hub->nickSelection) > 0)
 	{
 		if (event->keyval == GDK_Menu || (event->keyval == GDK_F10 && event->state & GDK_SHIFT_MASK))
 		{
@@ -555,11 +563,7 @@ gboolean Hub::onNickListKeyRelease_gui(GtkWidget *widget, GdkEventKey *event, gp
 		}
 		else if (event->keyval == GDK_Return || event->keyval == GDK_KP_Enter)
 		{
-			string nick = hub->nickView.getString(&iter, "Nick");
-
-			typedef Func2<Hub, string, bool> F2;
-			F2 *func = new F2(hub, &Hub::getFileList_client, nick, FALSE);
-			WulforManager::get()->dispatchClientFunc(func);
+			hub->onBrowseItemClicked_gui(NULL, data);
 		}
 	}
 
@@ -602,72 +606,144 @@ gboolean Hub::onEntryKeyPress_gui(GtkWidget *widget, GdkEventKey *event, gpointe
 void Hub::onBrowseItemClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	Hub *hub = (Hub *)data;
-	GtkTreeIter iter;
 
-	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
+	if (gtk_tree_selection_count_selected_rows(hub->nickSelection) > 0)
 	{
-		string nick = hub->nickView.getString(&iter, "Nick");
-
+		string nick;
+		GtkTreeIter iter;
+		GtkTreePath *path;
 		typedef Func2<Hub, string, bool> F2;
-		F2 *func = new F2(hub, &Hub::getFileList_client, nick, FALSE);
-		WulforManager::get()->dispatchClientFunc(func);
+		F2 *func;
+		GList *list = gtk_tree_selection_get_selected_rows(hub->nickSelection, NULL);
+
+		for (GList *i = list; i; i = i->next)
+		{
+			path = (GtkTreePath *)i->data;
+			if (gtk_tree_model_get_iter(GTK_TREE_MODEL(hub->nickStore), &iter, path))
+			{
+				nick = hub->nickView.getString(&iter, "Nick");
+				func = new F2(hub, &Hub::getFileList_client, nick, FALSE);
+				WulforManager::get()->dispatchClientFunc(func);
+			}
+			gtk_tree_path_free(path);
+		}
+
+		g_list_free(list);
 	}
 }
 
 void Hub::onMatchItemClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	Hub *hub = (Hub *)data;
-	GtkTreeIter iter;
 
-	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
+	if (gtk_tree_selection_count_selected_rows(hub->nickSelection) > 0)
 	{
-		string nick = hub->nickView.getString(&iter, "Nick");
-
+		string nick;
+		GtkTreeIter iter;
+		GtkTreePath *path;
 		typedef Func2<Hub, string, bool> F2;
-		F2 *func = new F2(hub, &Hub::getFileList_client, nick, TRUE);
-		WulforManager::get()->dispatchClientFunc(func);
+		F2 *func;
+		GList *list = gtk_tree_selection_get_selected_rows(hub->nickSelection, NULL);
+
+		for (GList *i = list; i; i = i->next)
+		{
+			path = (GtkTreePath *)i->data;
+			if (gtk_tree_model_get_iter(GTK_TREE_MODEL(hub->nickStore), &iter, path))
+			{
+				nick = hub->nickView.getString(&iter, "Nick");
+				func = new F2(hub, &Hub::getFileList_client, nick, TRUE);
+				WulforManager::get()->dispatchClientFunc(func);
+			}
+			gtk_tree_path_free(path);
+		}
+
+		g_list_free(list);
 	}
 }
 
 void Hub::onMsgItemClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	Hub *hub = (Hub *)data;
-	GtkTreeIter iter;
 
-	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
+	if (gtk_tree_selection_count_selected_rows(hub->nickSelection) > 0)
 	{
-		string nick = hub->nickView.getString(&iter, "Nick");
-		WulforManager::get()->addPrivMsg_gui(hub->idMap[nick].getUser());
+		string nick;
+		GtkTreeIter iter;
+		GtkTreePath *path;
+		typedef Func1<Hub, string> F1;
+		F1 *func;
+		GList *list = gtk_tree_selection_get_selected_rows(hub->nickSelection, NULL);
+
+		for (GList *i = list; i; i = i->next)
+		{
+			path = (GtkTreePath *)i->data;
+			if (gtk_tree_model_get_iter(GTK_TREE_MODEL(hub->nickStore), &iter, path))
+			{
+				nick = hub->nickView.getString(&iter, "Nick");
+				WulforManager::get()->addPrivMsg_gui(hub->idMap[nick].getUser());
+			}
+			gtk_tree_path_free(path);
+		}
+
+		g_list_free(list);
 	}
 }
 
 void Hub::onGrantItemClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	Hub *hub = (Hub *)data;
-	GtkTreeIter iter;
 
-	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
+	if (gtk_tree_selection_count_selected_rows(hub->nickSelection) > 0)
 	{
-		string nick = hub->nickView.getString(&iter, "Nick");
-
+		string nick;
+		GtkTreeIter iter;
+		GtkTreePath *path;
 		typedef Func1<Hub, string> F1;
-		F1 *func = new F1(hub, &Hub::grantSlot_client, nick);
-		WulforManager::get()->dispatchClientFunc(func);
+		F1 *func;
+		GList *list = gtk_tree_selection_get_selected_rows(hub->nickSelection, NULL);
+
+		for (GList *i = list; i; i = i->next)
+		{
+			path = (GtkTreePath *)i->data;
+			if (gtk_tree_model_get_iter(GTK_TREE_MODEL(hub->nickStore), &iter, path))
+			{
+				nick = hub->nickView.getString(&iter, "Nick");
+				func = new F1(hub, &Hub::grantSlot_client, nick);
+				WulforManager::get()->dispatchClientFunc(func);
+			}
+			gtk_tree_path_free(path);
+		}
+
+		g_list_free(list);
 	}
 }
 
 void Hub::onRemoveUserItemClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	Hub *hub = (Hub *)data;
-	GtkTreeIter iter;
 
-	if (gtk_tree_selection_get_selected(hub->nickSelection, NULL, &iter))
+	if (gtk_tree_selection_count_selected_rows(hub->nickSelection) > 0)
 	{
-		string nick = hub->nickView.getString(&iter, "Nick");
-
+		string nick;
+		GtkTreeIter iter;
+		GtkTreePath *path;
 		typedef Func1<Hub, string> F1;
-		F1 *func = new F1(hub, &Hub::removeUserFromQueue_client, nick);
-		WulforManager::get()->dispatchClientFunc(func);
+		F1 *func;
+		GList *list = gtk_tree_selection_get_selected_rows(hub->nickSelection, NULL);
+
+		for (GList *i = list; i; i = i->next)
+		{
+			path = (GtkTreePath *)i->data;
+			if (gtk_tree_model_get_iter(GTK_TREE_MODEL(hub->nickStore), &iter, path))
+			{
+				nick = hub->nickView.getString(&iter, "Nick");
+				func = new F1(hub, &Hub::removeUserFromQueue_client, nick);
+				WulforManager::get()->dispatchClientFunc(func);
+			}
+			gtk_tree_path_free(path);
+		}
+
+		g_list_free(list);
 	}
 }
 

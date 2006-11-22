@@ -31,8 +31,8 @@ WulforSettingsManager *WulforSettingsManager::ptr = NULL;
 WulforSettingsManager::WulforSettingsManager()
 {
 	defaultInt["main-window-maximized"] = 0;
-	defaultInt["main-window-size-x"] = 880;
-	defaultInt["main-window-size-y"] = 725;
+	defaultInt["main-window-size-x"] = 875;
+	defaultInt["main-window-size-y"] = 685;
 	defaultInt["main-window-pos-x"] = 100;
 	defaultInt["main-window-pos-y"] = 100;
 	defaultInt["transfer-pane-position"] = 482;

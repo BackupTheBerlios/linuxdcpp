@@ -1287,14 +1287,14 @@ void Search::on(SearchManagerListener::SR, SearchResult *result) throw()
 	}
 	else
 	{
-		for (TStringIter i = searchlist.begin(); i != searchlist.end(); i++)
+		for (TStringIter i = searchlist.begin(); i != searchlist.end(); ++i)
 		{
 			if ((*i->begin() != '-' && Util::findSubString(result->getUtf8() ? result->getFile() :
 				Text::acpToUtf8(result->getFile()), *i) == (string::size_type)-1) ||
 				(*i->begin() == '-' && i->size() != 1 && Util::findSubString(result->getUtf8() ? result->getFile() :
 				Text::acpToUtf8(result->getFile()), i->substr(1)) != (string::size_type)-1))
 			{
-				droppedResult++;
+				++droppedResult;
 				typedef Func2<Search, string, string> F2;
 				F2 *func = new F2(this, &Search::setStatus_gui, "statusbar3", Util::toString(droppedResult) + " filtered");
 				WulforManager::get()->dispatchGuiFunc(func);

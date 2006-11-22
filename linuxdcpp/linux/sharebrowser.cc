@@ -80,6 +80,9 @@ ShareBrowser::ShareBrowser(User::Ptr user, const std::string &file):
 	gtk_tree_view_set_model(dirView.get(), GTK_TREE_MODEL(dirStore));
 	g_object_unref(dirStore);
 	dirSelection = gtk_tree_view_get_selection(dirView.get());
+#if GTK_CHECK_VERSION(2, 10, 0)
+	gtk_tree_view_set_enable_tree_lines(dirView.get(), TRUE);
+#endif
 
 	// Connect the signals to their callback functions.
 	g_signal_connect(fileView.get(), "button-press-event", G_CALLBACK(onButtonPressed_gui), (gpointer)this);
@@ -369,31 +372,31 @@ void ShareBrowser::fileViewSelected_gui()
 	GList *list = gtk_tree_selection_get_selected_rows(fileSelection, NULL);
 	GtkTreePath *path = (GtkTreePath *)g_list_nth_data(list, 0);
 
-	if (!gtk_tree_model_get_iter(m, &iter, path))
-		return;
+	if (gtk_tree_model_get_iter(m, &iter, path))
+	{
+		ptr = fileView.getValue<gpointer>(&iter, "DL File");
+		fileOrder = fileView.getString(&iter, "File Order");
+
+		if (fileOrder[0] == 'd' && gtk_tree_selection_get_selected(dirSelection, NULL, &parentIter))
+		{
+			gtk_tree_path_free(path);
+			m = GTK_TREE_MODEL(dirStore);
+			gboolean valid = gtk_tree_model_iter_children(m, &iter, &parentIter);
+
+			while (valid && ptr != dirView.getValue<gpointer>(&iter, "DL Dir"))
+				valid = gtk_tree_model_iter_next(m, &iter);
+
+			path = gtk_tree_model_get_path(m, &iter);
+			gtk_tree_view_expand_to_path(dirView.get(), path);
+			gtk_tree_view_set_cursor(dirView.get(), path, NULL, FALSE);
+
+			updateFiles_gui((DirectoryListing::Directory *)ptr);
+		}
+		else
+			downloadSelectedFiles_gui(Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY)));
+	}
 
 	gtk_tree_path_free(path);
-	ptr = fileView.getValue<gpointer>(&iter, "DL File");
-	fileOrder = fileView.getString(&iter, "File Order");
-
-	if (fileOrder[0] == 'd' && gtk_tree_selection_get_selected(dirSelection, NULL, &parentIter))
-	{
-		m = GTK_TREE_MODEL(dirStore);
-		gboolean valid = gtk_tree_model_iter_children(m, &iter, &parentIter);
-
-		while (valid && ptr != dirView.getValue<gpointer>(&iter, "DL Dir"))
-			valid = gtk_tree_model_iter_next(m, &iter);
-
-		path = gtk_tree_model_get_path(m, &iter);
-		gtk_tree_view_expand_to_path(dirView.get(), path);
-		gtk_tree_view_set_cursor(dirView.get(), path, NULL, FALSE);
-		gtk_tree_path_free(path);
-
-		updateFiles_gui((DirectoryListing::Directory *)ptr);
-	}
-	else
-		downloadSelectedFiles_gui(Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY)));
-
 	g_list_free(list);
 }
 
@@ -413,37 +416,33 @@ void ShareBrowser::downloadSelectedFiles_gui(const string &target)
 	for (int i = 0; i < count; i++)
 	{
 		path = (GtkTreePath *)g_list_nth_data(list, i);
-		if (!gtk_tree_model_get_iter(m, &iter, path))
+		if (gtk_tree_model_get_iter(m, &iter, path))
 		{
-			gtk_tree_path_free(path);
-			continue;
-		}
+			ptr = fileView.getValue<gpointer>(&iter, "DL File");
+			fileOrder = fileView.getString(&iter, "File Order");
 
+			if (fileOrder[0] == 'd')
+			{
+				dir = (DirectoryListing::Directory *)ptr;
 
-		ptr = fileView.getValue<gpointer>(&iter, "DL File");
-		fileOrder = fileView.getString(&iter, "File Order");
-
-		if (fileOrder[0] == 'd')
-		{
-			dir = (DirectoryListing::Directory *)ptr;
-
-			typedef Func2<ShareBrowser, DirectoryListing::Directory *, string> F2;
-			F2 * func = new F2(this, &ShareBrowser::downloadDir_client, dir, target);
-			WulforManager::get()->dispatchClientFunc(func);
-		}
-		else
-		{
-			file = (DirectoryListing::File *)ptr;
-
-			string filename;
-			if (listing.getUtf8())
-				filename = Util::getFileName(file->getName());
+				typedef Func2<ShareBrowser, DirectoryListing::Directory *, string> F2;
+				F2 * func = new F2(this, &ShareBrowser::downloadDir_client, dir, target);
+				WulforManager::get()->dispatchClientFunc(func);
+			}
 			else
-				filename = Text::acpToUtf8(Util::getFileName(file->getName()));
+			{
+				file = (DirectoryListing::File *)ptr;
 
-			typedef Func2<ShareBrowser, DirectoryListing::File *, string> F2;
-			F2 * func = new F2(this, &ShareBrowser::downloadFile_client, file, target + filename);
-			WulforManager::get()->dispatchClientFunc(func);
+				string filename;
+				if (listing.getUtf8())
+					filename = Util::getFileName(file->getName());
+				else
+					filename = Text::acpToUtf8(Util::getFileName(file->getName()));
+
+				typedef Func2<ShareBrowser, DirectoryListing::File *, string> F2;
+				F2 * func = new F2(this, &ShareBrowser::downloadFile_client, file, target + filename);
+				WulforManager::get()->dispatchClientFunc(func);
+			}
 		}
 		gtk_tree_path_free(path);
 	}
@@ -628,7 +627,6 @@ gboolean ShareBrowser::onDirButtonReleased_gui(GtkWidget *widget, GdkEventButton
 {
 	ShareBrowser *sb = (ShareBrowser *)data;
 	GtkTreeIter iter;
-	GtkTreePath *path;
 	gpointer ptr;
 
 	if (!gtk_tree_selection_get_selected(sb->dirSelection, NULL, &iter))
@@ -636,7 +634,7 @@ gboolean ShareBrowser::onDirButtonReleased_gui(GtkWidget *widget, GdkEventButton
 
 	if (event->button == 1 && sb->oldType == GDK_2BUTTON_PRESS)
 	{
-		path = gtk_tree_model_get_path(GTK_TREE_MODEL(sb->dirStore), &iter);
+		GtkTreePath *path = gtk_tree_model_get_path(GTK_TREE_MODEL(sb->dirStore), &iter);
 		if (gtk_tree_view_row_expanded(sb->dirView.get(), path))
 			gtk_tree_view_collapse_row(sb->dirView.get(), path);
 		else
@@ -662,7 +660,6 @@ gboolean ShareBrowser::onDirKeyReleased_gui(GtkWidget *widget, GdkEventKey *even
 {
 	ShareBrowser *sb = (ShareBrowser *)data;
 	GtkTreeIter iter;
-	GtkTreePath *path;
 	gpointer ptr;
 
 	if (!gtk_tree_selection_get_selected(sb->dirSelection, NULL, &iter))
@@ -670,7 +667,7 @@ gboolean ShareBrowser::onDirKeyReleased_gui(GtkWidget *widget, GdkEventKey *even
 
 	if (event->keyval == GDK_Return || event->keyval == GDK_KP_Enter)
 	{
-		path = gtk_tree_model_get_path(GTK_TREE_MODEL(sb->dirStore), &iter);
+		GtkTreePath *path = gtk_tree_model_get_path(GTK_TREE_MODEL(sb->dirStore), &iter);
 		if (gtk_tree_view_row_expanded(sb->dirView.get(), path))
 			gtk_tree_view_collapse_row(sb->dirView.get(), path);
 		else
@@ -749,11 +746,10 @@ void ShareBrowser::onDownloadToClicked_gui(GtkMenuItem *item, gpointer data)
 
 	if (response == GTK_RESPONSE_OK)
 	{
-		string path;
 		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(sb->getWidget("dirChooserDialog")));
 		if (temp)
 		{
-			path = string(temp);
+			string path = string(temp);
 			g_free(temp);
 			if (path[path.length() - 1] != PATH_SEPARATOR)
 				path += PATH_SEPARATOR;
@@ -785,11 +781,16 @@ void ShareBrowser::onDownloadDirToClicked_gui(GtkMenuItem *item, gpointer data)
 
 	if (response == GTK_RESPONSE_OK)
 	{
-		string path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(sb->getWidget("dirChooserDialog")));
-		if (path[path.length() - 1] != PATH_SEPARATOR)
-			path += PATH_SEPARATOR;
+		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(sb->getWidget("dirChooserDialog")));
+		if (temp)
+		{
+			string path = string(temp);
+			g_free(temp);
+			if (path[path.length() - 1] != PATH_SEPARATOR)
+				path += PATH_SEPARATOR;
 
-		sb->downloadSelectedDirs_gui(path);
+			sb->downloadSelectedDirs_gui(path);
+		}
 	}
 }
 
@@ -817,36 +818,35 @@ void ShareBrowser::onSearchAlternatesClicked_gui(GtkMenuItem *item, gpointer dat
 	for (int i = 0; i < count; i++)
 	{
 		path = (GtkTreePath *)g_list_nth_data(list, i);
-		if (!gtk_tree_model_get_iter(m, &iter, path))
+		if (gtk_tree_model_get_iter(m, &iter, path))
 		{
-			gtk_tree_path_free(path);
-			continue;
-		}
+			ptr = sb->fileView.getValue<gpointer>(&iter, "DL File");
+			fileOrder = sb->fileView.getString(&iter, "File Order");
 
-		ptr = sb->fileView.getValue<gpointer>(&iter, "DL File");
-		fileOrder = sb->fileView.getString(&iter, "File Order");
-
-		if (fileOrder[0] == 'f')
-		{
-			file = (DirectoryListing::File *)ptr;
-			Search *s = dynamic_cast<Search *>(WulforManager::get()->addSearch_gui());
-
-			if (file->getTTH())
-				s->putValue_gui(file->getTTH()->toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
-			else
+			if (fileOrder[0] == 'f')
 			{
-				bigFile = (file->getSize() > 10 * 1024 * 1024);
-				if (sb->listing.getUtf8())
-					target = Util::getFileName(file->getName());
-				else
-					target = Text::acpToUtf8(Util::getFileName(file->getName()));
+				file = (DirectoryListing::File *)ptr;
+				Search *s = dynamic_cast<Search *>(WulforManager::get()->addSearch_gui());
 
-				if (!target.empty())
+				if (file->getTTH())
+					s->putValue_gui(file->getTTH()->toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
+				else
 				{
-					if (bigFile)
-						s->putValue_gui(SearchManager::clean(target), file->getSize()-1, SearchManager::SIZE_ATLEAST, ShareManager::getInstance()->getType(target));
+					bigFile = (file->getSize() > 10 * 1024 * 1024);
+					if (sb->listing.getUtf8())
+						target = Util::getFileName(file->getName());
 					else
-						s->putValue_gui(SearchManager::clean(target), file->getSize()+1, SearchManager::SIZE_ATMOST, ShareManager::getInstance()->getType(target));
+						target = Text::acpToUtf8(Util::getFileName(file->getName()));
+
+					if (!target.empty())
+					{
+						if (bigFile)
+							s->putValue_gui(SearchManager::clean(target), file->getSize()-1,
+							SearchManager::SIZE_ATLEAST, ShareManager::getInstance()->getType(target));
+						else
+							s->putValue_gui(SearchManager::clean(target), file->getSize()+1,
+							SearchManager::SIZE_ATMOST, ShareManager::getInstance()->getType(target));
+					}
 				}
 			}
 		}

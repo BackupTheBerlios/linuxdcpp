@@ -996,6 +996,7 @@ void MainWindow::onCloseConnectionClicked_gui(GtkMenuItem *menuItem, gpointer da
 		path = (GtkTreePath *)g_list_nth_data(list, i);
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(mw->transferStore), &iter, path))
 		{
+			cid = mw->transferView.getString(&iter, "CID");
 			gtk_list_store_set(mw->transferStore, &iter, mw->transferView.col("Status"), "Closing connection...", -1);
 			if (mw->transferView.getValue<GdkPixbuf*>(&iter,"Icon") == mw->downloadPic)
 				download = TRUE;
@@ -1126,8 +1127,11 @@ void MainWindow::getFileList_client(string cid)
 {
 	try
 	{
-		User::Ptr user = ClientManager::getInstance()->getUser(CID(cid));
-		QueueManager::getInstance()->addList(user, QueueItem::FLAG_CLIENT_VIEW);
+		if (!cid.empty())
+		{
+			User::Ptr user = ClientManager::getInstance()->getUser(CID(cid));
+			QueueManager::getInstance()->addList(user, QueueItem::FLAG_CLIENT_VIEW);
+		}
 	}
 	catch (const Exception&)
 	{
@@ -1138,8 +1142,11 @@ void MainWindow::matchQueue_client(string cid)
 {
 	try
 	{
-		User::Ptr user = ClientManager::getInstance()->getUser(CID(cid));
-		QueueManager::getInstance()->addList(user, QueueItem::FLAG_MATCH_QUEUE);
+		if (!cid.empty())
+		{
+			User::Ptr user = ClientManager::getInstance()->getUser(CID(cid));
+			QueueManager::getInstance()->addList(user, QueueItem::FLAG_MATCH_QUEUE);
+		}
 	}
 	catch (const Exception&)
 	{
@@ -1148,32 +1155,47 @@ void MainWindow::matchQueue_client(string cid)
 
 void MainWindow::addFavoriteUser_client(string cid)
 {
-	User::Ptr user = ClientManager::getInstance()->getUser(CID(cid));
-	FavoriteManager::getInstance()->addFavoriteUser(user);
+	if (!cid.empty())
+	{
+		User::Ptr user = ClientManager::getInstance()->getUser(CID(cid));
+		FavoriteManager::getInstance()->addFavoriteUser(user);
+	}
 }
 
 void MainWindow::grantExtraSlot_client(string cid)
 {
-	User::Ptr user = ClientManager::getInstance()->getUser(CID(cid));
-	UploadManager::getInstance()->reserveSlot(user);
+	if (!cid.empty())
+	{
+		User::Ptr user = ClientManager::getInstance()->getUser(CID(cid));
+		UploadManager::getInstance()->reserveSlot(user);
+	}
 }
 
 void MainWindow::removeUserFromQueue_client(string cid)
 {
-	User::Ptr user = ClientManager::getInstance()->getUser(CID(cid));
-	QueueManager::getInstance()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
+	if (!cid.empty())
+	{
+		User::Ptr user = ClientManager::getInstance()->getUser(CID(cid));
+		QueueManager::getInstance()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
+	}
 }
 
 void MainWindow::forceAttempt_client(string cid)
 {
-	User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
-	ClientManager::getInstance()->connect(user);
+	if (!cid.empty())
+	{
+		User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
+		ClientManager::getInstance()->connect(user);
+	}
 }
 
 void MainWindow::closeConnection_client(string cid, bool download)
 {
-	User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
-	ConnectionManager::getInstance()->disconnect(user, download);
+	if (!cid.empty())
+	{
+		User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
+		ConnectionManager::getInstance()->disconnect(user, download);
+	}
 }
 
 void MainWindow::transferComplete_client(Transfer *t)

@@ -327,10 +327,10 @@ void FinishedTransfers::removeAll_client()
 
 void FinishedTransfers::on(FinishedManagerListener::AddedDl, FinishedItem *item) throw()
 {
-	StringMap params = getFinishedParams_client(item);
-
 	if (!isUpload)
 	{
+		StringMap params = getFinishedParams_client(item);
+
 		typedef Func1<FinishedTransfers, StringMap> F1;
 		F1 *func = new F1(this, &FinishedTransfers::addItem_gui, params);
 		WulforManager::get()->dispatchGuiFunc(func);
@@ -339,10 +339,10 @@ void FinishedTransfers::on(FinishedManagerListener::AddedDl, FinishedItem *item)
 
 void FinishedTransfers::on(FinishedManagerListener::AddedUl, FinishedItem *item) throw()
 {
-	StringMap params = getFinishedParams_client(item);
-
 	if (isUpload)
 	{
+		StringMap params = getFinishedParams_client(item);
+
 		typedef Func1<FinishedTransfers, StringMap> F1;
 		F1 *func = new F1(this, &FinishedTransfers::addItem_gui, params);
 		WulforManager::get()->dispatchGuiFunc(func);

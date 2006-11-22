@@ -35,7 +35,7 @@ class Hash:
 
 	private:
 		// GUI functions
-		void updateStats_gui();
+		void updateStats_gui(std::string file, int64_t bytes, size_t files, u_int32_t tick);
 
 		// Client callbacks
 		virtual void on(TimerManagerListener::Second, u_int32_t tics) throw();

@@ -89,7 +89,7 @@ Help(opts.GenerateHelpText(env))
 # Dependencies
 # ----------------------------------------------------------------------
 
-if not env['CXX']:
+if not (env.has_key('CXX') and env['CXX']):
 	print 'CXX env variable is not set, attempting to use g++'
 	env['CXX'] = 'g++'
 
@@ -164,18 +164,18 @@ env = conf.Finish()
 env.Append(CXXFLAGS = Split('-I. -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64'))
 env.Append(LINKFLAGS = ['-Wl,--as-needed'])
 
-if env['debug']:
+if env.has_key('debug') and env['debug']:
 	env.Append(CXXFLAGS = Split('-g -ggdb -D_DEBUG -Wall'))
 	env.Append(LINKFLAGS = Split('-g -ggdb -Wall'))
 
-if env['release']:
+if env.has_key('release') and env['release']:
 	env.Append(CXXFLAGS = '-O3')
 
-if env['profile']:
+if env.has_key('profile') and env['profile']:
 	env.Append(CXXFLAGS = '-pg')
 	env.Append(LINKFLAGS= '-pg')
 
-if env['PREFIX']:
+if env.has_key('PREFIX') and env['PREFIX']:
 	env.Append(CXXFLAGS = '-D_DATADIR=\'\"' + env['PREFIX'] + '/share' + '\"\'')
 
 env.ParseConfig('pkg-config --libs libglade-2.0')

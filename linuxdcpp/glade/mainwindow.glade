@@ -4,8 +4,8 @@
 <glade-interface>
 
 <widget class="GtkWindow" id="mainWindow">
-  <property name="width_request">880</property>
-  <property name="height_request">725</property>
+  <property name="width_request">600</property>
+  <property name="height_request">600</property>
   <property name="visible">True</property>
   <property name="title" translatable="yes">LinuxDC++</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
@@ -1126,6 +1126,7 @@ Contributors:
   dorian
   Bart Vullings
   Razzloss
+  Jussi Peltola
 </property>
   <property name="artists">Johannes Sjölund</property>
 </widget>

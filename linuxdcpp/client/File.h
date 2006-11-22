@@ -249,6 +249,12 @@ public:
 			m |= O_TRUNC;
 		}
 
+		struct stat s;
+		if(lstat(aFileName.c_str(), &s) != -1) {
+			if(!S_ISREG(s.st_mode) && !S_ISLNK(s.st_mode))
+				throw FileException("Invalid file type");
+		}
+
 		h = open(aFileName.c_str(), m, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 		if(h == -1)
 			throw FileException("Could not open " + filename);

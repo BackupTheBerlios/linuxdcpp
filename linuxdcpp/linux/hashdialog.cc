@@ -22,13 +22,13 @@
 
 Hash::Hash() : DialogEntry("Hash", "hash.glade")
 {
-	TimerManager::getInstance()->addListener(this);
-
 	string tmp;
 	startTime = GET_TICK();
 	HashManager::getInstance()->getStats(tmp, startBytes, startFiles);
 	HashManager::getInstance()->setPriority(Thread::NORMAL);
-	updateStats_gui();
+	updateStats_gui("", 0, 0, 0);
+
+	TimerManager::getInstance()->addListener(this);
 }
 
 Hash::~Hash()
@@ -37,14 +37,8 @@ Hash::~Hash()
 	TimerManager::getInstance()->removeListener(this);
 }
 
-void Hash::updateStats_gui()
+void Hash::updateStats_gui(string file, int64_t bytes, size_t files, u_int32_t tick)
 {
-	string file;
-	int64_t bytes = 0;
-	size_t files = 0;
-	u_int32_t tick = GET_TICK();
-
-	HashManager::getInstance()->getStats(file, bytes, files);
 	if (bytes > startBytes)
 		startBytes = bytes;
 
@@ -69,7 +63,7 @@ void Hash::updateStats_gui()
 			gtk_label_set_text(GTK_LABEL(getWidget("labelTime")),"-:--:-- left");
 		else
 		{
-			double ss = bytes / speedStat;
+			double ss = (double)bytes / speedStat;
 			gtk_label_set_text(GTK_LABEL(getWidget("labelTime")), string(Util::formatSeconds((int64_t)ss) + " left").c_str());
 		}
 	}
@@ -96,5 +90,13 @@ void Hash::updateStats_gui()
 
 void Hash::on(TimerManagerListener::Second, u_int32_t tics) throw()
 {
-	WulforManager::get()->dispatchGuiFunc(new Func0<Hash>(this, &Hash::updateStats_gui));
+	string file;
+	int64_t bytes = 0;
+	size_t files = 0;
+
+	HashManager::getInstance()->getStats(file, bytes, files);
+
+	typedef Func4<Hash, string, int64_t, size_t, u_int32_t> F4;
+	F4 *func = new F4(this, &Hash::updateStats_gui, file, bytes, files, GET_TICK());
+	WulforManager::get()->dispatchGuiFunc(func);
 }
