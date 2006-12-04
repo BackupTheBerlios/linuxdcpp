@@ -30,14 +30,14 @@
 
 class ClientManager;
 
-class AdcHub : public Client, public CommandHandler<AdcHub>, private TimerManagerListener {
+class AdcHub : public Client, public CommandHandler<AdcHub> {
 public:
 	using Client::send;
+	using Client::connect;
 
 	virtual void connect(const OnlineUser& user);
 	void connect(const OnlineUser& user, string const& token, bool secure);
-	virtual void disconnect(bool graceless);
-	
+
 	virtual void hubMessage(const string& aMessage);
 	virtual void privateMessage(const OnlineUser& user, const string& aMessage);
 	virtual void sendUserCmd(const string& aUserCmd) { send(aUserCmd); }
@@ -70,16 +70,17 @@ private:
 	virtual ~AdcHub() throw();
 
 	/** Map session id to OnlineUser */
-	typedef HASH_MAP<u_int32_t, OnlineUser*> SIDMap;
+	typedef HASH_MAP<uint32_t, OnlineUser*> SIDMap;
 	typedef SIDMap::iterator SIDIter;
 
+	Socket udp;
 	SIDMap users;
 	StringMap lastInfoMap;
 	mutable CriticalSection cs;
 
 	string salt;
 
-	u_int32_t sid;
+	uint32_t sid;
 	bool reconnect;
 
 	static const string CLIENT_PROTOCOL;
@@ -87,12 +88,12 @@ private:
 	static const string ADCS_FEATURE;
 	static const string TCP4_FEATURE;
 	static const string UDP4_FEATURE;
-	 
+
 	virtual string checkNick(const string& nick);
-	
-	OnlineUser& getUser(const u_int32_t aSID, const CID& aCID);
-	OnlineUser* findUser(const u_int32_t sid) const;
-	void putUser(const u_int32_t sid);
+
+	OnlineUser& getUser(const uint32_t aSID, const CID& aCID);
+	OnlineUser* findUser(const uint32_t sid) const;
+	void putUser(const uint32_t sid);
 
 	void clearUsers();
 
@@ -109,17 +110,18 @@ private:
 	void handle(AdcCommand::CMD, AdcCommand& c) throw();
 	void handle(AdcCommand::RES, AdcCommand& c) throw();
 
-	template<typename T> void handle(T, AdcCommand&) { 
+	template<typename T> void handle(T, AdcCommand&) {
 		//Speaker<AdcHubListener>::fire(t, this, c);
 	}
 
-	void sendUDP(const AdcCommand& cmd);
+	void sendUDP(const AdcCommand& cmd) throw();
 
 	virtual void on(Connecting) throw() { fire(ClientListener::Connecting(), this); }
 	virtual void on(Connected) throw();
 	virtual void on(Line, const string& aLine) throw();
 	virtual void on(Failed, const string& aLine) throw();
-	virtual void on(TimerManagerListener::Second, u_int32_t aTick) throw();
+
+	virtual void on(Second, uint32_t aTick) throw();
 };
 
 #endif // !defined(ADC_HUB_H)

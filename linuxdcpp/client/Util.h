@@ -84,10 +84,10 @@ private:
 
 template<class T>
 struct PointerHash {
-#if _MSC_VER >= 1300 
-	static const size_t bucket_size = 4; 
-	static const size_t min_buckets = 8; 
-#endif 
+#if _MSC_VER >= 1300
+	static const size_t bucket_size = 4;
+	static const size_t min_buckets = 8;
+#endif
 	size_t operator()(const T* a) const { return ((size_t)a)/sizeof(T); }
 	bool operator()(const T* a, const T* b) { return a < b; }
 };
@@ -96,7 +96,7 @@ struct PointerHash<void> {
 	size_t operator()(const void* a) const { return ((size_t)a)>>2; }
 };
 
-/** 
+/**
  * Compares two values
  * @return -1 if v1 < v2, 0 if v1 == v2 and 1 if v1 > v2
  */
@@ -135,7 +135,7 @@ private:
 	TPtr p;
 };
 
-class Util  
+class Util
 {
 public:
 	static tstring emptyStringT;
@@ -149,37 +149,35 @@ public:
 #ifdef _WIN32
 		TCHAR buf[MAX_PATH + 1];
 		DWORD x = GetTempPath(MAX_PATH, buf);
-		return Text::wideToUtf8(wstring(buf, x));
+		return Text::fromT(tstring(buf, x));
 #else
 		return "/tmp/";
 #endif
 	}
 
 	/** Path of configuration files */
-	static string getConfigPath();
+	static const string& getConfigPath() { return configPath; }
+	static const string& getDataPath() { return dataPath; }
+	static const string& getSystemPath() { return systemPath; }
 
 	/** Path of file lists */
-	static string getListPath() {
-		return getConfigPath() + "FileLists" PATH_SEPARATOR_STR;
-	}
+	static string getListPath() { return getConfigPath() + "FileLists" PATH_SEPARATOR_STR; }
 	/** Notepad filename */
-	static string getNotepadFile() {
-		return getConfigPath() + "Notepad.txt";
-	}
+	static string getNotepadFile() { return getConfigPath() + "Notepad.txt"; }
 
 	static string translateError(int aError) {
 #ifdef _WIN32
 		LPVOID lpMsgBuf;
-		DWORD chars = FormatMessage( 
-			FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-			FORMAT_MESSAGE_FROM_SYSTEM | 
+		DWORD chars = FormatMessage(
+			FORMAT_MESSAGE_ALLOCATE_BUFFER |
+			FORMAT_MESSAGE_FROM_SYSTEM |
 			FORMAT_MESSAGE_IGNORE_INSERTS,
 			NULL,
 			aError,
 			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
 			(LPTSTR) &lpMsgBuf,
 			0,
-			NULL 
+			NULL
 			);
 		if(chars == 0) {
 			return string();
@@ -238,59 +236,20 @@ public:
 		return (j != wstring::npos) ? path.substr(j+1, i-j-1) : path;
 	}
 
-	static void decodeUrl(const string& aUrl, string& aServer, u_int16_t& aPort, string& aFile);
+	static void decodeUrl(const string& aUrl, string& aServer, uint16_t& aPort, string& aFile);
 	static string validateFileName(string aFile);
 	static string cleanPathChars(string aNick);
-	
-	static string formatBytes(const string& aString) {
-		return formatBytes(toInt64(aString));
-	}
 
+	static string formatBytes(const string& aString) { return formatBytes(toInt64(aString)); }
+	static string formatMessage(const string& nick, const string& message);
 	static string toDOS(const string& tmp);
 
 	static string getShortTimeString(time_t t = time(NULL) );
 
-	static string getTimeString() {
-		char buf[64];
-		time_t _tt;
-		time(&_tt);
-		tm* _tm = localtime(&_tt);
-		if(_tm == NULL) {
-			strcpy(buf, "xx:xx:xx");
-		} else {
-			strftime(buf, 64, "%X", _tm);
-		}
-		return buf;
-	}
+	static string getTimeString();
+	static string toAdcFile(const string& file);
+	static string toNmdcFile(const string& file);
 
-	static string toAdcFile(const string& file) {
-		if(file == "files.xml.bz2" || file == "MyList.DcLst")
-			return file;
-
-		string ret;
-		ret.reserve(file.length() + 1);
-		ret += '/';
-		ret += file;
-		for(string::size_type i = 0; i < ret.length(); ++i) {
-			if(ret[i] == '\\') {
-				ret[i] = '/';
-			}
-		}
-		return ret;
-	}
-	static string toNmdcFile(const string& file) {
-		if(file.empty())
-			return Util::emptyString;
-		
-		string ret(file.substr(1));
-		for(string::size_type i = 0; i < ret.length(); ++i) {
-			if(ret[i] == '/') {
-				ret[i] = '\\';
-			}
-		}
-		return ret;
-	}
-	
 	static string formatBytes(int64_t aBytes);
 
 	static string formatExactSize(int64_t aBytes);
@@ -315,11 +274,11 @@ public:
 	static int toInt(const string& aString) {
 		return atoi(aString.c_str());
 	}
-	static u_int32_t toUInt32(const string& str) {
+	static uint32_t toUInt32(const string& str) {
 		return toUInt32(str.c_str());
 	}
-	static u_int32_t toUInt32(const char* c) {
-		return (u_int32_t)atoi(c);
+	static uint32_t toUInt32(const char* c) {
+		return (uint32_t)atoi(c);
 	}
 
 	static double toDouble(const string& aString) {
@@ -370,20 +329,12 @@ public:
 	}
 	static string toString(long long val) {
 		char buf[32];
-#ifdef _MSC_VER
-		snprintf(buf, sizeof(buf), "%I64d", val);
-#else
-		snprintf(buf, sizeof(buf), "%lld", val);
-#endif
+		snprintf(buf, sizeof(buf), I64_FMT, val);
 		return buf;
 	}
 	static string toString(unsigned long long val) {
 		char buf[32];
-#ifdef _MSC_VER
-		snprintf(buf, sizeof(buf), "%I64u", val);
-#else
-		snprintf(buf, sizeof(buf), "%llu", val);
-#endif
+		snprintf(buf, sizeof(buf), U64_FMT, val);
 		return buf;
 	}
 	static string toString(double val) {
@@ -458,8 +409,6 @@ public:
 	static int strnicmp(const string& a, const string& b, size_t n) { return strnicmp(a.c_str(), b.c_str(), n); }
 	static int stricmp(const wstring& a, const wstring& b) { return stricmp(a.c_str(), b.c_str()); }
 	static int strnicmp(const wstring& a, const wstring& b, size_t n) { return strnicmp(a.c_str(), b.c_str(), n); }
-	
-	static string validateMessage(string tmp, bool reverse, bool checkNewLines = true);
 
 	static string getOsVersion();
 
@@ -478,20 +427,25 @@ public:
 	static string getAwayMessage();
 	static void setAwayMessage(const string& aMsg) { awayMsg = aMsg; }
 
-	static u_int32_t rand();
-	static u_int32_t rand(u_int32_t high) { return rand() % high; }
-	static u_int32_t rand(u_int32_t low, u_int32_t high) { return rand(high-low) + low; }
+	static uint32_t rand();
+	static uint32_t rand(uint32_t high) { return rand() % high; }
+	static uint32_t rand(uint32_t low, uint32_t high) { return rand(high-low) + low; }
 	static double randd() { return ((double)rand()) / ((double)0xffffffff); }
 
 private:
-	static string appPath;
+	/** Per-user configuration */
+	static string configPath;
+	/** Global configuration */
+	static string systemPath;
+	/** Various resources (help files etc) */
 	static string dataPath;
+
 	static bool away;
 	static bool manualAway;
 	static string awayMsg;
 	static time_t awayTime;
 
-	typedef map<u_int32_t, u_int16_t> CountryList;
+	typedef map<uint32_t, uint16_t> CountryList;
 	typedef CountryList::iterator CountryIter;
 
 	static CountryList countries;
@@ -500,12 +454,12 @@ private:
 
 /** Case insensitive hash function for strings */
 struct noCaseStringHash {
-#if _MSC_VER < 1300 
-	enum {bucket_size = 4}; 
-	enum {min_buckets = 8}; 
-#else 
-	static const size_t bucket_size = 4; 
-	static const size_t min_buckets = 8; 
+#if _MSC_VER < 1300
+	enum {bucket_size = 4};
+	enum {min_buckets = 8};
+#else
+	static const size_t bucket_size = 4;
+	static const size_t min_buckets = 8;
 #endif // _MSC_VER == 1200
 
 	size_t operator()(const string* s) const {

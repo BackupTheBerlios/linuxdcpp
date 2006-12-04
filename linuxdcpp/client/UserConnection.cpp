@@ -21,6 +21,7 @@
 
 #include "UserConnection.h"
 #include "ClientManager.h"
+#include "ResourceManager.h"
 
 #include "StringTokenizer.h"
 #include "AdcCommand.h"
@@ -33,20 +34,30 @@ const string UserConnection::FEATURE_ZLIB_GET = "ZLIG";
 const string UserConnection::FEATURE_TTHL = "TTHL";
 const string UserConnection::FEATURE_TTHF = "TTHF";
 const string UserConnection::FEATURE_ADC_BASE = "BAS0";
+const string UserConnection::FEATURE_ADC_BZIP = "BZIP";
 
 const string UserConnection::FILE_NOT_AVAILABLE = "File Not Available";
+
+const string Transfer::TYPE_FILE = "file";
+const string Transfer::TYPE_LIST = "list";
+const string Transfer::TYPE_TTHL = "tthl";
+
+const string Transfer::USER_LIST_NAME = "files.xml";
+const string Transfer::USER_LIST_NAME_BZ = "files.xml.bz2";
 
 const string UserConnection::UPLOAD = "Upload";
 const string UserConnection::DOWNLOAD = "Download";
 
+Transfer::Transfer(UserConnection& conn) : start(0), lastTick(GET_TICK()), runningAverage(0),
+last(0), actual(0), pos(0), startPos(0), size(-1), userConnection(conn) { }
+
 void Transfer::updateRunningAverage() {
-	u_int32_t tick = GET_TICK();
-	if(tick > lastTick) {
-		u_int32_t diff = tick - lastTick;
+	uint32_t tick = GET_TICK();
+	// Update 4 times/sec at most
+	if(tick > (lastTick + 250)) {
+		uint32_t diff = tick - lastTick;
 		int64_t tot = getTotal();
-		if(diff == 0) {
-			// No time passed, don't update runningAverage;
-		} else if( ((tick - getStart()) < AVG_PERIOD) ) {
+		if( ((tick - getStart()) < AVG_PERIOD) ) {
 			runningAverage = getAverageSpeed();
 		} else {
 			int64_t bdiff = tot - last;
@@ -61,6 +72,32 @@ void Transfer::updateRunningAverage() {
 		last = tot;
 	}
 	lastTick = tick;
+}
+
+void Transfer::getParams(const UserConnection& aSource, StringMap& params) {
+	params["userNI"] = Util::toString(ClientManager::getInstance()->getNicks(aSource.getUser()->getCID()));
+	params["userI4"] = aSource.getRemoteIp();
+	StringList hubNames = ClientManager::getInstance()->getHubNames(aSource.getUser()->getCID());
+	if(hubNames.empty())
+		hubNames.push_back(STRING(OFFLINE));
+	params["hub"] = Util::toString(hubNames);
+	StringList hubs = ClientManager::getInstance()->getHubs(aSource.getUser()->getCID());
+	if(hubs.empty())
+		hubs.push_back(STRING(OFFLINE));
+	params["hubURL"] = Util::toString(hubs);
+	params["fileSI"] = Util::toString(getSize());
+	params["fileSIshort"] = Util::formatBytes(getSize());
+	params["fileSIchunk"] = Util::toString(getTotal());
+	params["fileSIchunkshort"] = Util::formatBytes(getTotal());
+	params["fileSIactual"] = Util::toString(getActual());
+	params["fileSIactualshort"] = Util::formatBytes(getActual());
+	params["speed"] = Util::formatBytes(getAverageSpeed()) + "/s";
+	params["time"] = Util::formatSeconds((GET_TICK() - getStart()) / 1000);
+	params["fileTR"] = getTTH().toBase32();
+}
+
+User::Ptr Transfer::getUser() {
+	return getUserConnection().getUser();
 }
 
 void UserConnection::on(BufferedSocketListener::Line, const string& aLine) throw () {
@@ -82,14 +119,14 @@ void UserConnection::on(BufferedSocketListener::Line, const string& aLine) throw
 	string param;
 
 	string::size_type x;
-	
+
 	if( (x = aLine.find(' ')) == string::npos) {
 		cmd = aLine;
 	} else {
 		cmd = aLine.substr(0, x);
 		param = aLine.substr(x+1);
 	}
-	
+
 	if(cmd == "$MyNick") {
 		if(!param.empty())
 			fire(UserConnectionListener::MyNick(), this, Text::acpToUtf8(param));
@@ -99,8 +136,8 @@ void UserConnection::on(BufferedSocketListener::Line, const string& aLine) throw
 			fire(UserConnectionListener::Direction(), this, param.substr(0, x), param.substr(x+1));
 		}
 	} else if(cmd == "$Error") {
-		if(Util::stricmp(param.c_str(), FILE_NOT_AVAILABLE) == 0 || 
-			param.rfind(/*path/file*/" no more exists") != string::npos) { 
+		if(Util::stricmp(param.c_str(), FILE_NOT_AVAILABLE) == 0 ||
+			param.rfind(/*path/file*/" no more exists") != string::npos) {
 			fire(UserConnectionListener::FileNotAvailable(), this);
 		} else {
 			fire(UserConnectionListener::Failed(), this, param);
@@ -114,28 +151,6 @@ void UserConnection::on(BufferedSocketListener::Line, const string& aLine) throw
 		x = param.find('$');
 		if(x != string::npos) {
 			fire(UserConnectionListener::Get(), this, Text::acpToUtf8(param.substr(0, x)), Util::toInt64(param.substr(x+1)) - (int64_t)1);
-		}
-	} else if(cmd == "$GetZBlock" || cmd == "$UGetZBlock" || cmd == "$UGetBlock") {
-		string::size_type i = param.find(' ');
-		if(i == string::npos)
-			return;
-		int64_t start = Util::toInt64(param.substr(0, i));
-		if(start < 0) {
-			disconnect();
-			return;
-		}
-		i++;
-		string::size_type j = param.find(' ', i);
-		if(j == string::npos)
-			return;
-		int64_t bytes = Util::toInt64(param.substr(i, j-i));
-		string name = param.substr(j+1);
-		if(cmd == "$GetZBlock")
-			name = Text::acpToUtf8(name);
-		if(cmd == "$UGetBlock") {
-			fire(UserConnectionListener::GetBlock(), this, name, start, bytes);
-		} else {
-			fire(UserConnectionListener::GetZBlock(), this, name, start, bytes);
 		}
 	} else if(cmd == "$Key") {
 		if(!param.empty())
@@ -176,22 +191,22 @@ void UserConnection::on(BufferedSocketListener::Line, const string& aLine) throw
 	}
 }
 
-void UserConnection::connect(const string& aServer, short aPort) throw(SocketException, ThreadException) { 
+void UserConnection::connect(const string& aServer, short aPort) throw(SocketException, ThreadException) {
 	dcassert(!socket);
 
 	socket = BufferedSocket::getSocket(0);
 	socket->addListener(this);
-	socket->connect(aServer, aPort, secure, true);
+	socket->connect(aServer, aPort, secure, BOOLSETTING(ALLOW_UNTRUSTED_CLIENTS), true);
 }
 
 void UserConnection::accept(const Socket& aServer) throw(SocketException, ThreadException) {
 	dcassert(!socket);
 	socket = BufferedSocket::getSocket(0);
 	socket->addListener(this);
-	socket->accept(aServer, secure);
+	socket->accept(aServer, secure, BOOLSETTING(ALLOW_UNTRUSTED_CLIENTS));
 }
 
-void UserConnection::inf(bool withToken) { 
+void UserConnection::inf(bool withToken) {
 	AdcCommand c(AdcCommand::CMD_INF);
 	c.addParam("ID", ClientManager::getInstance()->getMyCID().toBase32());
 	if(withToken) {

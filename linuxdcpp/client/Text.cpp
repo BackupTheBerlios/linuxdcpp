@@ -44,7 +44,7 @@ void Text::initialize() {
 }
 
 int Text::utf8ToWc(const char* str, wchar_t& c) {
-	u_int8_t c0 = (u_int8_t)str[0];
+	uint8_t c0 = (uint8_t)str[0];
 	if(c0 & 0x80) {									// 1xxx xxxx
 		if(c0 & 0x40) {								// 11xx xxxx
 			if(c0 & 0x20) {							// 111x xxxx
@@ -64,11 +64,11 @@ int Text::utf8ToWc(const char* str, wchar_t& c) {
 						--i;
 					return i;
 				} else {		// 1110xxxx
-					u_int8_t c1 = (u_int8_t)str[1];
+					uint8_t c1 = (uint8_t)str[1];
 					if((c1 & (0x80 | 0x40)) != 0x80)
 						return -1;
 
-					u_int8_t c2 = (u_int8_t)str[2];
+					uint8_t c2 = (uint8_t)str[2];
 					if((c2 & (0x80 | 0x40)) != 0x80)
 						return -2;
 
@@ -87,7 +87,7 @@ int Text::utf8ToWc(const char* str, wchar_t& c) {
 					return 3;
 				}
 			} else {				// 110xxxxx
-				u_int8_t c1 = (u_int8_t)str[1];
+				uint8_t c1 = (uint8_t)str[1];
 				if((c1 & (0x80 | 0x40)) != 0x80)
 					return -1;
 
@@ -111,7 +111,7 @@ int Text::utf8ToWc(const char* str, wchar_t& c) {
 
 void Text::wcToUtf8(wchar_t c, string& str) {
 	if(c >= 0x0800) {
-		str += (char)(0x80 | 0x40 | 0x20  | (c >> 12));
+		str += (char)(0x80 | 0x40 | 0x20 | (c >> 12));
 		str += (char)(0x80 | ((c >> 6) & 0x3f));
 		str += (char)(0x80 | (c & 0x3f));
 	} else if(c >= 0x0080) {
@@ -307,4 +307,3 @@ string Text::toLower(const string& str) throw()
 	}
 	return lowerString;
 }
-

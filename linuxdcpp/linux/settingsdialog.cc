@@ -18,6 +18,7 @@
 
 #include "settingsdialog.hh"
 
+#include <client/CryptoManager.h>
 #include <client/FavoriteManager.h>
 #include <client/ShareManager.h>
 #include "settingsmanager.hh"
@@ -33,6 +34,7 @@ Settings::Settings() : DialogEntry("Settings", "settingsdialog.glade")
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("publicHubsDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("virtualNameDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("dirChooserDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("fileChooserDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	// Initialize the tabs in the GtkNotebook.
 	initPersonal_gui();
@@ -50,6 +52,8 @@ Settings::~Settings()
 	gtk_widget_destroy(getWidget("publicHubsDialog"));
 	gtk_widget_destroy(getWidget("virtualNameDialog"));
 	gtk_widget_destroy(getWidget("dirChooserDialog"));
+	gtk_widget_destroy(getWidget("fileChooserDialog"));
+	gtk_widget_destroy(getWidget("commandDialog")); // Never actually used
 }
 
 void Settings::saveSettings()
@@ -86,6 +90,9 @@ void Settings::saveSettings()
 		port = Util::toInt(gtk_entry_get_text(GTK_ENTRY(getWidget("udpEntry"))));
 		if (port > 0 && port <= 65535)
 			sm->set(SettingsManager::UDP_PORT, port);
+		port = Util::toInt(gtk_entry_get_text(GTK_ENTRY(getWidget("tlsEntry"))));
+		if (port > 0 && port <= 65535)
+			sm->set(SettingsManager::TLS_PORT, port);
 
 		// Outgoing connection
 		int type = SETTING(OUTGOING_CONNECTIONS);
@@ -274,6 +281,26 @@ void Settings::saveSettings()
 		sm->set(SettingsManager::SOCKET_IN_BUFFER, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("socketReadSpinButton")))));
 		sm->set(SettingsManager::SOCKET_OUT_BUFFER, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("socketWriteSpinButton")))));
 		WSET("default-charset", Text::acpToUtf8(string(gtk_entry_get_text(GTK_ENTRY(getWidget("encodingEntry"))))));
+
+		// Security Certificates
+		path = gtk_entry_get_text(GTK_ENTRY(getWidget("trustedCertificatesPathEntry")));
+		if (!path.empty() && path[path.length() - 1] != PATH_SEPARATOR)
+			path += PATH_SEPARATOR;
+		sm->set(SettingsManager::TLS_PRIVATE_KEY_FILE, string(gtk_entry_get_text(GTK_ENTRY(getWidget("privateKeyEntry")))));
+		sm->set(SettingsManager::TLS_CERTIFICATE_FILE, string(gtk_entry_get_text(GTK_ENTRY(getWidget("certificateFileEntry")))));
+		sm->set(SettingsManager::TLS_TRUSTED_CERTIFICATES_PATH, path);
+
+		m = GTK_TREE_MODEL(certificatesStore);
+		valid = gtk_tree_model_get_iter_first(m, &iter);
+
+		while (valid)
+		{
+			setting = (SettingsManager::IntSetting)certificatesView.getValue<gint>(&iter, "Setting");
+			toggled = certificatesView.getValue<gboolean>(&iter, "Use");
+			sm->set(setting, toggled);
+			valid = gtk_tree_model_iter_next(m, &iter);
+		}
+
 	}
 
 	sm->save();
@@ -314,6 +341,7 @@ void Settings::initConnection_gui()
 	gtk_entry_set_text(GTK_ENTRY(getWidget("ipEntry")), SETTING(EXTERNAL_IP).c_str());
 	gtk_entry_set_text(GTK_ENTRY(getWidget("tcpEntry")), Util::toString(SETTING(TCP_PORT)).c_str());
 	gtk_entry_set_text(GTK_ENTRY(getWidget("udpEntry")), Util::toString(SETTING(UDP_PORT)).c_str());
+	gtk_entry_set_text(GTK_ENTRY(getWidget("tlsEntry")), Util::toString(SETTING(TLS_PORT)).c_str());
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("forceIPCheckButton")), SETTING(NO_IP_OVERRIDE));
 
 	switch (SETTING(INCOMING_CONNECTIONS))
@@ -448,9 +476,9 @@ void Settings::initDownloads_gui()
 		addOption_gui(queueStore, "Automatically match queue for auto search hits", SettingsManager::AUTO_SEARCH_AUTO_MATCH);
 		addOption_gui(queueStore, "Skip zero-byte files", SettingsManager::SKIP_ZERO_BYTE);
 		addOption_gui(queueStore, "Don't download files already in share", SettingsManager::DONT_DL_ALREADY_SHARED);
+		addOption_gui(queueStore, "Don't download files already in the queue", SettingsManager::DONT_DL_ALREADY_QUEUED);
 		addOption_gui(queueStore, "Use antifragmentation method for downloads", SettingsManager::ANTI_FRAG);
 		addOption_gui(queueStore, "Advanced resume using TTH", SettingsManager::ADVANCED_RESUME);
-		addOption_gui(queueStore, "Only download files that have a TTH", SettingsManager::ONLY_DL_TTH_FILES);
 	}
 }
 
@@ -520,10 +548,8 @@ void Settings::initAppearance_gui()
 		addOption_gui(appearanceStore, "Only show joins / parts for favorite users", SettingsManager::FAV_SHOW_JOINS);
 		addOption_gui(appearanceStore, "Use OEM monospaced font for viewing text files", SettingsManager::USE_OEM_MONOFONT);
 		/// @todo: Uncomment when implemented
-		//addOption_gui(appearanceStore, "User alternative sorting order for transfers", SettingsManager::ALT_SORT_ORDER);
 		//addOption_gui(appearanceStore, "Minimize to tray", SettingsManager::MINIMIZE_TRAY);
-		//addOption_gui(appearanceStore, "Use system icons when browsing files (slows browsing a bit)", SettingsManager::USE_SYSTEM_ICONS);
-		//addOption_gui(appearanceStore, "Guess user country from IP", SettingsManager::GET_USER_COUNTRY);
+		//addOption_gui(appearanceStore, "Use system icons", SettingsManager::USE_SYSTEM_ICONS);
 		///@todo: uncomment when the save problem is solved. Using MINIMIZE_TRAY until then.
 		//addOption_gui(appearanceStore, "Show tray icon", WGETI("show-tray-icon"));
 
@@ -567,7 +593,6 @@ void Settings::initAppearance_gui()
 		addOption_gui(colorStore, "Search", SettingsManager::BOLD_SEARCH);
 		/// @todo: Uncomment when implemented
 		//addOption_gui(colorStore, "Waiting Users", SettingsManager::BOLD_WAITING_USERS);
-		//addOption_gui(colorStore, "System Log", SettingsManager::BOLD_SYSTEM_LOG);
 	}
 
 	{ // Window
@@ -595,10 +620,6 @@ void Settings::initAppearance_gui()
 		/// @todo: Uncomment when implemented
 		//addOption_gui(windowStore1, "Favorite Users", SettingsManager::OPEN_FAVORITE_USERS);
 		//addOption_gui(windowStore1, "Waiting Users", SettingsManager::OPEN_WAITING_USERS);
-		//addOption_gui(windowStore1, "Search Spy", SettingsManager::OPEN_SEARCH_SPY);
-		//addOption_gui(windowStore1, "Network Statistics", SettingsManager::OPEN_NETWORK_STATISTICS);
-		//addOption_gui(windowStore1, "Notepad", SettingsManager::OPEN_NOTEPAD);
-		//addOption_gui(windowStore1, "System Log", SettingsManager::OPEN_SYSTEM_LOG);
 
 		// Window options
 		windowView2.setView(GTK_TREE_VIEW(getWidget("windowsOptionsTreeView")));
@@ -619,10 +640,10 @@ void Settings::initAppearance_gui()
 		addOption_gui(windowStore2, "Open file list window in the background", SettingsManager::POPUNDER_FILELIST);
 		addOption_gui(windowStore2, "Open new private message windows in the background", SettingsManager::POPUNDER_PM);
 		addOption_gui(windowStore2, "Open new window when using /join", SettingsManager::JOIN_OPEN_NEW_WINDOW);
-		addOption_gui(windowStore2, "Ignore private messages from offline users", SettingsManager::IGNORE_OFFLINE);
+		addOption_gui(windowStore2, "Ignore private messages from the hub", SettingsManager::IGNORE_HUB_PMS);
+		addOption_gui(windowStore2, "Ignore private messages from bots", SettingsManager::IGNORE_BOT_PMS);
 		/// @todo: Uncomment when implemented
 		//addOption_gui(windowStore2, "Open private messages in their own window", SettingsManager::POPUP_PMS);
-		//addOption_gui(windowStore2, "Open private messages from offline users in their own window", SettingsManager::POPUP_OFFLINE);
 		//addOption_gui(windowStore2, "Toggle window when selecting an active tab", SettingsManager::TOGGLE_ACTIVE_WINDOW);
 
 		// Confirmation dialog
@@ -718,7 +739,6 @@ void Settings::initAdvanced_gui()
 		//addOption_gui(advancedStore, "Don't send the away message to bots", SettingsManager::NO_AWAYMSG_TO_BOTS);
 		//addOption_gui(advancedStore, "Break on first ADLSearch match", SettingsManager::ADLS_BREAK_ON_FIRST);
 		//addOption_gui(advancedStore, "Use CTRL for line history", SettingsManager::USE_CTRL_FOR_LINE_HISTORY);
-		//addOption_gui(advancedStore, "Use SSL when remote client supports it", SettingsManager::USE_SSL);
 	}
 
 	{ // User Commands
@@ -743,6 +763,36 @@ void Settings::initAdvanced_gui()
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("socketReadSpinButton")), (double)SETTING(SOCKET_IN_BUFFER));
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("socketWriteSpinButton")), (double)SETTING(SOCKET_OUT_BUFFER));
 		gtk_entry_set_text(GTK_ENTRY(getWidget("encodingEntry")), WGETS("default-charset").c_str());
+	}
+
+	{ // Security Certificates
+		gtk_entry_set_text(GTK_ENTRY(getWidget("privateKeyEntry")), SETTING(TLS_PRIVATE_KEY_FILE).c_str());
+		gtk_entry_set_text(GTK_ENTRY(getWidget("certificateFileEntry")), SETTING(TLS_CERTIFICATE_FILE).c_str());
+		gtk_entry_set_text(GTK_ENTRY(getWidget("trustedCertificatesPathEntry")), SETTING(TLS_TRUSTED_CERTIFICATES_PATH).c_str());
+		g_signal_connect(getWidget("privateKeyButton"), "clicked", G_CALLBACK(onCertificatesPrivateBrowseClicked_gui), (gpointer)this);
+		g_signal_connect(getWidget("certificateFileButton"), "clicked", G_CALLBACK(onCertificatesFileBrowseClicked_gui), (gpointer)this);
+		g_signal_connect(getWidget("trustedCertificatesPathButton"), "clicked", G_CALLBACK(onCertificatesPathBrowseClicked_gui), (gpointer)this);
+
+		certificatesView.setView(GTK_TREE_VIEW(getWidget("certificatesTreeView")));
+		certificatesView.insertColumn("Use", G_TYPE_BOOLEAN, TreeView::BOOL, -1);
+		certificatesView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, -1);
+		certificatesView.insertHiddenColumn("Setting", G_TYPE_INT);
+		certificatesView.finalize();
+		certificatesStore = gtk_list_store_newv(certificatesView.getColCount(), certificatesView.getGTypes());
+		gtk_tree_view_set_model(certificatesView.get(), GTK_TREE_MODEL(certificatesStore));
+		g_object_unref(certificatesStore);
+		gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(certificatesStore), certificatesView.col("Name"), GTK_SORT_ASCENDING);
+
+		GList *list = gtk_tree_view_column_get_cell_renderers(gtk_tree_view_get_column(certificatesView.get(), certificatesView.col("Use")));
+		GtkCellRenderer *renderer = (GtkCellRenderer*)g_list_nth_data(list, 0);
+		g_signal_connect(renderer, "toggled", G_CALLBACK(onCertificatesToggledClicked_gui), (gpointer)this);
+		g_list_free(list);
+
+		addOption_gui(certificatesStore, "Use TLS when remote client supports it", SettingsManager::USE_TLS);
+		addOption_gui(certificatesStore, "Allow TLS connections to hubs without trusted certificate", SettingsManager::ALLOW_UNTRUSTED_HUBS);
+		addOption_gui(certificatesStore, "Allow TLS connections to clients without trusted certificate", SettingsManager::ALLOW_UNTRUSTED_CLIENTS);
+
+		g_signal_connect(getWidget("generateCertificatesButton"), "clicked", G_CALLBACK(onGenerateCertificatesClicked_gui), (gpointer)this);
 	}
 }
 
@@ -782,6 +832,8 @@ void Settings::onInDirect_gui(GtkToggleButton *button, gpointer data)
 	gtk_widget_set_sensitive(s->getWidget("tcpLabel"), TRUE);
 	gtk_widget_set_sensitive(s->getWidget("udpEntry"), TRUE);
 	gtk_widget_set_sensitive(s->getWidget("udpLabel"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("tlsEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("tlsEntry"), TRUE);
 	gtk_widget_set_sensitive(s->getWidget("forceIPCheckButton"), TRUE);
 }
 
@@ -795,6 +847,8 @@ void Settings::onInFW_UPnP_gui(GtkToggleButton *button, gpointer data)
 	gtk_widget_set_sensitive(s->getWidget("tcpLabel"), TRUE);
 	gtk_widget_set_sensitive(s->getWidget("udpEntry"), TRUE);
 	gtk_widget_set_sensitive(s->getWidget("udpLabel"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("tlsEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("tlsEntry"), TRUE);
 	gtk_widget_set_sensitive(s->getWidget("forceIPCheckButton"), TRUE);
 }
 */
@@ -808,6 +862,8 @@ void Settings::onInFW_NAT_gui(GtkToggleButton *button, gpointer data)
 	gtk_widget_set_sensitive(s->getWidget("tcpLabel"), TRUE);
 	gtk_widget_set_sensitive(s->getWidget("udpEntry"), TRUE);
 	gtk_widget_set_sensitive(s->getWidget("udpLabel"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("tlsEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("tlsEntry"), TRUE);
 	gtk_widget_set_sensitive(s->getWidget("forceIPCheckButton"), TRUE);
 }
 
@@ -820,6 +876,8 @@ void Settings::onInPassive_gui(GtkToggleButton *button, gpointer data)
 	gtk_widget_set_sensitive(s->getWidget("tcpLabel"), FALSE);
 	gtk_widget_set_sensitive(s->getWidget("udpEntry"), FALSE);
 	gtk_widget_set_sensitive(s->getWidget("udpLabel"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("tlsEntry"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("tlsEntry"), FALSE);
 	gtk_widget_set_sensitive(s->getWidget("forceIPCheckButton"), FALSE);
 }
 
@@ -860,12 +918,12 @@ void Settings::onBrowseFinished_gui(GtkWidget *widget, gpointer data)
 
 	if (response == GTK_RESPONSE_OK)
 	{
-		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
-		string path = temp;
-		g_free(temp);
-		if (!path.empty() && path[path.length() - 1] != PATH_SEPARATOR)
-			path += PATH_SEPARATOR;
-		gtk_entry_set_text(GTK_ENTRY(s->getWidget("finishedDownloadsEntry")), path.c_str());
+		gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
+		if (path)
+		{
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("finishedDownloadsEntry")), path);
+			g_free(path);
+		}
 	}
 }
 
@@ -878,12 +936,12 @@ void Settings::onBrowseUnfinished_gui(GtkWidget *widget, gpointer data)
 
 	if (response == GTK_RESPONSE_OK)
 	{
-		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
-		string path = temp;
-		g_free(temp);
-		if (!path.empty() && path[path.length() - 1] != PATH_SEPARATOR)
-			path += PATH_SEPARATOR;
-		gtk_entry_set_text(GTK_ENTRY(s->getWidget("unfinishedDownloadsEntry")), path.c_str());
+		gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
+		if (path)
+		{
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("unfinishedDownloadsEntry")), path);
+			g_free(path);
+		}
 	}
 }
 
@@ -1223,12 +1281,9 @@ void Settings::onLogBrowseClicked_gui(GtkWidget *widget, gpointer data)
 
 	if (response == GTK_RESPONSE_OK)
 	{
-		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
-		string path = temp;
-		g_free(temp);
-		if (path[path.length() - 1] != PATH_SEPARATOR)
-			path += PATH_SEPARATOR;
-		gtk_entry_set_text(GTK_ENTRY(s->getWidget("logDirectoryEntry")), path.c_str());
+		gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
+		gtk_entry_set_text(GTK_ENTRY(s->getWidget("logDirectoryEntry")), path);
+		g_free(path);
 	}
 }
 
@@ -1276,6 +1331,79 @@ void Settings::onAdvancedToggledClicked_gui(GtkCellRendererToggle *cell, gchar *
 	}
 }
 
+void Settings::onCertificatesPrivateBrowseClicked_gui(GtkWidget *widget, gpointer data)
+{
+	Settings *s = (Settings *)data;
+
+ 	gint response = gtk_dialog_run(GTK_DIALOG(s->getWidget("fileChooserDialog")));
+	gtk_widget_hide(s->getWidget("fileChooserDialog"));
+
+	if (response == GTK_RESPONSE_OK)
+	{
+		gchar *path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(s->getWidget("fileChooserDialog")));
+		if (path)
+		{
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("privateKeyEntry")), path);
+			g_free(path);
+		}
+	}
+}
+
+void Settings::onCertificatesFileBrowseClicked_gui(GtkWidget *widget, gpointer data)
+{
+	Settings *s = (Settings *)data;
+
+ 	gint response = gtk_dialog_run(GTK_DIALOG(s->getWidget("fileChooserDialog")));
+	gtk_widget_hide(s->getWidget("fileChooserDialog"));
+
+	if (response == GTK_RESPONSE_OK)
+	{
+		gchar *path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(s->getWidget("fileChooserDialog")));
+		if (path)
+		{
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("certificateFileEntry")), path);
+			g_free(path);
+		}
+	}
+}
+
+void Settings::onCertificatesPathBrowseClicked_gui(GtkWidget *widget, gpointer data)
+{
+	Settings *s = (Settings *)data;
+
+ 	gint response = gtk_dialog_run(GTK_DIALOG(s->getWidget("dirChooserDialog")));
+	gtk_widget_hide(s->getWidget("dirChooserDialog"));
+
+	if (response == GTK_RESPONSE_OK)
+	{
+		gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
+		if (path)
+		{
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("trustedCertificatesPathEntry")), path);
+			g_free(path);
+		}
+	}
+}
+
+void Settings::onCertificatesToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data)
+{
+	Settings *s = (Settings *)data;
+	GtkTreeIter iter;
+
+	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(s->certificatesStore), &iter, path))
+	{
+		gboolean fixed = s->certificatesView.getValue<gboolean>(&iter, "Use");
+		gtk_list_store_set(s->certificatesStore, &iter, s->certificatesView.col("Use"), !fixed, -1);
+	}
+}
+
+void Settings::onGenerateCertificatesClicked_gui(GtkWidget *widget, gpointer data)
+{
+	Settings *s = (Settings *)data;
+	Func0<Settings> *func = new Func0<Settings>(s, &Settings::generateCertificates_client);
+	WulforManager::get()->dispatchClientFunc(func);
+}
+
 void Settings::shareHidden_client(bool show)
 {
 	SettingsManager::getInstance()->set(SettingsManager::SHARE_HIDDEN, show);
@@ -1299,4 +1427,15 @@ void Settings::addShare_client(string path, string name)
 	typedef Func3<Settings, string, string, string> F3;
 	F3 *func = new F3(this, &Settings::addShare_gui, path, name, error);
 	WulforManager::get()->dispatchGuiFunc(func);
+}
+
+void Settings::generateCertificates_client()
+{
+	try
+	{
+		CryptoManager::getInstance()->generateCertificate();
+	}
+	catch (const CryptoException &e)
+	{
+	}
 }

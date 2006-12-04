@@ -33,23 +33,23 @@
 
 class UserCommand;
 
-class ClientManager : public Speaker<ClientManagerListener>, 
-	private ClientListener, public Singleton<ClientManager>, 
+class ClientManager : public Speaker<ClientManagerListener>,
+	private ClientListener, public Singleton<ClientManager>,
 	private TimerManagerListener, private SettingsManagerListener
 {
 public:
 	Client* getClient(const string& aHubURL);
 	void putClient(Client* aClient);
 
-	size_t getUserCount();
-	int64_t getAvailable();
-	StringList getHubs(const CID& cid);
-	StringList getHubNames(const CID& cid);
-	StringList getNicks(const CID& cid);
-	string getConnection(const CID& cid);
+	size_t getUserCount() const;
+	int64_t getAvailable() const;
+	StringList getHubs(const CID& cid) const;
+	StringList getHubNames(const CID& cid) const;
+	StringList getNicks(const CID& cid) const;
+	string getConnection(const CID& cid) const;
 
-	bool isConnected(const string& aUrl);
-	
+	bool isConnected(const string& aUrl) const;
+
 	void search(int aSizeMode, int64_t aSize, int aFileType, const string& aString, const string& aToken);
 	void search(StringList& who, int aSizeMode, int64_t aSize, int aFileType, const string& aString, const string& aToken);
 	void infoUpdated();
@@ -57,27 +57,27 @@ public:
 	User::Ptr getUser(const string& aNick, const string& aHubUrl) throw();
 	User::Ptr getUser(const CID& cid) throw();
 
-	string findHub(const string& ipPort);
+	string findHub(const string& ipPort) const;
 
-	User::Ptr findUser(const string& aNick, const string& aHubUrl) throw() { return findUser(makeCid(aNick, aHubUrl)); }
-	User::Ptr findUser(const CID& cid) throw();
+	User::Ptr findUser(const string& aNick, const string& aHubUrl) const throw() { return findUser(makeCid(aNick, aHubUrl)); }
+	User::Ptr findUser(const CID& cid) const throw();
 	User::Ptr findLegacyUser(const string& aNick) const throw();
 
-	bool isOnline(const User::Ptr& aUser) {
+	bool isOnline(const User::Ptr& aUser) const {
 		Lock l(cs);
 		return onlineUsers.find(aUser->getCID()) != onlineUsers.end();
 	}
 
-	bool isOp(const User::Ptr& aUser, const string& aHubUrl);
+	bool isOp(const User::Ptr& aUser, const string& aHubUrl) const;
 
 	/** Constructs a synthetic, hopefully unique CID */
-	CID makeCid(const string& nick, const string& hubUrl) throw();
+	CID makeCid(const string& nick, const string& hubUrl) const throw();
 
-	void putOnline(OnlineUser& ou) throw();
-	void putOffline(OnlineUser& ou) throw();
+	void putOnline(OnlineUser* ou) throw();
+	void putOffline(OnlineUser* ou) throw();
 
 	User::Ptr& getMe();
-	
+
 	void connect(const User::Ptr& p);
 	void send(AdcCommand& c, const CID& to);
 	void privateMessage(const User::Ptr& p, const string& msg);
@@ -85,11 +85,9 @@ public:
 	void userCommand(const User::Ptr& p, const ::UserCommand& uc, StringMap& params, bool compatibility);
 
 	bool isActive() { return SETTING(INCOMING_CONNECTIONS) != SettingsManager::INCOMING_FIREWALL_PASSIVE; }
-	
+
 	void lock() throw() { cs.enter(); }
 	void unlock() throw() { cs.leave(); }
-
-	Identity getIdentity(const User::Ptr& aUser);
 
 	Client::List& getClients() { return clients; }
 
@@ -98,7 +96,6 @@ public:
 	CID getMyCID();
 	const CID& getMyPID();
 
-	void save();
 private:
 	typedef HASH_MAP<string, User::Ptr> LegacyMap;
 	typedef LegacyMap::iterator LegacyIter;
@@ -108,40 +105,39 @@ private:
 
 	typedef HASH_MULTIMAP_X(CID, OnlineUser*, CID::Hash, equal_to<CID>, less<CID>) OnlineMap;
 	typedef OnlineMap::iterator OnlineIter;
+	typedef OnlineMap::const_iterator OnlineIterC;
 	typedef pair<OnlineIter, OnlineIter> OnlinePair;
+	typedef pair<OnlineIterC, OnlineIterC> OnlinePairC;
 
 	Client::List clients;
 	mutable CriticalSection cs;
-	
+
 	UserMap users;
 	OnlineMap onlineUsers;
 
 	User::Ptr me;
-	
-	Socket s;
+
+	Socket udp;
 
 	string cachedIp;
 	CID pid;
 
 	friend class Singleton<ClientManager>;
 
-	ClientManager() { 
-		TimerManager::getInstance()->addListener(this); 
+	ClientManager() {
+		TimerManager::getInstance()->addListener(this);
 		SettingsManager::getInstance()->addListener(this);
 	}
 
-	virtual ~ClientManager() throw() { 
+	virtual ~ClientManager() throw() {
 		SettingsManager::getInstance()->removeListener(this);
-		TimerManager::getInstance()->removeListener(this); 
+		TimerManager::getInstance()->removeListener(this);
 	}
-
-	string getUsersFile() { return Util::getConfigPath() + "Users.xml"; }
 
 	void updateCachedIp();
 
 	// SettingsManagerListener
-	virtual void on(Load, SimpleXML*) throw();
-	virtual void on(Save, SimpleXML*) throw();
+	virtual void on(Load, SimpleXML&) throw();
 
 	// ClientListener
 	virtual void on(Connected, Client* c) throw() { fire(ClientManagerListener::ClientConnected(), c); }
@@ -150,11 +146,11 @@ private:
 	virtual void on(Failed, Client*, const string&) throw();
 	virtual void on(HubUpdated, Client* c) throw() { fire(ClientManagerListener::ClientUpdated(), c); }
 	virtual void on(UserCommand, Client*, int, int, const string&, const string&) throw();
-	virtual void on(NmdcSearch, Client* aClient, const string& aSeeker, int aSearchType, int64_t aSize, 
+	virtual void on(NmdcSearch, Client* aClient, const string& aSeeker, int aSearchType, int64_t aSize,
 		int aFileType, const string& aString) throw();
 	virtual void on(AdcSearch, Client* c, const AdcCommand& adc, const CID& from) throw();
 	// TimerManagerListener
-	virtual void on(TimerManagerListener::Minute, u_int32_t aTick) throw();
+	virtual void on(TimerManagerListener::Minute, uint32_t aTick) throw();
 };
 
 #endif // !defined(CLIENT_MANAGER_H)

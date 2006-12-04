@@ -30,8 +30,8 @@
 #include "FilteredFile.h"
 #include "ZUtils.h"
 #include "MerkleTree.h"
+#include "QueueItem.h"
 
-class QueueItem;
 class ConnectionQueueItem;
 
 /**
@@ -54,44 +54,35 @@ public:
 		FLAG_CALC_CRC32 = 0x10,
 		FLAG_CRC32_OK = 0x20,
 		FLAG_ANTI_FRAG = 0x40,
-		FLAG_UTF8 = 0x80,
 		FLAG_TREE_DOWNLOAD = 0x100,
 		FLAG_TREE_TRIED = 0x200,
 		FLAG_PARTIAL_LIST = 0x400,
 		FLAG_TTH_CHECK = 0x800
 	};
 
-	Download() throw();
-	Download(QueueItem* qi) throw();
+	Download(UserConnection& conn) throw();
+	Download(UserConnection& conn, QueueItem& qi) throw();
 
-	virtual ~Download() { }
+	virtual void getParams(const UserConnection& aSource, StringMap& params);
 
-	/**
-	 * @remarks This function is only used from DownloadManager but its
-	 * functionality could be useful in TransferView.
-	 *
-	 * @return Target filename without path.
-	 */
+	virtual ~Download();
+
+	/** @return Target filename without path. */
 	string getTargetFileName() {
-		string::size_type i = getTarget().rfind('\\');
-		if(i != string::npos) {
-			return getTarget().substr(i + 1);
-		} else {
-			return getTarget();
-		}
+		return Util::getFileName(getTarget());
 	}
 
 	/** @internal */
 	string getDownloadTarget() {
 		const string& tgt = (getTempTarget().empty() ? getTarget() : getTempTarget());
-		return isSet(FLAG_ANTI_FRAG) ? tgt + ANTI_FRAG_EXT : tgt;			
+		return isSet(FLAG_ANTI_FRAG) ? tgt + ANTI_FRAG_EXT : tgt;
 	}
 
 	/** @internal */
 	TigerTree& getTigerTree() { return tt; }
 	string& getPFS() { return pfs; }
 	/** @internal */
-	AdcCommand getCommand(bool zlib, bool tthf);
+	AdcCommand getCommand(bool zlib);
 
 	typedef CalcOutputStream<CRC32Filter, true> CrcOS;
 	GETSET(string, source, Source);
@@ -99,18 +90,15 @@ public:
 	GETSET(string, tempTarget, TempTarget);
 	GETSET(OutputStream*, file, File);
 	GETSET(CrcOS*, crcCalc, CrcCalc);
-	GETSET(TTHValue*, tth, TTH);
 	GETSET(bool, treeValid, TreeValid);
 
 private:
 	Download(const Download&);
-
 	Download& operator=(const Download&);
 
 	TigerTree tt;
 	string pfs;
 };
-
 
 /**
  * Use this listener interface to get progress information for downloads.
@@ -128,15 +116,15 @@ private:
 class DownloadManagerListener {
 public:
 	virtual ~DownloadManagerListener() { }
-	template<int I>	struct X { enum { TYPE = I };  };
+	template<int I>	struct X { enum { TYPE = I }; };
 
 	typedef X<0> Complete;
 	typedef X<1> Failed;
 	typedef X<2> Starting;
 	typedef X<3> Tick;
 
-	/** 
-	 * This is the first message sent before a download starts. 
+	/**
+	 * This is the first message sent before a download starts.
 	 * No other messages will be sent before.
 	 */
 	virtual void on(Starting, Download*) throw() { }
@@ -146,13 +134,13 @@ public:
 	 */
 	virtual void on(Tick, const Download::List&) throw() { }
 
-	/** 
-	 * This is the last message sent before a download is deleted. 
+	/**
+	 * This is the last message sent before a download is deleted.
 	 * No more messages will be sent after it.
 	 */
 	virtual void on(Complete, Download*) throw() { }
 
-	/** 
+	/**
 	 * This indicates some sort of failure with a particular download.
 	 * No more messages will be sent after it.
 	 *
@@ -167,45 +155,26 @@ public:
  * Singleton. Use its listener interface to update the download list
  * in the user interface.
  */
-class DownloadManager : public Speaker<DownloadManagerListener>, 
-	private UserConnectionListener, private TimerManagerListener, 
+class DownloadManager : public Speaker<DownloadManagerListener>,
+	private UserConnectionListener, private TimerManagerListener,
 	public Singleton<DownloadManager>
 {
 public:
 
 	/** @internal */
-	void addConnection(UserConnection::Ptr conn) {
-		conn->addListener(this);
-		checkDownloads(conn);
-	}
-
+	void addConnection(UserConnection::Ptr conn);
 	void checkIdle(const User::Ptr& user);
 
-	/** @internal */
-	void abortDownload(const string& aTarget);
+	/** @return Running average download speed in Bytes/s */
+	int64_t getRunningAverage();
 
-	/**
-	 * @remarks This is only used in the tray icons. In MainFrame this is
-	 * calculated instead so there seems to be a little duplication of code.
-	 *
-	 * @return Average download speed in Bytes/s
-	 */
-	int getAverageSpeed() {
-		Lock l(cs);
-		int avg = 0;
-		for(Download::Iter i = downloads.begin(); i != downloads.end(); ++i) {
-			Download* d = *i;
-			avg += (int)d->getRunningAverage();
-		}
-		return avg;
-	}
-
-	/** @return Number of downloads. */ 
+	/** @return Number of downloads. */
 	size_t getDownloadCount() {
 		Lock l(cs);
 		return downloads.size();
 	}
 
+	bool startDownload(QueueItem::Priority prio);
 private:
 	enum { MOVER_LIMIT = 10*1024*1024 };
 	class FileMover : public Thread {
@@ -225,12 +194,12 @@ private:
 		FileList files;
 		CriticalSection cs;
 	} mover;
-	
+
 	CriticalSection cs;
 	Download::List downloads;
 	UserConnection::List idlers;
 
-	bool checkRollback(Download* aDownload, const u_int8_t* aBuf, int aLen) throw(FileException);
+	bool checkRollback(Download* aDownload, const uint8_t* aBuf, int aLen) throw(FileException);
 	void removeConnection(UserConnection::Ptr aConn);
 	void removeDownload(Download* aDown);
 	void fileNotAvailable(UserConnection* aSource);
@@ -238,32 +207,23 @@ private:
 
 	void moveFile(const string& source, const string&target);
 	void logDownload(UserConnection* aSource, Download* d);
-	u_int32_t calcCrc32(const string& file) throw(FileException);
-	bool checkSfv(UserConnection* aSource, Download* d, u_int32_t crc);
+	uint32_t calcCrc32(const string& file) throw(FileException);
+	bool checkSfv(UserConnection* aSource, Download* d, uint32_t crc);
 	int64_t getResumePos(const string& file, const TigerTree& tt, int64_t startPos);
 
-	friend class Singleton<DownloadManager>;
-	DownloadManager() { 
-		TimerManager::getInstance()->addListener(this);
-	}
+	void failDownload(UserConnection* aSource, const string& reason);
 
-	virtual ~DownloadManager() throw() {
-		TimerManager::getInstance()->removeListener(this);
-		while(true) {
-			{
-				Lock l(cs);
-				if(downloads.empty())
-					break;
-			}
-			Thread::sleep(100);
-		}
-	}
-	
+	friend class Singleton<DownloadManager>;
+
+	DownloadManager();
+	virtual ~DownloadManager() throw();
+
 	void checkDownloads(UserConnection* aConn);
 	void handleEndData(UserConnection* aSource);
-	
+
 	// UserConnectionListener
-	virtual void on(Data, UserConnection*, const u_int8_t*, size_t) throw();
+	virtual void on(Data, UserConnection*, const uint8_t*, size_t) throw();
+	virtual void on(Error, UserConnection*, const string&) throw();
 	virtual void on(Failed, UserConnection*, const string&) throw();
 	virtual void on(Sending, UserConnection*, int64_t) throw();
 	virtual void on(FileLength, UserConnection*, int64_t) throw();
@@ -275,7 +235,7 @@ private:
 
 	bool prepareFile(UserConnection* aSource, int64_t newSize, bool z);
 	// TimerManagerListener
-	virtual void on(TimerManagerListener::Second, u_int32_t aTick) throw();
+	virtual void on(TimerManagerListener::Second, uint32_t aTick) throw();
 };
 
 #endif // !defined(DOWNLOAD_MANAGER_H)

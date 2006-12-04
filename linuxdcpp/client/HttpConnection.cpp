@@ -41,7 +41,7 @@ void HttpConnection::downloadFile(const string& aUrl) {
 		currentUrl.erase(currentUrl.length()-1);
 	}
 	// reset all settings (as in constructor), moved here from onLine(302) because ok was not reset properly
-	moved302 = false; 
+	moved302 = false;
 	ok = false;
 	size = -1;
 	// set download type
@@ -62,34 +62,34 @@ void HttpConnection::downloadFile(const string& aUrl) {
 
 	if(port == 0)
 		port = 80;
-	
+
 	if(!socket) {
 		socket = BufferedSocket::getSocket(0x0a);
 	}
 	socket->addListener(this);
 	try {
-		socket->connect(server, port, false, false);
+		socket->connect(server, port, false, false, false);
 	} catch(const Exception& e) {
 		fire(HttpConnectionListener::Failed(), this, e.getError() + " (" + currentUrl + ")");
 	}
 }
 
-void HttpConnection::on(BufferedSocketListener::Connected) throw() { 
-	dcassert(socket); 
-	socket->write("GET " + file + " HTTP/1.1\r\n"); 
-	socket->write("User-Agent: " APPNAME " v" VERSIONSTRING "\r\n"); 
+void HttpConnection::on(BufferedSocketListener::Connected) throw() {
+	dcassert(socket);
+	socket->write("GET " + file + " HTTP/1.1\r\n");
+	socket->write("User-Agent: " APPNAME " v" VERSIONSTRING "\r\n");
 
-	string sRemoteServer = server; 
-	if(!SETTING(HTTP_PROXY).empty()) 
-	{ 
+	string sRemoteServer = server;
+	if(!SETTING(HTTP_PROXY).empty())
+	{
 		string tfile;
-		u_int16_t tport; 
-		Util::decodeUrl(file, sRemoteServer, tport, tfile); 
-	} 
-	socket->write("Host: " + sRemoteServer + "\r\n"); 
+		uint16_t tport;
+		Util::decodeUrl(file, sRemoteServer, tport, tfile);
+	}
+	socket->write("Host: " + sRemoteServer + "\r\n");
 	socket->write("Connection: close\r\n");	// we'll only be doing one request
-	socket->write("Cache-Control: no-cache\r\n\r\n"); 
-} 
+	socket->write("Cache-Control: no-cache\r\n\r\n");
+}
 
 void HttpConnection::on(BufferedSocketListener::Line, const string& aLine) throw() {
 	if(!ok) {
@@ -130,14 +130,14 @@ void HttpConnection::on(BufferedSocketListener::Line, const string& aLine) throw
 		}
 		fire(HttpConnectionListener::Redirected(), this, location302);
 
-		downloadFile(location302); 		
+		downloadFile(location302); 
 	} else if(aLine == "\x0d") {
 		socket->setDataMode(size);
 	} else if(Util::findSubString(aLine, "Content-Length") != string::npos) {
 		size = Util::toInt(aLine.substr(16, aLine.length() - 17));
 	} else if(Util::findSubString(aLine, "Content-Encoding") != string::npos) {
 		if(aLine.substr(18, aLine.length() - 19) == "x-bzip2")
-			fire(HttpConnectionListener::TypeBZ2(), this);            
+			fire(HttpConnectionListener::TypeBZ2(), this);
 	}
 }
 
@@ -153,8 +153,8 @@ void HttpConnection::on(BufferedSocketListener::ModeChange) throw() {
 	socket->disconnect();
 	BufferedSocket::putSocket(socket);
 	socket = NULL;
-	fire(HttpConnectionListener::Complete(), this, currentUrl); 
+	fire(HttpConnectionListener::Complete(), this, currentUrl);
 }
-void HttpConnection::on(BufferedSocketListener::Data, u_int8_t* aBuf, size_t aLen) throw() {
+void HttpConnection::on(BufferedSocketListener::Data, uint8_t* aBuf, size_t aLen) throw() {
 	fire(HttpConnectionListener::Data(), this, aBuf, aLen);
 }

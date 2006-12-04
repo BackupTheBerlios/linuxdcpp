@@ -28,7 +28,7 @@
 /**
  * A class that implements a fast substring search algo suited for matching
  * one pattern against many strings (currently Quick Search, a variant of
- * Boyer-Moore. Code based on "A very fast substring search algorithm" by 
+ * Boyer-Moore. Code based on "A very fast substring search algorithm" by
  * D. Sunday).
  * @todo Perhaps find an algo suitable for matching multiple substrings.
  */
@@ -37,10 +37,10 @@ public:
 	typedef vector<StringSearch> List;
 	typedef List::iterator Iter;
 
-	explicit StringSearch(const string& aPattern) throw() : pattern(Text::toLower(aPattern)) { 
+	explicit StringSearch(const string& aPattern) throw() : pattern(Text::toLower(aPattern)) {
 		initDelta1();
 	}
-	StringSearch(const StringSearch& rhs) throw() : pattern(rhs.pattern) { 
+	StringSearch(const StringSearch& rhs) throw() : pattern(rhs.pattern) {
 		memcpy(delta1, rhs.delta1, sizeof(delta1));
 	}
 	const StringSearch& operator=(const StringSearch& rhs) {
@@ -65,9 +65,9 @@ public:
 		string lower;
 		Text::toLower(aText, lower);
 
-		// u_int8_t to avoid problems with signed char pointer arithmetic
-		u_int8_t *tx = (u_int8_t*)lower.c_str();
-		u_int8_t *px = (u_int8_t*)pattern.c_str();
+		// uint8_t to avoid problems with signed char pointer arithmetic
+		uint8_t *tx = (uint8_t*)lower.c_str();
+		uint8_t *px = (uint8_t*)pattern.c_str();
 
 		string::size_type plen = pattern.length();
 
@@ -75,13 +75,13 @@ public:
 			return false;
 		}
 
-		u_int8_t *end = tx + aText.length() - plen + 1;
+		uint8_t *end = tx + aText.length() - plen + 1;
 		while(tx < end) {
 			size_t i = 0;
 			for(; px[i] && (px[i] == tx[i]); ++i)
 				;		// Empty!
-			
-			if(px[i] == 0) 
+
+			if(px[i] == 0)
 				return true;
 
 			tx += delta1[tx[plen]];
@@ -92,24 +92,24 @@ public:
 
 private:
 	enum { ASIZE = 256 };
-	/** 
-	 * Delta1 shift, u_int16_t because we expect all patterns to be shorter than 2^16
+	/**
+	 * Delta1 shift, uint16_t because we expect all patterns to be shorter than 2^16
 	 * chars.
 	 */
-	u_int16_t delta1[ASIZE];
+	uint16_t delta1[ASIZE];
 	string pattern;
 
 	void initDelta1() {
-		u_int16_t x = (u_int16_t)(pattern.length() + 1);
-		u_int16_t i;
+		uint16_t x = (uint16_t)(pattern.length() + 1);
+		uint16_t i;
 		for(i = 0; i < ASIZE; ++i) {
 			delta1[i] = x;
 		}
 		// x = pattern.length();
 		x--;
-		u_int8_t* p = (u_int8_t*)pattern.data();
+		uint8_t* p = (uint8_t*)pattern.data();
 		for(i = 0; i < x; ++i) {
-			delta1[p[i]] = (u_int16_t)(x - i);
+			delta1[p[i]] = (uint16_t)(x - i);
 		}
 	}
 };

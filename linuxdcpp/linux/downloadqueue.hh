@@ -103,7 +103,6 @@ class DownloadQueue:
 		GdkEventType dirPrevious;
 		GtkTreeSelection *dirSelection;
 		GtkTreeSelection *fileSelection;
-		typedef QueueItem::Source::ConstIter SourceIter;
 };
 
 #else

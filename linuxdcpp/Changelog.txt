@@ -1,3 +1,18 @@
+2006-12-04 - Steven Sheehy
+* Upgraded the DC++ core to 0.698:
+	* The 0.691 core contains a security flaw so I recommend you upgrade ASAP.
+	* Support for non-TTH files was removed (by DC++, so don't complain to us).
+	* Added SSL support (thanks Mattias Webjörn Eriksson for some help with this).
+		* OpenSSL is now a required dependency to build.
+		* Added a "Security Certificates" page in the preferences dialog.
+		* Added a TLS port entry in the "Connection" page.
+	* Added "Ignore private messages from bots" option.
+	* Added "Ignore private messages from the hub" option.
+	* Added "Don't download files already in the queue" option.
+	* Removed "Ignore private messages from offline users" option.
+	* Removed "Only results with TTH root" option.
+	* Lots of other bug fixes to get the core to compile on *nix.
+
 2006-11-22 - Steven Sheehy
 * Disallowed hashing of sockets, device files, or named pipes.
 * Decoupled hashing dialog.

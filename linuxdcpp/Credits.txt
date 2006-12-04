@@ -29,6 +29,7 @@ dorian
 Bart Vullings
 Razzloss
 Jussi Peltola
+Mattias Webjörn Eriksson
 
 DC++:
 -----

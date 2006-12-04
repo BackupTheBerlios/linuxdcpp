@@ -55,21 +55,22 @@ public:
 	 * @param aName Virtual name
 	 */
 	void addDirectory(const string& aDirectory, const string & aName) throw(ShareException);
-	void removeDirectory(const string& aName, bool duringRefresh = false);	
+	void removeDirectory(const string& aName);
 	void renameDirectory(const string& oName, const string& nName) throw(ShareException);
-	string translateTTH(const string& TTH) throw(ShareException);
-	string translateFileName(const string& aFile) throw(ShareException);
-	bool getTTH(const string& aFile, TTHValue& tth) throw();
+	string toVirtual(const TTHValue& tth) throw(ShareException);
+	string toReal(const string& virtualFile) throw(ShareException);
+	TTHValue getTTH(const string& virtualFile) throw(ShareException);
+
 	void refresh(bool dirs = false, bool aUpdate = true, bool block = false) throw(ThreadException, ShareException);
 	void setDirty() { xmlDirty = true; }
 
 	void search(SearchResult::List& l, const string& aString, int aSearchType, int64_t aSize, int aFileType, Client* aClient, StringList::size_type maxResults);
 	void search(SearchResult::List& l, const StringList& params, StringList::size_type maxResults);
 
-	StringPairList getDirectories() const { RLock<> l(cs); return virtualMap; }
+	StringPairList getDirectories() const { Lock l(cs); return virtualMap; }
 
 	MemoryInputStream* generatePartialList(const string& dir, bool recurse);
-	MemoryInputStream* getTree(const string& aFile);
+	MemoryInputStream* getTree(const string& virtualFile);
 
 	AdcCommand getFileInfo(const string& aFile) throw(ShareException);
 
@@ -80,12 +81,12 @@ public:
 
 	string getShareSizeString() { return Util::toString(getShareSize()); }
 	string getShareSizeString(const string& aDir) { return Util::toString(getShareSize(aDir)); }
-	
+
 	SearchManager::TypeModes getType(const string& fileName);
 
 	string validateVirtual(const string& /*aVirt*/);
 
-	void addHits(u_int32_t aHits) {
+	void addHits(uint32_t aHits) {
 		hits += aHits;
 	}
 
@@ -95,14 +96,12 @@ public:
 	}
 
 	bool isTTHShared(const TTHValue& tth){
-		HashFileIter i = tthIndex.find(const_cast<TTHValue*>(&tth));
-		return (i != tthIndex.end());
+		Lock l(cs);
+		return tthIndex.find(tth) != tthIndex.end();
 	}
 
-	GETSET(u_int32_t, hits, Hits);
-	GETSET(string, listFile, ListFile);
+	GETSET(uint32_t, hits, Hits);
 	GETSET(string, bzXmlFile, BZXmlFile);
-
 private:
 	struct AdcSearch;
 	class Directory : public FastAlloc<Directory> {
@@ -122,9 +121,9 @@ private:
 			typedef Set::iterator Iter;
 
 			File() : size(0), parent(NULL) { }
-			File(const string& aName, int64_t aSize, Directory* aParent, const TTHValue& aRoot) : 
+			File(const string& aName, int64_t aSize, Directory* aParent, const TTHValue& aRoot) :
 			name(aName), tth(aRoot), size(aSize), parent(aParent) { }
-			File(const File& rhs) : 
+			File(const File& rhs) :
 			name(rhs.getName()), tth(rhs.getTTH()), size(rhs.getSize()), parent(rhs.getParent()) { }
 
 			~File() { }
@@ -155,38 +154,26 @@ private:
 		Map directories;
 		File::Set files;
 
-		Directory(const string& aName = Util::emptyString, Directory* aParent = NULL) : 
-		size(0), name(aName), parent(aParent), fileTypes(0) { 
+		Directory(const string& aName = Util::emptyString, Directory* aParent = NULL) :
+		size(0), name(aName), parent(aParent), fileTypes(0) {
 		}
 
 		~Directory();
 
-		bool hasType(u_int32_t type) const throw() {
+		bool hasType(uint32_t type) const throw() {
 			return ( (type == SearchManager::TYPE_ANY) || (fileTypes & (1 << type)) );
 		}
-		void addType(u_int32_t type) throw();
+		void addType(uint32_t type) throw();
 
 		string getADCPath() const throw();
-		string getFullName() const throw(); 
+		string getFullName() const throw();
 
-		int64_t getSize() {
-			int64_t tmp = size;
-			for(MapIter i = directories.begin(); i != directories.end(); ++i)
-				tmp+=i->second->getSize();
-			return tmp;
-		}
-
-		size_t countFiles() {
-			size_t tmp = files.size();
-			for(MapIter i = directories.begin(); i != directories.end(); ++i)
-				tmp+=i->second->countFiles();
-			return tmp;			
-		}
+		int64_t getSize();
+		size_t countFiles();
 
 		void search(SearchResult::List& aResults, StringSearch::List& aStrings, int aSearchType, int64_t aSize, int aFileType, Client* aClient, StringList::size_type maxResults) throw();
 		void search(SearchResult::List& aResults, AdcSearch& aStrings, StringList::size_type maxResults) throw();
 
-		void toNmdc(string& nmdc, string& indent, string& tmp2);
 		void toXml(OutputStream& xmlFile, string& indent, string& tmp2, bool fullList);
 		void filesToXml(OutputStream& xmlFile, string& indent, string& tmp2);
 
@@ -199,7 +186,7 @@ private:
 		Directory& operator=(const Directory&);
 
 		/** Set of flags that say which SearchManager::TYPE_* a directory contains */
-		u_int32_t fileTypes;
+		uint32_t fileTypes;
 
 	};
 
@@ -208,9 +195,9 @@ private:
 
 	friend class Singleton<ShareManager>;
 	ShareManager();
-	
+
 	virtual ~ShareManager();
-	
+
 	struct AdcSearch {
 		AdcSearch(const StringList& params);
 
@@ -246,33 +233,30 @@ private:
 		bool isDirectory;
 	};
 
-	typedef HASH_MULTIMAP_X(TTHValue*, Directory::File::Iter, TTHValue::PtrHash, TTHValue::PtrHash, TTHValue::PtrLess) HashFileMap;
+	typedef HASH_MAP_X(TTHValue, Directory::File::Set::const_iterator, TTHValue::Hash, equal_to<TTHValue>, less<TTHValue>) HashFileMap;
 	typedef HashFileMap::iterator HashFileIter;
 
 	HashFileMap tthIndex;
 
-	int64_t listLen;
-	int64_t bzXmlListLen;
-	TTHValue xmlbzRoot;
+	int64_t xmlListLen;
 	TTHValue xmlRoot;
+	int64_t bzXmlListLen;
+	TTHValue bzXmlRoot;
+	auto_ptr<File> bzXmlRef;
 
 	bool xmlDirty;
 	bool refreshDirs;
 	bool update;
 	bool initial;
-	
+
 	int listN;
 
 	volatile long refreshing;
 
-	File* lFile;
-	File* xFile;
+	uint32_t lastXmlUpdate;
+	uint32_t lastFullUpdate;
 
-	u_int32_t lastXmlUpdate;
-	u_int32_t lastFullUpdate;
-
-	mutable RWLock<> cs;
-	CriticalSection listGenLock;
+	mutable CriticalSection cs;
 
 	// Map real name to directory structure
 	Directory::Map directories;
@@ -281,21 +265,22 @@ private:
 	StringPairList virtualMap;
 
 	BloomFilter<5> bloom;
-	
-	/** Find virtual name from real name */
-	StringPairIter findVirtual(const string& name);
-	/** Find real name from virtual name */
-	StringPairIter lookupVirtual(const string& name);
 
-	bool checkFile(const string& aDir, const string& aFile, Directory::File::Iter& it);
+	/** Find virtual name from real name */
+	StringPairIter findVirtual(const string& realName);
+	/** Find real name from virtual name */
+	StringPairIter findReal(const string& virtualName);
+
+	bool checkFile(const string& virtualFile, string& realFile, Directory::File::Iter& it);
 
 	Directory* buildTree(const string& aName, Directory* aParent);
-	void addTree(Directory* aDirectory);
-	void addFile(Directory* dir, Directory::File::Iter i);
+
+	void rebuildIndices();
+
+	void addTree(Directory& aDirectory);
+	void addFile(Directory& dir, Directory::File::Iter i);
 	void generateXmlList();
 	bool loadCache();
-
-	void removeTTH(const TTHValue& tth, const Directory::File& file);
 
 	Directory* getDirectory(const string& fname);
 
@@ -308,18 +293,18 @@ private:
 	virtual void on(HashManagerListener::TTHDone, const string& fname, const TTHValue& root) throw();
 
 	// SettingsManagerListener
-	virtual void on(SettingsManagerListener::Save, SimpleXML* xml) throw() {
+	virtual void on(SettingsManagerListener::Save, SimpleXML& xml) throw() {
 		save(xml);
 	}
-	virtual void on(SettingsManagerListener::Load, SimpleXML* xml) throw() {
+	virtual void on(SettingsManagerListener::Load, SimpleXML& xml) throw() {
 		load(xml);
 	}
-	
+
 	// TimerManagerListener
-	virtual void on(TimerManagerListener::Minute, u_int32_t tick) throw();
-	void load(SimpleXML* aXml);
-	void save(SimpleXML* aXml);
-	
+	virtual void on(TimerManagerListener::Minute, uint32_t tick) throw();
+	void load(SimpleXML& aXml);
+	void save(SimpleXML& aXml);
+
 };
 
 #endif // !defined(SHARE_MANAGER_H)

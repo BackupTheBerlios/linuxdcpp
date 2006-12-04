@@ -28,7 +28,7 @@
 #include <sys/time.h>
 #endif
 
-class Semaphore  
+class Semaphore
 {
 #ifdef _WIN32
 public:
@@ -41,7 +41,7 @@ public:
 	}
 
 	bool wait() throw() { return WaitForSingleObject(h, INFINITE) == WAIT_OBJECT_0; }
-	bool wait(u_int32_t millis) throw() { return WaitForSingleObject(h, millis) == WAIT_OBJECT_0; }
+	bool wait(uint32_t millis) throw() { return WaitForSingleObject(h, millis) == WAIT_OBJECT_0; }
 
 	~Semaphore() throw() {
 		CloseHandle(h);
@@ -53,13 +53,13 @@ private:
 public:
 	Semaphore() throw() : count(0) { pthread_cond_init(&cond, NULL); }
 	~Semaphore() throw() { pthread_cond_destroy(&cond); }
-	void signal() throw() { 
+	void signal() throw() {
 		Lock l(cs);
 		count++;
 		pthread_cond_signal(&cond);
 	}
 
-	bool wait() throw() { 
+	bool wait() throw() {
 		Lock l(cs);
 		if(count == 0) {
 			pthread_cond_wait(&cond, &cs.getMutex());
@@ -67,7 +67,7 @@ public:
 		count--;
 		return true;
 	}
-	bool wait(u_int32_t millis) throw() { 
+	bool wait(uint32_t millis) throw() {
 		Lock l(cs);
 		if(count == 0) {
 			timeval timev;

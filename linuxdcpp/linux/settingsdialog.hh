@@ -87,18 +87,24 @@ class Settings:
 		static void onLogDownloadClicked_gui(GtkToggleButton *button, gpointer data);
 		static void onLogUploadClicked_gui(GtkToggleButton *button, gpointer data);
 		static void onAdvancedToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
+		static void onCertificatesPrivateBrowseClicked_gui(GtkWidget *widget, gpointer data);
+		static void onCertificatesFileBrowseClicked_gui(GtkWidget *widget, gpointer data);
+		static void onCertificatesPathBrowseClicked_gui(GtkWidget *widget, gpointer data);
+		static void onCertificatesToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
+		static void onGenerateCertificatesClicked_gui(GtkWidget *widget, gpointer data);
 
 		// Client functions
 		void shareHidden_client(bool show);
 		void addShare_client(std::string path, std::string name);
+		void generateCertificates_client();
 
 		GtkComboBox *connectionSpeedComboBox;
 		GtkListStore *downloadToStore, *publicListStore, *queueStore,
 			*shareStore, *appearanceStore, *colorStore, *windowStore1,
-			*windowStore2, *windowStore3, *advancedStore;
+			*windowStore2, *windowStore3, *advancedStore, *certificatesStore;
 		TreeView downloadToView, publicListView, queueView, shareView,
 			appearanceView, colorView, windowView1, windowView2,
-			windowView3, advancedView;
+			windowView3, advancedView, certificatesView;
 };
 
 #else

@@ -35,7 +35,7 @@ UserCommand FavoriteManager::addUserCommand(int type, int ctx, int flags, const 
 	Lock l(cs);
 	userCommands.push_back(UserCommand(lastId++, type, ctx, flags, name, command, hub));
 	UserCommand& uc = userCommands.back();
-	if(!uc.isSet(UserCommand::FLAG_NOSAVE)) 
+	if(!uc.isSet(UserCommand::FLAG_NOSAVE))
 		save();
 	return userCommands.back();
 }
@@ -122,13 +122,12 @@ void FavoriteManager::removeHubUserCommands(int ctx, const string& hub) {
 	}
 }
 
-void FavoriteManager::addFavoriteUser(User::Ptr& aUser) { 
+void FavoriteManager::addFavoriteUser(User::Ptr& aUser) {
 	Lock l(cs);
 	if(users.find(aUser->getCID()) == users.end()) {
-		aUser->setFlag(User::SAVE_NICK);
 		StringList urls = ClientManager::getInstance()->getHubs(aUser->getCID());
 		StringList nicks = ClientManager::getInstance()->getNicks(aUser->getCID());
-        
+
 		/// @todo make this an error probably...
 		if(urls.empty())
 			urls.push_back(Util::emptyString);
@@ -238,7 +237,7 @@ void FavoriteManager::onHttpFinished() throw() {
 
 	if(listType == TYPE_BZIP2) {
 		try {
-			CryptoManager::getInstance()->decodeBZ2((u_int8_t*)downloadBuf.data(), downloadBuf.size(), bzlist);
+			CryptoManager::getInstance()->decodeBZ2((uint8_t*)downloadBuf.data(), downloadBuf.size(), bzlist);
 		} catch(const CryptoException&) {
 			bzlist.clear();
 		}
@@ -345,7 +344,6 @@ void FavoriteManager::save() {
 		xml.addTag("Users");
 		xml.stepIn();
 		for(FavoriteMap::iterator j = users.begin(); j != users.end(); ++j) {
-			j->second.getUser()->setFlag(User::SAVE_NICK);
 			xml.addTag("User");
 			xml.addChildAttrib("LastSeen", j->second.getLastSeen());
 			xml.addChildAttrib("GrantSlot", j->second.isSet(FavoriteUser::FLAG_GRANTSLOT));
@@ -395,30 +393,24 @@ void FavoriteManager::save() {
 }
 
 void FavoriteManager::load() {
-	
+
 	// Add NMDC standard op commands
-	static const char kickstr[] = 
+	static const char kickstr[] =
 		"$To: %[userNI] From: %[myNI] $<%[myNI]> You are being kicked because: %[line:Reason]|<%[myNI]> %[myNI] is kicking %[userNI] because: %[line:Reason]|$Kick %[userNI]|";
-	addUserCommand(UserCommand::TYPE_RAW_ONCE, UserCommand::CONTEXT_CHAT | UserCommand::CONTEXT_SEARCH, UserCommand::FLAG_NOSAVE, 
+	addUserCommand(UserCommand::TYPE_RAW_ONCE, UserCommand::CONTEXT_CHAT | UserCommand::CONTEXT_SEARCH, UserCommand::FLAG_NOSAVE,
 		STRING(KICK_USER), kickstr, "op");
 	static const char redirstr[] =
 		"$OpForceMove $Who:%[userNI]$Where:%[line:Target Server]$Msg:%[line:Message]|";
-	addUserCommand(UserCommand::TYPE_RAW_ONCE, UserCommand::CONTEXT_CHAT | UserCommand::CONTEXT_SEARCH, UserCommand::FLAG_NOSAVE, 
-		STRING(REDIRECT_USER), redirstr, "op");
-
-	// Add ADC standard op commands
-	static const char adc_disconnectstr[] =
-		"HDSC %[userSID]\n";
 	addUserCommand(UserCommand::TYPE_RAW_ONCE, UserCommand::CONTEXT_CHAT | UserCommand::CONTEXT_SEARCH, UserCommand::FLAG_NOSAVE,
-		STRING(DISCONNECT_USER), adc_disconnectstr, "adc://op");
+		STRING(REDIRECT_USER), redirstr, "op");
 
 	try {
 		SimpleXML xml;
 		xml.fromXML(File(getConfigFile(), File::READ, File::OPEN).read());
-		
+
 		if(xml.findChild("Favorites")) {
 			xml.stepIn();
-			load(&xml);
+			load(xml);
 			xml.stepOut();
 		}
 	} catch(const Exception& e) {
@@ -426,37 +418,37 @@ void FavoriteManager::load() {
 	}
 }
 
-void FavoriteManager::load(SimpleXML* aXml) {
+void FavoriteManager::load(SimpleXML& aXml) {
 	dontSave = true;
 
-	aXml->resetCurrentChild();
-	if(aXml->findChild("Hubs")) {
-		aXml->stepIn();
-		while(aXml->findChild("Hub")) {
+	aXml.resetCurrentChild();
+	if(aXml.findChild("Hubs")) {
+		aXml.stepIn();
+		while(aXml.findChild("Hub")) {
 			FavoriteHubEntry* e = new FavoriteHubEntry();
-			e->setName(aXml->getChildAttrib("Name"));
-			e->setConnect(aXml->getBoolChildAttrib("Connect"));
-			e->setDescription(aXml->getChildAttrib("Description"));
-			e->setNick(aXml->getChildAttrib("Nick"));
-			e->setPassword(aXml->getChildAttrib("Password"));
-			e->setServer(aXml->getChildAttrib("Server"));
-			e->setUserDescription(aXml->getChildAttrib("UserDescription"));
-			e->setBottom((u_int16_t)aXml->getIntChildAttrib("Bottom") );
-			e->setTop((u_int16_t)aXml->getIntChildAttrib("Top"));
-			e->setRight((u_int16_t)aXml->getIntChildAttrib("Right"));
-			e->setLeft((u_int16_t)aXml->getIntChildAttrib("Left"));
+			e->setName(aXml.getChildAttrib("Name"));
+			e->setConnect(aXml.getBoolChildAttrib("Connect"));
+			e->setDescription(aXml.getChildAttrib("Description"));
+			e->setNick(aXml.getChildAttrib("Nick"));
+			e->setPassword(aXml.getChildAttrib("Password"));
+			e->setServer(aXml.getChildAttrib("Server"));
+			e->setUserDescription(aXml.getChildAttrib("UserDescription"));
+			e->setBottom((uint16_t)aXml.getIntChildAttrib("Bottom") );
+			e->setTop((uint16_t)aXml.getIntChildAttrib("Top"));
+			e->setRight((uint16_t)aXml.getIntChildAttrib("Right"));
+			e->setLeft((uint16_t)aXml.getIntChildAttrib("Left"));
 			favoriteHubs.push_back(e);
 		}
-		aXml->stepOut();
+		aXml.stepOut();
 	}
-	aXml->resetCurrentChild();
-	if(aXml->findChild("Users")) {
-		aXml->stepIn();
-		while(aXml->findChild("User")) {
+	aXml.resetCurrentChild();
+	if(aXml.findChild("Users")) {
+		aXml.stepIn();
+		while(aXml.findChild("User")) {
 			User::Ptr u;
-			const string& cid = aXml->getChildAttrib("CID");
-			const string& nick = aXml->getChildAttrib("Nick");
-			const string& hubUrl = aXml->getChildAttrib("URL");
+			const string& cid = aXml.getChildAttrib("CID");
+			const string& nick = aXml.getChildAttrib("Nick");
+			const string& hubUrl = aXml.getChildAttrib("URL");
 
 			if(cid.length() != 39) {
 				if(nick.empty() || hubUrl.empty())
@@ -469,35 +461,34 @@ void FavoriteManager::load(SimpleXML* aXml) {
 			}
 			FavoriteMap::iterator i = users.insert(make_pair(u->getCID(), FavoriteUser(u, nick, hubUrl))).first;
 
-			if(aXml->getBoolChildAttrib("GrantSlot"))
+			if(aXml.getBoolChildAttrib("GrantSlot"))
 				i->second.setFlag(FavoriteUser::FLAG_GRANTSLOT);
 
-			i->second.setLastSeen((u_int32_t)aXml->getIntChildAttrib("LastSeen"));
-			i->second.setDescription(aXml->getChildAttrib("UserDescription"));
+			i->second.setLastSeen((uint32_t)aXml.getIntChildAttrib("LastSeen"));
+			i->second.setDescription(aXml.getChildAttrib("UserDescription"));
 
-			i->second.getUser()->setFlag(User::SAVE_NICK);
 		}
-		aXml->stepOut();
+		aXml.stepOut();
 	}
-	aXml->resetCurrentChild();
-	if(aXml->findChild("UserCommands")) {
-		aXml->stepIn();
-		while(aXml->findChild("UserCommand")) {
-			addUserCommand(aXml->getIntChildAttrib("Type"), aXml->getIntChildAttrib("Context"),
-				0, aXml->getChildAttrib("Name"), aXml->getChildAttrib("Command"), aXml->getChildAttrib("Hub"));
+	aXml.resetCurrentChild();
+	if(aXml.findChild("UserCommands")) {
+		aXml.stepIn();
+		while(aXml.findChild("UserCommand")) {
+			addUserCommand(aXml.getIntChildAttrib("Type"), aXml.getIntChildAttrib("Context"),
+				0, aXml.getChildAttrib("Name"), aXml.getChildAttrib("Command"), aXml.getChildAttrib("Hub"));
 		}
-		aXml->stepOut();
+		aXml.stepOut();
 	}
 	//Favorite download to dirs
-	aXml->resetCurrentChild();
-	if(aXml->findChild("FavoriteDirs")) {
-		aXml->stepIn();
-		while(aXml->findChild("Directory")) {
-			string virt = aXml->getChildAttrib("Name");
-			string d(aXml->getChildData());
+	aXml.resetCurrentChild();
+	if(aXml.findChild("FavoriteDirs")) {
+		aXml.stepIn();
+		while(aXml.findChild("Directory")) {
+			string virt = aXml.getChildAttrib("Name");
+			string d(aXml.getChildData());
 			FavoriteManager::getInstance()->addFavoriteDir(d, virt);
 		}
-		aXml->stepOut();
+		aXml.stepOut();
 	}
 
 	dontSave = false;
@@ -523,7 +514,7 @@ FavoriteHubEntry* FavoriteManager::getFavoriteHubEntry(const string& aServer) {
 	return NULL;
 }
 
-bool FavoriteManager::hasSlot(const User::Ptr& aUser) const { 
+bool FavoriteManager::hasSlot(const User::Ptr& aUser) const {
 	Lock l(cs);
 	FavoriteMap::const_iterator i = users.find(aUser->getCID());
 	if(i == users.end())
@@ -531,7 +522,7 @@ bool FavoriteManager::hasSlot(const User::Ptr& aUser) const {
 	return i->second.isSet(FavoriteUser::FLAG_GRANTSLOT);
 }
 
-time_t FavoriteManager::getLastSeen(const User::Ptr& aUser) const { 
+time_t FavoriteManager::getLastSeen(const User::Ptr& aUser) const {
 	Lock l(cs);
 	FavoriteMap::const_iterator i = users.find(aUser->getCID());
 	if(i == users.end())
@@ -620,7 +611,7 @@ UserCommand::List FavoriteManager::getUserCommands(int ctx, const StringList& hu
 			bool hubAdc = hub.compare(0, 6, "adc://") == 0;
 			bool commandAdc = uc.getHub().compare(0, 6, "adc://") == 0;
 			if(hubAdc && commandAdc) {
-				if((uc.getHub().length() == 6) || 
+				if((uc.getHub().length() == 6) ||
 					(uc.getHub() == "adc://op" && isOp[j]) ||
 					(uc.getHub() == hub) )
 				{
@@ -628,7 +619,7 @@ UserCommand::List FavoriteManager::getUserCommands(int ctx, const StringList& hu
 					break;
 				}
 			} else if(!hubAdc && !commandAdc) {
-				if((uc.getHub().length() == 0) || 
+				if((uc.getHub().length() == 0) ||
 					(uc.getHub() == "op" && isOp[j]) ||
 					(uc.getHub() == hub) )
 				{
@@ -642,11 +633,11 @@ UserCommand::List FavoriteManager::getUserCommands(int ctx, const StringList& hu
 }
 
 // HttpConnectionListener
-void FavoriteManager::on(Data, HttpConnection*, const u_int8_t* buf, size_t len) throw() { 
+void FavoriteManager::on(Data, HttpConnection*, const uint8_t* buf, size_t len) throw() {
 	downloadBuf.append((const char*)buf, len);
 }
 
-void FavoriteManager::on(Failed, HttpConnection*, const string& aLine) throw() { 
+void FavoriteManager::on(Failed, HttpConnection*, const string& aLine) throw() {
 	c->removeListener(this);
 	lastServer++;
 	running = false;
@@ -658,14 +649,14 @@ void FavoriteManager::on(Complete, HttpConnection*, const string& aLine) throw()
 	running = false;
 	fire(FavoriteManagerListener::DownloadFinished(), aLine);
 }
-void FavoriteManager::on(Redirected, HttpConnection*, const string& aLine) throw() { 
+void FavoriteManager::on(Redirected, HttpConnection*, const string& aLine) throw() {
 	fire(FavoriteManagerListener::DownloadStarting(), aLine);
 }
-void FavoriteManager::on(TypeNormal, HttpConnection*) throw() { 
-	listType = TYPE_NORMAL; 
+void FavoriteManager::on(TypeNormal, HttpConnection*) throw() {
+	listType = TYPE_NORMAL;
 }
-void FavoriteManager::on(TypeBZ2, HttpConnection*) throw() { 
-	listType = TYPE_BZIP2; 
+void FavoriteManager::on(TypeBZ2, HttpConnection*) throw() {
+	listType = TYPE_BZIP2;
 }
 
 void FavoriteManager::on(UserUpdated, const OnlineUser& user) throw() {

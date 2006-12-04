@@ -73,7 +73,6 @@ class WulforManager
 		// DialogEntry functions
 		DialogEntry *getDialogEntry_gui(const std::string &id);
 		void insertDialogEntry_gui(DialogEntry *entry);
-		void hideDialogEntry_gui(DialogEntry *entry);
 		void deleteDialogEntry_gui(DialogEntry *entry);
 		void deleteAllDialogEntries();
 

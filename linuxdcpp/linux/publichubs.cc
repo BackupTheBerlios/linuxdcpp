@@ -269,15 +269,14 @@ void PublicHubs::onRefresh_gui(GtkWidget *widget, gpointer data)
 void PublicHubs::onAddFav_gui(GtkMenuItem *item, gpointer data)
 {
 	PublicHubs *ph = (PublicHubs *)data;
-	FavoriteHubEntry entry;
-	string name, address, description;
 	GtkTreeIter iter;
 
 	if (gtk_tree_selection_get_selected(ph->hubSelection, NULL, &iter))
 	{
-		name = ph->hubView.getString(&iter, "Name");
-		description = ph->hubView.getString(&iter, "Description");
-		address = ph->hubView.getString(&iter, "Address");
+		FavoriteHubEntry entry;
+		string name = ph->hubView.getString(&iter, "Name");
+		string description = ph->hubView.getString(&iter, "Description");
+		string address = ph->hubView.getString(&iter, "Address");
 
 		entry.setName(name);
 		entry.setServer(address);

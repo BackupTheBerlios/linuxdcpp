@@ -340,25 +340,19 @@ void Hub::addMessage_gui(string message)
 
 void Hub::addPrivateMessage_gui(Identity id, string msg)
 {
-	string nick = id.getNick();
-	BookEntry *entry;
-
-	if (id.getUser()->isOnline())
+	if (id.isHub() && BOOLSETTING(IGNORE_HUB_PMS))
 	{
-		entry = WulforManager::get()->addPrivMsg_gui(id.getUser(), !BOOLSETTING(POPUNDER_PM));
-		dynamic_cast< ::PrivateMessage *>(entry)->addMessage_gui(msg);
+		addStatusMessage_gui("Ignored private message from hub");
+	}
+	else if (id.isBot() && BOOLSETTING(IGNORE_BOT_PMS))
+	{
+		string nick = id.getNick();
+		addStatusMessage_gui("Ignored private message from bot " + nick);
 	}
 	else
 	{
-		if (BOOLSETTING(IGNORE_OFFLINE))
-		{
-			addStatusMessage_gui("Ignored private message from " + nick);
-		}
-		else
-		{
-			entry = WulforManager::get()->addPrivMsg_gui(id.getUser(), !BOOLSETTING(POPUNDER_PM));
-			dynamic_cast< ::PrivateMessage *>(entry)->addMessage_gui(msg);
-		}
+		BookEntry *entry = WulforManager::get()->addPrivMsg_gui(id.getUser(), !BOOLSETTING(POPUNDER_PM));
+		dynamic_cast< ::PrivateMessage *>(entry)->addMessage_gui(msg);
 	}
 }
 
@@ -552,7 +546,6 @@ gboolean Hub::onNickListButtonRelease_gui(GtkWidget *widget, GdkEventButton *eve
 gboolean Hub::onNickListKeyRelease_gui(GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
 	Hub *hub = (Hub *)data;
-	GtkTreeIter iter;
 
 	if (gtk_tree_selection_count_selected_rows(hub->nickSelection) > 0)
 	{
@@ -670,8 +663,6 @@ void Hub::onMsgItemClicked_gui(GtkMenuItem *item, gpointer data)
 		string nick;
 		GtkTreeIter iter;
 		GtkTreePath *path;
-		typedef Func1<Hub, string> F1;
-		F1 *func;
 		GList *list = gtk_tree_selection_get_selected_rows(hub->nickSelection, NULL);
 
 		for (GList *i = list; i; i = i->next)
@@ -751,19 +742,7 @@ void Hub::connectClient_client(string address, string nick, string desc, string 
 {
 	dcassert(client == NULL);
 	client = ClientManager::getInstance()->getClient(address);
-
-	if (!nick.empty())
-		client->getMyIdentity().setNick(nick);
-	else
-		client->getMyIdentity().setNick(SETTING(NICK));
-
-	if (!desc.empty())
-		client->getMyIdentity().setDescription(desc);
-	else
-		client->getMyIdentity().setDescription(SETTING(DESCRIPTION));
-
 	client->addListener(this);
-	client->setPassword(password);
 	client->connect();
 }
 
@@ -932,15 +911,6 @@ void Hub::on(ClientListener::Connected, Client *) throw()
 	typedef Func1<Hub, string> F1;
 	F1 *func = new F1(this, &Hub::addStatusMessage_gui, "Connected");
 	WulforManager::get()->dispatchGuiFunc(func);
-}
-
-void Hub::on(ClientListener::BadPassword, Client *) throw()
-{
-	typedef Func1<Hub, string> F1;
-	F1 *func = new F1(this, &Hub::addStatusMessage_gui, "Invalid password");
-	WulforManager::get()->dispatchGuiFunc(func);
-
-	client->setPassword("");
 }
 
 void Hub::on(ClientListener::UserUpdated, Client *, const OnlineUser &user) throw()

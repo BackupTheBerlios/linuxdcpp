@@ -17,6 +17,7 @@
  */
 
 #include "finishedtransfers.hh"
+#include <client/Text.h>
 #include "wulformanager.hh"
 
 FinishedTransfers::FinishedTransfers(const string &title):
@@ -52,6 +53,7 @@ FinishedTransfers::FinishedTransfers(const string &title):
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(transferStore), transferView.col("Time"), GTK_SORT_ASCENDING);
 	gtk_tree_view_set_fixed_height_mode(transferView.get(), TRUE);
 	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(transferView.get()), GTK_SELECTION_MULTIPLE);
+	transferView.setSortColumn_gui("Size", "Chunk Size");
 
 	// Connect the signals to their callback functions.
 	g_signal_connect(getWidget("openWithItem"), "activate", G_CALLBACK(onOpenWith_gui), (gpointer)this);

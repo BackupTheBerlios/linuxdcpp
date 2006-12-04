@@ -37,12 +37,12 @@ public:
 
 	User::Ptr& getUser() { return user; }
 
-	void update(const OnlineUser& info) { setNick(info.getIdentity().getNick()); setUrl(info.getIdentity().getHubUrl()); }
+	void update(const OnlineUser& info);
 
 	GETSET(User::Ptr, user, User);
 	GETSET(string, nick, Nick);
 	GETSET(string, url, Url);
-	GETSET(u_int32_t, lastSeen, LastSeen);
+	GETSET(uint32_t, lastSeen, LastSeen);
 	GETSET(string, description, Description);
 };
 

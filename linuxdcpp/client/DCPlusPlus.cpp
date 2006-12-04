@@ -33,9 +33,15 @@
 #include "SettingsManager.h"
 #include "FinishedManager.h"
 #include "ADLSearch.h"
-#include "SSLSocket.h"
 
 #include "StringTokenizer.h"
+
+#ifdef _STLP_DEBUG
+void __stl_debug_terminate() {
+	int* x = 0;
+	*x = 0;
+}
+#endif
 
 void startup(void (*f)(void*, const string&), void* p) {
 	// "Dedicated to the near-memory of Nev. Let's start remembering people while they're still alive."
@@ -61,7 +67,6 @@ void startup(void (*f)(void*, const string&), void* p) {
 	QueueManager::newInstance();
 	FinishedManager::newInstance();
 	ADLSearchManager::newInstance();
-	//SSLSocketFactory::newInstance();
 
 	SettingsManager::getInstance()->load();
 
@@ -70,7 +75,7 @@ void startup(void (*f)(void*, const string&), void* p) {
 	}
 
 	FavoriteManager::getInstance()->load();
-	//SSLSocketFactory::getInstance()->loadCertificates();
+	CryptoManager::getInstance()->loadCertificates();
 
 	if(f != NULL)
 		(*f)(p, STRING(HASH_DATABASE));
@@ -92,8 +97,7 @@ void shutdown() {
 	BufferedSocket::waitShutdown();
 
 	SettingsManager::getInstance()->save();
-	
-	//SSLSocketFactory::deleteInstance();
+
 	ADLSearchManager::deleteInstance();
 	FinishedManager::deleteInstance();
 	ShareManager::deleteInstance();

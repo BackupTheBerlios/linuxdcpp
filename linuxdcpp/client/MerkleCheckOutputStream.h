@@ -60,7 +60,7 @@ public:
 	}
 
 	virtual size_t write(const void* b, size_t len) throw(FileException) {
-		u_int8_t* xb = (u_int8_t*)b;
+		uint8_t* xb = (uint8_t*)b;
 		size_t pos = 0;
 
 		if(bufPos != 0) {
@@ -78,7 +78,7 @@ public:
 		if(pos < len) {
 			dcassert(bufPos == 0);
 			size_t left = len - pos;
-			size_t part = left - (left %  TreeType::BASE_BLOCK_SIZE);
+			size_t part = left - (left % TreeType::BASE_BLOCK_SIZE);
 			if(part > 0) {
 				cur.update(xb + pos, part);
 				pos += part;
@@ -101,13 +101,13 @@ private:
 	TreeType cur;
 	size_t verified;
 
-	u_int8_t buf[TreeType::BASE_BLOCK_SIZE];
+	uint8_t buf[TreeType::BASE_BLOCK_SIZE];
 	size_t bufPos;
 
 	void checkTrees() throw(FileException) {
 		while(cur.getLeaves().size() > verified) {
 			if(cur.getLeaves().size() > real.getLeaves().size() ||
-				!(cur.getLeaves()[verified] == real.getLeaves()[verified])) 
+				!(cur.getLeaves()[verified] == real.getLeaves()[verified]))
 			{
 				throw FileException(STRING(TTH_INCONSISTENCY));
 			}

@@ -37,7 +37,7 @@ class SocketException;
 class BufferedSocketListener {
 public:
 	virtual ~BufferedSocketListener() { }
-	template<int I>	struct X { enum { TYPE = I };  };
+	template<int I>	struct X { enum { TYPE = I }; };
 
 	typedef X<0> Connecting;
 	typedef X<1> Connected;
@@ -51,7 +51,7 @@ public:
 	virtual void on(Connecting) throw() { }
 	virtual void on(Connected) throw() { }
 	virtual void on(Line, const string&) throw() { }
-	virtual void on(Data, u_int8_t*, size_t) throw() { }
+	virtual void on(Data, uint8_t*, size_t) throw() { }
 	virtual void on(BytesSent, size_t, size_t) throw() { }
 	virtual void on(ModeChange) throw() { }
 	virtual void on(TransmitDone) throw() { }
@@ -72,12 +72,12 @@ public:
 	 * @param sep Line separator
 	 * @return An unconnected socket
 	 */
-	static BufferedSocket* getSocket(char sep) throw() { 
-		return new BufferedSocket(sep); 
+	static BufferedSocket* getSocket(char sep) throw() {
+		return new BufferedSocket(sep);
 	}
 
-	static void putSocket(BufferedSocket* aSock) { 
-		aSock->removeListeners(); 
+	static void putSocket(BufferedSocket* aSock) {
+		aSock->removeListeners();
 		aSock->shutdown();
 	}
 
@@ -86,22 +86,25 @@ public:
 			Thread::sleep(100);
 	}
 
-	void accept(const Socket& srv, bool secure) throw(SocketException, ThreadException);
-	void connect(const string& aAddress, short aPort, bool secure, bool proxy) throw(SocketException, ThreadException);
+	void accept(const Socket& srv, bool secure, bool allowUntrusted) throw(SocketException, ThreadException);
+	void connect(const string& aAddress, short aPort, bool secure, bool allowUntrusted, bool proxy) throw(SocketException, ThreadException);
 
 	/** Sets data mode for aBytes bytes. Must be called within onLine. */
 	void setDataMode(int64_t aBytes = -1) { mode = MODE_DATA; dataBytes = aBytes; }
-	/** 
+	/**
 	 * Rollback is an ugly hack to solve problems with compressed transfers where not all data received
 	 * should be treated as data.
-	 * Must be called from within onData. 
+	 * Must be called from within onData.
 	 */
 	void setLineMode(size_t aRollback) { setMode (MODE_LINE, aRollback);}
 	void setMode(Modes mode, size_t aRollback = 0);
 	Modes getMode() const { return mode; }
-	const string& getIp() { return sock ? sock->getIp() : Util::emptyString; }
-	bool isConnected() { return sock && sock->isConnected(); }
-	
+	const string& getIp() const { return sock ? sock->getIp() : Util::emptyString; }
+	bool isConnected() const { return sock && sock->isConnected(); }
+
+	bool isSecure() const { return sock && sock->isSecure(); }
+	bool isTrusted() const { return sock && sock->isTrusted(); }
+
 	void write(const string& aData) throw() { write(aData.data(), aData.length()); }
 	void write(const char* aBuf, size_t aLen) throw();
 	/** Send the file f over this socket. */
@@ -122,7 +125,7 @@ private:
 		ACCEPTED
 	};
 
-	struct TaskData { 
+	struct TaskData {
 		virtual ~TaskData() { }
 	};
 	struct ConnectInfo : public TaskData {
@@ -155,9 +158,9 @@ private:
 	size_t rollback;
 	bool failed;
 	string line;
-	vector<u_int8_t> inbuf;
-	vector<u_int8_t> writeBuf;
-	vector<u_int8_t> sendBuf;
+	vector<uint8_t> inbuf;
+	vector<uint8_t> writeBuf;
+	vector<uint8_t> sendBuf;
 
 	Socket* sock;
 	bool disconnecting;
@@ -169,15 +172,9 @@ private:
 	void threadSendFile(InputStream* is) throw(Exception);
 	void threadSendData();
 	void threadDisconnect();
-	
-	void fail(const string& aError) {
-		if(sock)
-			sock->disconnect();
-		fire(BufferedSocketListener::Failed(), aError);
-		failed = true;
-	}
-	
-	static size_t sockets;
+
+	void fail(const string& aError);
+	static volatile long sockets;
 
 	bool checkEvents();
 	void checkSocket();

@@ -109,7 +109,6 @@ class Search:
 		int searchHits;
 		bool isHash;
 		bool onlyFree;
-		bool onlyTTH;
 		static bool onlyOp;
 };
 

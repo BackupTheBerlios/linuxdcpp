@@ -20,6 +20,7 @@
 
 #include <client/FavoriteManager.h>
 #include <client/ShareManager.h>
+#include <client/Text.h>
 #include "search.hh"
 #include "settingsmanager.hh"
 #include "wulformanager.hh"
@@ -35,6 +36,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, const std::string &file):
 	updateFileView(TRUE)
 {
 	// Configure the dialogs
+	File::ensureDirectory(SETTING(DOWNLOAD_DIRECTORY));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("findDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(getWidget("dirChooserDialog")), Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY)).c_str());
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("dirChooserDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
@@ -316,13 +318,8 @@ void ShareBrowser::updateFiles_gui(DirectoryListing::Directory *dir)
 			fileView.col("Exact Size"), Util::formatExactSize(size).c_str(),
 			fileView.col("Size Order"), size,
 			fileView.col("DL File"), (gpointer)(*it_file),
+			fileView.col("TTH"), (*it_file)->getTTH().toBase32().c_str(),
 			-1);
-
-		TTHValue *tth = (*it_file)->getTTH();
-		if (tth)
-			gtk_list_store_set(fileStore, &iter, fileView.col("TTH"), tth->toBase32().c_str(), -1);
-		else
-			gtk_list_store_set(fileStore, &iter, fileView.col("TTH"), "N/A", -1);
 
 		currentSize += size;
 		currentItems++;
@@ -804,12 +801,11 @@ void ShareBrowser::onDownloadFavoriteDirClicked_gui(GtkMenuItem *item, gpointer 
 void ShareBrowser::onSearchAlternatesClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	ShareBrowser *sb = (ShareBrowser *)data;
-	string target;
-	bool bigFile;
 	GtkTreeIter iter;
 	GtkTreePath *path;
 	gpointer ptr;
 	string fileOrder;
+	Search *s;
 	DirectoryListing::File *file;
 	GtkTreeModel *m = GTK_TREE_MODEL(sb->fileStore);
 	GList *list = gtk_tree_selection_get_selected_rows(sb->fileSelection, NULL);
@@ -826,28 +822,8 @@ void ShareBrowser::onSearchAlternatesClicked_gui(GtkMenuItem *item, gpointer dat
 			if (fileOrder[0] == 'f')
 			{
 				file = (DirectoryListing::File *)ptr;
-				Search *s = dynamic_cast<Search *>(WulforManager::get()->addSearch_gui());
-
-				if (file->getTTH())
-					s->putValue_gui(file->getTTH()->toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
-				else
-				{
-					bigFile = (file->getSize() > 10 * 1024 * 1024);
-					if (sb->listing.getUtf8())
-						target = Util::getFileName(file->getName());
-					else
-						target = Text::acpToUtf8(Util::getFileName(file->getName()));
-
-					if (!target.empty())
-					{
-						if (bigFile)
-							s->putValue_gui(SearchManager::clean(target), file->getSize()-1,
-							SearchManager::SIZE_ATLEAST, ShareManager::getInstance()->getType(target));
-						else
-							s->putValue_gui(SearchManager::clean(target), file->getSize()+1,
-							SearchManager::SIZE_ATMOST, ShareManager::getInstance()->getType(target));
-					}
-				}
+				s = dynamic_cast<Search *>(WulforManager::get()->addSearch_gui());
+				s->putValue_gui(file->getTTH().toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
 			}
 		}
 		gtk_tree_path_free(path);

@@ -27,23 +27,24 @@
 
 #include "Streams.h"
 #include "SSLSocket.h"
+#include "CryptoManager.h"
 
 // Polling is used for tasks...should be fixed...
 #define POLL_TIMEOUT 250
 
-BufferedSocket::BufferedSocket(char aSeparator) throw() : 
+BufferedSocket::BufferedSocket(char aSeparator) throw() :
 separator(aSeparator), mode(MODE_LINE), filterIn(NULL),
 dataBytes(0), rollback(0), failed(false), sock(0), disconnecting(false)
 {
-	sockets++;
+	Thread::safeInc(sockets);
 }
 
-size_t BufferedSocket::sockets = 0;
+volatile long BufferedSocket::sockets = 0;
 
 BufferedSocket::~BufferedSocket() throw() {
 	delete sock;
 	delete filterIn;
-	sockets--;
+	Thread::safeDec(sockets);
 }
 
 void BufferedSocket::setMode (Modes aMode, size_t aRollback) {
@@ -73,59 +74,58 @@ void BufferedSocket::setMode (Modes aMode, size_t aRollback) {
 	}
 }
 
-void BufferedSocket::accept(const Socket& srv, bool secure) throw(SocketException, ThreadException) {
+void BufferedSocket::accept(const Socket& srv, bool secure, bool allowUntrusted) throw(SocketException, ThreadException) {
 	dcassert(!sock);
-	
-	dcdebug("BufferedSocket::accept() %p\n", (void*)this);
-	sock = /*secure ? SSLSocketFactory::getInstance()->getClientSocket() :*/ new Socket;
-
-	sock->accept(srv);
-	if(SETTING(SOCKET_IN_BUFFER) > 0)
-		sock->setSocketOpt(SO_RCVBUF, SETTING(SOCKET_IN_BUFFER));
-    if(SETTING(SOCKET_OUT_BUFFER) > 0)
-		sock->setSocketOpt(SO_SNDBUF, SETTING(SOCKET_OUT_BUFFER));
-	sock->setBlocking(false);
-
-	inbuf.resize(sock->getSocketOptInt(SO_RCVBUF));
-
-	// This lock prevents the shutdown task from being added and executed before we're done initializing the socket
-	Lock l(cs);
 	try {
+		dcdebug("BufferedSocket::accept() %p\n", (void*)this);
+		sock = secure ? CryptoManager::getInstance()->getServerSocket(allowUntrusted) : new Socket;
+
+		sock->accept(srv);
+		if(SETTING(SOCKET_IN_BUFFER) > 0)
+			sock->setSocketOpt(SO_RCVBUF, SETTING(SOCKET_IN_BUFFER));
+		if(SETTING(SOCKET_OUT_BUFFER) > 0)
+			sock->setSocketOpt(SO_SNDBUF, SETTING(SOCKET_OUT_BUFFER));
+		sock->setBlocking(false);
+
+		inbuf.resize(sock->getSocketOptInt(SO_RCVBUF));
+
+		// This lock prevents the shutdown task from being added and executed before we're done initializing the socket
+		Lock l(cs);
 		start();
+		addTask(ACCEPTED, 0);
 	} catch(...) {
 		delete sock;
 		sock = 0;
 		throw;
 	}
 
-	addTask(ACCEPTED, 0);
 }
 
-void BufferedSocket::connect(const string& aAddress, short aPort, bool secure, bool proxy) throw(SocketException, ThreadException) {
+void BufferedSocket::connect(const string& aAddress, short aPort, bool secure, bool allowUntrusted, bool proxy) throw(SocketException, ThreadException) {
 	dcassert(!sock);
 
-	dcdebug("BufferedSocket::connect() %p\n", (void*)this);
-	sock = /*secure ? SSLSocketFactory::getInstance()->getClientSocket() :*/ new Socket;
-
-	sock->create();
-	if(SETTING(SOCKET_IN_BUFFER) >= 1024)
-		sock->setSocketOpt(SO_RCVBUF, SETTING(SOCKET_IN_BUFFER));
-	if(SETTING(SOCKET_OUT_BUFFER) >= 1024)
-		sock->setSocketOpt(SO_SNDBUF, SETTING(SOCKET_OUT_BUFFER));
-	sock->setBlocking(false);
-
-	inbuf.resize(sock->getSocketOptInt(SO_RCVBUF));
-
-	Lock l(cs);
 	try {
+		dcdebug("BufferedSocket::connect() %p\n", (void*)this);
+		sock = secure ? CryptoManager::getInstance()->getClientSocket(allowUntrusted) : new Socket;
+
+		sock->create();
+		if(SETTING(SOCKET_IN_BUFFER) >= 1024)
+			sock->setSocketOpt(SO_RCVBUF, SETTING(SOCKET_IN_BUFFER));
+		if(SETTING(SOCKET_OUT_BUFFER) >= 1024)
+			sock->setSocketOpt(SO_SNDBUF, SETTING(SOCKET_OUT_BUFFER));
+		sock->setBlocking(false);
+
+		inbuf.resize(sock->getSocketOptInt(SO_RCVBUF));
+
+		Lock l(cs);
 		start();
+		addTask(CONNECT, new ConnectInfo(aAddress, aPort, proxy && (SETTING(OUTGOING_CONNECTIONS) == SettingsManager::OUTGOING_SOCKS5)));
 	} catch(...) {
 		delete sock;
 		sock = 0;
 		throw;
 	}
 
-	addTask(CONNECT, new ConnectInfo(aAddress, aPort, proxy && (SETTING(OUTGOING_CONNECTIONS) == SettingsManager::OUTGOING_SOCKS5)));
 }
 
 #define CONNECT_TIMEOUT 30000
@@ -136,7 +136,7 @@ void BufferedSocket::threadConnect(const string& aAddr, short aPort, bool proxy)
 		return;
 	fire(BufferedSocketListener::Connecting());
 
-	u_int32_t startTime = GET_TICK();
+	uint32_t startTime = GET_TICK();
 	if(proxy) {
 		sock->socksConnect(aAddr, aPort, CONNECT_TIMEOUT);
 	} else {
@@ -167,9 +167,9 @@ void BufferedSocket::threadRead() throw(SocketException) {
 		// This socket has been closed...
 		throw SocketException(STRING(CONNECTION_CLOSED));
 	}
-    size_t used;
+	size_t used;
 	string::size_type pos = 0;
-    // always uncompressed data
+	// always uncompressed data
 	string l;
 	int bufpos = 0, total = left;
 
@@ -177,10 +177,10 @@ void BufferedSocket::threadRead() throw(SocketException) {
 		switch (mode) {
 			case MODE_ZPIPE:
 				if (filterIn != NULL){
-				    const int BufSize = 1024;
+					const int BufSize = 1024;
 					// Special to autodetect nmdc connections...
 					string::size_type pos = 0;
-					AutoArray<u_int8_t> buffer (BufSize);
+					AutoArray<uint8_t> buffer (BufSize);
 					size_t in;
 					l = line;
 					// decompress all input data and store in l.
@@ -228,7 +228,7 @@ void BufferedSocket::threadRead() throw(SocketException) {
 						break;
 					}
 				}
-				if (pos == string::npos) 
+				if (pos == string::npos)
 					left = 0;
 				line = l;
 				break;
@@ -255,6 +255,10 @@ void BufferedSocket::threadRead() throw(SocketException) {
 				break;
 		}
 	}
+
+	if(mode == MODE_LINE && line.size() > static_cast<size_t>(SETTING(MAX_COMMAND_LENGTH))) {
+		throw SocketException(STRING(COMMAND_TOO_LONG));
+	}
 }
 
 void BufferedSocket::threadSendFile(InputStream* file) throw(Exception) {
@@ -264,9 +268,9 @@ void BufferedSocket::threadSendFile(InputStream* file) throw(Exception) {
 	dcassert(file != NULL);
 	size_t sockSize = (size_t)sock->getSocketOptInt(SO_SNDBUF);
 	size_t bufSize = max(sockSize, (size_t)64*1024);
-	
-	vector<u_int8_t> readBuf(bufSize);
-	vector<u_int8_t> writeBuf(bufSize);
+
+	vector<uint8_t> readBuf(bufSize);
+	vector<uint8_t> writeBuf(bufSize);
 
 	size_t readPos = 0;
 
@@ -407,19 +411,19 @@ bool BufferedSocket::checkEvents() {
 		switch(p.first) {
 			case SEND_DATA:
 				threadSendData(); break;
-			case SEND_FILE: 
+			case SEND_FILE:
 				threadSendFile(((SendFileInfo*)p.second)->stream); break;
-			case CONNECT: 
+			case CONNECT:
 				{
 					ConnectInfo* ci = (ConnectInfo*)p.second;
-					threadConnect(ci->addr, ci->port, ci->proxy); 
+					threadConnect(ci->addr, ci->port, ci->proxy);
 					break;
 				}
-			case DISCONNECT: 
-				if(isConnected()) 
-					fail(STRING(DISCONNECTED)); 
+			case DISCONNECT:
+				if(isConnected())
+					fail(STRING(DISCONNECTED));
 				break;
-			case SHUTDOWN: 
+			case SHUTDOWN:
 				return false;
 			case ACCEPTED:
 				break;
@@ -462,11 +466,21 @@ int BufferedSocket::run() {
 	return 0;
 }
 
-void BufferedSocket::shutdown() { 
+void BufferedSocket::fail(const string& aError) {
 	if(sock) {
-		Lock l(cs); 
-		disconnecting = true; 
-		addTask(SHUTDOWN, 0); 
+		sock->disconnect();
+	}
+	if(!failed) {
+		failed = true;
+		fire(BufferedSocketListener::Failed(), aError);
+	}
+}
+
+void BufferedSocket::shutdown() {
+	if(sock) {
+		Lock l(cs);
+		disconnecting = true;
+		addTask(SHUTDOWN, 0);
 	} else {
 		// Socket thread not running yet, disconnect...
 		delete this;

@@ -70,19 +70,14 @@ binreloc (since it wasn't portable).
 
 Known problems:
 ------------------------
-Utf8 locales are currently very buggy/not supported. If for example a lot of name
-and description fields in the public hub list are empty you are suffering from this.
-A workaround is to specify a non-utf8 locale when running the program, assuming
-you have a non-utf8 locale on your system. For example, I'm from Sweden so my
-utf8 locale would be sv_SE.UTF8. Starting the program like this:
-prompt# LANG=sv_SE.ISO-8859-1 ./linuxdcpp would run LinuxDC++ with a non-utf8 locale.
-
-Codepage is a bit of a headache. Files with local chars in their filename are
-sometimes rehashed on startup, messages in the hub and nicks in the wrong
-codepage may not be shown, lots of pango warnings, etc.
+Character encodings are currently a major headache. Files with non-ASCII chars
+in their filename are sometimes rehashed on startup, messages in the hub and
+nicks may not be shown correctly, lots of pango warnings, etc.
 
 Memory leaks.
 
+Everything listed in our bug tracker:
+http://developer.berlios.de/bugs/?group_id=2230
 
 License:
 --------

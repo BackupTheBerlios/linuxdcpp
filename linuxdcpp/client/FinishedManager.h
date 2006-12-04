@@ -36,11 +36,11 @@ public:
 	typedef vector<Ptr> List;
 	typedef List::iterator Iter;
 
-	FinishedItem(string const& aTarget, string const& aUser, string const& aHub, 
-		int64_t aSize, int64_t aChunkSize, int64_t aMSeconds, u_int32_t aTime,
-		bool aCrc32 = false) : 
+	FinishedItem(string const& aTarget, string const& aUser, string const& aHub,
+		int64_t aSize, int64_t aChunkSize, int64_t aMSeconds, uint32_t aTime,
+		bool aCrc32 = false) :
 		target(aTarget), user(aUser), hub(aHub), size(aSize), chunkSize(aChunkSize),
-		milliSeconds(aMSeconds), time(aTime), crc32Checked(aCrc32) 
+		milliSeconds(aMSeconds), time(aTime), crc32Checked(aCrc32)
 	{
 	}
 
@@ -52,7 +52,7 @@ public:
 	GETSET(int64_t, size, Size);
 	GETSET(int64_t, chunkSize, ChunkSize);
 	GETSET(int64_t, milliSeconds, MilliSeconds);
-	GETSET(u_int32_t, time, Time);
+	GETSET(uint32_t, time, Time);
 	GETSET(bool, crc32Checked, Crc32Checked)
 private:
 	friend class FinishedManager;
@@ -62,7 +62,7 @@ private:
 class FinishedManagerListener {
 public:
 	virtual ~FinishedManagerListener() { }
-	template<int I>	struct X { enum { TYPE = I };  };
+	template<int I>	struct X { enum { TYPE = I }; };
 
 	typedef X<0> AddedUl;
 	typedef X<1> AddedDl;
@@ -78,7 +78,7 @@ public:
 	virtual void on(RemovedUl, FinishedItem*) throw() { }
 	virtual void on(RemovedAllUl) throw() { }
 
-}; 
+};
 
 class FinishedManager : public Singleton<FinishedManager>,
 	public Speaker<FinishedManagerListener>, private DownloadManagerListener, private UploadManagerListener
@@ -92,8 +92,8 @@ public:
 	FinishedItem* getFinishedItem(string aTarget, bool upload = false);
 private:
 	friend class Singleton<FinishedManager>;
-	
-	FinishedManager() { 
+
+	FinishedManager() {
 		DownloadManager::getInstance()->addListener(this);
 		UploadManager::getInstance()->addListener(this);
 	}

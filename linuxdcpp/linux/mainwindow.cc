@@ -23,6 +23,7 @@
 #include <iomanip>
 #include <client/FavoriteManager.h>
 #include <client/ShareManager.h>
+#include <client/Text.h>
 #include "eggtrayicon.h"
 #include "func.hh"
 #include "hub.hh"
@@ -1202,14 +1203,14 @@ void MainWindow::transferComplete_client(Transfer *t)
 {
 	bool download;
 	StringMap params;
-	User::Ptr user = t->getUserConnection()->getUser();
+	User::Ptr user = t->getUserConnection().getUser();
 
 	params["CID"] = user->getCID().toBase32();
 	params["Progress"] = "100";
 	params["Time Left"] = "Done";
 	params["Sort Order"] = "w" + WulforUtil::getNicks(user) + WulforUtil::getHubNames(user);
 
-	if (t->getUserConnection()->isSet(UserConnection::FLAG_DOWNLOAD))
+	if (t->getUserConnection().isSet(UserConnection::FLAG_DOWNLOAD))
 	{
 		params["Status"] = "Download finished, idle...";
 		download = TRUE;
@@ -1283,7 +1284,7 @@ void MainWindow::on(ConnectionManagerListener::StatusChanged, ConnectionQueueIte
 void MainWindow::on(DownloadManagerListener::Starting, Download *dl) throw()
 {
 	StringMap params;
-	User::Ptr user = dl->getUserConnection()->getUser();
+	User::Ptr user = dl->getUserConnection().getUser();
 	string target = Text::acpToUtf8(dl->getTarget());
 
 	if (dl->isSet(Download::FLAG_USER_LIST))
@@ -1299,7 +1300,7 @@ void MainWindow::on(DownloadManagerListener::Starting, Download *dl) throw()
 	params["Size"] = Util::formatBytes(dl->getSize());
 	params["Size Order"] = Util::toString(dl->getSize());
 	params["Sort Order"] = "d" + WulforUtil::getNicks(user) + WulforUtil::getHubNames(user);
-	params["IP"] = dl->getUserConnection()->getRemoteIp();
+	params["IP"] = dl->getUserConnection().getRemoteIp();
 
 	typedef Func2<MainWindow, StringMap, bool> F2;
 	F2 *func = new F2(this, &MainWindow::updateTransfer_gui, params, TRUE);
@@ -1322,7 +1323,7 @@ void MainWindow::on(DownloadManagerListener::Tick, const Download::List &list) t
 		status.clear();
 		dl = *it;
 
-		if (dl->getUserConnection()->isSecure())
+		if (dl->getUserConnection().isSecure())
 			status += "[S]";
 		if (dl->isSet(Download::FLAG_TTH_CHECK))
 			status += "[T]";
@@ -1340,7 +1341,7 @@ void MainWindow::on(DownloadManagerListener::Tick, const Download::List &list) t
 		stream << "Downloaded " << Util::formatBytes((dl->getPos())) << " (" << percent
 			<< "%) in " << Util::formatSeconds((GET_TICK() - dl->getStart()) / 1000);
 
-		params["CID"] = dl->getUserConnection()->getUser()->getCID().toBase32();
+		params["CID"] = dl->getUserConnection().getUser()->getCID().toBase32();
 		params["Status"] = status + stream.str();
 		params["Time Left"] = Util::formatSeconds(dl->getSecondsLeft());
 		params["Progress"] = Util::toString((int)percent);
@@ -1361,7 +1362,7 @@ void MainWindow::on(DownloadManagerListener::Failed, Download *dl, const string 
 {
 	StringMap params;
 	string target = Text::acpToUtf8(dl->getTarget());
-	User::Ptr user = dl->getUserConnection()->getUser();
+	User::Ptr user = dl->getUserConnection().getUser();
 
 	if (dl->isSet(Download::FLAG_USER_LIST))
 		params["Filename"] = "Filelist";
@@ -1385,7 +1386,7 @@ void MainWindow::on(DownloadManagerListener::Failed, Download *dl, const string 
 void MainWindow::on(UploadManagerListener::Starting, Upload *ul) throw()
 {
 	StringMap params;
-	string source = Text::acpToUtf8(ul->getFileName());
+	string source = Text::acpToUtf8(ul->getSourceFile());
 	User::Ptr user = ul->getUser();
 
 	if (ul->isSet(Upload::FLAG_USER_LIST))
@@ -1401,7 +1402,7 @@ void MainWindow::on(UploadManagerListener::Starting, Upload *ul) throw()
 	params["Size"] = Util::formatBytes(ul->getSize());
 	params["Size Order"] = Util::toString(ul->getSize());
 	params["Sort Order"] = "u" + WulforUtil::getNicks(user) + WulforUtil::getHubNames(user);
-	params["IP"] = ul->getUserConnection()->getRemoteIp();
+	params["IP"] = ul->getUserConnection().getRemoteIp();
 
 	typedef Func2<MainWindow, StringMap, bool> F2;
 	F2 *func = new F2(this, &MainWindow::updateTransfer_gui, params, FALSE);
@@ -1424,7 +1425,7 @@ void MainWindow::on(UploadManagerListener::Tick, const Upload::List &list) throw
 		status.clear();
 		ul = *it;
 
-		if (ul->getUserConnection()->isSecure())
+		if (ul->getUserConnection().isSecure())
 			status += "[S]";
 		if (ul->isSet(Upload::FLAG_ZUPLOAD))
 			status += "[Z]";
@@ -1468,12 +1469,11 @@ void MainWindow::on(QueueManagerListener::Finished, QueueItem *item, int64_t avS
 {
 	if (item->isSet(QueueItem::FLAG_CLIENT_VIEW | QueueItem::FLAG_USER_LIST))
 	{
-		User::Ptr user = item->getCurrent()->getUser();
-		string searchString = item->getSearchString();
+		User::Ptr user = item->getCurrent();
 		string listName = item->getListName();
 
 		typedef Func4<MainWindow, User::Ptr, string, string, bool> F4;
-		F4 *func = new F4(this, &MainWindow::addShareBrowser_gui, user, listName, searchString, TRUE);
+		F4 *func = new F4(this, &MainWindow::addShareBrowser_gui, user, listName, "", TRUE);
 		WulforManager::get()->dispatchGuiFunc(func);
 	}
 }

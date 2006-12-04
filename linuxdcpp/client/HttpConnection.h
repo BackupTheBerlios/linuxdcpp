@@ -30,7 +30,7 @@ class HttpConnection;
 class HttpConnectionListener {
 public:
 	virtual ~HttpConnectionListener() { }
-	template<int I>	struct X { enum { TYPE = I };  };
+	template<int I>	struct X { enum { TYPE = I }; };
 
 	typedef X<0> Data;
 	typedef X<1> Failed;
@@ -39,7 +39,7 @@ public:
 	typedef X<4> TypeNormal;
 	typedef X<5> TypeBZ2;
 
-	virtual void on(Data, HttpConnection*, const u_int8_t*, size_t) throw() =0;
+	virtual void on(Data, HttpConnection*, const uint8_t*, size_t) throw() =0;
 	virtual void on(Failed, HttpConnection*, const string&) throw() { }
 	virtual void on(Complete, HttpConnection*, const string&) throw() { }
 	virtual void on(Redirected, HttpConnection*, const string&) throw() { }
@@ -52,9 +52,9 @@ class HttpConnection : BufferedSocketListener, public Speaker<HttpConnectionList
 public:
 	void downloadFile(const string& aUrl);
 	HttpConnection() : ok(false), port(80), size(-1), moved302(false), socket(NULL) { }
-	virtual ~HttpConnection() throw() { 
+	virtual ~HttpConnection() throw() {
 		if(socket) {
-			socket->removeListener(this); 
+			socket->removeListener(this);
 			BufferedSocket::putSocket(socket);
 		}
 	}
@@ -68,7 +68,7 @@ private:
 	string file;
 	string server;
 	bool ok;
-	u_int16_t port;
+	uint16_t port;
 	int64_t size;
 	bool moved302;
 
@@ -77,13 +77,13 @@ private:
 	// BufferedSocketListener
 	virtual void on(Connected) throw();
 	virtual void on(Line, const string&) throw();
-	virtual void on(Data, u_int8_t*, size_t) throw();
+	virtual void on(Data, uint8_t*, size_t) throw();
 	virtual void on(ModeChange) throw();
 	virtual void on(Failed, const string&) throw();
 
-	void onConnected(); 
+	void onConnected();
 	void onLine(const string& aLine);
-	
+
 };
 
 #endif // !defined(HTTP_CONNECTION_H)

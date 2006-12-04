@@ -129,17 +129,16 @@ void DownloadQueue::buildDynamicMenu_gui()
 			string name;
 			QueueItem *item = fileView.getValue<gpointer, QueueItem *>(&iter, "QueueItem");
 
-			for (SourceIter it = item->getSources().begin(); it != item->getSources().end(); ++it)
+			for (QueueItem::SourceConstIter it = item->getSources().begin(); it != item->getSources().end(); ++it)
 			{
-				if (!*it) break;
-				name = WulforUtil::getNicks((*it)->getUser());
+				name = WulforUtil::getNicks(it->getUser());
 				showOtherMenus = TRUE;
 
 				menuItem = gtk_menu_item_new_with_label(name.c_str());
 				gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("browseMenu")), menuItem);
 				g_signal_connect(menuItem, "activate", G_CALLBACK(onGetFileListClicked_gui), (gpointer)this);
 
-				if ((*it)->getUser()->isOnline())
+				if (it->getUser()->isOnline())
 				{
 					showPMMenu = TRUE;
 					menuItem = gtk_menu_item_new_with_label(name.c_str());
@@ -156,10 +155,10 @@ void DownloadQueue::buildDynamicMenu_gui()
 				g_signal_connect(menuItem, "activate", G_CALLBACK(onRemoveUserFromQueueClicked_gui), (gpointer)this);
 			}
 
-			for (SourceIter it = item->getBadSources().begin(); it != item->getBadSources().end(); ++it)
+			for (QueueItem::SourceConstIter it = item->getBadSources().begin(); it != item->getBadSources().end(); ++it)
 			{
 				showReAddMenu = TRUE;
-				name = WulforUtil::getNicks((*it)->getUser());
+				name = WulforUtil::getNicks(it->getUser());
 				menuItem = gtk_menu_item_new_with_label(name.c_str());
 				gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("reAddMenu")), menuItem);
 				g_signal_connect(menuItem, "activate", G_CALLBACK(onReAddSourceClicked_gui), (gpointer)this);
@@ -322,28 +321,8 @@ void DownloadQueue::onSearchAlternatesClicked_gui(GtkMenuItem *item, gpointer da
 	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(dq->fileStore), &iter, path))
 	{
 		QueueItem *item = dq->fileView.getValue<gpointer, QueueItem *>(&iter, "QueueItem");
-
-		if (item->getTTH() != NULL)
-		{
-			Search *s = dynamic_cast<Search*>(WulforManager::get()->addSearch_gui());
-			s->putValue_gui(item->getTTH()->toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
-		}
-		else
-		{
-			string target = dq->fileView.getString(&iter, "Filename");
-			string searchString = SearchManager::clean(target);
-
-			if (!searchString.empty())
-			{
-				bool bigFile = (item->getSize() > 10 * 1024 * 1024);
-				Search *s = dynamic_cast<Search*>(WulforManager::get()->addSearch_gui());
-
-				if (bigFile)
-					s->putValue_gui(searchString, item->getSize() - 1, SearchManager::SIZE_ATLEAST, ShareManager::getInstance()->getType(target));
-				else
-					s->putValue_gui(searchString, item->getSize() + 1, SearchManager::SIZE_ATMOST, ShareManager::getInstance()->getType(target));
-			}
-		}
+		Search *s = dynamic_cast<Search*>(WulforManager::get()->addSearch_gui());
+		s->putValue_gui(item->getTTH().toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
 	}
 	gtk_tree_path_free(path);
 	g_list_free(list);
@@ -364,12 +343,12 @@ void DownloadQueue::onGetFileListClicked_gui(GtkMenuItem *item, gpointer data)
 	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(dq->fileStore), &iter, path))
 	{
 		QueueItem *item = dq->fileView.getValue<gpointer, QueueItem *>(&iter, "QueueItem");
-		for (SourceIter it = item->getSources().begin(); it != item->getSources().end(); ++it)
+		for (QueueItem::SourceConstIter it = item->getSources().begin(); it != item->getSources().end(); ++it)
 		{
-			if (WulforUtil::getNicks((*it)->getUser()) == name)
+			if (WulforUtil::getNicks(it->getUser()) == name)
 			{
 				typedef Func1<DownloadQueue, const User::Ptr &> F1;
-				F1 *func = new F1(dq, &DownloadQueue::addList_client, (*it)->getUser());
+				F1 *func = new F1(dq, &DownloadQueue::addList_client, it->getUser());
 				WulforManager::get()->dispatchClientFunc(func);
 				break;
 			}
@@ -394,11 +373,11 @@ void DownloadQueue::onSendPrivateMessageClicked_gui(GtkMenuItem *item, gpointer 
 	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(dq->fileStore), &iter, path))
 	{
 		QueueItem *item = dq->fileView.getValue<gpointer, QueueItem *>(&iter, "QueueItem");
-		for (SourceIter it = item->getSources().begin(); it != item->getSources().end(); ++it)
+		for (QueueItem::SourceConstIter it = item->getSources().begin(); it != item->getSources().end(); ++it)
 		{
-			if (WulforUtil::getNicks((*it)->getUser()) == name)
+			if (WulforUtil::getNicks(it->getUser()) == name)
 			{
-				WulforManager::get()->addPrivMsg_gui((*it)->getUser());
+				WulforManager::get()->addPrivMsg_gui(it->getUser());
 				break;
 			}
 		}
@@ -422,12 +401,12 @@ void DownloadQueue::onReAddSourceClicked_gui(GtkMenuItem *item, gpointer data)
 	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(dq->fileStore), &iter, path))
 	{
 		QueueItem *item = dq->fileView.getValue<gpointer, QueueItem *>(&iter, "QueueItem");
-		for (SourceIter it = item->getBadSources().begin(); it != item->getBadSources().end(); ++it)
+		for (QueueItem::SourceIter it = item->getBadSources().begin(); it != item->getBadSources().end(); ++it)
 		{
-			if (WulforUtil::getNicks((*it)->getUser()) == name)
+			if (WulforUtil::getNicks(it->getUser()) == name)
 			{
 				typedef Func2<DownloadQueue, string, User::Ptr&> F2;
-				F2 *func = new F2(dq, &DownloadQueue::reAddSource_client, item->getTarget(), (*it)->getUser());
+				F2 *func = new F2(dq, &DownloadQueue::reAddSource_client, item->getTarget(), it->getUser());
 				WulforManager::get()->dispatchClientFunc(func);
 				break;
 			}
@@ -452,12 +431,12 @@ void DownloadQueue::onRemoveSourceClicked_gui(GtkMenuItem *item, gpointer data)
 	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(dq->fileStore), &iter, path))
 	{
 		QueueItem *item = dq->fileView.getValue<gpointer, QueueItem *>(&iter, "QueueItem");
-		for (SourceIter it = item->getSources().begin(); it != item->getSources().end(); ++it)
+		for (QueueItem::SourceIter it = item->getSources().begin(); it != item->getSources().end(); ++it)
 		{
-			if (WulforUtil::getNicks((*it)->getUser()) == name)
+			if (WulforUtil::getNicks(it->getUser()) == name)
 			{
 				typedef Func2<DownloadQueue, string, User::Ptr&> F2;
-				F2 *func = new F2(dq, &DownloadQueue::removeSource_client, item->getTarget(), (*it)->getUser());
+				F2 *func = new F2(dq, &DownloadQueue::removeSource_client, item->getTarget(), it->getUser());
 				WulforManager::get()->dispatchClientFunc(func);
 				break;
 			}
@@ -482,12 +461,12 @@ void DownloadQueue::onRemoveUserFromQueueClicked_gui(GtkMenuItem *item, gpointer
 	if (gtk_tree_model_get_iter(GTK_TREE_MODEL(dq->fileStore), &iter, path))
 	{
 		QueueItem *item = dq->fileView.getValue<gpointer, QueueItem *>(&iter, "QueueItem");
-		for (SourceIter it = item->getSources().begin(); it != item->getSources().end(); ++it)
+		for (QueueItem::SourceIter it = item->getSources().begin(); it != item->getSources().end(); ++it)
 		{
-			if (WulforUtil::getNicks((*it)->getUser()) == name)
+			if (WulforUtil::getNicks(it->getUser()) == name)
 			{
 				typedef Func1<DownloadQueue, User::Ptr&> F1;
-				F1 *func = new F1(dq, &DownloadQueue::removeSources_client, (*it)->getUser());
+				F1 *func = new F1(dq, &DownloadQueue::removeSources_client, it->getUser());
 				WulforManager::get()->dispatchClientFunc(func);
 				break;
 			}
@@ -774,16 +753,15 @@ void DownloadQueue::updateItem_gui(QueueItem *item, bool add)
 	// Users
 	int online = 0;
 
-	for (SourceIter it = item->getSources().begin(); it != item->getSources().end(); ++it)
+	for (QueueItem::SourceConstIter it = item->getSources().begin(); it != item->getSources().end(); ++it)
 	{
-		if (!*it) return;
 		if (tmp.size() > 0)
 			tmp += ", ";
 
-			if ((*it)->getUser()->isOnline())
+			if (it->getUser()->isOnline())
 				online++;
 
-			tmp += WulforUtil::getNicks((*it)->getUser());
+			tmp += WulforUtil::getNicks(it->getUser());
 	}
 	gtk_list_store_set(fileStore, &iter, fileView.col("Users"), string(tmp.empty() ? "No users" : tmp).c_str(), -1);
 
@@ -861,23 +839,23 @@ void DownloadQueue::updateItem_gui(QueueItem *item, bool add)
 	gtk_list_store_set(fileStore, &iter, fileView.col("Path"), Util::getFilePath(item->getTarget()).c_str(), -1);
 
 	// Errors
-	for (SourceIter it = item->getBadSources().begin(); it != item->getBadSources().end(); ++it)
+	for (QueueItem::SourceConstIter it = item->getBadSources().begin(); it != item->getBadSources().end(); ++it)
 	{
-		if (!(*it)->isSet(QueueItem::Source::FLAG_REMOVED))
+		if (!it->isSet(QueueItem::Source::FLAG_REMOVED))
 		{
 			if (tmp.size() > 0)
 				tmp += ", ";
-			tmp += WulforUtil::getNicks((*it)->getUser());
+			tmp += WulforUtil::getNicks(it->getUser());
 			tmp += " (";
-			if ((*it)->isSet(QueueItem::Source::FLAG_FILE_NOT_AVAILABLE))
+			if (it->isSet(QueueItem::Source::FLAG_FILE_NOT_AVAILABLE))
 				tmp += "File not available";
-			else if ((*it)->isSet(QueueItem::Source::FLAG_PASSIVE))
+			else if (it->isSet(QueueItem::Source::FLAG_PASSIVE))
 				tmp += "Passive user";
-			else if ((*it)->isSet(QueueItem::Source::FLAG_ROLLBACK_INCONSISTENCY))
+			else if (it->isSet(QueueItem::Source::FLAG_ROLLBACK_INCONSISTENCY))
 				tmp += "Rollback inconsistency, existing file does not match the one being downloaded";
-			else if ((*it)->isSet(QueueItem::Source::FLAG_CRC_FAILED))
+			else if (it->isSet(QueueItem::Source::FLAG_CRC_FAILED))
 				tmp += "CRC32 inconsistency (SFV-Check)";
-			else if ((*it)->isSet(QueueItem::Source::FLAG_BAD_TREE))
+			else if (it->isSet(QueueItem::Source::FLAG_BAD_TREE))
 				tmp += "Downloaded tree does not match TTH root";
 			tmp += ")";
 		}
@@ -888,8 +866,7 @@ void DownloadQueue::updateItem_gui(QueueItem *item, bool add)
 	gtk_list_store_set(fileStore, &iter, fileView.col("Added"), Util::formatTime("%Y-%m-%d %H:%M", item->getAdded()).c_str(), -1);
 
 	// TTH
-	if (item->getTTH() != NULL)
-		gtk_list_store_set(fileStore, &iter, fileView.col("TTH"), string(item->getTTH()->toBase32()).c_str(), -1);
+	gtk_list_store_set(fileStore, &iter, fileView.col("TTH"), item->getTTH().toBase32().c_str(), -1);
 }
 
 void DownloadQueue::updateStatus_gui()

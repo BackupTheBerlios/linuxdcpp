@@ -76,7 +76,6 @@ class Hub:
 		// Client callbacks
 		virtual void on(ClientListener::Connecting, Client *) throw();
 		virtual void on(ClientListener::Connected, Client *) throw();
-		virtual void on(ClientListener::BadPassword, Client *) throw();
 		virtual void on(ClientListener::UserUpdated, Client *, const OnlineUser &user) throw();
 		virtual void on(ClientListener::UsersUpdated, Client *, const OnlineUser::List &list) throw();
 		virtual void on(ClientListener::UserRemoved, Client *, const OnlineUser &user) throw();

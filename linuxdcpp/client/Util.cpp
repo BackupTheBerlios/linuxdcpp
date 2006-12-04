@@ -27,8 +27,12 @@
 #include "StringTokenizer.h"
 #include "SettingsManager.h"
 #include "version.h"
+#include "File.h"
+#include "SimpleXML.h"
 
-#ifndef _WIN32
+#ifdef _WIN32
+#include <ShlObj.h>
+#else
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -56,11 +60,14 @@ string Util::awayMsg;
 time_t Util::awayTime;
 
 Util::CountryList Util::countries;
+string Util::configPath;
+string Util::systemPath;
+string Util::dataPath;
 
 static void sgenrand(unsigned long seed);
 
-extern "C" void bz_internal_error(int errcode) { 
-	dcdebug("bzip2 internal error: %d\n", errcode); 
+extern "C" void bz_internal_error(int errcode) {
+	dcdebug("bzip2 internal error: %d\n", errcode);
 }
 
 #if defined(_WIN32) && _MSC_VER == 1400
@@ -77,17 +84,52 @@ void Util::initialize() {
 	sgenrand((unsigned long)time(NULL));
 
 #ifdef _WIN32
+	TCHAR buf[MAX_PATH+1];
+	::GetModuleFileName(NULL, buf, MAX_PATH);
+	// System config path is DC++ executable path...
+	systemPath = Util::getFilePath(Text::fromT(buf));
+	configPath = systemPath;
+	dataPath = systemPath;
+
+#else
+	systemPath = "/etc/";
+	char* home = getenv("HOME");
+	configPath = home ? home + string("/.dc++/") : "/tmp/";
+	dataPath = configPath; // dataPath in linux is usually prefix + /share/app_name, so we can't represent it here
+#endif
+
+	// Load boot settings
+	try {
+		SimpleXML boot;
+		boot.fromXML(File(systemPath + "dcppboot.xml", File::READ, File::OPEN).read());
+		boot.stepIn();
+
+		if(boot.findChild("ConfigPath")) {
+			StringMap params;
+#ifdef _WIN32
+			TCHAR path[MAX_PATH];
+
+			params["APPDATA"] = Text::fromT((::SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, SHGFP_TYPE_CURRENT, path), path));
+			params["PERSONAL"] = Text::fromT((::SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, path), path));
+			configPath = Util::formatParams(boot.getChildData(), params, false);
+#endif
+		}
+	} catch(const Exception& ) {
+		// Unable to load boot settings...
+	}
+
+	if(!File::isAbsolute(configPath)) {
+		configPath = systemPath + configPath;
+	}
 
 #if _MSC_VER == 1400
 	_set_invalid_parameter_handler(reinterpret_cast<_invalid_parameter_handler>(invalidParameterHandler));
 #endif
 
-#endif // _WIN32
-
 	try {
 		// This product includes GeoIP data created by MaxMind, available from http://maxmind.com/
 		// Updates at http://www.maxmind.com/app/geoip_country
-		string file = Util::getConfigPath() + "GeoIpCountryWhois.csv";
+		string file = Util::getDataPath() + "GeoIpCountryWhois.csv";
 		string data = File(file, File::READ, File::OPEN).read();
 
 		const char* start = data.c_str();
@@ -98,8 +140,8 @@ void Util::initialize() {
 		string::size_type comma4 = 0;
 		string::size_type lineend = 0;
 		CountryIter last = countries.end();
-		u_int32_t startIP = 0;
-		u_int32_t endIP = 0, endIPprev = 0;
+		uint32_t startIP = 0;
+		uint32_t endIP = 0, endIPprev = 0;
 
 		for(;;) {
 			comma1 = data.find(',', linestart);
@@ -115,9 +157,9 @@ void Util::initialize() {
 
 			startIP = Util::toUInt32(start + comma2 + 2);
 			endIP = Util::toUInt32(start + comma3 + 2);
-			u_int16_t* country = (u_int16_t*)(start + comma4 + 2);
+			uint16_t* country = (uint16_t*)(start + comma4 + 2);
 			if((startIP-1) != endIPprev)
-				last = countries.insert(last, make_pair((startIP-1), (u_int16_t)16191));
+				last = countries.insert(last, make_pair((startIP-1), (uint16_t)16191));
 			last = countries.insert(last, make_pair(endIP, *country));
 
 			endIPprev = endIP;
@@ -127,97 +169,15 @@ void Util::initialize() {
 	}
 }
 
-string Util::getConfigPath() {
 #ifdef _WIN32
-	TCHAR buf[MAX_PATH+1];
-	GetModuleFileName(NULL, buf, MAX_PATH);
-	string appPath = Text::fromT(buf);
-	appPath.erase(appPath.rfind('\\') + 1);
-	return appPath;
-#else
-	char* home = getenv("HOME");
-	if (home) {
-#ifdef __APPLE__
-/// @todo Verify this for apple?
-		return string(home) + "/Library/Application Support/Mac DC++/";
-#else
-		return string(home) + "/.dc++/";
-#endif // __APPLE__
-	}
-	return emptyString;
-#endif // _WIN32
-}
-
-string Util::validateMessage(string tmp, bool reverse, bool checkNewLines) {
-	string::size_type i = 0;
-
-	if(reverse) {
-		while( (i = tmp.find("&#36;", i)) != string::npos) {
-			tmp.replace(i, 5, "$");
-			i++;
-		}
-		i = 0;
-		while( (i = tmp.find("&#124;", i)) != string::npos) {
-			tmp.replace(i, 6, "|");
-			i++;
-		}
-		i = 0;
-		while( (i = tmp.find("&amp;", i)) != string::npos) {
-			tmp.replace(i, 5, "&");
-			i++;
-		}
-		if(checkNewLines) {
-			// Check all '<' and '[' after newlines...
-			i = 0;
-			while( (i = tmp.find('\n', i)) != string::npos) {
-				if(i + 1 < tmp.length()) {
-					if(tmp[i+1] == '[' || tmp[i+1] == '<') {
-						tmp.insert(i+1, "- ");
-						i += 2;
-					}
-				}
-				i++;
-			}
-		}
-	} else {
-		i = 0;
-		while( (i = tmp.find("&amp;", i)) != string::npos) {
-			tmp.replace(i, 1, "&amp;");
-			i += 4;
-		}
-		i = 0;
-		while( (i = tmp.find("&#36;", i)) != string::npos) {
-			tmp.replace(i, 1, "&amp;");
-			i += 4;
-		}
-		i = 0;
-		while( (i = tmp.find("&#124;", i)) != string::npos) {
-			tmp.replace(i, 1, "&amp;");
-			i += 4;
-		}
-		i = 0;
-		while( (i = tmp.find('$', i)) != string::npos) {
-			tmp.replace(i, 1, "&#36;");
-			i += 4;
-		}
-		i = 0;
-		while( (i = tmp.find('|', i)) != string::npos) {
-			tmp.replace(i, 1, "&#124;");
-			i += 5;
-		}
-	}
-	return tmp;
-}
-
-#ifdef _WIN32
-static const char badChars[] = { 
+static const char badChars[] = {
 	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 	17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
 	31, '<', '>', '/', '"', '|', '?', '*', 0
 };
 #else
 
-static const char badChars[] = { 
+static const char badChars[] = {
 	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 	17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
 	31, '<', '>', '\\', '"', '|', '?', '*', 0
@@ -244,7 +204,7 @@ string Util::validateFileName(string tmp) {
 			i++;
 			continue;
 		}
-		tmp[i] = '_';	
+		tmp[i] = '_';
 		i++;
 	}
 
@@ -284,6 +244,19 @@ string Util::validateFileName(string tmp) {
 		i += 2;
 	}
 
+	// Dots at the end of path names aren't popular
+	i = 0;
+	while( ((i = tmp.find(".\\", i)) != string::npos) ) {
+		tmp[i] = '_';
+		i += 1;
+	}
+	i = 0;
+	while( ((i = tmp.find("./", i)) != string::npos) ) {
+		tmp[i] = '_';
+		i += 1;
+	}
+
+
 	return tmp;
 }
 
@@ -313,10 +286,10 @@ string Util::getShortTimeString(time_t t) {
  * http:// -> port 80
  * dchub:// -> port 411
  */
-void Util::decodeUrl(const string& url, string& aServer, u_int16_t& aPort, string& aFile) {
+void Util::decodeUrl(const string& url, string& aServer, uint16_t& aPort, string& aFile) {
 	// First, check for a protocol: xxxx://
 	string::size_type i = 0, j, k;
-	
+
 	aServer = emptyString;
 	aFile = emptyString;
 
@@ -355,7 +328,7 @@ void Util::decodeUrl(const string& url, string& aServer, u_int16_t& aPort, strin
 		aServer = url.substr(i, k-i);
 }
 
-string Util::getAwayMessage() { 
+string Util::getAwayMessage() {
 	return (formatTime(awayMsg.empty() ? SETTING(DEFAULT_AWAY_MESSAGE) : awayMsg, awayTime)) + " <DC++ v" VERSIONSTRING ">";
 }
 string Util::formatBytes(int64_t aBytes) {
@@ -363,15 +336,15 @@ string Util::formatBytes(int64_t aBytes) {
 	if(aBytes < 1024) {
 		snprintf(buf, sizeof(buf), "%d %s", (int)(aBytes&0xffffffff), CSTRING(B));
 	} else if(aBytes < 1024*1024) {
-		snprintf(buf, sizeof(buf), "%.02lf %s", (double)aBytes/(1024.0), CSTRING(KiB));
+		snprintf(buf, sizeof(buf), "%.02f %s", (double)aBytes/(1024.0), CSTRING(KiB));
 	} else if(aBytes < 1024*1024*1024) {
-		snprintf(buf, sizeof(buf), "%.02lf %s", (double)aBytes/(1024.0*1024.0), CSTRING(MiB));
+		snprintf(buf, sizeof(buf), "%.02f %s", (double)aBytes/(1024.0*1024.0), CSTRING(MiB));
 	} else if(aBytes < (int64_t)1024*1024*1024*1024) {
-		snprintf(buf, sizeof(buf), "%.02lf %s", (double)aBytes/(1024.0*1024.0*1024.0), CSTRING(GiB));
+		snprintf(buf, sizeof(buf), "%.02f %s", (double)aBytes/(1024.0*1024.0*1024.0), CSTRING(GiB));
 	} else if(aBytes < (int64_t)1024*1024*1024*1024*1024) {
-		snprintf(buf, sizeof(buf), "%.02lf %s", (double)aBytes/(1024.0*1024.0*1024.0*1024.0), CSTRING(TiB));
+		snprintf(buf, sizeof(buf), "%.02f %s", (double)aBytes/(1024.0*1024.0*1024.0*1024.0), CSTRING(TiB));
 	} else {
-		snprintf(buf, sizeof(buf), "%.02lf %s", (double)aBytes/(1024.0*1024.0*1024.0*1024.0*1024.0), CSTRING(PIB));
+		snprintf(buf, sizeof(buf), "%.02f %s", (double)aBytes/(1024.0*1024.0*1024.0*1024.0*1024.0), CSTRING(PIB));
 	}
 
 	return buf;
@@ -384,7 +357,7 @@ string Util::formatExactSize(int64_t aBytes) {
 		NUMBERFMT nf;
 		_stprintf(number, _T("%I64d"), aBytes);
 		TCHAR Dummy[16];
-    
+
 		/*No need to read these values from the system because they are not
 		used to format the exact size*/
 		nf.NumDigits = 0;
@@ -398,19 +371,19 @@ string Util::formatExactSize(int64_t aBytes) {
 		nf.lpThousandSep = Dummy;
 
 		GetNumberFormat(LOCALE_USER_DEFAULT, 0, number, &nf, buf, sizeof(buf)/sizeof(buf[0]));
-		
+
 		_stprintf(buf, _T("%s %s"), buf, CTSTRING(B));
 		return Text::fromT(buf);
 #else
 		char buf[64];
-		snprintf(buf, sizeof(buf), "%'lld", static_cast<long long int>(aBytes));
+		snprintf(buf, sizeof(buf), "%'lld", (long long int)aBytes);
 		return string(buf) + STRING(B);
 #endif
 }
 
 string Util::getLocalIp() {
 	string tmp;
-	
+
 	char buf[256];
 	gethostname(buf, 255);
 	hostent* he = gethostbyname(buf);
@@ -418,7 +391,7 @@ string Util::getLocalIp() {
 		return Util::emptyString;
 	sockaddr_in dest;
 	int i = 0;
-	
+
 	// We take the first ip as default, but if we can find a better one, use it instead...
 	memcpy(&(dest.sin_addr), he->h_addr_list[i++], he->h_length);
 	tmp = inet_ntoa(dest.sin_addr);
@@ -440,7 +413,7 @@ bool Util::isPrivateIp(string const& ip) {
 
 	addr.s_addr = inet_addr(ip.c_str());
 
-	if (addr.s_addr  != INADDR_NONE) {
+	if (addr.s_addr != INADDR_NONE) {
 		unsigned long haddr = ntohl(addr.s_addr);
 		return ((haddr & 0xff000000) == 0x0a000000 || // 10.0.0.0/8
 				(haddr & 0xff000000) == 0x7f000000 || // 127.0.0.0/8
@@ -450,7 +423,7 @@ bool Util::isPrivateIp(string const& ip) {
 	return false;
 }
 
-typedef const u_int8_t* ccp;
+typedef const uint8_t* ccp;
 static wchar_t utf8ToLC(ccp& str) {
 	wchar_t c = 0;
 	if(str[0] & 0x80) {
@@ -469,7 +442,7 @@ static wchar_t utf8ToLC(ccp& str) {
 				str += 3;
 			} else {
 				if(str[1] == 0 ||
-					!((((unsigned char)str[1]) & ~0x3f) == 0x80)) 
+					!((((unsigned char)str[1]) & ~0x3f) == 0x80))
 				{
 					str++;
 					return 0;
@@ -502,22 +475,22 @@ string::size_type Util::findSubString(const string& aString, const string& aSubS
 		return 0;
 
 	// Hm, should start measure in characters or in bytes? bytes for now...
-	const u_int8_t* tx = (const u_int8_t*)aString.c_str() + start;
-	const u_int8_t* px = (const u_int8_t*)aSubString.c_str();
+	const uint8_t* tx = (const uint8_t*)aString.c_str() + start;
+	const uint8_t* px = (const uint8_t*)aSubString.c_str();
 
-	const u_int8_t* end = tx + aString.length() - start - aSubString.length() + 1;
+	const uint8_t* end = tx + aString.length() - start - aSubString.length() + 1;
 
 	wchar_t wp = utf8ToLC(px);
 
 	while(tx < end) {
-		const u_int8_t* otx = tx;
+		const uint8_t* otx = tx;
 		if(wp == utf8ToLC(tx)) {
-			const u_int8_t* px2 = px;
-			const u_int8_t* tx2 = tx;
+			const uint8_t* px2 = px;
+			const uint8_t* tx2 = tx;
 
 			for(;;) {
 				if(*px2 == 0)
-					return otx - (u_int8_t*)aString.c_str();
+					return otx - (uint8_t*)aString.c_str();
 
 				if(utf8ToLC(px2) != utf8ToLC(tx2))
 					break;
@@ -615,8 +588,8 @@ string Util::encodeURI(const string& aString, bool reverse) {
 		}
 	} else {
 		const string disallowed = ";/?:@&=+$," // reserved
-			                      "<>#%\" "    // delimiters
-		                          "{}|\\^[]`"; // unwise
+								  "<>#%\" "    // delimiters
+								  "{}|\\^[]`"; // unwise
 		string::size_type idx, loc;
 		for(idx = 0; idx < tmp.length(); ++idx) {
 			if(tmp[idx] == ' ') {
@@ -635,7 +608,7 @@ string Util::encodeURI(const string& aString, bool reverse) {
 /**
  * This function takes a string and a set of parameters and transforms them according to
  * a simple formatting rule, similar to strftime. In the message, every parameter should be
- * represented by %[name]. It will then be replaced by the corresponding item in 
+ * represented by %[name]. It will then be replaced by the corresponding item in
  * the params stringmap. After that, the string is passed through strftime with the current
  * date/time and then finally written to the log file. If the parameter is not present at all,
  * it is removed from the string completely...
@@ -669,7 +642,7 @@ string Util::formatParams(const string& msg, StringMap& params, bool filter) {
 						tmp[m] = '_';
 					}
 				}
-				
+
 				result.replace(j, k-j + 1, tmp);
 				i = j + tmp.size();
 			} else {
@@ -680,7 +653,7 @@ string Util::formatParams(const string& msg, StringMap& params, bool filter) {
 	}
 
 	result = formatTime(result, time(NULL));
-	
+
 	return result;
 }
 
@@ -699,12 +672,12 @@ string fixedftime(const string& format, struct tm* t) {
 		tmp[1] = codes[i];
 		tmp[2] = 0;
 		strftime(buf, 1024-1, tmp, t);
-		sm[tmp] = buf; 
+		sm[tmp] = buf;
 
 		tmp[1] = '#';
 		tmp[2] = codes[i];
 		strftime(buf, 1024-1, tmp, t);
-		sm[tmp] = buf; 		
+		sm[tmp] = buf; 
 	}
 
 	for(StringMapIter i = sm.begin(); i != sm.end(); ++i) {
@@ -751,25 +724,25 @@ string Util::formatTime(const string &msg, const time_t t) {
 
 /* Below is a high-speed random number generator with much
    better granularity than the CRT one in msvc...(no, I didn't
-   write it...see copyright) */ 
+   write it...see copyright) */
 /* Copyright (C) 1997 Makoto Matsumoto and Takuji Nishimura.
-   Any feedback is very welcome. For any question, comments,       
-   see http://www.math.keio.ac.jp/matumoto/emt.html or email       
-   matumoto@math.keio.ac.jp */       
-/* Period parameters */  
+   Any feedback is very welcome. For any question, comments,
+   see http://www.math.keio.ac.jp/matumoto/emt.html or email
+   matumoto@math.keio.ac.jp */
+/* Period parameters */
 #define N 624
 #define M 397
 #define MATRIX_A 0x9908b0df   /* constant vector a */
 #define UPPER_MASK 0x80000000 /* most significant w-r bits */
 #define LOWER_MASK 0x7fffffff /* least significant r bits */
 
-/* Tempering parameters */   
+/* Tempering parameters */
 #define TEMPERING_MASK_B 0x9d2c5680
 #define TEMPERING_MASK_C 0xefc60000
-#define TEMPERING_SHIFT_U(y)  (y >> 11)
-#define TEMPERING_SHIFT_S(y)  (y << 7)
-#define TEMPERING_SHIFT_T(y)  (y << 15)
-#define TEMPERING_SHIFT_L(y)  (y >> 18)
+#define TEMPERING_SHIFT_U(y) (y >> 11)
+#define TEMPERING_SHIFT_S(y) (y << 7)
+#define TEMPERING_SHIFT_T(y) (y << 15)
+#define TEMPERING_SHIFT_L(y) (y >> 18)
 
 static unsigned long mt[N]; /* the array for the state vector  */
 static int mti=N+1; /* mti==N+1 means mt[N] is not initialized */
@@ -785,7 +758,7 @@ static void sgenrand(unsigned long seed) {
 		mt[mti] = (69069 * mt[mti-1]) & 0xffffffff;
 }
 
-u_int32_t Util::rand() {
+uint32_t Util::rand() {
 	unsigned long y;
 	static unsigned long mag01[2]={0x0, MATRIX_A};
 	/* mag01[x] = x * MATRIX_A  for x=0,1 */
@@ -816,7 +789,7 @@ u_int32_t Util::rand() {
 	y ^= TEMPERING_SHIFT_T(y) & TEMPERING_MASK_C;
 	y ^= TEMPERING_SHIFT_L(y);
 
-	return y; 
+	return y;
 }
 
 string Util::getOsVersion() {
@@ -856,6 +829,8 @@ string Util::getOsVersion() {
 				os += " Server";
 			else if(ver.wProductType & VER_NT_DOMAIN_CONTROLLER)
 				os += " DC";
+		} else if(ver.dwMajorVersion == 6) {
+			os = "WinVista";
 		}
 
 		if(ver.wServicePackMajor != 0) {
@@ -896,9 +871,9 @@ string Util::getIpCountry (string IP) {
 		string::size_type b = IP.find('.', a+1);
 		string::size_type c = IP.find('.', b+2);
 
-		u_int32_t ipnum = (Util::toUInt32(IP.c_str()) << 24) | 
-			(Util::toUInt32(IP.c_str() + a + 1) << 16) | 
-			(Util::toUInt32(IP.c_str() + b + 1) << 8) | 
+		uint32_t ipnum = (Util::toUInt32(IP.c_str()) << 24) |
+			(Util::toUInt32(IP.c_str() + a + 1) << 16) |
+			(Util::toUInt32(IP.c_str() + b + 1) << 8) |
 			(Util::toUInt32(IP.c_str() + c + 1) );
 
 		CountryIter i = countries.lower_bound(ipnum);
@@ -932,4 +907,61 @@ string Util::toDOS(const string& tmp) {
 		}
 	}
 	return tmp2;
+}
+
+string Util::formatMessage(const string& nick, const string& message) {
+	string tmp = '<' + nick + "> " + message;
+	// Check all '<' and '[' after newlines as they're probably pasts...
+	size_t i = 0;
+	while( (i = tmp.find('\n', i)) != string::npos) {
+		if(i + 1 < tmp.length()) {
+			if(tmp[i+1] == '[' || tmp[i+1] == '<') {
+				tmp.insert(i+1, "- ");
+				i += 2;
+			}
+		}
+		i++;
+	}
+	return toDOS(tmp);
+}
+
+string Util::getTimeString() {
+	char buf[64];
+	time_t _tt;
+	time(&_tt);
+	tm* _tm = localtime(&_tt);
+	if(_tm == NULL) {
+		strcpy(buf, "xx:xx:xx");
+	} else {
+		strftime(buf, 64, "%X", _tm);
+	}
+	return buf;
+}
+
+string Util::toAdcFile(const string& file) {
+	if(file == "files.xml.bz2" || file == "files.xml")
+		return file;
+
+	string ret;
+	ret.reserve(file.length() + 1);
+	ret += '/';
+	ret += file;
+	for(string::size_type i = 0; i < ret.length(); ++i) {
+		if(ret[i] == '\\') {
+			ret[i] = '/';
+		}
+	}
+	return ret;
+}
+string Util::toNmdcFile(const string& file) {
+	if(file.empty())
+		return Util::emptyString;
+
+	string ret(file.substr(1));
+	for(string::size_type i = 0; i < ret.length(); ++i) {
+		if(ret[i] == '/') {
+			ret[i] = '\\';
+		}
+	}
+	return ret;
 }

@@ -28,20 +28,20 @@ class BitOutputStream
 public:
 	BitOutputStream(string& aStream) : is(aStream), bitPos(0), next(0) { }
 	~BitOutputStream() { }
-	
-	void put(vector<u_int8_t>& b) {
-		for(vector<u_int8_t>::iterator i = b.begin(); i != b.end(); ++i) {
-			next |=  (*i) << bitPos++;
-			
+
+	void put(vector<uint8_t>& b) {
+		for(vector<uint8_t>::iterator i = b.begin(); i != b.end(); ++i) {
+			next |= (*i) << bitPos++;
+
 			if(bitPos > 7) {
 				bitPos-=8;
 				is += next;
 				next = 0;
 			}
-			
+
 		}
 	}
-	
+
 	void skipToByte() {
 		if(bitPos > 0) {
 			bitPos = 0;
@@ -49,12 +49,12 @@ public:
 			next = 0;
 		}
 	}
-	
+
 private:
 	BitOutputStream& operator=(const BitOutputStream&);
 	string& is;
 	int bitPos;
-	u_int8_t next;
+	uint8_t next;
 };
 
 #endif // !defined(BIT_OUTPUT_STREAM_H)

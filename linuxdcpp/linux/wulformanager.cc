@@ -423,12 +423,6 @@ void WulforManager::insertDialogEntry_gui(DialogEntry *entry)
 	gtk_dialog_run(GTK_DIALOG(entry->getContainer()));
 }
 
-void WulforManager::hideDialogEntry_gui(DialogEntry *entry)
-{
-	if (entry->getContainer())
-		gtk_widget_hide(entry->getContainer());
-}
-
 // This is a callback, so gdk_threads_enter/leave is called automatically.
 void WulforManager::deleteDialogEntry_gui(DialogEntry *entry)
 {

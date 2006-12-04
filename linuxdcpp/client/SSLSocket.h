@@ -22,32 +22,17 @@
 #include "Socket.h"
 #include "Singleton.h"
 
-class SSLSocket;
+#include <openssl/ssl.h>
 
-namespace yaSSL {
-	class SSL;
-	class SSL_CTX;
-	struct DH;
-}
+#ifndef SSL_SUCCESS
+#define SSL_SUCCESS 1
+#endif
 
+#ifdef YASSL_VERSION
 using namespace yaSSL;
+#endif
 
-class SSLSocketFactory : public Singleton<SSLSocketFactory> {
-public:
-	SSLSocketFactory();
-	virtual ~SSLSocketFactory();
-
-	SSLSocket* getClientSocket() throw(SocketException);
-	SSLSocket* getServerSocket() throw(SocketException);
-
-	void loadCertificates() throw();
-	bool hasCerts() const { return certsLoaded; }
-private:
-	SSL_CTX* clientContext;
-	SSL_CTX* serverContext;
-	DH* dh;
-	bool certsLoaded;
-};
+class CryptoManager;
 
 class SSLSocket : public Socket {
 public:
@@ -57,11 +42,15 @@ public:
 	virtual void connect(const string& aIp, short aPort) throw(SocketException);
 	virtual int read(void* aBuffer, int aBufLen) throw(SocketException);
 	virtual int write(const void* aBuffer, int aLen) throw(SocketException);
-	virtual int wait(u_int32_t millis, int waitFor) throw(SocketException);
+	virtual int wait(uint32_t millis, int waitFor) throw(SocketException);
 	virtual void shutdown() throw();
 	virtual void close() throw();
+
+	virtual bool isSecure() const throw() { return true; }
+	virtual bool isTrusted() const throw();
+
 private:
-	friend class SSLSocketFactory;
+	friend class CryptoManager;
 
 	SSLSocket(SSL_CTX* context) throw(SocketException);
 	SSLSocket(const SSLSocket&);
