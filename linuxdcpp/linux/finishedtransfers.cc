@@ -75,34 +75,37 @@ FinishedTransfers::~FinishedTransfers()
 	gtk_widget_destroy(getWidget("openWithDialog"));
 }
 
-void FinishedTransfers::addItem_gui(StringMap params)
+void FinishedTransfers::addItem_gui(StringMap params, bool update)
 {
 	GtkTreeIter iter;
-	gtk_list_store_append(transferStore, &iter);
-
-	for (StringMap::const_iterator it = params.begin(); it != params.end(); ++it)
-	{
-		if (it->first == "Chunk Size")
-		{
-			int64_t size = Util::toInt64(it->second);
-			totalBytes += size;
-			gtk_list_store_set(transferStore, &iter, transferView.col(it->first), size, -1);
-		}
-		else if (it->first == "Elapsed Time")
-		{
-			int64_t time = Util::toInt64(it->second);
-			totalTime += time;
-			gtk_list_store_set(transferStore, &iter, transferView.col(it->first), time, -1);
-		}
-		else if (!it->second.empty())
-			gtk_list_store_set(transferStore, &iter, transferView.col(it->first), it->second.c_str(), -1);
-	}
-
+	int64_t size = Util::toInt64(params["Chunk Size"]);
+	int64_t time = Util::toInt64(params["Elapsed Time"]);
+	totalBytes += size;
+	totalTime += time;
 	items++;
-	updateStatus_gui();
 
-	if (!isUpload && BOOLSETTING(BOLD_FINISHED_DOWNLOADS) || isUpload && BOOLSETTING(BOLD_FINISHED_UPLOADS))
-		setBold_gui();
+	gtk_list_store_append(transferStore, &iter);
+	gtk_list_store_set(transferStore, &iter,
+		transferView.col("Filename"), params["Filename"].c_str(),
+		transferView.col("Time"), params["Time"].c_str(),
+		transferView.col("Path"), params["Path"].c_str(),
+		transferView.col("Nick"), params["Nick"].c_str(),
+		transferView.col("Hub"), params["Hub"].c_str(),
+		transferView.col("Size"), params["Size"].c_str(),
+		transferView.col("Speed"), params["Speed"].c_str(),
+		transferView.col("CRC Checked"), params["CRC Checked"].c_str(),
+		transferView.col("Target"), params["Target"].c_str(),
+		transferView.col("Chunk Size"), size,
+		transferView.col("Elapsed Time"), time,
+		-1);
+
+	if (update)
+	{
+		updateStatus_gui();
+
+		if (!isUpload && BOOLSETTING(BOLD_FINISHED_DOWNLOADS) || isUpload && BOOLSETTING(BOLD_FINISHED_UPLOADS))
+			setBold_gui();
+	}
 }
 
 void FinishedTransfers::updateStatus_gui()
@@ -194,9 +197,9 @@ void FinishedTransfers::onOpenWith_gui(GtkMenuItem *item, gpointer data)
 		GtkTreePath *path;
 		GList *list = gtk_tree_selection_get_selected_rows(ft->transferSelection, NULL);
 
-		for (int i = 0; i < count; i++)
+		for (GList *i = list; i; i = i->next)
 		{
-			path = (GtkTreePath *)g_list_nth_data(list, i);
+			path = (GtkTreePath *)i->data;
 			if (gtk_tree_model_get_iter(GTK_TREE_MODEL(ft->transferStore), &iter, path))
 			{
 				target = ft->transferView.getString(&iter, "Target");
@@ -219,13 +222,12 @@ void FinishedTransfers::onRemoveItems_gui(GtkMenuItem *item, gpointer data)
 	GtkTreeIter iter;
 	GtkTreePath *path;
 	GList *list = gtk_tree_selection_get_selected_rows(ft->transferSelection, NULL);
-	int count = gtk_tree_selection_count_selected_rows(ft->transferSelection);
 	typedef Func1<FinishedTransfers, string> F1;
 	F1 *func;
 
-	for (int i = 0; i < count; i++)
+	for (GList *i = list; i; i = i->next)
 	{
-		path = (GtkTreePath *)g_list_nth_data(list, i);
+		path = (GtkTreePath *)i->data;
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(ft->transferStore), &iter, path))
 		{
 			target = ft->transferView.getString(&iter, "Target");
@@ -252,9 +254,9 @@ void FinishedTransfers::removeItem_gui(string target)
 		{
 			totalBytes -= transferView.getValue<gint64>(&iter, "Chunk Size");
 			totalTime -= transferView.getValue<gint64>(&iter, "Elapsed Time");
-			items--;
 			gtk_list_store_remove(transferStore, &iter);
-			break;
+			items--;
+			return;
 		}
 		valid = gtk_tree_model_iter_next(m, &iter);
 	}
@@ -278,15 +280,15 @@ void FinishedTransfers::onRemoveAll_gui(GtkMenuItem *item, gpointer data)
 void FinishedTransfers::initializeList_client()
 {
 	StringMap params;
-	typedef Func1<FinishedTransfers, StringMap> F1;
-	F1 *func;
+	typedef Func2<FinishedTransfers, StringMap, bool> F2;
+	F2 *func;
 	const FinishedItem::List &list = FinishedManager::getInstance()->lockList(isUpload);
 
 	for (FinishedItem::List::const_iterator it = list.begin(); it != list.end(); ++it)
 	{
 		params.clear();
-		params = getFinishedParams_client(*it);
-		func = new F1(this, &FinishedTransfers::addItem_gui, params);
+		getFinishedParams_client(*it, params);
+		func = new F2(this, &FinishedTransfers::addItem_gui, params, FALSE);
 		WulforManager::get()->dispatchGuiFunc(func);
 	}
 
@@ -295,10 +297,8 @@ void FinishedTransfers::initializeList_client()
 	WulforManager::get()->dispatchGuiFunc(new Func0<FinishedTransfers>(this, &FinishedTransfers::updateStatus_gui));
 }
 
-StringMap FinishedTransfers::getFinishedParams_client(FinishedItem *item)
+void FinishedTransfers::getFinishedParams_client(FinishedItem *item, StringMap &params)
 {
-	StringMap params;
-
 	params["Filename"] = Util::getFileName(item->getTarget());
 	params["Time"] = Util::formatTime("%Y-%m-%d %H:%M:%S", item->getTime());
 	params["Path"] = Util::getFilePath(item->getTarget());
@@ -310,8 +310,6 @@ StringMap FinishedTransfers::getFinishedParams_client(FinishedItem *item)
 	params["Target"] = item->getTarget();
 	params["Chunk Size"] = Util::toString(item->getChunkSize());
 	params["Elapsed Time"] = Util::toString(item->getMilliSeconds());
-
-	return params;
 }
 
 void FinishedTransfers::remove_client(std::string target)
@@ -331,10 +329,11 @@ void FinishedTransfers::on(FinishedManagerListener::AddedDl, FinishedItem *item)
 {
 	if (!isUpload)
 	{
-		StringMap params = getFinishedParams_client(item);
+		StringMap params;
+		getFinishedParams_client(item, params);
 
-		typedef Func1<FinishedTransfers, StringMap> F1;
-		F1 *func = new F1(this, &FinishedTransfers::addItem_gui, params);
+		typedef Func2<FinishedTransfers, StringMap, bool> F2;
+		F2 *func = new F2(this, &FinishedTransfers::addItem_gui, params, TRUE);
 		WulforManager::get()->dispatchGuiFunc(func);
 	}
 }
@@ -343,10 +342,11 @@ void FinishedTransfers::on(FinishedManagerListener::AddedUl, FinishedItem *item)
 {
 	if (isUpload)
 	{
-		StringMap params = getFinishedParams_client(item);
+		StringMap params;
+		getFinishedParams_client(item, params);
 
-		typedef Func1<FinishedTransfers, StringMap> F1;
-		F1 *func = new F1(this, &FinishedTransfers::addItem_gui, params);
+		typedef Func2<FinishedTransfers, StringMap, bool> F2;
+		F2 *func = new F2(this, &FinishedTransfers::addItem_gui, params, TRUE);
 		WulforManager::get()->dispatchGuiFunc(func);
 	}
 }

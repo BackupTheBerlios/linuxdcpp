@@ -46,7 +46,7 @@ ConnectionManager::ConnectionManager() : floodCounter(0), server(0), secureServe
 
 void ConnectionManager::listen() throw(SocketException){
 	disconnect();
-	unsigned short port = static_cast<unsigned short>(SETTING(TCP_PORT));
+	uint16_t port = static_cast<uint16_t>(SETTING(TCP_PORT));
 
 	server = new Server(false, port, SETTING(BIND_ADDRESS));
 
@@ -55,7 +55,7 @@ void ConnectionManager::listen() throw(SocketException){
 		return;
 	}
 
-	port = static_cast<unsigned short>(SETTING(TLS_PORT));
+	port = static_cast<uint16_t>(SETTING(TLS_PORT));
 
 	secureServer = new Server(true, port, SETTING(BIND_ADDRESS));
 }
@@ -215,7 +215,7 @@ void ConnectionManager::on(TimerManagerListener::Minute, uint32_t aTick) throw()
 static const uint32_t FLOOD_TRIGGER = 20000;
 static const uint32_t FLOOD_ADD = 2000;
 
-ConnectionManager::Server::Server(bool secure_, short aPort, const string& ip /* = "0.0.0.0" */) : port(0), secure(secure_), die(false) {
+ConnectionManager::Server::Server(bool secure_, uint16_t aPort, const string& ip /* = "0.0.0.0" */) : port(0), secure(secure_), die(false) {
 	sock.create();
 	port = sock.bind(aPort, ip);
 	sock.listen();
@@ -273,7 +273,7 @@ void ConnectionManager::accept(const Socket& sock, bool secure) throw() {
 	}
 }
 
-void ConnectionManager::nmdcConnect(const string& aServer, short aPort, const string& aNick, const string& hubUrl) {
+void ConnectionManager::nmdcConnect(const string& aServer, uint16_t aPort, const string& aNick, const string& hubUrl) {
 	if(shuttingDown)
 		return;
 
@@ -290,7 +290,7 @@ void ConnectionManager::nmdcConnect(const string& aServer, short aPort, const st
 	}
 }
 
-void ConnectionManager::adcConnect(const OnlineUser& aUser, short aPort, const string& aToken, bool secure) {
+void ConnectionManager::adcConnect(const OnlineUser& aUser, uint16_t aPort, const string& aToken, bool secure) {
 	if(shuttingDown)
 		return;
 

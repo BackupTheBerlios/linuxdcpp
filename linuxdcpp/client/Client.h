@@ -104,7 +104,7 @@ public:
 	bool isConnected() const { return socket && socket->isConnected(); }
 	bool isOp() const { return getMyIdentity().isOp(); }
 
-	short getPort() const { return port; }
+	uint16_t getPort() const { return port; }
 	const string& getAddress() const { return address; }
 
 	const string& getIp() const { return ip; }

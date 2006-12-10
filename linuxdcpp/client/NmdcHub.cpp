@@ -429,7 +429,7 @@ void NmdcHub::onLine(const string& aLine) throw() {
 			return;
 		}
 		string port = param.substr(j+1);
-		ConnectionManager::getInstance()->nmdcConnect(server, (unsigned short)Util::toInt(port), getMyNick(), getHubUrl());
+		ConnectionManager::getInstance()->nmdcConnect(server, (uint16_t)Util::toInt(port), getMyNick(), getHubUrl());
 	} else if(cmd == "$RevConnectToMe") {
 		if(state != STATE_CONNECTED) {
 			return;

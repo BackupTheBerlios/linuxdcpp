@@ -21,7 +21,6 @@
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
-#include <client/ShareManager.h>
 
 #include "wulformanager.hh"
 #include "settingsmanager.hh"
@@ -39,7 +38,6 @@ int main(int argc, char *argv[])
 	startup(callBack, NULL);
 
 	WulforSettingsManager::get()->load();
-	SettingsManager::getInstance()->load();
 	TimerManager::getInstance()->start();
 
 	g_thread_init(NULL);

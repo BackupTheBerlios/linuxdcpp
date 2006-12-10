@@ -1,3 +1,12 @@
+2006-12-10 - Steven Sheehy
+* Decoupled Hub (thanks Razzloss).
+* Fixed some short overflow issues in the core when dealing with ports.
+* Bug #9647: "Renamed file when downloading to a folder" (thanks Mikael Eman).
+* Bug #9671: "Multiple selection in filelist" (thanks Mikael Eman).
+* Bug #9600: "High CPU usage for some time upon connecting to large hub." Caused
+  by nick completion code so it had to be temporarily removed (thanks Razzloss).
+* Fixed some uninitialized variables (thanks Mikael Eman).
+
 2006-12-04 - Steven Sheehy
 * Upgraded the DC++ core to 0.698:
 	* The 0.691 core contains a security flaw so I recommend you upgrade ASAP.

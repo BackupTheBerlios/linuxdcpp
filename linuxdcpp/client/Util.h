@@ -302,7 +302,7 @@ public:
 		snprintf(buf, sizeof(buf), "%d", (int)val);
 		return buf;
 	}
-	static string toString(unsigned short val) {
+	static string toString(uint16_t val) {
 		char buf[8];
 		snprintf(buf, sizeof(buf), "%u", (unsigned int)val);
 		return buf;

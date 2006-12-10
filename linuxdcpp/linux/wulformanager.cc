@@ -196,6 +196,8 @@ void WulforManager::processGuiQueue()
 		}
 		pthread_mutex_unlock(&guiQueueLock);
 
+		gdk_flush();
+
 		gdk_threads_leave();
 	}
 }

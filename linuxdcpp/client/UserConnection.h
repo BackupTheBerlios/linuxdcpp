@@ -240,7 +240,7 @@ public:
 
 	};
 
-	short getNumber() { return (short)((((size_t)this)>>2) & 0x7fff); }
+	uint16_t getNumber() { return static_cast<uint16_t>(((((size_t)this)>>2) & 0x7fff)); }
 
 	// NMDC stuff
 	void myNick(const string& aNick) { send("$MyNick " + Text::utf8ToAcp(aNick) + '|'); }
@@ -279,7 +279,7 @@ public:
 	void setDataMode(int64_t aBytes = -1) { dcassert(socket); socket->setDataMode(aBytes); }
 	void setLineMode(size_t rollback) { dcassert(socket); socket->setLineMode(rollback); }
 
-	void connect(const string& aServer, short aPort) throw(SocketException, ThreadException);
+	void connect(const string& aServer, uint16_t aPort) throw(SocketException, ThreadException);
 	void accept(const Socket& aServer) throw(SocketException, ThreadException);
 
 	void disconnect(bool graceless = false) { if(socket) socket->disconnect(graceless); }

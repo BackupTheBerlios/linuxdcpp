@@ -52,7 +52,7 @@ class PrivateMessage:
 		User::Ptr user;
 		std::vector<std::string> history;
 		int historyIndex;
-		static const int maxLines = 500;
+		static const int maxLines = 500; ///@todo: make these preferences
 		static const int maxHistory = 20;
 };
 

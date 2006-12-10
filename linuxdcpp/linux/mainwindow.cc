@@ -36,7 +36,9 @@ using namespace std;
 
 MainWindow::MainWindow():
 	Entry("Main Window", "mainwindow.glade"),
-	lastUpdate(0)
+	lastUpdate(0),
+	lastUp(0),
+	lastDown(0)
 {
 	// Configure the dialogs
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("exitDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
@@ -1493,9 +1495,9 @@ void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw()
 	status4 = "U: " + Util::formatBytes(Socket::getTotalUp());
 	if (diff > 0)
 	{
-		status5 = "D: " + Util::formatBytes((int64_t)(downdiff*1000)/diff) + "/s (" +
+		status5 = "D: " + Util::formatBytes((int64_t)((downdiff*1000)/diff)) + "/s (" +
 			Util::toString(DownloadManager::getInstance()->getDownloadCount()) + ")";
-		status6 = "U: " + Util::formatBytes((int64_t)(updiff*1000)/diff) + "/s (" +
+		status6 = "U: " + Util::formatBytes((int64_t)((updiff*1000)/diff)) + "/s (" +
 			Util::toString(UploadManager::getInstance()->getUploadCount()) + ")";
 	}
 
@@ -1507,7 +1509,7 @@ void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw()
 	func_t *func = new func_t(this, &MainWindow::setStats_gui, status1, status2, status3, status4, status5, status6);
 	WulforManager::get()->dispatchGuiFunc(func);
 
-	if (BOOLSETTING(MINIMIZE_TRAY))
+	if (BOOLSETTING(MINIMIZE_TRAY) && !status5.empty() && !status6.empty())
 	{
 		string toolTip = status5 + " " + status6;
 		typedef Func1<MainWindow, string> F1;

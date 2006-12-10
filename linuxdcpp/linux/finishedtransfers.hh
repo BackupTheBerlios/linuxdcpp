@@ -35,7 +35,7 @@ class FinishedTransfers:
 
 	private:
 		// GUI functions
-		void addItem_gui(StringMap params);
+		void addItem_gui(StringMap params, bool update);
 		void removeItem_gui(std::string target);
 		void updateStatus_gui();
 
@@ -49,7 +49,7 @@ class FinishedTransfers:
 
 		// Client functions
 		void initializeList_client();
-		StringMap getFinishedParams_client(FinishedItem *item);
+		void getFinishedParams_client(FinishedItem *item, StringMap &params);
 		void remove_client(std::string target);
 		void removeAll_client();
 

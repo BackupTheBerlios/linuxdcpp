@@ -55,7 +55,7 @@ class FavoriteHubs:
 
 		// Client functions
 		void initializeList_client();
-		StringMap getFavHubParams_client(const FavoriteHubEntry *entry);
+		void getFavHubParams_client(const FavoriteHubEntry *entry, StringMap &params);
 		void addEntry_client(StringMap params);
 		void editEntry_client(string address, StringMap params);
 		void removeEntry_client(string address);

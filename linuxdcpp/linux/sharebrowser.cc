@@ -32,7 +32,9 @@ ShareBrowser::ShareBrowser(User::Ptr user, const std::string &file):
 	BookEntry("List: " + WulforUtil::getNicks(user), "sharebrowser.glade"),
 	listing(user),
 	shareSize(0),
+	currentSize(0),
 	shareItems(0),
+	currentItems(0),
 	updateFileView(TRUE)
 {
 	// Configure the dialogs
@@ -590,7 +592,23 @@ void ShareBrowser::find_gui()
 
 gboolean ShareBrowser::onButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
-	((ShareBrowser *)data)->oldType = event->type;
+	ShareBrowser *sb = (ShareBrowser *)data;
+	sb->oldType = event->type;
+
+	if (event->button == 3)
+	{
+		GtkTreePath *path;
+
+		if (gtk_tree_view_get_path_at_pos(sb->fileView.get(), (gint)event->x, (gint)event->y, &path, NULL, NULL, NULL))
+		{
+			bool selected = gtk_tree_selection_path_is_selected(sb->fileSelection, path);
+			gtk_tree_path_free(path);
+			
+			if (selected)
+				return TRUE;
+		}
+	}
+	
 	return FALSE;
 }
 

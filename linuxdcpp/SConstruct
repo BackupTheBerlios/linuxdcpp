@@ -153,7 +153,7 @@ if not conf.CheckLibWithHeader('bz2', 'bzlib.h', 'c'):
 	Exit(1)
 
 if not conf.CheckLibWithHeader('ssl', 'openssl/ssl.h', 'c'):
-	print '\tOpenSSL library not found'
+	print '\tOpenSSL library (libssl) not found'
 	print '\tNote: You might have the lib but not the headers'
 	Exit(1)
 

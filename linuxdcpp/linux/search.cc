@@ -787,6 +787,9 @@ void Search::onDownloadToClicked_gui(GtkMenuItem *item, gpointer data)
 			string target = temp;
 			g_free(temp);
 
+			if (target[target.length() - 1] != PATH_SEPARATOR)
+				target += PATH_SEPARATOR;
+
 			SearchResult *result;
 			GtkTreeIter iter;
 			GtkTreePath *path;
@@ -926,6 +929,9 @@ void Search::onDownloadDirToClicked_gui(GtkMenuItem *item, gpointer data)
 		{
 			string target = temp;
 			g_free(temp);
+
+			if (target[target.length() - 1] != PATH_SEPARATOR)
+				target += PATH_SEPARATOR;
 
 			SearchResult *result;
 			GtkTreeIter iter;

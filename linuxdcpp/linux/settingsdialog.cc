@@ -591,8 +591,6 @@ void Settings::initAppearance_gui()
 		addOption_gui(colorStore, "Hub", SettingsManager::BOLD_HUB);
 		addOption_gui(colorStore, "Private message", SettingsManager::BOLD_PM);
 		addOption_gui(colorStore, "Search", SettingsManager::BOLD_SEARCH);
-		/// @todo: Uncomment when implemented
-		//addOption_gui(colorStore, "Waiting Users", SettingsManager::BOLD_WAITING_USERS);
 	}
 
 	{ // Window
@@ -619,7 +617,6 @@ void Settings::initAppearance_gui()
 		addOption_gui(windowStore1, "Finished Uploads", SettingsManager::OPEN_FINISHED_UPLOADS);
 		/// @todo: Uncomment when implemented
 		//addOption_gui(windowStore1, "Favorite Users", SettingsManager::OPEN_FAVORITE_USERS);
-		//addOption_gui(windowStore1, "Waiting Users", SettingsManager::OPEN_WAITING_USERS);
 
 		// Window options
 		windowView2.setView(GTK_TREE_VIEW(getWidget("windowsOptionsTreeView")));
@@ -642,9 +639,6 @@ void Settings::initAppearance_gui()
 		addOption_gui(windowStore2, "Open new window when using /join", SettingsManager::JOIN_OPEN_NEW_WINDOW);
 		addOption_gui(windowStore2, "Ignore private messages from the hub", SettingsManager::IGNORE_HUB_PMS);
 		addOption_gui(windowStore2, "Ignore private messages from bots", SettingsManager::IGNORE_BOT_PMS);
-		/// @todo: Uncomment when implemented
-		//addOption_gui(windowStore2, "Open private messages in their own window", SettingsManager::POPUP_PMS);
-		//addOption_gui(windowStore2, "Toggle window when selecting an active tab", SettingsManager::TOGGLE_ACTIVE_WINDOW);
 
 		// Confirmation dialog
 		windowView3.setView(GTK_TREE_VIEW(getWidget("windowsConfirmTreeView")));
@@ -737,7 +731,6 @@ void Settings::initAdvanced_gui()
 		//addOption_gui(advancedStore, "Register with the OS to handle dchub:// and adc:// URL links", SettingsManager::URL_HANDLER);
 		//addOption_gui(advancedStore, "Register with the OS to handle magnet: URL links", SettingsManager::MAGNET_REGISTER);
 		//addOption_gui(advancedStore, "Don't send the away message to bots", SettingsManager::NO_AWAYMSG_TO_BOTS);
-		//addOption_gui(advancedStore, "Break on first ADLSearch match", SettingsManager::ADLS_BREAK_ON_FIRST);
 		//addOption_gui(advancedStore, "Use CTRL for line history", SettingsManager::USE_CTRL_FOR_LINE_HISTORY);
 	}
 
@@ -833,7 +826,7 @@ void Settings::onInDirect_gui(GtkToggleButton *button, gpointer data)
 	gtk_widget_set_sensitive(s->getWidget("udpEntry"), TRUE);
 	gtk_widget_set_sensitive(s->getWidget("udpLabel"), TRUE);
 	gtk_widget_set_sensitive(s->getWidget("tlsEntry"), TRUE);
-	gtk_widget_set_sensitive(s->getWidget("tlsEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("tlsLabel"), TRUE);
 	gtk_widget_set_sensitive(s->getWidget("forceIPCheckButton"), TRUE);
 }
 
@@ -863,7 +856,7 @@ void Settings::onInFW_NAT_gui(GtkToggleButton *button, gpointer data)
 	gtk_widget_set_sensitive(s->getWidget("udpEntry"), TRUE);
 	gtk_widget_set_sensitive(s->getWidget("udpLabel"), TRUE);
 	gtk_widget_set_sensitive(s->getWidget("tlsEntry"), TRUE);
-	gtk_widget_set_sensitive(s->getWidget("tlsEntry"), TRUE);
+	gtk_widget_set_sensitive(s->getWidget("tlsLabel"), TRUE);
 	gtk_widget_set_sensitive(s->getWidget("forceIPCheckButton"), TRUE);
 }
 
@@ -877,7 +870,7 @@ void Settings::onInPassive_gui(GtkToggleButton *button, gpointer data)
 	gtk_widget_set_sensitive(s->getWidget("udpEntry"), FALSE);
 	gtk_widget_set_sensitive(s->getWidget("udpLabel"), FALSE);
 	gtk_widget_set_sensitive(s->getWidget("tlsEntry"), FALSE);
-	gtk_widget_set_sensitive(s->getWidget("tlsEntry"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("tlsLabel"), FALSE);
 	gtk_widget_set_sensitive(s->getWidget("forceIPCheckButton"), FALSE);
 }
 

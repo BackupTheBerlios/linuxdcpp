@@ -42,13 +42,13 @@ class Hub:
 		// GUI functions
 		void setStatus_gui(std::string statusBar, std::string text);
 		bool findUser_gui(const std::string &nick, GtkTreeIter *iter);
-		void updateUser_gui(Identity id);
+		void updateUser_gui(StringMap id);
 		void removeUser_gui(std::string nick);
 		void clearNickList_gui();
 		void getPassword_gui();
 		void addMessage_gui(std::string message);
 		void addStatusMessage_gui(std::string message);
-		void addPrivateMessage_gui(Identity id, std::string message);
+		void addPrivateMessage_gui(std::string cid, std::string message);
 
 		// GUI callbacks
 		static void onSendMessage_gui(GtkEntry *entry, gpointer data);
@@ -65,13 +65,15 @@ class Hub:
 		// Client functions
 		void setPassword_client(std::string password);
 		void sendMessage_client(std::string message);
-		void getFileList_client(std::string nick, bool match);
-		void grantSlot_client(std::string nick);
-		void removeUserFromQueue_client(std::string nick);
+		void getFileList_client(std::string cid, bool match);
+		void grantSlot_client(std::string cid);
+		void removeUserFromQueue_client(std::string cid);
 		void redirect_client(std::string address);
 		void rebuildHashData_client();
 		void refreshFileList_client();
 		void addAsFavorite_client();
+		void checkFavoriteUserJoin_client(std::string cid);
+		void getParams_client(StringMap &user, Identity &id);
 
 		// Client callbacks
 		virtual void on(ClientListener::Connecting, Client *) throw();
@@ -90,7 +92,7 @@ class Hub:
 		virtual void on(ClientListener::NickTaken, Client *) throw();
 		virtual void on(ClientListener::SearchFlood, Client *, const string &message) throw();
 
-		hash_map<std::string, Identity> idMap;
+		hash_map<std::string, std::string> userMap;
 		hash_map<std::string, GdkPixbuf *> userIcons;
 		Client *client;
 		TreeView nickView;
@@ -98,7 +100,6 @@ class Hub:
 		GtkTreeSelection *nickSelection;
 		GtkTextBuffer *chatBuffer;
 		GtkTextMark *chatMark;
-		GtkEntryCompletion *completion;
 		gint oldType;
 		std::vector<std::string> history;
 		int historyIndex;

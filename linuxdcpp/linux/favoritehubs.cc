@@ -63,9 +63,7 @@ FavoriteHubs::FavoriteHubs():
 	g_signal_connect(favoriteView.get(), "button-release-event", G_CALLBACK(onButtonReleased_gui), (gpointer)this);
 	g_signal_connect(favoriteView.get(), "key-release-event", G_CALLBACK(onKeyReleased_gui), (gpointer)this);
 
-	// Faster without queuing it, but we may need to change it back in the future.
-	//WulforManager::get()->dispatchClientFunc(new Func0<FavoriteHubs>(this, &FavoriteHubs::initializeList_client));
-	initializeList_client();
+	WulforManager::get()->dispatchClientFunc(new Func0<FavoriteHubs>(this, &FavoriteHubs::initializeList_client));
 }
 
 FavoriteHubs::~FavoriteHubs()
@@ -92,13 +90,16 @@ void FavoriteHubs::editEntry_gui(StringMap &params, GtkTreeIter *iter)
 			params["Password"] = "";
 	}
 
-	for (StringMap::const_iterator it = params.begin(); it != params.end(); ++it)
-	{
-		if (it->first == "Auto Connect")
-			gtk_list_store_set(favoriteStore, iter, favoriteView.col(it->first), Util::toInt(it->second), -1);
-		else
-			gtk_list_store_set(favoriteStore, iter, favoriteView.col(it->first), it->second.c_str(), -1);
-	}
+	gtk_list_store_set(favoriteStore, iter,
+		favoriteView.col("Auto Connect"), Util::toInt(params["Auto Connect"]),
+		favoriteView.col("Name"), params["Name"].c_str(),
+		favoriteView.col("Description"), params["Description"].c_str(),
+		favoriteView.col("Nick"), params["Nick"].c_str(),
+		favoriteView.col("Password"), params["Password"].c_str(),
+		favoriteView.col("Hidden Password"), params["Hidden Password"].c_str(),
+		favoriteView.col("Address"), params["Address"].c_str(),
+		favoriteView.col("User Description"), params["User Description"].c_str(),
+		-1);
 }
 
 void FavoriteHubs::removeEntry_gui(string address)
@@ -334,11 +335,11 @@ void FavoriteHubs::onToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path
 
 	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(fh->favoriteStore), &iter, path))
 	{
+		string address = fh->favoriteView.getString(&iter, "Address");
 		bool fixed = fh->favoriteView.getValue<gboolean>(&iter, "Auto Connect");
 		fixed = !fixed;
 		gtk_list_store_set(fh->favoriteStore, &iter, fh->favoriteView.col("Auto Connect"), fixed, -1);
 
-		string address = fh->favoriteView.getString(&iter, "Address");
 		typedef Func2<FavoriteHubs, string, bool> F2;
 		F2 *func = new F2(fh, &FavoriteHubs::setConnect_client, address, fixed);
 		WulforManager::get()->dispatchClientFunc(func);
@@ -352,21 +353,17 @@ void FavoriteHubs::initializeList_client()
 	F1 *func;
 	const FavoriteHubEntry::List& fl = FavoriteManager::getInstance()->getFavoriteHubs();
 
-	for (FavoriteHubEntry::List::const_iterator i = fl.begin(); i != fl.end(); ++i)
+	for (FavoriteHubEntry::List::const_iterator it = fl.begin(); it != fl.end(); ++it)
 	{
 		params.clear();
-		params = getFavHubParams_client(*i);
-		// Faster without queuing it, but we may need to change it back in the future.
-		//func = new F1(this, &FavoriteHubs::addEntry_gui, params);
-		//WulforManager::get()->dispatchGuiFunc(func);
-		addEntry_gui(params);
+		getFavHubParams_client(*it, params);
+		func = new F1(this, &FavoriteHubs::addEntry_gui, params);
+		WulforManager::get()->dispatchGuiFunc(func);
 	}
 }
 
-StringMap FavoriteHubs::getFavHubParams_client(const FavoriteHubEntry *entry)
+void FavoriteHubs::getFavHubParams_client(const FavoriteHubEntry *entry, StringMap &params)
 {
-	StringMap params;
-
 	params["Auto Connect"] = entry->getConnect() ? "1" : "0";
 	params["Name"] = entry->getName();
 	params["Description"] = entry->getDescription();
@@ -376,8 +373,6 @@ StringMap FavoriteHubs::getFavHubParams_client(const FavoriteHubEntry *entry)
 	params["Hidden Password"] = entry->getPassword();
 	params["Address"] = entry->getServer();
 	params["User Description"] = entry->getUserDescription();
-
-	return params;
 }
 
 void FavoriteHubs::addEntry_client(StringMap params)
@@ -430,7 +425,8 @@ void FavoriteHubs::setConnect_client(string address, bool active)
 
 void FavoriteHubs::on(FavoriteManagerListener::FavoriteAdded, const FavoriteHubEntry *entry) throw()
 {
-	StringMap params = getFavHubParams_client(entry);
+	StringMap params;
+	getFavHubParams_client(entry, params);
 
 	typedef Func1<FavoriteHubs, StringMap> F1;
 	F1 *func = new F1(this, &FavoriteHubs::addEntry_gui, params);

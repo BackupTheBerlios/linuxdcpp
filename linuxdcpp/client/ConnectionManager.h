@@ -103,8 +103,8 @@ public:
 		expectedConnections.add(aNick, aMyNick, aHubUrl);
 	}
 
-	void nmdcConnect(const string& aServer, short aPort, const string& aMyNick, const string& hubUrl);
-	void adcConnect(const OnlineUser& aUser, short aPort, const string& aToken, bool secure);
+	void nmdcConnect(const string& aServer, uint16_t aPort, const string& aMyNick, const string& hubUrl);
+	void adcConnect(const OnlineUser& aUser, uint16_t aPort, const string& aToken, bool secure);
 
 	void getDownloadConnection(const User::Ptr& aUser);
 
@@ -116,20 +116,20 @@ public:
 	void listen() throw(SocketException);
 	void disconnect() throw();
 
-	unsigned short getPort() { return server ? static_cast<unsigned short>(server->getPort()) : 0; }
-	unsigned short getSecurePort() { return secureServer ? static_cast<unsigned short>(secureServer->getPort()) : 0; }
+	uint16_t getPort() { return server ? static_cast<uint16_t>(server->getPort()) : 0; }
+	uint16_t getSecurePort() { return secureServer ? static_cast<uint16_t>(secureServer->getPort()) : 0; }
 private:
 
 	class Server : public Thread {
 	public:
-		Server(bool secure_, short port, const string& ip = "0.0.0.0");
-		short getPort() { return port; }
+		Server(bool secure_, uint16_t port, const string& ip = "0.0.0.0");
+		uint16_t getPort() { return port; }
 		virtual ~Server() { die = true; join(); }
 	private:
 		virtual int run() throw();
 
 		Socket sock;
-		short port;
+		uint16_t port;
 		bool secure;
 		bool die;
 	};
