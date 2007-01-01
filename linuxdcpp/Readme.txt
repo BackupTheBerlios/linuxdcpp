@@ -29,6 +29,7 @@ libglade-2.0 >= 2.4
 pthread
 zlib
 libbz2
+libssl
 
 
 Compiling:

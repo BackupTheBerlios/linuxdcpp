@@ -428,10 +428,10 @@ void MainWindow::setStats_gui(std::string hub, std::string slot,
 	setStatus_gui("status7", dl);
 }
 
-void MainWindow::addShareBrowser_gui(User::Ptr user, string listName, string searchString, bool useSetting)
+void MainWindow::addShareBrowser_gui(User::Ptr user, string listName, string initialDir, bool useSetting)
 {
 	bool raise = useSetting ? !BOOLSETTING(POPUNDER_FILELIST) : TRUE;
-	WulforManager::get()->addShareBrowser_gui(user, listName, raise);
+	WulforManager::get()->addShareBrowser_gui(user, listName, initialDir, raise);
 
 	setStatus_gui("status1", "File list loaded");
 }
@@ -519,11 +519,12 @@ gboolean MainWindow::onDeleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpoi
 gboolean MainWindow::onKeyPressed_gui(GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
 	MainWindow *mw = (MainWindow *)data;
-	GtkNotebook *book = GTK_NOTEBOOK(mw->getWidget("book"));
 
 	if (event->state & GDK_CONTROL_MASK)
 	{
-		if ((event->state & GDK_SHIFT_MASK && event->keyval == GDK_ISO_Left_Tab) || event->keyval == GDK_Left)
+		GtkNotebook *book = GTK_NOTEBOOK(mw->getWidget("book"));
+
+		if (event->state & GDK_SHIFT_MASK && event->keyval == GDK_ISO_Left_Tab)
 		{
 			if (gtk_notebook_get_current_page(book) == 0)
 				gtk_notebook_set_current_page(book, -1);
@@ -532,7 +533,7 @@ gboolean MainWindow::onKeyPressed_gui(GtkWidget *widget, GdkEventKey *event, gpo
 
 			return TRUE;
 		}
-		else if (event->keyval == GDK_Tab || event->keyval == GDK_Right)
+		else if (event->keyval == GDK_Tab)
 		{
 			if (gtk_notebook_get_n_pages(book) - 1 == gtk_notebook_get_current_page(book))
 				gtk_notebook_set_current_page(book, 0);
@@ -745,7 +746,7 @@ void MainWindow::onOpenFileListClicked_gui(GtkWidget *widget, gpointer data)
 
 		User::Ptr user = DirectoryListing::getUserFromFilename(path);
 		if (user)
-			WulforManager::get()->addShareBrowser_gui(user, path);
+			WulforManager::get()->addShareBrowser_gui(user, path, "");
 		else
 			mw->setStatus_gui("status1", "Unable to open: Older file list format detected");
 	}
@@ -1326,7 +1327,12 @@ void MainWindow::on(DownloadManagerListener::Tick, const Download::List &list) t
 		dl = *it;
 
 		if (dl->getUserConnection().isSecure())
-			status += "[S]";
+		{
+			if (dl->getUserConnection().isTrusted())
+				status += "[S]";
+			else
+				status += "[U]";
+		}
 		if (dl->isSet(Download::FLAG_TTH_CHECK))
 			status += "[T]";
 		if (dl->isSet(Download::FLAG_ZDOWNLOAD))
@@ -1428,7 +1434,12 @@ void MainWindow::on(UploadManagerListener::Tick, const Upload::List &list) throw
 		ul = *it;
 
 		if (ul->getUserConnection().isSecure())
-			status += "[S]";
+		{
+			if (ul->getUserConnection().isTrusted())
+				status += "[S]";
+			else
+				status += "[U]";
+		}
 		if (ul->isSet(Upload::FLAG_ZUPLOAD))
 			status += "[Z]";
 		if (!status.empty())
@@ -1467,7 +1478,7 @@ void MainWindow::on(LogManagerListener::Message, time_t t, const string &str) th
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
-void MainWindow::on(QueueManagerListener::Finished, QueueItem *item, int64_t avSpeed) throw()
+void MainWindow::on(QueueManagerListener::Finished, QueueItem *item, const string& dir, int64_t avSpeed) throw()
 {
 	if (item->isSet(QueueItem::FLAG_CLIENT_VIEW | QueueItem::FLAG_USER_LIST))
 	{
@@ -1475,7 +1486,7 @@ void MainWindow::on(QueueManagerListener::Finished, QueueItem *item, int64_t avS
 		string listName = item->getListName();
 
 		typedef Func4<MainWindow, User::Ptr, string, string, bool> F4;
-		F4 *func = new F4(this, &MainWindow::addShareBrowser_gui, user, listName, "", TRUE);
+		F4 *func = new F4(this, &MainWindow::addShareBrowser_gui, user, listName, dir, TRUE);
 		WulforManager::get()->dispatchGuiFunc(func);
 	}
 }

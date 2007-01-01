@@ -802,6 +802,9 @@ void Settings::onAddShare_gui(GtkWidget *widget, gpointer data)
 		string path = temp;
 		g_free(temp);
 
+		if (path[path.length() - 1] != PATH_SEPARATOR)
+			path += PATH_SEPARATOR;
+
 		gtk_entry_set_text(GTK_ENTRY(s->getWidget("virtualNameDialogEntry")), "");
 		response = gtk_dialog_run(GTK_DIALOG(s->getWidget("virtualNameDialog")));
 		gtk_widget_hide(s->getWidget("virtualNameDialog"));

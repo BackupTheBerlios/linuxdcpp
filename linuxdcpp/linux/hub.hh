@@ -94,6 +94,7 @@ class Hub:
 
 		hash_map<std::string, std::string> userMap;
 		hash_map<std::string, GdkPixbuf *> userIcons;
+		std::string completionKey;
 		Client *client;
 		TreeView nickView;
 		GtkListStore *nickStore;

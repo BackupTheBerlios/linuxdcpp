@@ -28,7 +28,7 @@
 
 using namespace std;
 
-ShareBrowser::ShareBrowser(User::Ptr user, const std::string &file):
+ShareBrowser::ShareBrowser(User::Ptr user, const std::string &file, const std::string &initialDir):
 	BookEntry("List: " + WulforUtil::getNicks(user), "sharebrowser.glade"),
 	listing(user),
 	shareSize(0),
@@ -106,27 +106,42 @@ ShareBrowser::ShareBrowser(User::Ptr user, const std::string &file):
 	try
 	{
 		listing.loadFile(file);
+
+		// Set name of root entry to user nick.
+		listing.getRoot()->setName(WulforUtil::getNicks(user));
+		
+		// Add entries to dir tree view starting with the root entry.
+		buildDirs_gui(listing.getRoot(), NULL);
+
+		GtkTreeIter iter;
+
+		if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(dirStore), &iter))
+		{
+			GtkTreePath *path;
+			DirectoryListing::Directory *directory;
+
+			if (findDir_gui(initialDir, &iter))
+				path = gtk_tree_model_get_path(GTK_TREE_MODEL(dirStore), &iter);
+			else
+				path = gtk_tree_path_new_first();
+
+			directory = dirView.getValue<gpointer, DirectoryListing::Directory *>(&iter, "DL Dir");
+
+			gtk_tree_view_expand_to_path(dirView.get(), path);
+			gtk_tree_view_scroll_to_cell(dirView.get(), path, gtk_tree_view_get_column(dirView.get(), 0), FALSE, 0.0, 0.0);
+			gtk_tree_view_set_cursor(dirView.get(), path, NULL, FALSE);
+			gtk_tree_path_free(path);
+
+			// Show entries in file view. fileView isn't realized yet so we have
+			// to queue it for later. Not sure why it isn't realized, though...
+			typedef Func1<ShareBrowser, DirectoryListing::Directory *> F1;
+			WulforManager::get()->dispatchGuiFunc(new F1(this, &ShareBrowser::updateFiles_gui, directory));
+		}
 	}
-	catch (const Exception& e)
+	catch (const Exception &e)
 	{
 		setStatus_gui("mainStatus", "Unable to load file list: " + e.getError());
 	}
-
-	// Set name of root entry to user nick.
-	listing.getRoot()->setName(WulforUtil::getNicks(user));
-	
-	// Add entries to dir tree view starting with the root entry.
-	buildDirs_gui(listing.getRoot(), NULL);
-
-	// Expand root entry of dir tree view.
-	GtkTreePath *path = gtk_tree_path_new_first();
-	gtk_tree_view_expand_row(dirView.get(), path, 0);
-	gtk_tree_view_set_cursor(dirView.get(), path, NULL, FALSE);
-	gtk_tree_path_free(path);
-
-	// Show entries of root in file view. fileView isn't realized yet so we have to queue it for later.
-	typedef Func1<ShareBrowser, DirectoryListing::Directory *> F1;
-	WulforManager::get()->dispatchGuiFunc(new F1(this, &ShareBrowser::updateFiles_gui, listing.getRoot()));
 
 	updateStatus_gui();
 }
@@ -146,8 +161,28 @@ ShareBrowser::~ShareBrowser()
 	gtk_widget_destroy(getWidget("dirChooserDialog"));
 }
 
-void ShareBrowser::setPosition_gui(string pos)
+bool ShareBrowser::findDir_gui(const string &dir, GtkTreeIter *parent)
 {
+	if (dir.empty())
+		return TRUE;
+
+	string::size_type i = dir.find_first_of(PATH_SEPARATOR);
+	const string &current = dir.substr(0, i);
+	GtkTreeIter iter;
+	bool valid = gtk_tree_model_iter_children(GTK_TREE_MODEL(dirStore), &iter, parent);
+
+	while (valid)
+	{
+		if (dirView.getString(&iter, "Dir") == current)
+		{
+			*parent = iter;
+			return findDir_gui(dir.substr(i + 1), parent);
+		}
+
+		valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(dirStore), &iter);
+	}
+
+	return FALSE;
 }
 
 void ShareBrowser::buildDirs_gui(DirectoryListing::Directory *dir, GtkTreeIter *iter)

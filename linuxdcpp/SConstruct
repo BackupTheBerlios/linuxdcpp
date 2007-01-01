@@ -97,15 +97,6 @@ if not conf.CheckCXXVersion(env['CXX'], 3, 4):
 	print 'Compiler version check failed. g++ 3.4 or later is needed'
 	Exit(1)
 
-# Add support for compiler caches to speed-up compilation.
-if conf.TryAction(Action('distcc'))[0]:
-	env.Prepend(CXX = 'distcc ')
-	print 'Enabling distcc...'
-
-if conf.TryAction(Action('ccache'))[0]:
-	env.Prepend(CXX = 'ccache ')
-	print 'Enabling ccache...'
-
 if not conf.CheckPKGConfig():
 	print '\tpkg-config not found.'
 	Exit(1)

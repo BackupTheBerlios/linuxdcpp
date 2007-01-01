@@ -68,7 +68,7 @@ class MainWindow:
 		void setStatus_gui(std::string statusBar, std::string text);
 		void setStats_gui(std::string hub, std::string slot,
 			std::string dTot, std::string uTot, std::string dl, std::string ul);
-		void addShareBrowser_gui(User::Ptr user, std::string listName, std::string searchString, bool useSetting);
+		void addShareBrowser_gui(User::Ptr user, std::string listName, std::string initialDir, bool useSetting);
 		void openHub_gui(std::string server, std::string nick, std::string desc, std::string password);
 		bool findTransfer_gui(const std::string &cid, bool download, GtkTreeIter *iter);
 		void updateTransfer_gui(StringMap params, bool download);
@@ -136,7 +136,7 @@ class MainWindow:
 		virtual void on(UploadManagerListener::Tick, const Upload::List &list) throw();
 		virtual void on(UploadManagerListener::Complete, Upload *ul) throw();
 		virtual void on(LogManagerListener::Message, time_t t, const std::string &m) throw();
-		virtual void on(QueueManagerListener::Finished, QueueItem *item, int64_t avSpeed) throw();
+		virtual void on(QueueManagerListener::Finished, QueueItem *item, const string& dir, int64_t avSpeed) throw();
 		virtual void on(TimerManagerListener::Second, u_int32_t ticks) throw();
 
 		GtkWindow *window;

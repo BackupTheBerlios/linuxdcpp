@@ -30,14 +30,12 @@ class ShareBrowser:
 	public BookEntry
 {
 	public:
-		ShareBrowser(User::Ptr user, const std::string &file);
+		ShareBrowser(User::Ptr user, const std::string &file, const std::string &initialDir);
 		~ShareBrowser();
-
-		// GUI function
-		void setPosition_gui(std::string pos);
 
 	private:
 		// GUI functions
+		bool findDir_gui(const std::string &dir, GtkTreeIter *parent);
 		void buildDirs_gui(DirectoryListing::Directory *dir, GtkTreeIter *iter);
 		void buildDirDownloadMenu_gui();
 		void buildFileDownloadMenu_gui();

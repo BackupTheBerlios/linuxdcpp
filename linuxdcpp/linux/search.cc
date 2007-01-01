@@ -995,8 +995,8 @@ void Search::onGetFileListClicked_gui(GtkMenuItem *item, gpointer data)
 		GtkTreeIter iter;
 		GtkTreePath *path;
 		GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
-		typedef Func2<Search, User::Ptr &, QueueItem::FileFlags> F2;
-		F2 *func;
+		typedef Func3<Search, User::Ptr &, QueueItem::FileFlags, const string> F3;
+		F3 *func;
 
 		for (GList *i = list; i; i = i->next)
 		{
@@ -1006,7 +1006,9 @@ void Search::onGetFileListClicked_gui(GtkMenuItem *item, gpointer data)
 				result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
 				if (result)
 				{
-					func = new F2(s, &Search::getFileList_client, result->getUser(), QueueItem::FLAG_CLIENT_VIEW);
+					string dir = Util::getFilePath(WulforUtil::linuxSeparator(result->getFileName()));
+
+					func = new F3(s, &Search::getFileList_client, result->getUser(), QueueItem::FLAG_CLIENT_VIEW, dir);
 					WulforManager::get()->dispatchClientFunc(func);
 				}
 			}
@@ -1026,8 +1028,8 @@ void Search::onMatchQueueClicked_gui(GtkMenuItem *item, gpointer data)
 		GtkTreeIter iter;
 		GtkTreePath *path;
 		GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
-		typedef Func2<Search, User::Ptr &, QueueItem::FileFlags> F2;
-		F2 *func;
+		typedef Func3<Search, User::Ptr &, QueueItem::FileFlags, const string> F3;
+		F3 *func;
 
 		for (GList *i = list; i; i = i->next)
 		{
@@ -1037,7 +1039,7 @@ void Search::onMatchQueueClicked_gui(GtkMenuItem *item, gpointer data)
 				result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
 				if (result)
 				{
-					func = new F2(s, &Search::getFileList_client, result->getUser(), QueueItem::FLAG_MATCH_QUEUE);
+					func = new F3(s, &Search::getFileList_client, result->getUser(), QueueItem::FLAG_MATCH_QUEUE, "");
 					WulforManager::get()->dispatchClientFunc(func);
 				}
 			}
@@ -1251,11 +1253,11 @@ void Search::addSource_client(string source, SearchResult *result)
 	}
 }
 
-void Search::getFileList_client(User::Ptr &user, QueueItem::FileFlags flags)
+void Search::getFileList_client(User::Ptr &user, QueueItem::FileFlags flags, string dir)
 {
 	try
 	{
-		QueueManager::getInstance()->addList(user, flags);
+		QueueManager::getInstance()->addList(user, flags, dir);
 	}
 	catch (const Exception&)
 	{

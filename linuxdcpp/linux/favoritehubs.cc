@@ -42,12 +42,17 @@ FavoriteHubs::FavoriteHubs():
 	favoriteView.finalize();
 	favoriteStore = gtk_list_store_newv(favoriteView.getColCount(), favoriteView.getGTypes());
 	gtk_tree_view_set_model(favoriteView.get(), GTK_TREE_MODEL(favoriteStore));
+	g_object_unref(favoriteStore);
 	gtk_tree_view_set_fixed_height_mode(favoriteView.get(), TRUE);
 	favoriteSelection = gtk_tree_view_get_selection(favoriteView.get());
-	g_object_unref(favoriteStore);
 	GList *list = gtk_tree_view_column_get_cell_renderers(gtk_tree_view_get_column(favoriteView.get(), favoriteView.col("Auto Connect")));
 	GtkCellRenderer *renderer = (GtkCellRenderer *)g_list_nth_data(list, 0);
 	g_list_free(list);
+
+	// Treat "Name" as the default col instead of "Auto Connect"
+	gtk_tree_view_set_search_column(favoriteView.get(), favoriteView.col("Name"));
+	GtkTreeViewColumn *column = gtk_tree_view_get_column(favoriteView.get(), favoriteView.col("Name"));
+	gtk_widget_grab_focus(column->button);
 
 	// Connect the signals to their callback functions.
 	g_signal_connect(getWidget("buttonNew"), "clicked", G_CALLBACK(onAddEntry_gui), (gpointer)this);
@@ -192,12 +197,25 @@ gboolean FavoriteHubs::onKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, 
 
 	if (gtk_tree_selection_get_selected(fh->favoriteSelection, NULL, &iter))
 	{
+		gtk_widget_set_sensitive(fh->getWidget("buttonProperties"), TRUE);
+		gtk_widget_set_sensitive(fh->getWidget("buttonRemove"), TRUE);
+		gtk_widget_set_sensitive(fh->getWidget("buttonConnect"), TRUE);
+
 		if (event->keyval == GDK_Return || event->keyval == GDK_KP_Enter)
-			fh->connect_gui(&iter);
+		{
+			GtkTreeViewColumn *column;
+			gtk_tree_view_get_cursor(fh->favoriteView.get(), NULL, &column);
+			if (column && column != gtk_tree_view_get_column(fh->favoriteView.get(), fh->favoriteView.col("Auto Connect")))
+				fh->connect_gui(&iter);
+		}
 		else if (event->keyval == GDK_Delete || event->keyval == GDK_BackSpace)
+		{
 			fh->onRemoveEntry_gui(widget, data);
+		}
 		else if (event->keyval == GDK_Menu || (event->keyval == GDK_F10 && event->state & GDK_SHIFT_MASK))
+		{
 			fh->popupMenu_gui();
+		}
 	}
 
 	return FALSE;
@@ -355,7 +373,6 @@ void FavoriteHubs::initializeList_client()
 
 	for (FavoriteHubEntry::List::const_iterator it = fl.begin(); it != fl.end(); ++it)
 	{
-		params.clear();
 		getFavHubParams_client(*it, params);
 		func = new F1(this, &FavoriteHubs::addEntry_gui, params);
 		WulforManager::get()->dispatchGuiFunc(func);
@@ -370,6 +387,8 @@ void FavoriteHubs::getFavHubParams_client(const FavoriteHubEntry *entry, StringM
 	params["Nick"] = entry->getNick();
 	if (!entry->getPassword().empty())
 		params["Password"] = string(8, '*');
+	else
+		params["Password"] = "";
 	params["Hidden Password"] = entry->getPassword();
 	params["Address"] = entry->getServer();
 	params["User Description"] = entry->getUserDescription();

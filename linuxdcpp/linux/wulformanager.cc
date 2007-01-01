@@ -544,12 +544,12 @@ BookEntry *WulforManager::addPrivMsg_gui(User::Ptr user, bool raise)
 	return privMsg;
 }
 
-BookEntry *WulforManager::addShareBrowser_gui(User::Ptr user, const string &file, bool raise)
+BookEntry *WulforManager::addShareBrowser_gui(User::Ptr user, const string &file, const string &dir, bool raise)
 {
 	BookEntry *entry = getBookEntry_gui("List: " + WulforUtil::getNicks(user));
 	if (entry) return entry;
 
-	ShareBrowser *browser = new ShareBrowser(user, file);
+	ShareBrowser *browser = new ShareBrowser(user, file, dir);
 	insertBookEntry_gui(browser, raise);
 
 	return browser;

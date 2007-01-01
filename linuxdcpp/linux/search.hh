@@ -82,7 +82,7 @@ class Search:
 		void download_client(std::string target, SearchResult *result);
 		void downloadDir_client(std::string target, SearchResult *result);
 		void addSource_client(std::string source, SearchResult *result);
-		void getFileList_client(User::Ptr &user, QueueItem::FileFlags flags);
+		void getFileList_client(User::Ptr &user, QueueItem::FileFlags flags, std::string dir);
 		void addFavUser_client(User::Ptr &user);
 		void grantSlot_client(User::Ptr &user);
 		void removeSource_client(User::Ptr &user);

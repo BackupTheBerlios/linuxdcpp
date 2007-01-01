@@ -547,36 +547,99 @@ gboolean Hub::onNickListKeyRelease_gui(GtkWidget *widget, GdkEventKey *event, gp
 	return FALSE;
 }
 
-gboolean Hub::onEntryKeyPress_gui(GtkWidget *widget, GdkEventKey *event, gpointer data)
+gboolean Hub::onEntryKeyPress_gui(GtkWidget *entry, GdkEventKey *event, gpointer data)
 {
 	Hub *hub = (Hub *)data;
-	GtkEntry *chatEntry = GTK_ENTRY(widget);
-	string text;
-	size_t index;
 
 	if (event->keyval == GDK_Up || event->keyval == GDK_KP_Up)
 	{
-		index = hub->historyIndex - 1;
+		size_t index = hub->historyIndex - 1;
 		if (index >= 0 && index < hub->history.size())
 		{
-			text = hub->history[index];
 			hub->historyIndex = index;
-			gtk_entry_set_text(chatEntry, text.c_str());
+			gtk_entry_set_text(GTK_ENTRY(entry), hub->history[index].c_str());
 		}
 		return TRUE;
 	}
 	else if (event->keyval == GDK_Down || event->keyval == GDK_KP_Down)
 	{
-		index = hub->historyIndex + 1;
+		size_t index = hub->historyIndex + 1;
 		if (index >= 0 && index < hub->history.size())
 		{
-			text = hub->history[index];
 			hub->historyIndex = index;
-			gtk_entry_set_text(chatEntry, text.c_str());
+			gtk_entry_set_text(GTK_ENTRY(entry), hub->history[index].c_str());
 		}
 		return TRUE;
 	}
+	else if (event->keyval == GDK_Tab || event->keyval == GDK_ISO_Left_Tab)
+	{
+		string current;
+		string::size_type start, end;
+		string text(gtk_entry_get_text(GTK_ENTRY(entry)));
+		int curpos = gtk_editable_get_position(GTK_EDITABLE(entry));
 
+		// Allow tab to focus other widgets if entry is empty
+		if (curpos <= 0 && text.empty())
+			return FALSE;
+
+		// Erase ": " at the end of the nick.
+		if (curpos > 2 && text.substr(curpos - 2, 2) == ": ")
+		{
+			text.erase(curpos - 2, 2);
+			curpos -= 2;
+		}
+
+		start = text.rfind(' ', curpos - 1);
+		end = text.find(' ', curpos - 1);
+
+		// Text to match starts at the beginning
+		if (start == string::npos)
+			start = 0;
+		else
+			++start;
+
+		if (start < end)
+		{
+			current = text.substr(start, end - start);
+
+			if (hub->completionKey.empty() || Text::toLower(current).find(Text::toLower(hub->completionKey)) != 0)
+				hub->completionKey = current;
+
+			GtkTreeIter iter;
+			bool valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(hub->nickStore), &iter);
+			bool useNext = (current == hub->completionKey);
+			string key = Text::toLower(hub->completionKey);
+			string complete = hub->completionKey;
+
+			while (valid)
+			{
+				string nick = hub->nickView.getString(&iter, "Nick");
+				if (useNext && Text::toLower(nick).find(key) == 0)
+				{
+					complete = nick;
+					if (start <= 0)
+						complete.append(": ");
+
+					break;
+				}
+
+				if (nick == current)
+					useNext = TRUE;
+
+				valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(hub->nickStore),&iter);
+			}
+
+			text.replace(start, end - start, complete);
+			gtk_entry_set_text(GTK_ENTRY(entry), text.c_str());
+			gtk_editable_set_position(GTK_EDITABLE(entry), start + complete.length());
+		}
+		else
+			hub->completionKey.clear();
+
+		return TRUE;
+	}
+
+	hub->completionKey.clear();
 	return FALSE;
 }
 
@@ -742,7 +805,7 @@ void Hub::sendMessage_client(string message)
 
 void Hub::getFileList_client(string cid, bool match)
 {
-	string message = "User not found";
+	string message;
 
 	if (!cid.empty())
 	{
@@ -756,6 +819,8 @@ void Hub::getFileList_client(string cid, bool match)
 				else
 					QueueManager::getInstance()->addList(user, QueueItem::FLAG_CLIENT_VIEW);
 			}
+			else
+				message = "User not found";
 		}
 		catch (const Exception &e)
 		{
@@ -764,9 +829,12 @@ void Hub::getFileList_client(string cid, bool match)
 		}
 	}
 
-	typedef Func1<Hub, string> F1;
-	F1 *func = new F1(this, &Hub::addStatusMessage_gui, message);
-	WulforManager::get()->dispatchGuiFunc(func);
+	if (!message.empty())
+	{
+		typedef Func1<Hub, string> F1;
+		F1 *func = new F1(this, &Hub::addStatusMessage_gui, message);
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
 }
 
 void Hub::grantSlot_client(string cid)
