@@ -408,7 +408,7 @@ void QueueManager::addList(const User::Ptr& aUser, int aFlags, const string& aIn
 	string target = Util::getListPath() + Util::validateFileName(aUser->getFirstNick()) + "." + aUser->getCID().toBase32();
 
 	if (!aInitialDir.empty()) {
-		dirMap[aUser->getCID().toBase32()] = aInitialDir;
+		dirMap[target] = aInitialDir;
 	}
 
 	add(target, -1, TTHValue(), aUser, QueueItem::FLAG_USER_LIST | aFlags);
@@ -806,7 +806,7 @@ void QueueManager::putDownload(Download* aDownload, bool finished) throw() {
 						}
 
 						string dir;
-						StringMapIter i = dirMap.find(aDownload->getUser()->getCID().toBase32());
+						StringMapIter i = dirMap.find(aDownload->getTarget());
 						if (i != dirMap.end()) {
 							dir = i->second;
 							dirMap.erase(i);
@@ -923,7 +923,7 @@ void QueueManager::remove(const string& aTarget) throw() {
 			File::deleteFile(q->getTempTarget());
 		}
 
-		StringMapIter i = dirMap.find(q->getCurrent()->getCID().toBase32());
+		StringMapIter i = dirMap.find(aTarget);
 		if (i != dirMap.end()) {
 			dirMap.erase(i);
 		}
