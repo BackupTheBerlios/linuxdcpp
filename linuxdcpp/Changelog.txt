@@ -1,3 +1,17 @@
+2007-01-04 - Steven Sheehy
+* Fixed "Search by TTH" regression (thanks Mikael Eman).
+* Download queue changes:
+	* Fixed crashing regressions.
+	* Fixed an issue with scroll position not updating when changing dirs.
+	* Fixed new files from showing up in the wrong directory.
+	* Fixed crash when adding files to "/".
+	* Fixed sorting of "Downloaded" column.
+	* File view and dir view are now both sorted automatically.
+	* Bug #6728: Download queue selection.
+	* Added the ability to move and rename files.
+	* Added more keyboard events.
+	* Decoupling and lots of cleanup.
+
 2007-01-01 - Steven Sheehy
 * Fixed a deadlock in the core, improving socket disconnections as a nice
   side effect (thanks Mikael Eman).

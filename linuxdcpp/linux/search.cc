@@ -976,7 +976,7 @@ void Search::onSearchByTTHClicked_gui(GtkMenuItem *item, gpointer data)
 			if (gtk_tree_model_get_iter(s->sortedFilterModel, &iter, path))
 			{
 				result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
-				if (result && result->getType() != SearchResult::TYPE_FILE)
+				if (result && result->getType() == SearchResult::TYPE_FILE)
 					s->putValue_gui(result->getTTH().toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
 			}
 			gtk_tree_path_free(path);

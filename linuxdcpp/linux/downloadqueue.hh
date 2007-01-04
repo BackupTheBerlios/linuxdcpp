@@ -32,30 +32,21 @@ class DownloadQueue:
 {
 	public:
 		DownloadQueue();
-		~DownloadQueue();
+		virtual ~DownloadQueue();
 
 	private:
-		string getNextSubDir(std::string path);
-		string getTrailingSubDir(std::string path);
-		string getRemainingDir(std::string path);
-
 		// GUI functions
-		void buildList_gui();
-		void updateStatus_gui();
-		void setStatus_gui(std::string text, std::string statusItem);
-		void setDirPriority_gui(std::string path, QueueItem::Priority priority);
 		void buildDynamicMenu_gui();
-		void update_gui();
-		void addItem_gui(QueueItem *item);
-		void updateItem_gui(QueueItem *item, bool add);
+		void setStatus_gui(std::string text, std::string statusItem);
+		void updateStatus_gui();
+		void addFiles_gui(vector<StringMap> files);
+		void addFile_gui(StringMap params, bool updateDirs);
+		void addDir_gui(const std::string &path, GtkTreeIter *parent);
+		void updateFile_gui(StringMap params);
 		void removeFile_gui(std::string path);
-		void removeDir_gui(std::string path);
-		int countFiles_gui(std::string path);
-		void addDir_gui(std::string path, GtkTreeIter *row, std::string &current);
-		void addFile_gui(QueueItem *item, std::string path);
-		void getChildren(std::string path, std::vector<GtkTreeIter> *iter);
-		void getChildren(std::string path, std::vector<std::string> *iter);
-		static std::string getTextFromMenu(GtkMenuItem *item);
+		void removeDir_gui(const std::string &path, GtkTreeIter *parent);
+		void updateFileView_gui();
+		void sendMessage_gui(User::Ptr user);
 
 		// GUI callbacks
 		static gboolean onDirButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
@@ -64,45 +55,59 @@ class DownloadQueue:
 		static gboolean onFileButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onFileButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onFileKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
-		static void onRemoveFileClicked_gui(GtkMenuItem *menuitem, gpointer data);
-		static void onRemoveDirClicked_gui(GtkMenuItem *menuitem, gpointer data);
-		static void onSearchAlternatesClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onDirPriorityClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onDirMoveClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onDirRemoveClicked_gui(GtkMenuItem *menuitem, gpointer data);
+		static void onFileSearchAlternatesClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onFileMoveClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onFilePriorityClicked_gui(GtkMenuItem *item, gpointer data);
-		static void onGetFileListClicked_gui(GtkMenuItem *item, gpointer data);
-		static void onSendPrivateMessageClicked_gui(GtkMenuItem *item, gpointer data);
-		static void onReAddSourceClicked_gui(GtkMenuItem *item, gpointer data);
-		static void onRemoveSourceClicked_gui(GtkMenuItem *item, gpointer data);
-		static void onRemoveUserFromQueueClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onFileGetListClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onFileSendPMClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onFileReAddSourceClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onFileRemoveSourceClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onFileRemoveUserFromQueueClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onFileRemoveClicked_gui(GtkMenuItem *menuitem, gpointer data);
 
 		// Client functions
-		void remove_client(std::string path);
+		void buildList_client();
+		void move_client(std::string source, std::string target);
+		void moveDir_client(std::string source, std::string target);
 		void setPriority_client(std::string target, QueueItem::Priority p);
-		void reAddSource_client(std::string target, User::Ptr &user);
-		void addList_client(const User::Ptr &user);
-		void removeSource_client(std::string target, User::Ptr &user);
-		void removeSources_client(User::Ptr &user);
+		void setPriorityDir_client(std::string path, QueueItem::Priority p);
+		void addList_client(std::string target, std::string nick);
+		void sendMessage_client(std::string target, std::string nick);
+		void reAddSource_client(std::string target, std::string nick);
+		void removeSource_client(std::string target, std::string nick);
+		void removeSources_client(std::string target, std::string nick);
+		void remove_client(std::string target);
+		void removeDir_client(std::string path);
+		void updateFileView_client(std::string path);
+		void getQueueParams_client(QueueItem *item, StringMap &params);
 
 		// Client callbacks
 		virtual void on(QueueManagerListener::Added, QueueItem *item) throw();
-		virtual void on(QueueManagerListener::Moved, QueueItem *item) throw();
+		virtual void on(QueueManagerListener::Moved, QueueItem *item, const std::string &oldTarget) throw();
 		virtual void on(QueueManagerListener::Removed, QueueItem *item) throw();
 		virtual void on(QueueManagerListener::SourcesUpdated, QueueItem *item) throw();
 		virtual void on(QueueManagerListener::StatusUpdated, QueueItem *item) throw();
 
 		// Private variables
-		TreeView dirView, fileView;
+		TreeView dirView;
+		TreeView fileView;
 		GtkTreeStore *dirStore;
 		GtkListStore *fileStore;
-		hash_map<std::string, GtkTreeIter> dirMap;
-		hash_map<std::string, std::vector<QueueItem *> > dirFileMap;
-		hash_map<std::string, QueueItem *> fileMap;
-		int64_t queueSize;
-		int queueItems;
-		std::string showingDir;
-		GdkEventType dirPrevious;
 		GtkTreeSelection *dirSelection;
 		GtkTreeSelection *fileSelection;
+		GdkEventType dirPrevious;
+		std::string currentDir;
+		hash_map<std::string, std::map<std::string, std::string> > sources;
+		hash_map<std::string, std::map<std::string, std::string> > badSources;
+		int currentItems;
+		int totalItems;
+		int64_t currentSize;
+		int64_t totalSize;
+
+		typedef map<std::string, std::string>::const_iterator SourceIter;
 };
 
 #else
