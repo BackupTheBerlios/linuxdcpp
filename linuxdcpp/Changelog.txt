@@ -1,5 +1,6 @@
 2007-01-04 - Steven Sheehy
 * Fixed "Search by TTH" regression (thanks Mikael Eman).
+* Updated glade xml files to Glade3 (smaller file size, cleaner layout).
 * Download queue changes:
 	* Fixed crashing regressions.
 	* Fixed an issue with scroll position not updating when changing dirs.

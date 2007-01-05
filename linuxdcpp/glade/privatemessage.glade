@@ -1,68 +1,40 @@
-<?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
-<!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
-
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
+<!--*- mode: xml -*-->
 <glade-interface>
-
-<widget class="GtkVBox" id="mainBox">
-  <property name="border_width">4</property>
-  <property name="visible">True</property>
-  <property name="homogeneous">False</property>
-  <property name="spacing">4</property>
-
-  <child>
-    <widget class="GtkScrolledWindow" id="scroll">
-      <property name="visible">True</property>
-      <property name="can_focus">True</property>
-      <property name="hscrollbar_policy">GTK_POLICY_NEVER</property>
-      <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-      <property name="shadow_type">GTK_SHADOW_IN</property>
-      <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
-
-      <child>
-	<widget class="GtkTextView" id="text">
-	  <property name="visible">True</property>
-	  <property name="can_focus">True</property>
-	  <property name="editable">False</property>
-	  <property name="overwrite">False</property>
-	  <property name="accepts_tab">True</property>
-	  <property name="justification">GTK_JUSTIFY_LEFT</property>
-	  <property name="wrap_mode">GTK_WRAP_WORD</property>
-	  <property name="cursor_visible">False</property>
-	  <property name="pixels_above_lines">0</property>
-	  <property name="pixels_below_lines">0</property>
-	  <property name="pixels_inside_wrap">0</property>
-	  <property name="left_margin">0</property>
-	  <property name="right_margin">0</property>
-	  <property name="indent">0</property>
-	  <property name="text" translatable="yes"></property>
-	</widget>
-      </child>
-    </widget>
-    <packing>
-      <property name="padding">0</property>
-      <property name="expand">True</property>
-      <property name="fill">True</property>
-    </packing>
-  </child>
-
-  <child>
-    <widget class="GtkEntry" id="entry">
-      <property name="visible">True</property>
-      <property name="can_focus">True</property>
-      <property name="editable">True</property>
-      <property name="visibility">True</property>
-      <property name="max_length">0</property>
-      <property name="text" translatable="yes"></property>
-      <property name="has_frame">True</property>
-      <property name="invisible_char">*</property>
-      <property name="activates_default">False</property>
-    </widget>
-    <packing>
-      <property name="padding">0</property>
-      <property name="expand">False</property>
-      <property name="fill">False</property>
-    </packing>
-  </child>
-</widget>
-
+  <widget class="GtkVBox" id="mainBox">
+    <property name="visible">True</property>
+    <property name="border_width">4</property>
+    <property name="spacing">4</property>
+    <child>
+      <widget class="GtkScrolledWindow" id="scroll">
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="hscrollbar_policy">GTK_POLICY_NEVER</property>
+        <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+        <property name="shadow_type">GTK_SHADOW_IN</property>
+        <child>
+          <widget class="GtkTextView" id="text">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="editable">False</property>
+            <property name="wrap_mode">GTK_WRAP_WORD</property>
+            <property name="cursor_visible">False</property>
+          </widget>
+        </child>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkEntry" id="entry">
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="invisible_char">*</property>
+      </widget>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">False</property>
+        <property name="position">1</property>
+      </packing>
+    </child>
+  </widget>
 </glade-interface>

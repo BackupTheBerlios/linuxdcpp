@@ -1,487 +1,384 @@
-<?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
-<!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
-
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
+<!--*- mode: xml -*-->
 <glade-interface>
-
-<widget class="GtkVBox" id="mainBox">
-  <property name="border_width">4</property>
-  <property name="visible">True</property>
-  <property name="homogeneous">False</property>
-  <property name="spacing">4</property>
-
-  <child>
-    <widget class="GtkHPaned" id="pane">
-      <property name="visible">True</property>
-      <property name="can_focus">True</property>
-      <property name="position">200</property>
-
-      <child>
-	<widget class="GtkScrolledWindow" id="scrolledwindow1">
-	  <property name="visible">True</property>
-	  <property name="can_focus">True</property>
-	  <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-	  <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-	  <property name="shadow_type">GTK_SHADOW_IN</property>
-	  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
-
-	  <child>
-	    <widget class="GtkTreeView" id="dirView">
-	      <property name="visible">True</property>
-	      <property name="can_focus">True</property>
-	      <property name="headers_visible">False</property>
-	      <property name="rules_hint">False</property>
-	      <property name="reorderable">False</property>
-	      <property name="enable_search">True</property>
-	      <property name="fixed_height_mode">False</property>
-	      <property name="hover_selection">False</property>
-	      <property name="hover_expand">False</property>
-	    </widget>
-	  </child>
-	</widget>
-	<packing>
-	  <property name="shrink">True</property>
-	  <property name="resize">True</property>
-	</packing>
-      </child>
-
-      <child>
-	<widget class="GtkScrolledWindow" id="scrolledwindow2">
-	  <property name="visible">True</property>
-	  <property name="can_focus">True</property>
-	  <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-	  <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-	  <property name="shadow_type">GTK_SHADOW_IN</property>
-	  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
-
-	  <child>
-	    <widget class="GtkTreeView" id="fileView">
-	      <property name="visible">True</property>
-	      <property name="can_focus">True</property>
-	      <property name="headers_visible">True</property>
-	      <property name="rules_hint">True</property>
-	      <property name="reorderable">False</property>
-	      <property name="enable_search">True</property>
-	      <property name="fixed_height_mode">False</property>
-	      <property name="hover_selection">False</property>
-	      <property name="hover_expand">False</property>
-	    </widget>
-	  </child>
-	</widget>
-	<packing>
-	  <property name="shrink">True</property>
-	  <property name="resize">True</property>
-	</packing>
-      </child>
-    </widget>
-    <packing>
-      <property name="padding">0</property>
-      <property name="expand">True</property>
-      <property name="fill">True</property>
-    </packing>
-  </child>
-
-  <child>
-    <widget class="GtkHBox" id="hbox1">
-      <property name="visible">True</property>
-      <property name="homogeneous">False</property>
-      <property name="spacing">4</property>
-
-      <child>
-	<widget class="GtkStatusbar" id="statusMain">
-	  <property name="visible">True</property>
-	  <property name="has_resize_grip">False</property>
-	</widget>
-	<packing>
-	  <property name="padding">0</property>
-	  <property name="expand">True</property>
-	  <property name="fill">True</property>
-	</packing>
-      </child>
-
-      <child>
-	<widget class="GtkStatusbar" id="statusItems">
-	  <property name="width_request">80</property>
-	  <property name="visible">True</property>
-	  <property name="has_resize_grip">False</property>
-	</widget>
-	<packing>
-	  <property name="padding">0</property>
-	  <property name="expand">False</property>
-	  <property name="fill">False</property>
-	</packing>
-      </child>
-
-      <child>
-	<widget class="GtkStatusbar" id="statusFileSize">
-	  <property name="width_request">120</property>
-	  <property name="visible">True</property>
-	  <property name="has_resize_grip">False</property>
-	</widget>
-	<packing>
-	  <property name="padding">0</property>
-	  <property name="expand">False</property>
-	  <property name="fill">False</property>
-	</packing>
-      </child>
-
-      <child>
-	<widget class="GtkStatusbar" id="statusFiles">
-	  <property name="width_request">80</property>
-	  <property name="visible">True</property>
-	  <property name="has_resize_grip">False</property>
-	</widget>
-	<packing>
-	  <property name="padding">0</property>
-	  <property name="expand">False</property>
-	  <property name="fill">False</property>
-	</packing>
-      </child>
-
-      <child>
-	<widget class="GtkStatusbar" id="statusTotalSize">
-	  <property name="width_request">120</property>
-	  <property name="visible">True</property>
-	  <property name="has_resize_grip">False</property>
-	</widget>
-	<packing>
-	  <property name="padding">0</property>
-	  <property name="expand">False</property>
-	  <property name="fill">False</property>
-	</packing>
-      </child>
-    </widget>
-    <packing>
-      <property name="padding">0</property>
-      <property name="expand">False</property>
-      <property name="fill">False</property>
-    </packing>
-  </child>
-</widget>
-
-<widget class="GtkMenu" id="dirMenu">
-
-  <child>
-    <widget class="GtkMenuItem" id="dirSetPriorityItem">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Set Priority</property>
-      <property name="use_underline">True</property>
-
-      <child>
-	<widget class="GtkMenu" id="dirPriorityMenu">
-
-	  <child>
-	    <widget class="GtkMenuItem" id="pausedPriorityItem">
-	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Paused</property>
-	      <property name="use_underline">True</property>
-	    </widget>
-	  </child>
-
-	  <child>
-	    <widget class="GtkMenuItem" id="lowestPriorityItem">
-	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Lowest</property>
-	      <property name="use_underline">True</property>
-	    </widget>
-	  </child>
-
-	  <child>
-	    <widget class="GtkMenuItem" id="lowPrioritytem">
-	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Low</property>
-	      <property name="use_underline">True</property>
-	    </widget>
-	  </child>
-
-	  <child>
-	    <widget class="GtkMenuItem" id="normalPriorityItem">
-	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Normal</property>
-	      <property name="use_underline">True</property>
-	    </widget>
-	  </child>
-
-	  <child>
-	    <widget class="GtkMenuItem" id="highPriorityItem">
-	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">High</property>
-	      <property name="use_underline">True</property>
-	    </widget>
-	  </child>
-
-	  <child>
-	    <widget class="GtkMenuItem" id="highestPriorityItem">
-	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Highest</property>
-	      <property name="use_underline">True</property>
-	    </widget>
-	  </child>
-	</widget>
-      </child>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkSeparatorMenuItem" id="separator4">
-      <property name="visible">True</property>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkMenuItem" id="moveDirItem">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Move</property>
-      <property name="use_underline">True</property>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkSeparatorMenuItem" id="separator5">
-      <property name="visible">True</property>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkMenuItem" id="removeDirItem">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Remove</property>
-      <property name="use_underline">True</property>
-    </widget>
-  </child>
-</widget>
-
-<widget class="GtkMenu" id="fileMenu">
-
-  <child>
-    <widget class="GtkMenuItem" id="searchForAlternatesItem">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Search for alternates</property>
-      <property name="use_underline">True</property>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkMenuItem" id="moveFileItem">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Move/Rename</property>
-      <property name="use_underline">True</property>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkSeparatorMenuItem" id="separator6">
-      <property name="visible">True</property>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkMenuItem" id="fileSetPriorityItem">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Set Priority</property>
-      <property name="use_underline">True</property>
-
-      <child>
-	<widget class="GtkMenu" id="filePriorityMenu">
-
-	  <child>
-	    <widget class="GtkMenuItem" id="filePausedItem">
-	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Paused</property>
-	      <property name="use_underline">True</property>
-	    </widget>
-	  </child>
-
-	  <child>
-	    <widget class="GtkMenuItem" id="fileLowestPriorityItem">
-	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Lowest</property>
-	      <property name="use_underline">True</property>
-	    </widget>
-	  </child>
-
-	  <child>
-	    <widget class="GtkMenuItem" id="fileLowPriorityItem">
-	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Low</property>
-	      <property name="use_underline">True</property>
-	    </widget>
-	  </child>
-
-	  <child>
-	    <widget class="GtkMenuItem" id="fileNormalPriorityItem">
-	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Normal</property>
-	      <property name="use_underline">True</property>
-	    </widget>
-	  </child>
-
-	  <child>
-	    <widget class="GtkMenuItem" id="fileHighPriorityItem">
-	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">High</property>
-	      <property name="use_underline">True</property>
-	    </widget>
-	  </child>
-
-	  <child>
-	    <widget class="GtkMenuItem" id="fileHighestPriorityItem">
-	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Highest</property>
-	      <property name="use_underline">True</property>
-	    </widget>
-	  </child>
-	</widget>
-      </child>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkMenuItem" id="getFileListItem">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Get file list</property>
-      <property name="use_underline">True</property>
-
-      <child>
-	<widget class="GtkMenu" id="browseMenu">
-	</widget>
-      </child>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkMenuItem" id="sendPrivateMessageItem">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Send private message</property>
-      <property name="use_underline">True</property>
-
-      <child>
-	<widget class="GtkMenu" id="pmMenu">
-	</widget>
-      </child>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkMenuItem" id="reAddSourceItem">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Re-add source</property>
-      <property name="use_underline">True</property>
-
-      <child>
-	<widget class="GtkMenu" id="reAddMenu">
-	</widget>
-      </child>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkSeparatorMenuItem" id="separator8">
-      <property name="visible">True</property>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkMenuItem" id="removeSourceItem">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Remove Source</property>
-      <property name="use_underline">True</property>
-
-      <child>
-	<widget class="GtkMenu" id="removeMenu">
-	</widget>
-      </child>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkMenuItem" id="removeUserFromQueueItem">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Remove user from queue</property>
-      <property name="use_underline">True</property>
-
-      <child>
-	<widget class="GtkMenu" id="removeAllMenu">
-	</widget>
-      </child>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkMenuItem" id="fileRemoveItem">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Remove</property>
-      <property name="use_underline">True</property>
-    </widget>
-  </child>
-</widget>
-
-<widget class="GtkFileChooserDialog" id="dirChooserDialog">
-  <property name="action">GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER</property>
-  <property name="local_only">True</property>
-  <property name="select_multiple">False</property>
-  <property name="show_hidden">False</property>
-  <property name="do_overwrite_confirmation">True</property>
-  <property name="title" translatable="yes">Move To...</property>
-  <property name="type">GTK_WINDOW_TOPLEVEL</property>
-  <property name="window_position">GTK_WIN_POS_NONE</property>
-  <property name="modal">True</property>
-  <property name="resizable">True</property>
-  <property name="destroy_with_parent">False</property>
-  <property name="decorated">True</property>
-  <property name="skip_taskbar_hint">False</property>
-  <property name="skip_pager_hint">False</property>
-  <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
-  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
-  <property name="focus_on_map">True</property>
-  <property name="urgency_hint">False</property>
-
-  <child internal-child="vbox">
-    <widget class="GtkVBox" id="dialog-vbox1">
-      <property name="visible">True</property>
-      <property name="homogeneous">False</property>
-      <property name="spacing">24</property>
-
-      <child internal-child="action_area">
-	<widget class="GtkHButtonBox" id="dialog-action_area1">
-	  <property name="visible">True</property>
-	  <property name="layout_style">GTK_BUTTONBOX_END</property>
-
-	  <child>
-	    <widget class="GtkButton" id="button1">
-	      <property name="visible">True</property>
-	      <property name="can_default">True</property>
-	      <property name="can_focus">True</property>
-	      <property name="label">gtk-cancel</property>
-	      <property name="use_stock">True</property>
-	      <property name="relief">GTK_RELIEF_NORMAL</property>
-	      <property name="focus_on_click">True</property>
-	      <property name="response_id">-6</property>
-	    </widget>
-	  </child>
-
-	  <child>
-	    <widget class="GtkButton" id="button2">
-	      <property name="visible">True</property>
-	      <property name="can_default">True</property>
-	      <property name="has_default">True</property>
-	      <property name="can_focus">True</property>
-	      <property name="label">gtk-open</property>
-	      <property name="use_stock">True</property>
-	      <property name="relief">GTK_RELIEF_NORMAL</property>
-	      <property name="focus_on_click">True</property>
-	      <property name="response_id">-5</property>
-	    </widget>
-	  </child>
-	</widget>
-	<packing>
-	  <property name="padding">0</property>
-	  <property name="expand">False</property>
-	  <property name="fill">True</property>
-	  <property name="pack_type">GTK_PACK_END</property>
-	</packing>
-      </child>
-    </widget>
-  </child>
-</widget>
-
+  <widget class="GtkVBox" id="mainBox">
+    <property name="visible">True</property>
+    <property name="border_width">4</property>
+    <property name="spacing">4</property>
+    <child>
+      <widget class="GtkHPaned" id="pane">
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="position">200</property>
+        <child>
+          <widget class="GtkScrolledWindow" id="scrolledwindow1">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+            <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+            <property name="shadow_type">GTK_SHADOW_IN</property>
+            <child>
+              <widget class="GtkTreeView" id="dirView">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="headers_visible">False</property>
+              </widget>
+            </child>
+          </widget>
+        </child>
+        <child>
+          <widget class="GtkScrolledWindow" id="scrolledwindow2">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+            <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+            <property name="shadow_type">GTK_SHADOW_IN</property>
+            <child>
+              <widget class="GtkTreeView" id="fileView">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="rules_hint">True</property>
+              </widget>
+            </child>
+          </widget>
+        </child>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkHBox" id="hbox1">
+        <property name="visible">True</property>
+        <property name="spacing">4</property>
+        <child>
+          <widget class="GtkStatusbar" id="statusMain">
+            <property name="visible">True</property>
+            <property name="has_resize_grip">False</property>
+          </widget>
+        </child>
+        <child>
+          <widget class="GtkStatusbar" id="statusItems">
+            <property name="width_request">80</property>
+            <property name="visible">True</property>
+            <property name="has_resize_grip">False</property>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkStatusbar" id="statusFileSize">
+            <property name="width_request">120</property>
+            <property name="visible">True</property>
+            <property name="has_resize_grip">False</property>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkStatusbar" id="statusFiles">
+            <property name="width_request">80</property>
+            <property name="visible">True</property>
+            <property name="has_resize_grip">False</property>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">3</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkStatusbar" id="statusTotalSize">
+            <property name="width_request">120</property>
+            <property name="visible">True</property>
+            <property name="has_resize_grip">False</property>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">4</property>
+          </packing>
+        </child>
+      </widget>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">False</property>
+        <property name="position">1</property>
+      </packing>
+    </child>
+  </widget>
+  <widget class="GtkMenu" id="dirMenu">
+    <child>
+      <widget class="GtkMenuItem" id="dirSetPriorityItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Set Priority</property>
+        <property name="use_underline">True</property>
+        <child>
+          <widget class="GtkMenu" id="dirPriorityMenu">
+            <child>
+              <widget class="GtkMenuItem" id="pausedPriorityItem">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">Paused</property>
+                <property name="use_underline">True</property>
+              </widget>
+            </child>
+            <child>
+              <widget class="GtkMenuItem" id="lowestPriorityItem">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">Lowest</property>
+                <property name="use_underline">True</property>
+              </widget>
+            </child>
+            <child>
+              <widget class="GtkMenuItem" id="lowPrioritytem">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">Low</property>
+                <property name="use_underline">True</property>
+              </widget>
+            </child>
+            <child>
+              <widget class="GtkMenuItem" id="normalPriorityItem">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">Normal</property>
+                <property name="use_underline">True</property>
+              </widget>
+            </child>
+            <child>
+              <widget class="GtkMenuItem" id="highPriorityItem">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">High</property>
+                <property name="use_underline">True</property>
+              </widget>
+            </child>
+            <child>
+              <widget class="GtkMenuItem" id="highestPriorityItem">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">Highest</property>
+                <property name="use_underline">True</property>
+              </widget>
+            </child>
+          </widget>
+        </child>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkSeparatorMenuItem" id="separator4">
+        <property name="visible">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="moveDirItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Move</property>
+        <property name="use_underline">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkSeparatorMenuItem" id="separator5">
+        <property name="visible">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="removeDirItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Remove</property>
+        <property name="use_underline">True</property>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkMenu" id="fileMenu">
+    <child>
+      <widget class="GtkMenuItem" id="searchForAlternatesItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Search for alternates</property>
+        <property name="use_underline">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="moveFileItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Move/Rename</property>
+        <property name="use_underline">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkSeparatorMenuItem" id="separator6">
+        <property name="visible">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="fileSetPriorityItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Set Priority</property>
+        <property name="use_underline">True</property>
+        <child>
+          <widget class="GtkMenu" id="filePriorityMenu">
+            <child>
+              <widget class="GtkMenuItem" id="filePausedItem">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">Paused</property>
+                <property name="use_underline">True</property>
+              </widget>
+            </child>
+            <child>
+              <widget class="GtkMenuItem" id="fileLowestPriorityItem">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">Lowest</property>
+                <property name="use_underline">True</property>
+              </widget>
+            </child>
+            <child>
+              <widget class="GtkMenuItem" id="fileLowPriorityItem">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">Low</property>
+                <property name="use_underline">True</property>
+              </widget>
+            </child>
+            <child>
+              <widget class="GtkMenuItem" id="fileNormalPriorityItem">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">Normal</property>
+                <property name="use_underline">True</property>
+              </widget>
+            </child>
+            <child>
+              <widget class="GtkMenuItem" id="fileHighPriorityItem">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">High</property>
+                <property name="use_underline">True</property>
+              </widget>
+            </child>
+            <child>
+              <widget class="GtkMenuItem" id="fileHighestPriorityItem">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">Highest</property>
+                <property name="use_underline">True</property>
+              </widget>
+            </child>
+          </widget>
+        </child>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="getFileListItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Get file list</property>
+        <property name="use_underline">True</property>
+        <child>
+          <widget class="GtkMenu" id="browseMenu">
+          </widget>
+        </child>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="sendPrivateMessageItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Send private message</property>
+        <property name="use_underline">True</property>
+        <child>
+          <widget class="GtkMenu" id="pmMenu">
+          </widget>
+        </child>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="reAddSourceItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Re-add source</property>
+        <property name="use_underline">True</property>
+        <child>
+          <widget class="GtkMenu" id="reAddMenu">
+          </widget>
+        </child>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkSeparatorMenuItem" id="separator8">
+        <property name="visible">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="removeSourceItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Remove Source</property>
+        <property name="use_underline">True</property>
+        <child>
+          <widget class="GtkMenu" id="removeMenu">
+          </widget>
+        </child>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="removeUserFromQueueItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Remove user from queue</property>
+        <property name="use_underline">True</property>
+        <child>
+          <widget class="GtkMenu" id="removeAllMenu">
+          </widget>
+        </child>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="fileRemoveItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Remove</property>
+        <property name="use_underline">True</property>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkFileChooserDialog" id="dirChooserDialog">
+    <property name="do_overwrite_confirmation">True</property>
+    <property name="action">GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER</property>
+    <property name="title" translatable="yes">Move To...</property>
+    <property name="modal">True</property>
+    <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
+    <child internal-child="vbox">
+      <widget class="GtkVBox" id="dialog-vbox1">
+        <property name="visible">True</property>
+        <property name="spacing">24</property>
+        <child>
+          <placeholder/>
+        </child>
+        <child internal-child="action_area">
+          <widget class="GtkHButtonBox" id="dialog-action_area1">
+            <property name="visible">True</property>
+            <property name="layout_style">GTK_BUTTONBOX_END</property>
+            <child>
+              <widget class="GtkButton" id="button1">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="can_default">True</property>
+                <property name="label">gtk-cancel</property>
+                <property name="use_stock">True</property>
+                <property name="response_id">-6</property>
+              </widget>
+            </child>
+            <child>
+              <widget class="GtkButton" id="button2">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="can_default">True</property>
+                <property name="has_default">True</property>
+                <property name="label">gtk-open</property>
+                <property name="use_stock">True</property>
+                <property name="response_id">-5</property>
+              </widget>
+              <packing>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="pack_type">GTK_PACK_END</property>
+          </packing>
+        </child>
+      </widget>
+    </child>
+  </widget>
 </glade-interface>
