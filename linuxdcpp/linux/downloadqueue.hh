@@ -43,7 +43,7 @@ class DownloadQueue:
 		void addFile_gui(StringMap params, bool updateDirs);
 		void addDir_gui(const std::string &path, GtkTreeIter *parent);
 		void updateFile_gui(StringMap params);
-		void removeFile_gui(std::string path);
+		void removeFile_gui(std::string path, int64_t size);
 		void removeDir_gui(const std::string &path, GtkTreeIter *parent);
 		void updateFileView_gui();
 		void sendMessage_gui(User::Ptr user);

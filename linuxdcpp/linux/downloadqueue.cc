@@ -110,7 +110,8 @@ DownloadQueue::DownloadQueue():
 	if (panePosition > 10)
 		gtk_paned_set_position(GTK_PANED(getWidget("pane")), panePosition);
 
-	WulforManager::get()->dispatchClientFunc(new Func0<DownloadQueue>(this, &DownloadQueue::buildList_client));
+	buildList_client();
+	//WulforManager::get()->dispatchClientFunc(new Func0<DownloadQueue>(this, &DownloadQueue::buildList_client));
 	QueueManager::getInstance()->addListener(this);
 }
 
@@ -225,16 +226,20 @@ void DownloadQueue::updateStatus_gui()
 
 void DownloadQueue::addFiles_gui(vector<StringMap> files)
 {
-	gint sortColumn;
-	GtkSortType sortType;
-	gtk_tree_sortable_get_sort_column_id(GTK_TREE_SORTABLE(fileStore), &sortColumn, &sortType);
-	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(fileStore), GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID, sortType);
+	if (files.size() > 0 && currentDir == files[0]["Path"] &&
+	    gtk_tree_selection_get_selected(dirSelection, NULL, NULL))
+	{
+		gint sortColumn;
+		GtkSortType sortType;
+		gtk_tree_sortable_get_sort_column_id(GTK_TREE_SORTABLE(fileStore), &sortColumn, &sortType);
+		gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(fileStore), GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID, sortType);
 
-	for (vector<StringMap>::const_iterator it = files.begin(); it != files.end(); ++it)
-		addFile_gui(*it, FALSE);
+		for (vector<StringMap>::const_iterator it = files.begin(); it != files.end(); ++it)
+			addFile_gui(*it, FALSE);
 
-	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(fileStore), sortColumn, sortType);
-	gtk_tree_view_scroll_to_point(fileView.get(), 0, 0);
+		gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(fileStore), sortColumn, sortType);
+		gtk_tree_view_scroll_to_point(fileView.get(), 0, 0);
+	}
 }
 
 void DownloadQueue::addFile_gui(StringMap params, bool updateDirs)
@@ -375,26 +380,26 @@ void DownloadQueue::updateFile_gui(StringMap params)
 	}
 }
 
-void DownloadQueue::removeFile_gui(string target)
+void DownloadQueue::removeFile_gui(string target, int64_t size)
 {
 	GtkTreeIter iter;
 	bool valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(fileStore), &iter);
-	string path = Text::acpToUtf8(Util::getFilePath(target));
+	string path = Util::getFilePath(target);
 
 	while (valid)
 	{
 		if (target == fileView.getString(&iter, "Target"))
 		{
-			int64_t size = fileView.getValue<gint64>(&iter, "Size Sort");
 			--currentItems;
-			--totalItems;
-			totalSize -= size;
 			currentSize -= size;
 			gtk_list_store_remove(fileStore, &iter);
 			break;
 		}
 		valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(fileStore), &iter);
 	}
+
+	--totalItems;
+	totalSize -= size;
 
 	if (path.length() > 1 && gtk_tree_model_get_iter_first(GTK_TREE_MODEL(dirStore), &iter))
 		removeDir_gui(path.substr(1), &iter);
@@ -628,7 +633,7 @@ void DownloadQueue::onDirMoveClicked_gui(GtkMenuItem *menuItem, gpointer data)
 
 	if (gtk_tree_selection_get_selected(dq->dirSelection, NULL, &iter))
 	{
-		string path = dq->dirView.getString(&iter, "Path");
+		string path = Text::utf8ToAcp(dq->dirView.getString(&iter, "Path"));
 		GtkWidget *dialog = dq->getWidget("dirChooserDialog");
 		gtk_file_chooser_set_action(GTK_FILE_CHOOSER(dialog), GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
 		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), path.c_str());
@@ -640,7 +645,7 @@ void DownloadQueue::onDirMoveClicked_gui(GtkMenuItem *menuItem, gpointer data)
 			gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
 			if (temp)
 			{
-				string target = string(temp);
+				string target = Text::acpToUtf8(temp);
 				g_free(temp);
 
 				if (target[target.length() - 1] != PATH_SEPARATOR)
@@ -710,7 +715,7 @@ void DownloadQueue::onFileMoveClicked_gui(GtkMenuItem *menuItem, gpointer data)
 
 	if (gtk_tree_selection_get_selected(dq->dirSelection, NULL, &iter))
 	{
-		string filepath = dq->dirView.getString(&iter, "Path");
+		string filepath = Text::utf8ToAcp(dq->dirView.getString(&iter, "Path"));
 		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), filepath.c_str());
 	}
 
@@ -719,7 +724,7 @@ void DownloadQueue::onFileMoveClicked_gui(GtkMenuItem *menuItem, gpointer data)
 		path = (GtkTreePath *)list->data;
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(dq->fileStore), &iter, path))
 		{
-			string target = dq->fileView.getString(&iter, "Filename");
+			string target = Text::utf8ToAcp(dq->fileView.getString(&iter, "Filename"));
 			gtk_file_chooser_set_action(GTK_FILE_CHOOSER(dialog), GTK_FILE_CHOOSER_ACTION_SAVE);
 			gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(dialog), target.c_str());
 			int response = gtk_dialog_run(GTK_DIALOG(dialog));
@@ -730,7 +735,7 @@ void DownloadQueue::onFileMoveClicked_gui(GtkMenuItem *menuItem, gpointer data)
 				gchar *tmp = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 				if (tmp)
 				{
-					target = string(tmp);
+					target = Text::acpToUtf8(tmp);
 					g_free(tmp);
 					source = dq->fileView.getString(&iter, "Target");
 					func = new F2(dq, &DownloadQueue::move_client, source, target);
@@ -752,7 +757,7 @@ void DownloadQueue::onFileMoveClicked_gui(GtkMenuItem *menuItem, gpointer data)
 			if (tmp)
 			{
 				string filename;
-				string target = string(tmp);
+				string target = Text::acpToUtf8(tmp);
 				g_free(tmp);
 
 				if (target[target.length() - 1] != PATH_SEPARATOR)
@@ -973,16 +978,17 @@ void DownloadQueue::buildList_client()
 {
 	StringMap params;
 	typedef Func2<DownloadQueue, StringMap, bool> F2;
-	F2 *func;
+	//F2 *func;
 	const QueueItem::StringMap &ll = QueueManager::getInstance()->lockQueue();
 
 	for (QueueItem::StringMap::const_iterator it = ll.begin(); it != ll.end(); ++it)
 	{
 		params["Size Sort"] = Util::toString(it->second->getSize());
-		params["Path"] = Text::acpToUtf8(Util::getFilePath(*it->first));
+		params["Path"] = Util::getFilePath(*it->first);
 
-		func = new F2(this, &DownloadQueue::addFile_gui, params, TRUE);
-		WulforManager::get()->dispatchGuiFunc(func);
+		addFile_gui(params, TRUE);
+		//func = new F2(this, &DownloadQueue::addFile_gui, params, TRUE);
+		//WulforManager::get()->dispatchGuiFunc(func);
 	}
 
 	QueueManager::getInstance()->unlockQueue();
@@ -1004,7 +1010,7 @@ void DownloadQueue::moveDir_client(string source, string target)
 
 		for (QueueItem::StringMap::const_iterator it = ll.begin(); it != ll.end(); ++it)
 		{
-			if (it->first->length() >= source.length() && Text::acpToUtf8(it->first->substr(0, source.length())) == source)
+			if (it->first->length() >= source.length() && it->first->substr(0, source.length()) == source)
 				targets.push_back(*it->first);
 		}
 		QueueManager::getInstance()->unlockQueue();
@@ -1028,7 +1034,7 @@ void DownloadQueue::setPriorityDir_client(string path, QueueItem::Priority p)
 
 		for (QueueItem::StringMap::const_iterator it = ll.begin(); it != ll.end(); ++it)
 		{
-			if (it->first->length() >= path.length() && Text::acpToUtf8(it->first->substr(0, path.length())) == path)
+			if (it->first->length() >= path.length() && it->first->substr(0, path.length()) == path)
 				QueueManager::getInstance()->setPriority(*it->first, p);
 		}
 		QueueManager::getInstance()->unlockQueue();
@@ -1142,7 +1148,7 @@ void DownloadQueue::removeDir_client(string path)
 
 		for (QueueItem::StringMap::const_iterator it = ll.begin(); it != ll.end(); ++it)
 		{
-			if (it->first->length() >= path.length() && Text::acpToUtf8(it->first->substr(0, path.length())) == path)
+			if (it->first->length() >= path.length() && it->first->substr(0, path.length()) == path)
 				targets.push_back(*it->first);
 		}
 		QueueManager::getInstance()->unlockQueue();
@@ -1161,7 +1167,7 @@ void DownloadQueue::updateFileView_client(string path)
 
 		for (QueueItem::StringMap::const_iterator it = ll.begin(); it != ll.end(); ++it)
 		{
-			if (it->first->length() >= path.length() && Text::acpToUtf8(it->first->substr(0, path.length())) == path)
+			if (it->first->length() >= path.length() && it->first->substr(0, path.length()) == path)
 			{
 				StringMap params;
 				getQueueParams_client(it->second, params);
@@ -1183,8 +1189,8 @@ void DownloadQueue::getQueueParams_client(QueueItem *item, StringMap &params)
 	map<string, string> source;
 	int online = 0;
 
-	params["Filename"] = Text::acpToUtf8(item->getTargetFileName());
-	params["Path"] = Text::acpToUtf8(Util::getFilePath(item->getTarget()));
+	params["Filename"] = item->getTargetFileName();
+	params["Path"] = Util::getFilePath(item->getTarget());
 	params["Target"] = item->getTarget();
 
 	params["Users"] = "";
@@ -1311,23 +1317,23 @@ void DownloadQueue::on(QueueManagerListener::Added, QueueItem *item) throw()
 void DownloadQueue::on(QueueManagerListener::Moved, QueueItem *item, const string &oldTarget) throw()
 {
 	// Remove the old file
-	typedef Func1<DownloadQueue, string> F1;
-	F1 *func1 = new F1(this, &DownloadQueue::removeFile_gui, oldTarget);
+	typedef Func2<DownloadQueue, string, int64_t> F2a;
+	F2a *func1 = new F2a(this, &DownloadQueue::removeFile_gui, oldTarget, item->getSize());
 	WulforManager::get()->dispatchGuiFunc(func1);
 
 	// Add the new file
 	StringMap params;
 	getQueueParams_client(item, params);
 
-	typedef Func2<DownloadQueue, StringMap, bool> F2;
-	F2 *func2 = new F2(this, &DownloadQueue::addFile_gui, params, TRUE);
+	typedef Func2<DownloadQueue, StringMap, bool> F2b;
+	F2b *func2 = new F2b(this, &DownloadQueue::addFile_gui, params, TRUE);
 	WulforManager::get()->dispatchGuiFunc(func2);
 }
 
 void DownloadQueue::on(QueueManagerListener::Removed, QueueItem *item) throw()
 {
-	typedef Func1<DownloadQueue, string> F1;
-	F1 *func = new F1(this, &DownloadQueue::removeFile_gui, item->getTarget());
+	typedef Func2<DownloadQueue, string, int64_t> F2;
+	F2 *func = new F2(this, &DownloadQueue::removeFile_gui, item->getTarget(), item->getSize());
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 

@@ -101,6 +101,7 @@ Hub::Hub(const string &address):
 	g_signal_connect(getWidget("matchItem"), "activate", G_CALLBACK(onMatchItemClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("msgItem"), "activate", G_CALLBACK(onMsgItemClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("grantItem"), "activate", G_CALLBACK(onGrantItemClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("removeUserItem"), "activate", G_CALLBACK(onRemoveUserItemClicked_gui), (gpointer)this);
 
 	gtk_widget_set_sensitive(getWidget("favoriteUserItem"), FALSE); // Not implemented yet
 	gtk_widget_grab_focus(getWidget("chatEntry"));
@@ -433,7 +434,8 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
 		{
 			if (BOOLSETTING(JOIN_OPEN_NEW_WINDOW))
 			{
-				WulforManager::get()->addHub_gui(param);
+				// Assumption: new hub is same encoding as current hub.
+				WulforManager::get()->addHub_gui(param, hub->client->getEncoding());
 			}
 			else
 			{
@@ -780,10 +782,11 @@ void Hub::onRemoveUserItemClicked_gui(GtkMenuItem *item, gpointer data)
 	}
 }
 
-void Hub::connectClient_client(string address, string nick, string desc, string password)
+void Hub::connectClient_client(string address, string encoding)
 {
 	dcassert(client == NULL);
 	client = ClientManager::getInstance()->getClient(address);
+	client->setEncoding(encoding);
 	client->addListener(this);
 	client->connect();
 }
@@ -882,6 +885,7 @@ void Hub::redirect_client(string address)
 		if (BOOLSETTING(AUTO_FOLLOW))
 		{
 			// the client is dead, long live the client!
+			string encoding = client->getEncoding();
 			client->removeListener(this);
 			ClientManager::getInstance()->putClient(client);
 
@@ -889,6 +893,7 @@ void Hub::redirect_client(string address)
 			WulforManager::get()->dispatchGuiFunc(func);
 
 			client = ClientManager::getInstance()->getClient(address);
+			client->setEncoding(encoding);
 			client->addListener(this);
 			client->connect();
 		}

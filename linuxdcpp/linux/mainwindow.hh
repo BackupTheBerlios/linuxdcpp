@@ -69,7 +69,7 @@ class MainWindow:
 		void setStats_gui(std::string hub, std::string slot,
 			std::string dTot, std::string uTot, std::string dl, std::string ul);
 		void addShareBrowser_gui(User::Ptr user, std::string listName, std::string initialDir, bool useSetting);
-		void openHub_gui(std::string server, std::string nick, std::string desc, std::string password);
+		void openHub_gui(std::string server, std::string encoding);
 		bool findTransfer_gui(const std::string &cid, bool download, GtkTreeIter *iter);
 		void updateTransfer_gui(StringMap params, bool download);
 		void removeTransfer_gui(std::string cid, bool download);

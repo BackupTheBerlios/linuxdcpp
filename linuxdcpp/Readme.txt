@@ -69,16 +69,17 @@ Linuxdcpp no longer dynamically finds the location of the binary using
 binreloc (since it wasn't portable).
 
 
-Known problems:
-------------------------
-Character encodings are currently a major headache. Files with non-ASCII chars
-in their filename are sometimes rehashed on startup, messages in the hub and
-nicks may not be shown correctly, lots of pango warnings, etc.
+Using:
+------
+Open the preferences and change the necessary options to your liking. If you're
+behind a firewall or router, make sure to either set your connection type to
+passive/firewall or configure the device to allow port forwarding. Read
+http://dcpp.net/faq/ for more information on this topic.
 
-Memory leaks.
-
-Everything listed in our bug tracker:
-http://developer.berlios.de/bugs/?group_id=2230
+To minimize any character encoding issues, specify the default hub encoding on
+the personal tab in preferences. This should be set to the character encoding
+most commonly used in one's favorite hubs. Additionally, a per-hub character
+encoding option can be found on the favorite hubs tab.
 
 License:
 --------

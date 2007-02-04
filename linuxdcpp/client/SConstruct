@@ -33,6 +33,7 @@ client_files = [
 	'stdinc.cpp',
 	'StringDefs.cpp',
 	'StringTokenizer.cpp',
+	'Text.cpp',
 	'Thread.cpp',
 	'TigerHash.cpp',
 	'TimerManager.cpp',
@@ -46,10 +47,5 @@ Import('env')
 
 # Build the client_files
 clientObjs = env.Object(client_files)
-
-# Special case: Text.cpp uses glib utf8 functions, so it needs extra cxxflags
-env_client = env.Copy()
-env_client.ParseConfig('pkg-config --cflags libglade-2.0')
-clientObjs.append(env_client.Object('Text.cpp'))
 
 Return('clientObjs')

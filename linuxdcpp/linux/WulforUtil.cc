@@ -19,6 +19,8 @@
 #include "WulforUtil.hh"
 #include <client/ClientManager.h>
 
+std::vector<std::vector<std::string> > WulforUtil::charsets(16, vector<string>(2));
+
 vector<int> WulforUtil::splitString(const string &str, const string &delimiter)
 {
 	string::size_type loc, len, pos = 0;
@@ -89,4 +91,44 @@ string WulforUtil::getTextFromMenu(GtkMenuItem *item)
 		text = gtk_label_get_text(GTK_LABEL(child));
 
 	return text;
+}
+
+vector<vector<string> >& WulforUtil::getCharsets()
+{
+	if (charsets[0][0].empty())
+	{
+		charsets[0][0] = "System default";
+		charsets[0][1] = "System default";
+		charsets[1][0] = "UTF-8 (Unicode)";
+		charsets[1][1] = "UTF-8";
+		charsets[2][0] = "CP1252 (Western Europe)";
+		charsets[2][1] = "CP1252";
+		charsets[3][0] = "ISO-8859-2 (Central Europe)";
+		charsets[3][1] = "ISO-8859-2";
+		charsets[4][0] = "ISO-8859-7 (Greek)";
+		charsets[4][1] = "ISO-8859-7";
+		charsets[5][0] = "ISO-8859-8 (Hebrew)";
+		charsets[5][1] = "ISO-8859-8";
+		charsets[6][0] = "ISO-8859-9 (Turkish)";
+		charsets[6][1] = "ISO-8859-9";
+		charsets[7][0] = "ISO-2022-JP (Japanese)";
+		charsets[7][1] = "ISO-2022-JP";
+		charsets[8][0] = "SJIS (Japanese)";
+		charsets[8][1] = "SJIS";
+		charsets[9][0] = "CP949 (Korean)";
+		charsets[9][1] = "CP949";
+		charsets[10][0] = "KOI8-R (Cyrillic)";
+		charsets[10][1] = "KOI8-R";
+		charsets[11][0] = "CP1251 (Cyrillic)";
+		charsets[11][1] = "CP1251";
+		charsets[12][0] = "CP1256 (Arabic)";
+		charsets[12][1] = "CP1256";
+		charsets[13][0] = "CP1257 (Baltic)";
+		charsets[13][1] = "CP1257";
+		charsets[14][0] = "GB18030 (Chinese)";
+		charsets[14][1] = "GB18030";
+		charsets[15][0] = "TIS-620 (Thai)";
+		charsets[15][1] = "TIS-620";
+	}
+	return charsets;
 }

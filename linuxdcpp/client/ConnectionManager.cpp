@@ -217,6 +217,7 @@ static const uint32_t FLOOD_ADD = 2000;
 
 ConnectionManager::Server::Server(bool secure_, uint16_t aPort, const string& ip /* = "0.0.0.0" */) : port(0), secure(secure_), die(false) {
 	sock.create();
+	sock.setSocketOpt(SO_REUSEADDR, 1);
 	port = sock.bind(aPort, ip);
 	sock.listen();
 
@@ -273,13 +274,14 @@ void ConnectionManager::accept(const Socket& sock, bool secure) throw() {
 	}
 }
 
-void ConnectionManager::nmdcConnect(const string& aServer, uint16_t aPort, const string& aNick, const string& hubUrl) {
+void ConnectionManager::nmdcConnect(const string& aServer, uint16_t aPort, const string& aNick, const string& hubUrl, const string& encoding) {
 	if(shuttingDown)
 		return;
 
 	UserConnection* uc = getConnection(true, false);
 	uc->setToken(aNick);
 	uc->setHubUrl(hubUrl);
+	uc->setEncoding(encoding);
 	uc->setState(UserConnection::STATE_CONNECT);
 	uc->setFlag(UserConnection::FLAG_NMDC);
 	try {
@@ -296,6 +298,7 @@ void ConnectionManager::adcConnect(const OnlineUser& aUser, uint16_t aPort, cons
 
 	UserConnection* uc = getConnection(false, secure);
 	uc->setToken(aToken);
+	uc->setEncoding("UTF-8");
 	uc->setState(UserConnection::STATE_CONNECT);
 	if(aUser.getIdentity().isOp()) {
 		uc->setFlag(UserConnection::FLAG_OP);

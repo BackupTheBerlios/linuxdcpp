@@ -135,7 +135,7 @@ void CryptoManager::generateCertificate() throw(CryptoException) {
 
 	cmd = "openssl req -x509 -new -batch -days 3650 -key \"" + Text::utf8ToAcp(SETTING(TLS_PRIVATE_KEY_FILE)) +
 		"\" -out \"" + Text::utf8ToAcp(SETTING(TLS_CERTIFICATE_FILE)) + "\" -subj \"/CN=" +
-		Text::utf8ToAcp(ClientManager::getInstance()->getMyCID().toBase32()) + "\"";
+		ClientManager::getInstance()->getMyCID().toBase32() + "\"";
 	if (system(cmd.c_str()) == -1) {
 		throw CryptoException("Failed to spawn process: openssl");
 	}

@@ -103,8 +103,8 @@ private:
 	OnlineUser* findUser(const string& aNick);
 	void putUser(const string& aNick);
 
-	string fromAcp(const string& str) const { return Text::acpToUtf8(str); }
-	string toAcp(const string& str) const { return Text::utf8ToAcp(str); }
+	string fromAcp(const string& str) const { return Text::convert(str, getEncoding(), "UTF-8"); }
+	string toAcp(const string& str) const { return Text::convert(str, "UTF-8", getEncoding()); }
 
 	void validateNick(const string& aNick) { send("$ValidateNick " + toAcp(aNick) + "|"); }
 	void key(const string& aKey) { send("$Key " + aKey + "|"); }

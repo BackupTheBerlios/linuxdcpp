@@ -23,6 +23,7 @@
 #include <client/ShareManager.h>
 #include "settingsmanager.hh"
 #include "wulformanager.hh"
+#include "WulforUtil.hh"
 
 using namespace std;
 
@@ -70,6 +71,15 @@ void Settings::saveSettings()
 		sm->set(SettingsManager::EMAIL, gtk_entry_get_text(GTK_ENTRY(getWidget("emailEntry"))));
 		sm->set(SettingsManager::DESCRIPTION, gtk_entry_get_text(GTK_ENTRY(getWidget("descriptionEntry"))));
 		sm->set(SettingsManager::UPLOAD_SPEED, SettingsManager::connectionSpeeds[gtk_combo_box_get_active(connectionSpeedComboBox)]);
+		if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(getWidget("comboboxCharset")), &iter))
+		{
+			gchar *encoding;
+			gtk_tree_model_get(GTK_TREE_MODEL(charsetStore), &iter, 1, &encoding, -1);
+			WSET("default-charset", string(encoding));
+			g_free(encoding);
+		}
+		else
+			WSET("default-charset", "System Default");
 	}
 
 	{ // Connection
@@ -280,7 +290,6 @@ void Settings::saveSettings()
 		sm->set(SettingsManager::BIND_ADDRESS, string(gtk_entry_get_text(GTK_ENTRY(getWidget("bindAddressEntry")))));
 		sm->set(SettingsManager::SOCKET_IN_BUFFER, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("socketReadSpinButton")))));
 		sm->set(SettingsManager::SOCKET_OUT_BUFFER, Util::toString(gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("socketWriteSpinButton")))));
-		WSET("default-charset", Text::acpToUtf8(string(gtk_entry_get_text(GTK_ENTRY(getWidget("encodingEntry"))))));
 
 		// Security Certificates
 		path = gtk_entry_get_text(GTK_ENTRY(getWidget("trustedCertificatesPathEntry")));
@@ -327,6 +336,33 @@ void Settings::initPersonal_gui()
 		gtk_combo_box_append_text(connectionSpeedComboBox, (*i).c_str());
 		if (SETTING(UPLOAD_SPEED) == *i)
 			gtk_combo_box_set_active(connectionSpeedComboBox, i - SettingsManager::connectionSpeeds.begin());
+	}
+
+	charsetStore = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
+	GtkTreeModel *m = GTK_TREE_MODEL(charsetStore);
+	gtk_combo_box_set_model(GTK_COMBO_BOX(getWidget("comboboxCharset")), m);
+	g_object_unref(charsetStore);
+
+	GtkTreeIter iter;
+	vector<vector<string> > charsets = WulforUtil::getCharsets();
+	for (size_t i = 0; i < charsets.size(); i++)
+		gtk_list_store_insert_with_values(charsetStore, &iter, i, 0, charsets[i][0].c_str(), 1, charsets[i][1].c_str(), -1);
+
+	// Set charset to previously specified value.
+	gtk_combo_box_set_active(GTK_COMBO_BOX(getWidget("comboboxCharset")), 0);
+	gchar *encoding;
+	bool valid = gtk_tree_model_get_iter_first(m, &iter);
+	while (valid)
+	{
+		gtk_tree_model_get(m, &iter, 1, &encoding, -1);
+		if (string(encoding) == WGETS("default-charset"))
+		{
+			gtk_combo_box_set_active_iter(GTK_COMBO_BOX(getWidget("comboboxCharset")), &iter);
+			g_free(encoding);
+			break;
+		}
+		g_free(encoding);
+		valid = gtk_tree_model_iter_next(m, &iter);
 	}
 }
 
@@ -755,7 +791,6 @@ void Settings::initAdvanced_gui()
 		gtk_entry_set_text(GTK_ENTRY(getWidget("bindAddressEntry")), SETTING(BIND_ADDRESS).c_str());
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("socketReadSpinButton")), (double)SETTING(SOCKET_IN_BUFFER));
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("socketWriteSpinButton")), (double)SETTING(SOCKET_OUT_BUFFER));
-		gtk_entry_set_text(GTK_ENTRY(getWidget("encodingEntry")), WGETS("default-charset").c_str());
 	}
 
 	{ // Security Certificates
@@ -799,22 +834,25 @@ void Settings::onAddShare_gui(GtkWidget *widget, gpointer data)
 	if (response == GTK_RESPONSE_OK)
 	{
 		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
-		string path = temp;
-		g_free(temp);
-
-		if (path[path.length() - 1] != PATH_SEPARATOR)
-			path += PATH_SEPARATOR;
-
-		gtk_entry_set_text(GTK_ENTRY(s->getWidget("virtualNameDialogEntry")), "");
-		response = gtk_dialog_run(GTK_DIALOG(s->getWidget("virtualNameDialog")));
-		gtk_widget_hide(s->getWidget("virtualNameDialog"));
-
-		if (response == GTK_RESPONSE_OK)
+		if (temp)
 		{
-			string name = gtk_entry_get_text(GTK_ENTRY(s->getWidget("virtualNameDialogEntry")));
-			typedef Func2<Settings, string, string> F2;
-			F2 *func = new F2(s, &Settings::addShare_client, path, name);
-			WulforManager::get()->dispatchClientFunc(func);
+			string path = Text::acpToUtf8(temp);
+			g_free(temp);
+
+			if (path[path.length() - 1] != PATH_SEPARATOR)
+				path += PATH_SEPARATOR;
+
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("virtualNameDialogEntry")), "");
+			response = gtk_dialog_run(GTK_DIALOG(s->getWidget("virtualNameDialog")));
+			gtk_widget_hide(s->getWidget("virtualNameDialog"));
+
+			if (response == GTK_RESPONSE_OK)
+			{
+				string name = gtk_entry_get_text(GTK_ENTRY(s->getWidget("virtualNameDialogEntry")));
+				typedef Func2<Settings, string, string> F2;
+				F2 *func = new F2(s, &Settings::addShare_client, path, name);
+				WulforManager::get()->dispatchClientFunc(func);
+			}
 		}
 	}
 }
@@ -917,7 +955,7 @@ void Settings::onBrowseFinished_gui(GtkWidget *widget, gpointer data)
 		gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
 		if (path)
 		{
-			gtk_entry_set_text(GTK_ENTRY(s->getWidget("finishedDownloadsEntry")), path);
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("finishedDownloadsEntry")), Text::acpToUtf8(path).c_str());
 			g_free(path);
 		}
 	}
@@ -935,7 +973,7 @@ void Settings::onBrowseUnfinished_gui(GtkWidget *widget, gpointer data)
 		gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
 		if (path)
 		{
-			gtk_entry_set_text(GTK_ENTRY(s->getWidget("unfinishedDownloadsEntry")), path);
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("unfinishedDownloadsEntry")),  Text::acpToUtf8(path).c_str());
 			g_free(path);
 		}
 	}
@@ -1047,34 +1085,37 @@ void Settings::onAddFavorite_gui(GtkWidget *widget, gpointer data)
 	if (response == GTK_RESPONSE_OK)
 	{
 		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
-		string path = temp;
-		g_free(temp);
-
-		gtk_entry_set_text(GTK_ENTRY(s->getWidget("favoriteNameDialogEntry")), "");
-		response = gtk_dialog_run(GTK_DIALOG(s->getWidget("favoriteNameDialog")));
-		gtk_widget_hide(s->getWidget("favoriteNameDialog"));
-
-		if (response == GTK_RESPONSE_OK)
+		if (temp)
 		{
-			string name = gtk_entry_get_text(GTK_ENTRY(s->getWidget("favoriteNameDialogEntry")));
-			if (path[path.length() - 1] != PATH_SEPARATOR)
-				path += PATH_SEPARATOR;
+			string path = Text::acpToUtf8(temp);
+			g_free(temp);
 
-			if (!name.empty() && FavoriteManager::getInstance()->addFavoriteDir(path, name))
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("favoriteNameDialogEntry")), "");
+			response = gtk_dialog_run(GTK_DIALOG(s->getWidget("favoriteNameDialog")));
+			gtk_widget_hide(s->getWidget("favoriteNameDialog"));
+
+			if (response == GTK_RESPONSE_OK)
 			{
-				GtkTreeIter iter;
-				gtk_list_store_append(s->downloadToStore, &iter);
-				gtk_list_store_set(s->downloadToStore, &iter,
-					s->downloadToView.col("Favorite Name"), name.c_str(),
-					s->downloadToView.col("Directory"), path.c_str(),
-					-1);
-			}
-			else
-			{
-				GtkWidget *d = gtk_message_dialog_new(GTK_WINDOW(s->getWidget("dialog")), GTK_DIALOG_MODAL,
-					GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "Directory or favorite name already exists");
-				gtk_dialog_run(GTK_DIALOG(d));
-				gtk_widget_destroy(d);
+				string name = gtk_entry_get_text(GTK_ENTRY(s->getWidget("favoriteNameDialogEntry")));
+				if (path[path.length() - 1] != PATH_SEPARATOR)
+					path += PATH_SEPARATOR;
+
+				if (!name.empty() && FavoriteManager::getInstance()->addFavoriteDir(path, name))
+				{
+					GtkTreeIter iter;
+					gtk_list_store_append(s->downloadToStore, &iter);
+					gtk_list_store_set(s->downloadToStore, &iter,
+						s->downloadToView.col("Favorite Name"), name.c_str(),
+						s->downloadToView.col("Directory"), path.c_str(),
+						-1);
+				}
+				else
+				{
+					GtkWidget *d = gtk_message_dialog_new(GTK_WINDOW(s->getWidget("dialog")), GTK_DIALOG_MODAL,
+						GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "Directory or favorite name already exists");
+					gtk_dialog_run(GTK_DIALOG(d));
+					gtk_widget_destroy(d);
+				}
 			}
 		}
 	}
@@ -1278,8 +1319,11 @@ void Settings::onLogBrowseClicked_gui(GtkWidget *widget, gpointer data)
 	if (response == GTK_RESPONSE_OK)
 	{
 		gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
-		gtk_entry_set_text(GTK_ENTRY(s->getWidget("logDirectoryEntry")), path);
-		g_free(path);
+		if (path)
+		{
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("logDirectoryEntry")), Text::acpToUtf8(path).c_str());
+			g_free(path);
+		}
 	}
 }
 
@@ -1339,7 +1383,7 @@ void Settings::onCertificatesPrivateBrowseClicked_gui(GtkWidget *widget, gpointe
 		gchar *path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(s->getWidget("fileChooserDialog")));
 		if (path)
 		{
-			gtk_entry_set_text(GTK_ENTRY(s->getWidget("privateKeyEntry")), path);
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("privateKeyEntry")), Text::acpToUtf8(path).c_str());
 			g_free(path);
 		}
 	}
@@ -1357,7 +1401,7 @@ void Settings::onCertificatesFileBrowseClicked_gui(GtkWidget *widget, gpointer d
 		gchar *path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(s->getWidget("fileChooserDialog")));
 		if (path)
 		{
-			gtk_entry_set_text(GTK_ENTRY(s->getWidget("certificateFileEntry")), path);
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("certificateFileEntry")), Text::acpToUtf8(path).c_str());
 			g_free(path);
 		}
 	}
@@ -1375,7 +1419,7 @@ void Settings::onCertificatesPathBrowseClicked_gui(GtkWidget *widget, gpointer d
 		gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
 		if (path)
 		{
-			gtk_entry_set_text(GTK_ENTRY(s->getWidget("trustedCertificatesPathEntry")), path);
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("trustedCertificatesPathEntry")), Text::acpToUtf8(path).c_str());
 			g_free(path);
 		}
 	}

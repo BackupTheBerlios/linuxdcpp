@@ -99,7 +99,7 @@ class Settings:
 		void generateCertificates_client();
 
 		GtkComboBox *connectionSpeedComboBox;
-		GtkListStore *downloadToStore, *publicListStore, *queueStore,
+		GtkListStore *charsetStore, *downloadToStore, *publicListStore, *queueStore,
 			*shareStore, *appearanceStore, *colorStore, *windowStore1,
 			*windowStore2, *windowStore3, *advancedStore, *certificatesStore;
 		TreeView downloadToView, publicListView, queueView, shareView,

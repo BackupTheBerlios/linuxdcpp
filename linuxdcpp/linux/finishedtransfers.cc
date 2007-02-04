@@ -65,8 +65,9 @@ FinishedTransfers::FinishedTransfers(const string &title):
 
 	isUpload = (getID() == string("Finished Uploads")) ? TRUE : FALSE;
 
-	Func0<FinishedTransfers> *func = new Func0<FinishedTransfers>(this, &FinishedTransfers::initializeList_client);
-	WulforManager::get()->dispatchClientFunc(func);
+	initializeList_client();
+	//Func0<FinishedTransfers> *func = new Func0<FinishedTransfers>(this, &FinishedTransfers::initializeList_client);
+	//WulforManager::get()->dispatchClientFunc(func);
 }
 
 FinishedTransfers::~FinishedTransfers()
@@ -281,15 +282,16 @@ void FinishedTransfers::initializeList_client()
 {
 	StringMap params;
 	typedef Func2<FinishedTransfers, StringMap, bool> F2;
-	F2 *func;
+	//F2 *func;
 	const FinishedItem::List &list = FinishedManager::getInstance()->lockList(isUpload);
 
 	for (FinishedItem::List::const_iterator it = list.begin(); it != list.end(); ++it)
 	{
 		params.clear();
 		getFinishedParams_client(*it, params);
-		func = new F2(this, &FinishedTransfers::addItem_gui, params, FALSE);
-		WulforManager::get()->dispatchGuiFunc(func);
+		addItem_gui(params, FALSE);
+		//func = new F2(this, &FinishedTransfers::addItem_gui, params, FALSE);
+		//WulforManager::get()->dispatchGuiFunc(func);
 	}
 
 	FinishedManager::getInstance()->unlockList();

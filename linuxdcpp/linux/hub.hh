@@ -35,7 +35,7 @@ class Hub:
 		~Hub();
 
 		// Client functions
-		void connectClient_client(string address, string nick = "", string desc = "", string password = "");
+		void connectClient_client(string address, string encoding);
 		void reconnect_client();
 
 	private:

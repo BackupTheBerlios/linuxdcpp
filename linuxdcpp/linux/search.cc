@@ -784,7 +784,7 @@ void Search::onDownloadToClicked_gui(GtkMenuItem *item, gpointer data)
 
 		if (temp && count > 0)
 		{
-			string target = temp;
+			string target = Text::acpToUtf8(temp);
 			g_free(temp);
 
 			if (target[target.length() - 1] != PATH_SEPARATOR)
@@ -927,7 +927,7 @@ void Search::onDownloadDirToClicked_gui(GtkMenuItem *item, gpointer data)
 
 		if (temp && count > 0)
 		{
-			string target = temp;
+			string target = Text::acpToUtf8(temp);
 			g_free(temp);
 
 			if (target[target.length() - 1] != PATH_SEPARATOR)
@@ -1006,7 +1006,7 @@ void Search::onGetFileListClicked_gui(GtkMenuItem *item, gpointer data)
 				result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
 				if (result)
 				{
-					string dir = Util::getFilePath(WulforUtil::linuxSeparator(result->getFileName()));
+					string dir = Util::getFilePath(WulforUtil::linuxSeparator(result->getFile()));
 
 					func = new F3(s, &Search::getFileList_client, result->getUser(), QueueItem::FLAG_CLIENT_VIEW, dir);
 					WulforManager::get()->dispatchClientFunc(func);
@@ -1199,8 +1199,6 @@ void Search::onRemoveClicked_gui(GtkMenuItem *item, gpointer data)
 
 void Search::download_client(string target, SearchResult *result)
 {
-	target = Text::utf8ToAcp(target);
-
 	try
 	{
 		if (result->getType() == SearchResult::TYPE_FILE)
@@ -1220,8 +1218,6 @@ void Search::download_client(string target, SearchResult *result)
 
 void Search::downloadDir_client(string target, SearchResult *result)
 {
-	target = Text::utf8ToAcp(target);
-
 	try
 	{
 		if (result->getType() == SearchResult::TYPE_FILE)

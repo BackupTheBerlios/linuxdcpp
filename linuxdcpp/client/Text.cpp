@@ -20,27 +20,23 @@
 #include "DCPlusPlus.h"
 
 #include "Text.h"
-#include <glib.h>
-#include "../linux/settingsmanager.hh"
 
-char Text::asciiLower[128];
-wchar_t Text::lower[65536];
+#ifndef _WIN32
+#include <errno.h>
+#include <iconv.h>
+#endif
 
-// When using GNU C library; setlocale should be called before Text::initialize
+string Text::systemCharset;
 
 void Text::initialize() {
-	for(size_t i = 0; i < 65536; ++i) {
-#ifdef _WIN32
-		lower[i] = (wchar_t)CharLowerW((LPWSTR)i);
-#else
-		lower[i] = (char)towlower(i);
-#endif
-	}
+	setlocale(LC_ALL, "");
 
-	for(size_t i = 0; i < 128; ++i) {
-		asciiLower[i] = (char)lower[i];
+	char *ctype = setlocale(LC_CTYPE, NULL);
+	if(ctype) {
+		systemCharset = string(ctype);
+	} else {
+		dcdebug("Unable to determine the program's locale");
 	}
-
 }
 
 int Text::utf8ToWc(const char* str, wchar_t& c) {
@@ -121,12 +117,12 @@ void Text::wcToUtf8(wchar_t c, string& str) {
 		str += (char)c;
 	}
 }
-/*
+
 string& Text::acpToUtf8(const string& str, string& tmp) throw() {
 	wstring wtmp;
 	return wideToUtf8(acpToWide(str, wtmp), tmp);
 }
-*/
+
 wstring& Text::acpToWide(const string& str, wstring& tmp) throw() {
 	if(str.empty())
 		return tmp;
@@ -144,18 +140,25 @@ wstring& Text::acpToWide(const string& str, wstring& tmp) throw() {
 	}
 	return tmp;
 #else
-	//convert from current locale multibyte (equivalent to CP_ACP?) to wide char
-	const char* src = str.c_str();
-	int n = mbsrtowcs(NULL, &src, 0, NULL);
-	if (n < 1) {
-		return tmp;
-	}
-	src = str.c_str();
-	tmp.resize(n);
-	n = mbsrtowcs(&tmp[0], &src, n, NULL);
-	if (n < 1) {
-		tmp.clear();
-		return tmp;
+	size_t rv;
+	wchar_t wc;
+	const char *src = str.c_str();
+	size_t n = str.length() + 1;
+	tmp.reserve(n);
+
+	while(n > 0) {
+		rv = mbrtowc(&wc, src, n, NULL);
+		if(rv == 0 || rv == (size_t)-2) {
+			break;
+		} else if(rv == (size_t)-1) {
+			tmp.push_back(L'_');
+			++src;
+			--n;
+		} else {
+			tmp.push_back(wc);
+			src += rv;
+			n -= rv;
+		}
 	}
 	return tmp;
 #endif
@@ -213,12 +216,12 @@ bool Text::validateUtf8(const string& str) throw() {
 	}
 	return true;
 }
-/*
+
 string& Text::utf8ToAcp(const string& str, string& tmp) throw() {
 	wstring wtmp;
 	return wideToAcp(utf8ToWide(str, wtmp), tmp);
 }
-*/
+
 wstring& Text::utf8ToWide(const string& str, wstring& tgt) throw() {
 	tgt.reserve(str.length());
 	string::size_type n = str.length();
@@ -236,6 +239,14 @@ wstring& Text::utf8ToWide(const string& str, wstring& tgt) throw() {
 	return tgt;
 }
 
+wchar_t Text::toLower(wchar_t c) throw() {
+#ifdef _WIN32
+		return (wchar_t)CharLowerW((LPWSTR)c);
+#else
+		return (wchar_t)towlower(c);
+#endif
+}
+
 wstring& Text::toLower(const wstring& str, wstring& tmp) throw() {
 	tmp.reserve(str.length());
 	wstring::const_iterator end = str.end();
@@ -244,7 +255,7 @@ wstring& Text::toLower(const wstring& str, wstring& tmp) throw() {
 	}
 	return tmp;
 }
-/*
+
 string& Text::toLower(const string& str, string& tmp) throw() {
 	if(str.empty())
 		return tmp;
@@ -263,47 +274,63 @@ string& Text::toLower(const string& str, string& tmp) throw() {
 	}
 	return tmp;
 }
-*/
-string Text::acpToUtf8(const string& str) throw()
-{
-	std::string utf8String;
-	gchar *utf8CString = g_filename_to_utf8(str.c_str(), -1, NULL, NULL, NULL);
-	if (utf8CString == NULL)
-	{
-		utf8CString = g_convert(str.c_str(), -1, "UTF-8", WGETS("default-charset").c_str(), NULL, NULL, NULL);
-		if (utf8CString == NULL)
-			return utf8String;
-	}
-	utf8String = string(utf8CString);
-	g_free(utf8CString);
-	return utf8String;
-}
 
-string Text::utf8ToAcp(const string& str) throw()
-{
-	std::string acpString;
-	gchar *acpCString;
-	if (g_getenv("G_FILENAME_ENCODING") != NULL)
-		acpCString = g_filename_from_utf8(str.c_str(), -1, NULL, NULL, NULL);
+string& Text::convert(const string& str, string& tmp, const string& fromCharset, const string& toCharset) throw() {
+	const string& from = toLower(fromCharset);
+	const string& to = toLower(toCharset);
+
+	if(str.empty() || from == to)
+		return tmp = str;
+	if(to == "utf-8" && (fromCharset.empty() || fromCharset == systemCharset))
+		return acpToUtf8(str, tmp);
+	if(from == "utf-8" && (toCharset.empty() || toCharset == systemCharset))
+		return utf8ToAcp(str, tmp);
+
+#ifdef _WIN32
+
+	// Windows DC++ assumes everything is either utf-8 or acp
+	if(to == "utf-8")
+		return acpToUtf8(str, tmp);
 	else
-		acpCString = g_convert(str.c_str(), -1, WGETS("default-charset").c_str(), "UTF-8", NULL, NULL, NULL);
+		return utf8ToAcp(str, tmp);
+#else
 
-	if (acpCString == NULL)
-		return acpString;
-	acpString = string(acpCString);
-	g_free(acpCString);
-	return acpString;
-}
+	// Initialize the converter
+	iconv_t cd = iconv_open(toCharset.c_str(), fromCharset.c_str());
+	if(cd == (iconv_t)-1)
+		return tmp = str;
 
-string Text::toLower(const string& str) throw()
-{
-	std::string lowerString = acpToUtf8(str);
-	gchar *lowerCString;
-	if (!lowerString.empty())
-	{
-		lowerCString = g_utf8_strdown(lowerString.c_str(), -1);
-		lowerString = string(lowerCString);
-		g_free(lowerCString);
+	size_t rv;
+	size_t len = str.length() * 2; // optimization
+	size_t inleft = str.length();
+	size_t outleft = len;
+	tmp.resize(len);
+	const char *inbuf = str.data();
+	char *outbuf = (char *)tmp.data();
+
+	while(inleft > 0) {
+		rv = iconv(cd, (char **)&inbuf, &inleft, &outbuf, &outleft);
+		if(rv == (size_t)-1) {
+			size_t used = outbuf - tmp.data();
+			if(errno == E2BIG) {
+				len *= 2;
+				tmp.resize(len);
+				outbuf = (char *)tmp.data() + used;
+				outleft = len - used;
+			} else if(errno == EILSEQ) {
+				++inbuf;
+				--inleft;
+				tmp[used] = '_';
+			} else {
+				tmp.replace(used, inleft, string(inleft, '_'));
+				inleft = 0;
+			}
+		}
 	}
-	return lowerString;
+	iconv_close(cd);
+	if(outleft > 0) {
+		tmp.resize(len - outleft);
+	}
+	return tmp;
+#endif
 }

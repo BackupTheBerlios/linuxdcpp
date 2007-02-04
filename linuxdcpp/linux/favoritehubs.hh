@@ -40,7 +40,6 @@ class FavoriteHubs:
 		void editEntry_gui(StringMap &params, GtkTreeIter *iter);
 		void removeEntry_gui(std::string address);
 		void showErrorDialog_gui(const std::string &description);
-		void connect_gui(GtkTreeIter *iter);
 		void popupMenu_gui();
 
 		// GUI callbacks
@@ -69,6 +68,7 @@ class FavoriteHubs:
 		GtkListStore *favoriteStore;
 		GtkTreeSelection *favoriteSelection;
 		GdkEventType previous;
+		GtkListStore *charsetStore;
 };
 
 #else

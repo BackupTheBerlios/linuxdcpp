@@ -17,16 +17,24 @@
  */
 
 #include "favoritehubs.hh"
+#include "settingsmanager.hh"
 #include "wulformanager.hh"
+#include "WulforUtil.hh"
 
 FavoriteHubs::FavoriteHubs():
 	BookEntry("Favorite Hubs", "favoritehubs.glade")
 {
-	FavoriteManager::getInstance()->addListener(this);
-
 	// Configure the dialogs
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("deleteFavoriteDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("favoriteHubsDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	charsetStore = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
+	gtk_combo_box_set_model(GTK_COMBO_BOX(getWidget("comboboxEncoding")), GTK_TREE_MODEL(charsetStore));
+	g_object_unref(charsetStore);
+
+	GtkTreeIter iter;
+	vector<vector<string> > charsets = WulforUtil::getCharsets();
+	for (size_t i = 0; i < charsets.size(); i++)
+		gtk_list_store_insert_with_values(charsetStore, &iter, i, 0, charsets[i][0].c_str(), 1, charsets[i][1].c_str(), -1);
 
 	// Initialize favorite hub list treeview
 	GtkTreeView *view = GTK_TREE_VIEW(getWidget("favoriteView"));
@@ -38,6 +46,7 @@ FavoriteHubs::FavoriteHubs():
 	favoriteView.insertColumn("Password", G_TYPE_STRING, TreeView::STRING, 100);
 	favoriteView.insertColumn("Address", G_TYPE_STRING, TreeView::STRING, 175);
 	favoriteView.insertColumn("User Description", G_TYPE_STRING, TreeView::STRING, 125);
+	favoriteView.insertColumn("Encoding", G_TYPE_STRING, TreeView::STRING, 125);
 	favoriteView.insertHiddenColumn("Hidden Password", G_TYPE_STRING);
 	favoriteView.finalize();
 	favoriteStore = gtk_list_store_newv(favoriteView.getColCount(), favoriteView.getGTypes());
@@ -68,7 +77,9 @@ FavoriteHubs::FavoriteHubs():
 	g_signal_connect(favoriteView.get(), "button-release-event", G_CALLBACK(onButtonReleased_gui), (gpointer)this);
 	g_signal_connect(favoriteView.get(), "key-release-event", G_CALLBACK(onKeyReleased_gui), (gpointer)this);
 
-	WulforManager::get()->dispatchClientFunc(new Func0<FavoriteHubs>(this, &FavoriteHubs::initializeList_client));
+	initializeList_client();
+	//WulforManager::get()->dispatchClientFunc(new Func0<FavoriteHubs>(this, &FavoriteHubs::initializeList_client));
+	FavoriteManager::getInstance()->addListener(this);
 }
 
 FavoriteHubs::~FavoriteHubs()
@@ -92,7 +103,7 @@ void FavoriteHubs::editEntry_gui(StringMap &params, GtkTreeIter *iter)
 		if (!params["Hidden Password"].empty())
 			params["Password"] = string(8, '*');
 		else
-			params["Password"] = "";
+			params["Password"].clear();
 	}
 
 	gtk_list_store_set(favoriteStore, iter,
@@ -104,6 +115,7 @@ void FavoriteHubs::editEntry_gui(StringMap &params, GtkTreeIter *iter)
 		favoriteView.col("Hidden Password"), params["Hidden Password"].c_str(),
 		favoriteView.col("Address"), params["Address"].c_str(),
 		favoriteView.col("User Description"), params["User Description"].c_str(),
+		favoriteView.col("Encoding"), params["Encoding"].empty() ? WGETS("default-charset").c_str() : params["Encoding"].c_str(),
 		-1);
 }
 
@@ -129,15 +141,6 @@ void FavoriteHubs::showErrorDialog_gui(const string &description)
 	gtk_label_set_text(GTK_LABEL(getWidget("errorLabel")), description.c_str());
 	gtk_dialog_run(GTK_DIALOG(getWidget("errorDialog")));
 	gtk_widget_hide(getWidget("errorDialog"));
-}
-
-void FavoriteHubs::connect_gui(GtkTreeIter *iter)
-{
-	WulforManager::get()->addHub_gui(
-		favoriteView.getString(iter, "Address"),
-		favoriteView.getString(iter, "Nick"),
-		favoriteView.getString(iter, "User Description"),
-		favoriteView.getString(iter, "Hidden Password"));
 }
 
 void FavoriteHubs::popupMenu_gui()
@@ -182,9 +185,15 @@ gboolean FavoriteHubs::onButtonReleased_gui(GtkWidget *widget, GdkEventButton *e
 		gtk_widget_set_sensitive(fh->getWidget("buttonConnect"), TRUE);
 
 		if (fh->previous == GDK_BUTTON_PRESS && event->button == 3)
+		{
 			fh->popupMenu_gui();
+		}
 		else if (fh->previous == GDK_2BUTTON_PRESS && event->button == 1)
-			fh->connect_gui(&iter);
+		{
+			WulforManager::get()->addHub_gui(
+				fh->favoriteView.getString(&iter, "Address"),
+				fh->favoriteView.getString(&iter, "Encoding"));
+		}
 	}
 
 	return FALSE;
@@ -206,7 +215,11 @@ gboolean FavoriteHubs::onKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, 
 			GtkTreeViewColumn *column;
 			gtk_tree_view_get_cursor(fh->favoriteView.get(), NULL, &column);
 			if (column && column != gtk_tree_view_get_column(fh->favoriteView.get(), fh->favoriteView.col("Auto Connect")))
-				fh->connect_gui(&iter);
+			{
+				WulforManager::get()->addHub_gui(
+					fh->favoriteView.getString(&iter, "Address"),
+					fh->favoriteView.getString(&iter, "Encoding"));
+			}
 		}
 		else if (event->keyval == GDK_Delete || event->keyval == GDK_BackSpace)
 		{
@@ -232,6 +245,23 @@ void FavoriteHubs::onAddEntry_gui(GtkWidget *widget, gpointer data)
 	gtk_entry_set_text(GTK_ENTRY(fh->getWidget("entryPassword")), "");
 	gtk_entry_set_text(GTK_ENTRY(fh->getWidget("entryUDescription")), "");	
 
+	gchar *encoding;
+	GtkTreeIter iter;
+	GtkTreeModel *m = GTK_TREE_MODEL(fh->charsetStore);
+	bool valid = gtk_tree_model_get_iter_first(m, &iter);
+	while (valid)
+	{
+		gtk_tree_model_get(m, &iter, 1, &encoding, -1);
+		if (string(encoding) == WGETS("default-charset"))
+		{
+			gtk_combo_box_set_active_iter(GTK_COMBO_BOX(fh->getWidget("comboboxEncoding")), &iter);
+			g_free(encoding);
+			break;
+		}
+		g_free(encoding);
+		valid = gtk_tree_model_iter_next(m, &iter);
+	}
+
 	int response = gtk_dialog_run(GTK_DIALOG(fh->getWidget("favoriteHubsDialog")));
 	gtk_widget_hide(fh->getWidget("favoriteHubsDialog"));
 
@@ -244,6 +274,14 @@ void FavoriteHubs::onAddEntry_gui(GtkWidget *widget, gpointer data)
 		params["Nick"] = gtk_entry_get_text(GTK_ENTRY(fh->getWidget("entryNick")));
 		params["Hidden Password"] = gtk_entry_get_text(GTK_ENTRY(fh->getWidget("entryPassword")));
 		params["User Description"] = gtk_entry_get_text(GTK_ENTRY(fh->getWidget("entryUDescription")));
+		if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(fh->getWidget("comboboxEncoding")), &iter))
+		{
+			gtk_tree_model_get(m, &iter, 1, &encoding, -1);
+			params["Encoding"] = string(encoding);
+			g_free(encoding);
+		}
+		else
+			params["Encoding"] = WGETS("default-charset");
 
 		if (params["Name"].empty() || params["Address"].empty())
 		{
@@ -262,17 +300,18 @@ void FavoriteHubs::onEditEntry_gui(GtkWidget *widget, gpointer data)
 {
 	FavoriteHubs *fh = (FavoriteHubs *)data;
 	GtkTreeIter iter;
-	StringMap params;
 
 	if (!gtk_tree_selection_get_selected(fh->favoriteSelection, NULL, &iter))
 		return;
 
+	StringMap params;
 	params["Name"] = fh->favoriteView.getString(&iter, "Name");
 	params["Address"] = fh->favoriteView.getString(&iter, "Address");
 	params["Description"] = fh->favoriteView.getString(&iter, "Description");
 	params["Nick"] = fh->favoriteView.getString(&iter, "Nick");
 	params["Hidden Password"] = fh->favoriteView.getString(&iter, "Hidden Password");
 	params["User Description"] = fh->favoriteView.getString(&iter, "User Description");
+	params["Encoding"] = fh->favoriteView.getString(&iter, "Encoding");
 
 	gtk_entry_set_text(GTK_ENTRY(fh->getWidget("entryName")), params["Name"].c_str());
 	gtk_entry_set_text(GTK_ENTRY(fh->getWidget("entryAddress")), params["Address"].c_str());
@@ -281,7 +320,24 @@ void FavoriteHubs::onEditEntry_gui(GtkWidget *widget, gpointer data)
 	gtk_entry_set_text(GTK_ENTRY(fh->getWidget("entryPassword")), params["Hidden Password"].c_str());
 	gtk_entry_set_text(GTK_ENTRY(fh->getWidget("entryUDescription")), params["User Description"].c_str());
 
-	gint response = gtk_dialog_run(GTK_DIALOG(fh->getWidget("favoriteHubsDialog")));
+	gchar *encoding;
+	GtkTreeIter encodingIter;
+	GtkTreeModel *m = GTK_TREE_MODEL(fh->charsetStore);
+	bool valid = gtk_tree_model_get_iter_first(m, &encodingIter);
+	while (valid)
+	{
+		gtk_tree_model_get(m, &encodingIter, 1, &encoding, -1);
+		if (string(encoding) == params["Encoding"])
+		{
+			gtk_combo_box_set_active_iter(GTK_COMBO_BOX(fh->getWidget("comboboxEncoding")), &encodingIter);
+			g_free(encoding);
+			break;
+		}
+		g_free(encoding);
+		valid = gtk_tree_model_iter_next(m, &encodingIter);
+	}
+
+	int response = gtk_dialog_run(GTK_DIALOG(fh->getWidget("favoriteHubsDialog")));
 	gtk_widget_hide(fh->getWidget("favoriteHubsDialog"));
 
 	if (response == GTK_RESPONSE_OK)
@@ -293,6 +349,14 @@ void FavoriteHubs::onEditEntry_gui(GtkWidget *widget, gpointer data)
 		params["Nick"] = gtk_entry_get_text(GTK_ENTRY(fh->getWidget("entryNick")));
 		params["Hidden Password"] = gtk_entry_get_text(GTK_ENTRY(fh->getWidget("entryPassword")));
 		params["User Description"] = gtk_entry_get_text(GTK_ENTRY(fh->getWidget("entryUDescription")));
+		if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(fh->getWidget("comboboxEncoding")), &encodingIter))
+		{
+			gtk_tree_model_get(m, &encodingIter, 1, &encoding, -1);
+			params["Encoding"] = string(encoding);
+			g_free(encoding);
+		}
+		else
+			params["Encoding"] = WGETS("default-charset");
 
 		if (params["Name"].empty() || params["Address"].empty())
 		{
@@ -343,7 +407,9 @@ void FavoriteHubs::onConnect_gui(GtkButton *widget, gpointer data)
 	GtkTreeIter iter;
 
 	if (gtk_tree_selection_get_selected(fh->favoriteSelection, NULL, &iter))
-		fh->connect_gui(&iter);
+		WulforManager::get()->addHub_gui(
+			fh->favoriteView.getString(&iter, "Address"),
+			fh->favoriteView.getString(&iter, "Encoding"));
 }
 
 void FavoriteHubs::onToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data)
@@ -368,14 +434,15 @@ void FavoriteHubs::initializeList_client()
 {
 	StringMap params;
 	typedef Func1<FavoriteHubs, StringMap> F1;
-	F1 *func;
+	//F1 *func;
 	const FavoriteHubEntry::List& fl = FavoriteManager::getInstance()->getFavoriteHubs();
 
 	for (FavoriteHubEntry::List::const_iterator it = fl.begin(); it != fl.end(); ++it)
 	{
 		getFavHubParams_client(*it, params);
-		func = new F1(this, &FavoriteHubs::addEntry_gui, params);
-		WulforManager::get()->dispatchGuiFunc(func);
+		addEntry_gui(params);
+		//func = new F1(this, &FavoriteHubs::addEntry_gui, params);
+		//WulforManager::get()->dispatchGuiFunc(func);
 	}
 }
 
@@ -392,6 +459,7 @@ void FavoriteHubs::getFavHubParams_client(const FavoriteHubEntry *entry, StringM
 	params["Hidden Password"] = entry->getPassword();
 	params["Address"] = entry->getServer();
 	params["User Description"] = entry->getUserDescription();
+	params["Encoding"] = entry->getEncoding();
 }
 
 void FavoriteHubs::addEntry_client(StringMap params)
@@ -404,6 +472,7 @@ void FavoriteHubs::addEntry_client(StringMap params)
 	entry.setNick(params["Nick"]);
 	entry.setPassword(params["Hidden Password"]);
 	entry.setUserDescription(params["User Description"]);
+	entry.setEncoding(params["Encoding"]);
 	FavoriteManager::getInstance()->addFavorite(entry);
 }
 
@@ -419,6 +488,7 @@ void FavoriteHubs::editEntry_client(string address, StringMap params)
 		entry->setNick(params["Nick"]);
 		entry->setPassword(params["Hidden Password"]);
 		entry->setUserDescription(params["User Description"]);
+		entry->setEncoding(params["Encoding"]);
 		FavoriteManager::getInstance()->save();
 	}
 }

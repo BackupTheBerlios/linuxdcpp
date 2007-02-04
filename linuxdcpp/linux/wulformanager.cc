@@ -28,6 +28,7 @@
 #include "publichubs.hh"
 #include "search.hh"
 #include "settingsdialog.hh"
+#include "settingsmanager.hh"
 #include "sharebrowser.hh"
 #include "WulforUtil.hh"
 
@@ -319,7 +320,8 @@ BookEntry *WulforManager::getBookEntry_gui(const string &id, bool raise)
 	BookEntry *ret = NULL;
 
 	pthread_mutex_lock(&bookEntryLock);
-	ret = bookEntries[id];
+	if (bookEntries.find(id) != bookEntries.end())
+		ret = bookEntries[id];
 	pthread_mutex_unlock(&bookEntryLock);
 
 	if (ret && raise)
@@ -408,7 +410,8 @@ DialogEntry* WulforManager::getDialogEntry_gui(const string &id)
 	DialogEntry *ret = NULL;
 
 	pthread_mutex_lock(&dialogEntryLock);
-	ret = dialogEntries[id];
+	if (dialogEntries.find(id) != dialogEntries.end())
+		ret = dialogEntries[id];
 	pthread_mutex_unlock(&dialogEntryLock);
 
 	return ret;
@@ -516,7 +519,7 @@ BookEntry *WulforManager::addFavoriteHubs_gui()
 	return favHubs;
 }
 
-BookEntry *WulforManager::addHub_gui(const string &address, const string &nick, const string &desc, const string &password)
+BookEntry *WulforManager::addHub_gui(const string &address, const string &encoding)
 {
 	BookEntry *entry = getBookEntry_gui("Hub: " + address);
 	if (entry) return entry;
@@ -525,8 +528,18 @@ BookEntry *WulforManager::addHub_gui(const string &address, const string &nick, 
 	mainWin->appendWindowItem(hub->getContainer(), hub->getID());
 	insertBookEntry_gui(hub);
 
-	typedef Func4<Hub, string, string, string, string> F4;
-	F4 *func = new F4(hub, &Hub::connectClient_client, address, nick, desc, password);
+	string charset;
+	if (address.substr(0, 6) == "adc://" || address.substr(0, 7) == "adcs://")
+		charset = "UTF-8";
+	else if (encoding.empty())
+		charset = WGETS("default-charset");
+	else if (encoding == "System Default")
+		charset = Text::getSystemCharset();
+	else
+		charset = encoding;
+
+	typedef Func2<Hub, string, string> F2;
+	F2 *func = new F2(hub, &Hub::connectClient_client, address, charset);
 	dispatchClientFunc(func);
 
 	return hub;

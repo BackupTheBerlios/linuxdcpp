@@ -65,7 +65,7 @@ WulforSettingsManager::WulforSettingsManager()
 	defaultString["sharebrowser-order"] = "";
 	defaultString["sharebrowser-width"] = "";
 	defaultString["sharebrowser-visibility"] = "";
-	defaultString["default-charset"] = "CP1252";
+	defaultString["default-charset"] = "System default";
 }
 
 WulforSettingsManager *WulforSettingsManager::get()

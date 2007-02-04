@@ -61,7 +61,7 @@ void PrivateMessage::addMessage_gui(string message)
 	if (BOOLSETTING(LOG_PRIVATE_CHAT))
 	{
 		StringMap params;
-		params["message"] = Text::acpToUtf8(message);
+		params["message"] = message;
 		params["hubNI"] = Util::toString(ClientManager::getInstance()->getHubNames(user->getCID()));
 		params["hubURL"] = Util::toString(ClientManager::getInstance()->getHubs(user->getCID()));
 		params["userCID"] = user->getCID().toBase32();
@@ -124,78 +124,77 @@ void PrivateMessage::addLine_gui(const string &message)
 
 void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
 {
-	PrivateMessage *pm = (PrivateMessage *)data;
 	string text = gtk_entry_get_text(entry);
+	if (text.empty())
+		return;
 
-	if (!text.empty())
+	PrivateMessage *pm = (PrivateMessage *)data;
+	gtk_entry_set_text(entry, "");
+
+	// Store line in chat history
+	pm->history.pop_back();
+	pm->history.push_back(text);
+	pm->history.push_back("");
+	pm->historyIndex = pm->history.size() - 1;
+	if (pm->history.size() > maxHistory + 1)
+		pm->history.erase(pm->history.begin());
+
+	// Process special commands
+	if (text[0] == '/')
 	{
-		gtk_entry_set_text(entry, "");
+		string command = text.substr(1);
+		std::transform(command.begin(), command.end(), command.begin(), (int(*)(int))tolower);
 
-		// Store line in chat history
-		pm->history.pop_back();
-		pm->history.push_back(text);
-		pm->history.push_back("");
-		pm->historyIndex = pm->history.size() - 1;
-		if (pm->history.size() > maxHistory + 1)
-			pm->history.erase(pm->history.begin());
-
-		// Process special commands
-		if (text[0] == '/')
+		if (command == "clear")
 		{
-			string command;
-			std::transform(text.begin(), text.end(), command.begin(), (int(*)(int))tolower);
-
-			if (command == "/clear")
+			GtkTextIter startIter, endIter;
+			gtk_text_buffer_get_start_iter(pm->buffer, &startIter);
+			gtk_text_buffer_get_end_iter(pm->buffer, &endIter);
+			gtk_text_buffer_delete(pm->buffer, &startIter, &endIter);
+		}
+		else if (command == "close")
+		{
+			WulforManager::get()->deleteBookEntry_gui((BookEntry *)pm);
+		}
+		else if (command == "favorite" || text == "fav")
+		{
+			FavoriteManager::getInstance()->addFavoriteUser(pm->user);
+			pm->addStatusMessage_gui("Added user to favorites list");
+		}
+		else if (command == "getlist")
+		{
+			try
 			{
-				GtkTextIter startIter, endIter;
-				gtk_text_buffer_get_start_iter(pm->buffer, &startIter);
-				gtk_text_buffer_get_end_iter(pm->buffer, &endIter);
-				gtk_text_buffer_delete(pm->buffer, &startIter, &endIter);
+				QueueManager::getInstance()->addList(pm->user, QueueItem::FLAG_CLIENT_VIEW);
 			}
-			else if (command == "/close")
+			catch (const Exception& e)
 			{
-				WulforManager::get()->deleteBookEntry_gui((BookEntry *)pm);
-			}
-			else if (command == "/favorite" || command == "/fav")
-			{
-				FavoriteManager::getInstance()->addFavoriteUser(pm->user);
-				pm->addStatusMessage_gui("Added user to favorites list");
-			}
-			else if (command == "/getlist")
-			{
-				try
-				{
-					QueueManager::getInstance()->addList(pm->user, QueueItem::FLAG_CLIENT_VIEW);
-				}
-				catch (const Exception& e)
-				{
-					pm->addStatusMessage_gui(Text::acpToUtf8(e.getError()));
-				}
-			}
-			else if (command == "/grant")
-			{
-				UploadManager::getInstance()->reserveSlot(pm->user);
-				pm->addStatusMessage_gui("Slot granted");
-			}
-			else if (command == "/help")
-			{
-				pm->addStatusMessage_gui("Available commands: /clear, /close, /favorite, /getlist, /grant, /help");
-			}
-			else
-			{
-				pm->addStatusMessage_gui("Unknown command " + text + ": type /help for a list of valid commands");
+				pm->addStatusMessage_gui(e.getError());
 			}
 		}
-		else if (pm->user->isOnline())
+		else if (command == "grant")
 		{
-			typedef Func1<PrivateMessage, string> F1;
-			F1 *func = new F1(pm, &PrivateMessage::sendMessage_client, text);
-			WulforManager::get()->dispatchClientFunc(func);
+			UploadManager::getInstance()->reserveSlot(pm->user);
+			pm->addStatusMessage_gui("Slot granted");
+		}
+		else if (command == "help")
+		{
+			pm->addStatusMessage_gui("Available commands: /clear, /close, /favorite, /getlist, /grant, /help");
 		}
 		else
 		{
-			pm->addStatusMessage_gui("User went offline");
+			pm->addStatusMessage_gui("Unknown command " + text + ": type /help for a list of valid commands");
 		}
+	}
+	else if (pm->user->isOnline())
+	{
+		typedef Func1<PrivateMessage, string> F1;
+		F1 *func = new F1(pm, &PrivateMessage::sendMessage_client, text);
+		WulforManager::get()->dispatchClientFunc(func);
+	}
+	else
+	{
+		pm->addStatusMessage_gui("User went offline");
 	}
 }
 

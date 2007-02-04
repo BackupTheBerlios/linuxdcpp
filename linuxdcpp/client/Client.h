@@ -154,6 +154,7 @@ public:
 	GETSET(bool, registered, Registered);
 	GETSET(bool, autoReconnect, AutoReconnect);
 	GETSET(bool, reconnecting, Reconnecting);
+	GETSET(string, encoding, Encoding);
 
 	GETSET(string, currentNick, CurrentNick);
 	GETSET(string, currentDescription, CurrentDescription);

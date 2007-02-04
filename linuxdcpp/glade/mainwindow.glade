@@ -206,7 +206,7 @@
                         <child internal-child="image">
                           <widget class="GtkImage" id="image270">
                             <property name="visible">True</property>
-                            <property name="stock">gtk-missing-image</property>
+                            <property name="stock">gtk-directory</property>
                             <property name="icon_size">1</property>
                           </widget>
                         </child>
@@ -259,6 +259,7 @@
               <widget class="GtkMenuItem" id="help1">
                 <property name="visible">True</property>
                 <property name="label">gtk-help</property>
+                <property name="use_stock">True</property>
                 <property name="use_underline">True</property>
                 <child>
                   <widget class="GtkMenu" id="help1_menu">

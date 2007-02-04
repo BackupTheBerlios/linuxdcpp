@@ -192,12 +192,7 @@ void ShareBrowser::buildDirs_gui(DirectoryListing::Directory *dir, GtkTreeIter *
 	GtkTreeIter newIter;
 
 	gtk_tree_store_append(dirStore, &newIter, iter);
-
-	// Add the name and check if it is utf-8.
-	if (listing.getUtf8())
-		gtk_tree_store_set(dirStore, &newIter, dirView.col("Dir"), dir->getName().c_str(), -1);
-	else
-		gtk_tree_store_set(dirStore, &newIter, dirView.col("Dir"), Text::acpToUtf8(dir->getName()).c_str(), -1);
+	gtk_tree_store_set(dirStore, &newIter, dirView.col("Dir"), dir->getName().c_str(), -1);
 
 	gtk_tree_store_set(dirStore, &newIter,
 		dirView.col("DL Dir"), (gpointer)dir,
@@ -289,22 +284,10 @@ void ShareBrowser::updateFiles_gui(DirectoryListing::Directory *dir)
 	for (it_dir = dirs->begin(); it_dir != dirs->end(); ++it_dir)
 	{
 		gtk_list_store_append(fileStore, &iter);
-
-		// Data needs to be converted to utf-8 if it's not in that form.
-		if (listing.getUtf8())
-		{
-			gtk_list_store_set(fileStore, &iter,
-				fileView.col("Filename"), Util::getFileName((*it_dir)->getName()).c_str(),
-				fileView.col("File Order"), Util::getFileName("d"+(*it_dir)->getName()).c_str(),
-				-1);
-		}
-		else
-		{
-			gtk_list_store_set(fileStore, &iter,
-				fileView.col("Filename"), Text::acpToUtf8(Util::getFileName((*it_dir)->getName())).c_str(),
-				fileView.col("File Order"), Text::acpToUtf8(Util::getFileName("d"+(*it_dir)->getName())).c_str(),
-				-1);
-		}
+		gtk_list_store_set(fileStore, &iter,
+			fileView.col("Filename"), Util::getFileName((*it_dir)->getName()).c_str(),
+			fileView.col("File Order"), Util::getFileName("d"+(*it_dir)->getName()).c_str(),
+			-1);
 
 		size = (*it_dir)->getTotalSize(false);
 		gtk_list_store_set(fileStore, &iter,
@@ -330,23 +313,11 @@ void ShareBrowser::updateFiles_gui(DirectoryListing::Directory *dir)
 		if (ext.length() > 0)
 			ext = ext.substr(1);
 
-		// Data needs to be converted to utf-8 if it's not in that form.
- 		if (listing.getUtf8())
- 		{
-			gtk_list_store_set(fileStore, &iter,
-				fileView.col("Filename"), Util::getFileName((*it_file)->getName()).c_str(),
-				fileView.col("Type"), ext.c_str(),
-				fileView.col("File Order"), Util::getFileName("f"+(*it_file)->getName()).c_str(),
-				-1);
-		}
-		else
-		{
-			gtk_list_store_set(fileStore, &iter,
-				fileView.col("Filename"), Text::acpToUtf8(Util::getFileName((*it_file)->getName())).c_str(),
-				fileView.col("Type"), Text::acpToUtf8(ext).c_str(),
-				fileView.col("File Order"), Text::acpToUtf8(Util::getFileName("f"+(*it_file)->getName())).c_str(),
-				-1);
-		}
+		gtk_list_store_set(fileStore, &iter,
+			fileView.col("Filename"), Util::getFileName((*it_file)->getName()).c_str(),
+			fileView.col("Type"), ext.c_str(),
+			fileView.col("File Order"), Util::getFileName("f"+(*it_file)->getName()).c_str(),
+			-1);
 
 		size = (*it_file)->getSize();
 		gtk_list_store_set(fileStore, &iter,
@@ -467,11 +438,7 @@ void ShareBrowser::downloadSelectedFiles_gui(const string &target)
 			{
 				file = (DirectoryListing::File *)ptr;
 
-				string filename;
-				if (listing.getUtf8())
-					filename = Util::getFileName(file->getName());
-				else
-					filename = Text::acpToUtf8(Util::getFileName(file->getName()));
+				string filename = Util::getFileName(file->getName());
 
 				typedef Func2<ShareBrowser, DirectoryListing::File *, string> F2;
 				F2 * func = new F2(this, &ShareBrowser::downloadFile_client, file, target + filename);
@@ -587,10 +554,7 @@ void ShareBrowser::find_gui()
 
 		for (file = dir->files.begin(), cursorPos = dir->directories.size(); file != dir->files.end(); file++, cursorPos++)
 		{
-			name = (*file)->getName();
-			if (!listing.getUtf8())
-				name = Text::acpToUtf8(name);
-			name = Text::toLower(name);
+			name = Text::toLower((*file)->getName());
 
 			// We found a matching file. Update the cursors and the fileView if necessary.
 			if (name.find(search, 0) != string::npos && hits++ == skipHits)
@@ -799,7 +763,7 @@ void ShareBrowser::onDownloadToClicked_gui(GtkMenuItem *item, gpointer data)
 		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(sb->getWidget("dirChooserDialog")));
 		if (temp)
 		{
-			string path = string(temp);
+			string path = Text::acpToUtf8(temp);
 			g_free(temp);
 			if (path[path.length() - 1] != PATH_SEPARATOR)
 				path += PATH_SEPARATOR;
@@ -834,7 +798,7 @@ void ShareBrowser::onDownloadDirToClicked_gui(GtkMenuItem *item, gpointer data)
 		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(sb->getWidget("dirChooserDialog")));
 		if (temp)
 		{
-			string path = string(temp);
+			string path = Text::acpToUtf8(temp);
 			g_free(temp);
 			if (path[path.length() - 1] != PATH_SEPARATOR)
 				path += PATH_SEPARATOR;

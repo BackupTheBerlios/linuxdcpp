@@ -436,9 +436,9 @@ void MainWindow::addShareBrowser_gui(User::Ptr user, string listName, string ini
 	setStatus_gui("status1", "File list loaded");
 }
 
-void MainWindow::openHub_gui(string server, string nick, string desc, string password)
+void MainWindow::openHub_gui(string server, string encoding)
 {
-	WulforManager::get()->addHub_gui(server, nick, desc, password);
+	WulforManager::get()->addHub_gui(server, encoding);
 }
 
 bool MainWindow::findTransfer_gui(const string &cid, bool download, GtkTreeIter *iter)
@@ -731,9 +731,8 @@ void MainWindow::onQuitClicked_gui(GtkWidget *widget, gpointer data)
 void MainWindow::onOpenFileListClicked_gui(GtkWidget *widget, gpointer data)
 {
 	MainWindow *mw = (MainWindow *)data;
-	string path = Text::toT(Util::getListPath());
 
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(mw->getWidget("flistDialog")), path.c_str());
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(mw->getWidget("flistDialog")), Text::utf8ToAcp(Util::getListPath()).c_str());
 
  	int ret = gtk_dialog_run(GTK_DIALOG(mw->getWidget("flistDialog")));
 	gtk_widget_hide(mw->getWidget("flistDialog"));
@@ -741,14 +740,17 @@ void MainWindow::onOpenFileListClicked_gui(GtkWidget *widget, gpointer data)
 	if (ret == GTK_RESPONSE_OK)
 	{
 		gchar *temp = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(mw->getWidget("flistDialog")));
-		path = string(temp);
-		g_free(temp);
+		if (temp)
+		{
+			string path = Text::acpToUtf8(temp);
+			g_free(temp);
 
-		User::Ptr user = DirectoryListing::getUserFromFilename(path);
-		if (user)
-			WulforManager::get()->addShareBrowser_gui(user, path, "");
-		else
-			mw->setStatus_gui("status1", "Unable to open: Older file list format detected");
+			User::Ptr user = DirectoryListing::getUserFromFilename(path);
+			if (user)
+				WulforManager::get()->addShareBrowser_gui(user, path, "");
+			else
+				mw->setStatus_gui("status1", "Unable to open: Older file list format detected");
+		}
 	}
 }
 
@@ -1039,37 +1041,28 @@ void MainWindow::onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data)
 		state = gdk_window_get_state(GTK_WIDGET(win)->window);
 		isMaximized = (state & GDK_WINDOW_STATE_MAXIMIZED);
 		isIconified = (state & GDK_WINDOW_STATE_ICONIFIED);
-		gtk_widget_hide_all(GTK_WIDGET(win));
+		gtk_widget_hide(GTK_WIDGET(win));
 	}
 	else
 	{
 		gtk_window_move(win, x, y);
 		if (isMaximized) gtk_window_maximize(win);
 		if (isIconified) gtk_window_iconify(win);
-		gtk_widget_show_all(GTK_WIDGET(win));
+		gtk_widget_show(GTK_WIDGET(win));
 	}
 }
 
 void MainWindow::autoConnect_client()
 {
 	FavoriteHubEntry::List &l = FavoriteManager::getInstance()->getFavoriteHubs();
-	FavoriteHubEntry *entry;
-	typedef Func4<MainWindow, string, string, string, string> F4;
-	F4 *func;
-	string nick;
+	typedef Func2<MainWindow, string, string> F2;
+	F2 *func;
 
 	for (FavoriteHubEntry::List::const_iterator it = l.begin(); it != l.end(); ++it)
 	{
-		entry = *it;
-		if (entry->getConnect() && (!entry->getNick().empty() || !SETTING(NICK).empty()))
+		if ((*it)->getConnect())
 		{
-			if (entry->getNick().empty())
-				nick = SETTING(NICK);
-			else
-				nick = entry->getNick();
-
-			func = new F4(this, &MainWindow::openHub_gui, entry->getServer(), nick,
-				entry->getUserDescription(), entry->getPassword());
+			func = new F2(this, &MainWindow::openHub_gui, (*it)->getServer(), (*it)->getEncoding());
 			WulforManager::get()->dispatchGuiFunc(func);
 		}
 	}
@@ -1288,17 +1281,16 @@ void MainWindow::on(DownloadManagerListener::Starting, Download *dl) throw()
 {
 	StringMap params;
 	User::Ptr user = dl->getUserConnection().getUser();
-	string target = Text::acpToUtf8(dl->getTarget());
 
 	if (dl->isSet(Download::FLAG_USER_LIST))
 		params["Filename"] = "Filelist";
 	else if (dl->isSet(Download::FLAG_TREE_DOWNLOAD))
-		params["Filename"] = "TTH: " + Util::getFileName(target);
+		params["Filename"] = "TTH: " + Util::getFileName(dl->getTarget());
 	else
-		params["Filename"] = Util::getFileName(target);
+		params["Filename"] = Util::getFileName(dl->getTarget());
 
 	params["CID"] = user->getCID().toBase32();
-	params["Path"] = Util::getFilePath(target);
+	params["Path"] = Util::getFilePath(dl->getTarget());
 	params["Status"] = "Download starting...";
 	params["Size"] = Util::formatBytes(dl->getSize());
 	params["Size Order"] = Util::toString(dl->getSize());
@@ -1369,18 +1361,17 @@ void MainWindow::on(DownloadManagerListener::Complete, Download *dl) throw()
 void MainWindow::on(DownloadManagerListener::Failed, Download *dl, const string &reason) throw()
 {
 	StringMap params;
-	string target = Text::acpToUtf8(dl->getTarget());
 	User::Ptr user = dl->getUserConnection().getUser();
 
 	if (dl->isSet(Download::FLAG_USER_LIST))
 		params["Filename"] = "Filelist";
 	else if (dl->isSet(Download::FLAG_TREE_DOWNLOAD))
-		params["Filename"] = "TTH: " + Util::getFileName(target);
+		params["Filename"] = "TTH: " + Util::getFileName(dl->getTarget());
 	else
-		params["Filename"] = Util::getFileName(target);
+		params["Filename"] = Util::getFileName(dl->getTarget());
 
 	params["CID"] = user->getCID().toBase32();
-	params["Path"] = Util::getFilePath(target);
+	params["Path"] = Util::getFilePath(dl->getTarget());
 	params["Status"] = reason;
 	params["Size"] = Util::formatBytes(dl->getSize());
 	params["Size Order"] = Util::toString(dl->getSize());
@@ -1394,18 +1385,17 @@ void MainWindow::on(DownloadManagerListener::Failed, Download *dl, const string 
 void MainWindow::on(UploadManagerListener::Starting, Upload *ul) throw()
 {
 	StringMap params;
-	string source = Text::acpToUtf8(ul->getSourceFile());
 	User::Ptr user = ul->getUser();
 
 	if (ul->isSet(Upload::FLAG_USER_LIST))
 		params["Filename"] = "Filelist";
 	else if (ul->isSet(Download::FLAG_TREE_DOWNLOAD))
-		params["Filename"] = "TTH: " + Util::getFileName(source);
+		params["Filename"] = "TTH: " + Util::getFileName(ul->getSourceFile());
 	else
-		params["Filename"] = Util::getFileName(source);
+		params["Filename"] = Util::getFileName(ul->getSourceFile());
 
 	params["CID"] = user->getCID().toBase32();
-	params["Path"] = Util::getFilePath(source);
+	params["Path"] = Util::getFilePath(ul->getSourceFile());
 	params["Status"] = "Upload starting...";
 	params["Size"] = Util::formatBytes(ul->getSize());
 	params["Size Order"] = Util::toString(ul->getSize());

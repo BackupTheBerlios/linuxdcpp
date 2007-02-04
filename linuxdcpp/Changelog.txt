@@ -1,3 +1,24 @@
+2007-02-04 - Steven Sheehy
+* Patch #1802: Fix for Total Item/Size counts not updated in dlqueue (thanks Razzloss).
+* Patch #1804: Allow filelist to be expanded to directories (thanks Mikael Eman).
+* Fixed a couple glade regressions.
+* Fixed "Remove user from queue" regression in hub nicklist.
+* Fixed /commands regression in pm window.
+* Fixed address binding failures in core (thanks Mikael Eman).
+* Fixed scons not checking for dependencies during scons install.
+* Fixed scons from recompiling if scons install is specified but the executable
+  is not up-to-date.
+* Character encoding fixes:
+	* Should finally fix the many character encoding issues once and for all.
+	* Added a per-hub encoding option.
+	* Rewrote core's text handling functions to use iconv. This allows us to
+	  convert between more than just the file system encoding and utf-8.
+	* Changed xml handling code to respect the encoding specified in the file
+	  when loading and to always save as UTF-8 when writing.
+	* Moved default global charset to the personal tab and made it a drop-down
+	  list. Set it to the encoding most common to the hubs you visit.
+	* Many other core changes to ensure UTF-8 is always sent from core <-> gui.
+
 2007-01-04 - Steven Sheehy
 * Fixed "Search by TTH" regression (thanks Mikael Eman).
 * Updated glade xml files to Glade3 (smaller file size, cleaner layout).

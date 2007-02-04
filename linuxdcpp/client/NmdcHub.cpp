@@ -429,7 +429,8 @@ void NmdcHub::onLine(const string& aLine) throw() {
 			return;
 		}
 		string port = param.substr(j+1);
-		ConnectionManager::getInstance()->nmdcConnect(server, (uint16_t)Util::toInt(port), getMyNick(), getHubUrl());
+		// For simplicity, we make the assumption that users on a hub have the same character encoding
+		ConnectionManager::getInstance()->nmdcConnect(server, (uint16_t)Util::toInt(port), getMyNick(), getHubUrl(), getEncoding());
 	} else if(cmd == "$RevConnectToMe") {
 		if(state != STATE_CONNECTED) {
 			return;

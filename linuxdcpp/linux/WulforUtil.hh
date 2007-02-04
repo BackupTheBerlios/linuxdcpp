@@ -36,6 +36,9 @@ class WulforUtil
 		static std::string getHubNames(const CID& cid);
 		static std::string getHubNames(const User::Ptr& user);
 		static std::string getTextFromMenu(GtkMenuItem *item);
+		static std::vector<std::vector<std::string> >& getCharsets();
+	private:
+		static std::vector<std::vector<std::string> > charsets;
 };
 
 #endif

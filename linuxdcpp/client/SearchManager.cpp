@@ -37,9 +37,9 @@ string SearchResult::toSR(const Client& c) const {
 	string tmp;
 	tmp.reserve(128);
 	tmp.append("$SR ", 4);
-	tmp.append(Text::utf8ToAcp(c.getMyNick()));
+	tmp.append(Text::convert(c.getMyNick(), "UTF-8", c.getEncoding()));
 	tmp.append(1, ' ');
-	string acpFile = Text::utf8ToAcp(file);
+	string acpFile = Text::convert(file, "UTF-8", c.getEncoding());
 	if(type == TYPE_FILE) {
 		tmp.append(acpFile);
 		tmp.append(1, '\x05');
@@ -161,7 +161,7 @@ void SearchManager::onData(const uint8_t* buf, size_t aLen, const string& remote
 		if( (j = x.find(' ', i)) == string::npos) {
 			return;
 		}
-		string nick = Text::acpToUtf8(x.substr(i, j-i));
+		string nick = x.substr(i, j-i);
 		i = j + 1;
 
 		// A file has 2 0x05, a directory only one
@@ -186,12 +186,12 @@ void SearchManager::onData(const uint8_t* buf, size_t aLen, const string& remote
 			if(j < i + 1) {
 				return;
 			}
-			file = Text::acpToUtf8(x.substr(i, j-i)) + '\\';
+			file = x.substr(i, j-i) + '\\';
 		} else if(cnt == 2) {
 			if( (j = x.find((char)5, i)) == string::npos) {
 				return;
 			}
-			file = Text::acpToUtf8(x.substr(i, j-i));
+			file = x.substr(i, j-i);
 			i = j + 1;
 			if( (j = x.find(' ', i)) == string::npos) {
 				return;
@@ -213,7 +213,7 @@ void SearchManager::onData(const uint8_t* buf, size_t aLen, const string& remote
 		if( (j = x.rfind(" (")) == string::npos) {
 			return;
 		}
-		string hubName = Text::acpToUtf8(x.substr(i, j-i));
+		string hubName = x.substr(i, j-i);
 		i = j + 2;
 		if( (j = x.rfind(')')) == string::npos) {
 			return;
@@ -221,6 +221,11 @@ void SearchManager::onData(const uint8_t* buf, size_t aLen, const string& remote
 
 		string hubIpPort = x.substr(i, j-i);
 		string url = ClientManager::getInstance()->findHub(hubIpPort);
+
+		string encoding = ClientManager::getInstance()->findHubEncoding(url);
+		nick = Text::convert(nick, encoding, "UTF-8");
+		file = Text::convert(file, encoding, "UTF-8");
+		hubName = Text::convert(hubName, encoding, "UTF-8");
 
 		User::Ptr user = ClientManager::getInstance()->findUser(nick, url);
 		if(!user) {
