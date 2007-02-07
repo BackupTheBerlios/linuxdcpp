@@ -1,3 +1,7 @@
+2007-02-06 - Steven Sheehy
+* Patch #1876: Fix compile on *BSD caused by inconsistent iconv API (thanks Mikael Eman).
+* Patch #1874: Fix dl queue folders from sometimes appearing empty (thanks naga).
+
 2007-02-04 - Steven Sheehy
 * Patch #1802: Fix for Total Item/Size counts not updated in dlqueue (thanks Razzloss).
 * Patch #1804: Allow filelist to be expanded to directories (thanks Mikael Eman).

@@ -1167,7 +1167,7 @@ void DownloadQueue::updateFileView_client(string path)
 
 		for (QueueItem::StringMap::const_iterator it = ll.begin(); it != ll.end(); ++it)
 		{
-			if (it->first->length() >= path.length() && it->first->substr(0, path.length()) == path)
+			if (it->first->length() >= path.length() && it->first->substr(0, it->first->rfind('/') + 1) == path)
 			{
 				StringMap params;
 				getQueueParams_client(it->second, params);

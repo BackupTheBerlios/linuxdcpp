@@ -38,6 +38,22 @@ def CheckCXXVersion(context, name, major, minor):
 	context.Result(retval)
 	return retval
 
+def CheckIconv(context):
+	context.Message('Checking iconv... ')
+	t = """
+#include <iconv.h>
+int main() { size_t r = iconv(0, (%s)0, 0, (char**)0, 0); return 0; }
+"""
+	ret = context.TryCompile(t % 'const char **' , '.cc')
+
+	if ret:
+		env['ICONV_CONST']='const'
+	else:
+		env['ICONV_CONST']=''
+		ret = context.TryCompile(t % 'char **', '.cc')
+
+	context.Result(ret)
+	return ret
 
 # ----------------------------------------------------------------------
 # Command-line options
@@ -69,7 +85,8 @@ conf = Configure(env,
 	{
 		'CheckPKGConfig' : CheckPKGConfig,
 		'CheckPKG' : CheckPKG,
-		'CheckCXXVersion' : CheckCXXVersion
+		'CheckCXXVersion' : CheckCXXVersion,
+		'CheckIconv' : CheckIconv
 	},
 	conf_dir = 'build/sconf',
 	log_file = 'build/sconf/config.log')
@@ -150,6 +167,11 @@ if not 'install' in COMMAND_LINE_TARGETS:
 		print '\tNote: You might have the lib but not the headers'
 		Exit(1)
 
+	if not conf.CheckIconv():
+		print '\tEither unable to find iconv.h or'
+		print '\tcould not determine if iconv() uses const or not'
+		Exit(1)
+
 	env = conf.Finish()
 
 
@@ -159,6 +181,9 @@ if not 'install' in COMMAND_LINE_TARGETS:
 
 	env.Append(CXXFLAGS = Split('-I. -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64'))
 	env.Append(LINKFLAGS = ['-Wl,--as-needed'])
+
+	if env.has_key('ICONV_CONST') and env['ICONV_CONST']:
+		env.Append(CXXFLAGS = '-DICONV_CONST=' + env['ICONV_CONST'])
 
 	if env.has_key('debug') and env['debug']:
 		env.Append(CXXFLAGS = Split('-g -ggdb -D_DEBUG -Wall'))

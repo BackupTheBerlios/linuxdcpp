@@ -24,6 +24,11 @@
 #ifndef _WIN32
 #include <errno.h>
 #include <iconv.h>
+
+#ifndef ICONV_CONST
+ #define ICONV_CONST
+#endif
+
 #endif
 
 string Text::systemCharset;
@@ -309,7 +314,7 @@ string& Text::convert(const string& str, string& tmp, const string& fromCharset,
 	char *outbuf = (char *)tmp.data();
 
 	while(inleft > 0) {
-		rv = iconv(cd, (char **)&inbuf, &inleft, &outbuf, &outleft);
+		rv = iconv(cd, (ICONV_CONST char **)&inbuf, &inleft, &outbuf, &outleft);
 		if(rv == (size_t)-1) {
 			size_t used = outbuf - tmp.data();
 			if(errno == E2BIG) {
