@@ -214,7 +214,7 @@ File::File(const string& aFileName, int access, int mode) throw(FileException) {
 		m |= O_TRUNC;
 	}
 
-	string filename = Text::utf8ToAcp(aFileName);
+	string filename = Text::fromUtf8(aFileName);
 
 	struct stat s;
 	if(lstat(filename.c_str(), &s) != -1) {
@@ -336,7 +336,7 @@ size_t File::flush() throw(FileException) {
  * work across different mount points, even if the same filesystem is mounted on both.)
 */
 void File::renameFile(const string& source, const string& target) throw(FileException) {
-	int ret = ::rename(Text::utf8ToAcp(source).c_str(), Text::utf8ToAcp(target).c_str());
+	int ret = ::rename(Text::fromUtf8(source).c_str(), Text::fromUtf8(target).c_str());
 	if(ret != 0 && errno == EXDEV) {
 		copyFile(source.c_str(), target.c_str());
 		deleteFile(source.c_str());
@@ -364,19 +364,19 @@ void File::copyFile(const string& source, const string& target) throw(FileExcept
 }
 
 void File::deleteFile(const string& aFileName) throw() {
-	::unlink(Text::utf8ToAcp(aFileName).c_str());
+	::unlink(Text::fromUtf8(aFileName).c_str());
 }
 
 int64_t File::getSize(const string& aFileName) throw() {
 	struct stat s;
-	if(stat(Text::utf8ToAcp(aFileName).c_str(), &s) == -1)
+	if(stat(Text::fromUtf8(aFileName).c_str(), &s) == -1)
 		return -1;
 
 	return s.st_size;
 }
 
 void File::ensureDirectory(const string& aFile) throw() {
-	string file = Text::utf8ToAcp(aFile);
+	string file = Text::fromUtf8(aFile);
 	string::size_type start = 0;
 	while( (start = file.find_first_of('/', start)) != string::npos) {
 		mkdir(file.substr(0, start+1).c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
@@ -422,11 +422,11 @@ StringList File::findFiles(const string& path, const string& pattern) {
 		::FindClose(hFind);
 	}
 #else
-	DIR* dir = opendir(Text::utf8ToAcp(Util::getConfigPath()).c_str());
+	DIR* dir = opendir(Text::fromUtf8(Util::getConfigPath()).c_str());
 	if (dir) {
 		while (struct dirent* ent = readdir(dir)) {
 			if (fnmatch(pattern.c_str(), ent->d_name, 0) == 0) {
-				ret.push_back(path + Text::acpToUtf8(ent->d_name));
+				ret.push_back(path + Text::toUtf8(ent->d_name));
 			}
 		}
 		closedir(dir);

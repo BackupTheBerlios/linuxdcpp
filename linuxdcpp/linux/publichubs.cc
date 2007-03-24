@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -167,8 +167,8 @@ void PublicHubs::updateList_gui()
 
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(hubStore), sortColumn, sortType);
 
-	setStatus_gui("statusHubs", "Hubs: " + Util::toString(numHubs));
-	setStatus_gui("statusUsers", "Users: " + Util::toString(numUsers));
+	setStatus_gui("statusHubs", _("Hubs: ") + Util::toString(numHubs));
+	setStatus_gui("statusUsers", _("Users: ") + Util::toString(numUsers));
 }
 
 void PublicHubs::setStatus_gui(string statusBar, string text)
@@ -337,7 +337,7 @@ void PublicHubs::onAdd_gui(GtkWidget *widget, gpointer data)
 	GtkTreeViewColumn *col;
 
 	gtk_list_store_append(ph->listsStore, &iter);
-	gtk_list_store_set(ph->listsStore, &iter, ph->listsView.col("List"), "New list", -1);
+	gtk_list_store_set(ph->listsStore, &iter, ph->listsView.col("List"), _("New list"), -1);
 	path = gtk_tree_model_get_path(GTK_TREE_MODEL(ph->listsStore), &iter);
 	col = gtk_tree_view_get_column(ph->listsView.get(), 0);
 	gtk_tree_view_set_cursor(ph->listsView.get(), path, col, TRUE);
@@ -403,7 +403,7 @@ void PublicHubs::addFav_client(FavoriteHubEntry entry)
 
 void PublicHubs::on(FavoriteManagerListener::DownloadStarting, const string &file) throw()
 {
-	string msg = "Download starting: " + file;
+	string msg = _("Download starting: ") + file;
 	typedef Func2<PublicHubs, string, string> Func;
 	Func *func = new Func(this, &PublicHubs::setStatus_gui, "statusMain", msg);
 	WulforManager::get()->dispatchGuiFunc(func);
@@ -411,7 +411,7 @@ void PublicHubs::on(FavoriteManagerListener::DownloadStarting, const string &fil
 
 void PublicHubs::on(FavoriteManagerListener::DownloadFailed, const string &file) throw()
 {
-	string msg = "Download failed: " + file;
+	string msg = _("Download failed: ") + file;
 	typedef Func2<PublicHubs, string, string> Func;
 	Func *func = new Func(this, &PublicHubs::setStatus_gui, "statusMain", msg);
 	WulforManager::get()->dispatchGuiFunc(func);
@@ -419,7 +419,7 @@ void PublicHubs::on(FavoriteManagerListener::DownloadFailed, const string &file)
 
 void PublicHubs::on(FavoriteManagerListener::DownloadFinished, const string &file) throw()
 {
-	string msg = "Download finished: " + file;
+	string msg = _("Download finished: ") + file;
 	typedef Func2<PublicHubs, string, string> Func;
 	Func *f2 = new Func(this, &PublicHubs::setStatus_gui, "statusMain", msg);
 	WulforManager::get()->dispatchGuiFunc(f2);

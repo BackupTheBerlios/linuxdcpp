@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -99,7 +99,7 @@ class Settings:
 		void generateCertificates_client();
 
 		GtkComboBox *connectionSpeedComboBox;
-		GtkListStore *charsetStore, *downloadToStore, *publicListStore, *queueStore,
+		GtkListStore *downloadToStore, *publicListStore, *queueStore,
 			*shareStore, *appearanceStore, *colorStore, *windowStore1,
 			*windowStore2, *windowStore3, *advancedStore, *certificatesStore;
 		TreeView downloadToView, publicListView, queueView, shareView,

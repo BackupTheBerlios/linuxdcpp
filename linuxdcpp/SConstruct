@@ -38,22 +38,6 @@ def CheckCXXVersion(context, name, major, minor):
 	context.Result(retval)
 	return retval
 
-def CheckIconv(context):
-	context.Message('Checking iconv... ')
-	t = """
-#include <iconv.h>
-int main() { size_t r = iconv(0, (%s)0, 0, (char**)0, 0); return 0; }
-"""
-	ret = context.TryCompile(t % 'const char **' , '.cc')
-
-	if ret:
-		env['ICONV_CONST']='const'
-	else:
-		env['ICONV_CONST']=''
-		ret = context.TryCompile(t % 'char **', '.cc')
-
-	context.Result(ret)
-	return ret
 
 # ----------------------------------------------------------------------
 # Command-line options
@@ -85,8 +69,7 @@ conf = Configure(env,
 	{
 		'CheckPKGConfig' : CheckPKGConfig,
 		'CheckPKG' : CheckPKG,
-		'CheckCXXVersion' : CheckCXXVersion,
-		'CheckIconv' : CheckIconv
+		'CheckCXXVersion' : CheckCXXVersion
 	},
 	conf_dir = 'build/sconf',
 	log_file = 'build/sconf/config.log')
@@ -136,15 +119,12 @@ if not 'install' in COMMAND_LINE_TARGETS:
 		Exit(1)
 
 	if not conf.CheckHeader('time.h'):
-		print '\tHeader file time.h not found'
 		Exit(1)
 
 	if not conf.CheckHeader('signal.h'):
-		print '\tHeader file signal.h not found'
 		Exit(1)
 
 	if not conf.CheckHeader('unistd.h'):
-		print '\tHeader file unistd.h not found'
 		Exit(1)
 
 	if not conf.CheckLibWithHeader('pthread', 'pthread.h', 'c'):
@@ -167,10 +147,10 @@ if not 'install' in COMMAND_LINE_TARGETS:
 		print '\tNote: You might have the lib but not the headers'
 		Exit(1)
 
-	if not conf.CheckIconv():
-		print '\tEither unable to find iconv.h or'
-		print '\tcould not determine if iconv() uses const or not'
+	if not conf.CheckHeader('iconv.h'):
 		Exit(1)
+	elif conf.CheckLibWithHeader('iconv', 'iconv.h', 'c', 'iconv(0, (const char **)0, 0, (char**)0, 0);'):
+		conf.env['ICONV_CONST'] = 'const'
 
 	env = conf.Finish()
 

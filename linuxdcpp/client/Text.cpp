@@ -20,6 +20,7 @@
 #include "DCPlusPlus.h"
 
 #include "Text.h"
+#include "Util.h"
 
 #ifndef _WIN32
 #include <errno.h>
@@ -32,6 +33,7 @@
 #endif
 
 string Text::systemCharset;
+const string Text::utf8 = "UTF-8"; // optimization
 
 void Text::initialize() {
 	setlocale(LC_ALL, "");
@@ -280,30 +282,45 @@ string& Text::toLower(const string& str, string& tmp) throw() {
 	return tmp;
 }
 
-string& Text::convert(const string& str, string& tmp, const string& fromCharset, const string& toCharset) throw() {
-	const string& from = toLower(fromCharset);
-	const string& to = toLower(toCharset);
-
-	if(str.empty() || from == to)
-		return tmp = str;
-	if(to == "utf-8" && (fromCharset.empty() || fromCharset == systemCharset))
-		return acpToUtf8(str, tmp);
-	if(from == "utf-8" && (toCharset.empty() || toCharset == systemCharset))
-		return utf8ToAcp(str, tmp);
+string Text::toUtf8(const string& str, const string& charset) throw() {
+	string tmp;
 
 #ifdef _WIN32
+	return acpToUtf8(str, tmp);
+#else
+	return convert(str, tmp, charset, utf8);
+#endif
+}
 
-	// Windows DC++ assumes everything is either utf-8 or acp
-	if(to == "utf-8")
+string Text::fromUtf8(const string& str, const string& charset) throw() {
+	string tmp;
+
+#ifdef _WIN32
+	return utf8ToAcp(str, tmp);
+#else
+	return convert(str, tmp, utf8, charset);
+#endif
+}
+
+const string& Text::convert(const string& str, string& tmp, const string& fromCharset, const string& toCharset) throw() {
+	if(str.empty() || Util::stricmp(fromCharset, toCharset) == 0)
+		return str;
+
+#ifdef _WIN32
+	if(toCharset == utf8 || toLower(toCharset) == "utf-8")
 		return acpToUtf8(str, tmp);
-	else
+	if(fromCharset == utf8 || toLower(fromCharset) == "utf-8")
 		return utf8ToAcp(str, tmp);
+
+	// We don't know how to convert arbitrary charsets
+	dcdebug("Unknown conversion from %s to %s\n", fromCharset.c_str(), toCharset.c_str());
+	return str;
 #else
 
 	// Initialize the converter
 	iconv_t cd = iconv_open(toCharset.c_str(), fromCharset.c_str());
 	if(cd == (iconv_t)-1)
-		return tmp = str;
+		return str;
 
 	size_t rv;
 	size_t len = str.length() * 2; // optimization

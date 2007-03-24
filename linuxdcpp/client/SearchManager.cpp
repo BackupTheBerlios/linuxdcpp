@@ -37,9 +37,9 @@ string SearchResult::toSR(const Client& c) const {
 	string tmp;
 	tmp.reserve(128);
 	tmp.append("$SR ", 4);
-	tmp.append(Text::convert(c.getMyNick(), "UTF-8", c.getEncoding()));
+	tmp.append(Text::fromUtf8(c.getMyNick(), c.getEncoding()));
 	tmp.append(1, ' ');
-	string acpFile = Text::convert(file, "UTF-8", c.getEncoding());
+	string acpFile = Text::fromUtf8(file, c.getEncoding());
 	if(type == TYPE_FILE) {
 		tmp.append(acpFile);
 		tmp.append(1, '\x05');
@@ -223,9 +223,9 @@ void SearchManager::onData(const uint8_t* buf, size_t aLen, const string& remote
 		string url = ClientManager::getInstance()->findHub(hubIpPort);
 
 		string encoding = ClientManager::getInstance()->findHubEncoding(url);
-		nick = Text::convert(nick, encoding, "UTF-8");
-		file = Text::convert(file, encoding, "UTF-8");
-		hubName = Text::convert(hubName, encoding, "UTF-8");
+		nick = Text::toUtf8(nick, encoding);
+		file = Text::toUtf8(file, encoding);
+		hubName = Text::toUtf8(hubName, encoding);
 
 		User::Ptr user = ClientManager::getInstance()->findUser(nick, url);
 		if(!user) {

@@ -709,6 +709,7 @@
     </child>
   </widget>
   <widget class="GtkAboutDialog" id="aboutDialog">
+    <property name="name" translatable="no">LinuxDC++</property>
     <property name="copyright" translatable="yes">Copyright © 2004-2006 Jens Oknelid</property>
     <property name="comments" translatable="yes">A DC++ port for Linux
 

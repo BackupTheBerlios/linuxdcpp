@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,11 @@
 using namespace std;
 
 int DialogEntry::responseID = GTK_RESPONSE_NONE;
+
+DialogEntry::~DialogEntry()
+{
+	gtk_widget_destroy(getContainer());
+}
 
 GtkWidget* DialogEntry::getContainer()
 {

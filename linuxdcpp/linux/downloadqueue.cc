@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -206,7 +206,7 @@ void DownloadQueue::buildDynamicMenu_gui()
 
 void DownloadQueue::setStatus_gui(string text, string statusItem)
 {
-	if (!text.empty())
+	if (!text.empty() && !statusItem.empty())
 	{
 		if (statusItem == "statusMain")
 			text = "[" + Util::getShortTimeString() + "] " + text;
@@ -218,17 +218,20 @@ void DownloadQueue::setStatus_gui(string text, string statusItem)
 
 void DownloadQueue::updateStatus_gui()
 {
-	setStatus_gui("Items: " + Util::toString(currentItems), "statusItems");
-	setStatus_gui("Size: " + Util::formatBytes(currentSize), "statusFileSize");
-	setStatus_gui("Files: " + Util::toString(totalItems), "statusFiles");
-	setStatus_gui("Size: " + Util::formatBytes(totalSize), "statusTotalSize");
+	setStatus_gui(_("Items: ") + Util::toString(currentItems), "statusItems");
+	setStatus_gui(_("Size: ") + Util::formatBytes(currentSize), "statusFileSize");
+	setStatus_gui(_("Files: ") + Util::toString(totalItems), "statusFiles");
+	setStatus_gui(_("Size: ") + Util::formatBytes(totalSize), "statusTotalSize");
 }
 
-void DownloadQueue::addFiles_gui(vector<StringMap> files)
+void DownloadQueue::addFiles_gui(vector<StringMap> files, bool firstUpdate)
 {
 	if (files.size() > 0 && currentDir == files[0]["Path"] &&
 	    gtk_tree_selection_get_selected(dirSelection, NULL, NULL))
 	{
+		if (firstUpdate)
+			gtk_list_store_clear(fileStore);
+
 		gint sortColumn;
 		GtkSortType sortType;
 		gtk_tree_sortable_get_sort_column_id(GTK_TREE_SORTABLE(fileStore), &sortColumn, &sortType);
@@ -1177,8 +1180,8 @@ void DownloadQueue::updateFileView_client(string path)
 		QueueManager::getInstance()->unlockQueue();
 
 		// Updating gui is smoother if we do it in large chunks.
-		typedef Func1<DownloadQueue, vector<StringMap> > F1;
-		F1 *func = new F1(this, &DownloadQueue::addFiles_gui, files);
+		typedef Func2<DownloadQueue, vector<StringMap>, bool> F2;
+		F2 *func = new F2(this, &DownloadQueue::addFiles_gui, files, TRUE);
 		WulforManager::get()->dispatchGuiFunc(func);
 	}
 }
@@ -1207,21 +1210,21 @@ void DownloadQueue::getQueueParams_client(QueueItem *item, StringMap &params)
 		params["Users"] += nick;
 	}
 	if (params["Users"].empty())
-		params["Users"] = "No users";
+		params["Users"] = _("No users");
 	sources[item->getTarget()] = source;
 
 	// Status
 	if (item->getStatus() == QueueItem::STATUS_WAITING)
-		params["Status"] = Util::toString(online) + " of " + Util::toString(item->getSources().size()) + " user(s) online";
+		params["Status"] = Util::toString(online) + _(" of ") + Util::toString(item->getSources().size()) + _(" user(s) online");
 	else if (item->getStatus() == QueueItem::STATUS_RUNNING)
-		params["Status"] = "Running...";
+		params["Status"] = _("Running...");
 
 	// Size
 	params["Size Sort"] = Util::toString(item->getSize());
 	if (item->getSize() < 0)
 	{
-		params["Size"] = "Unknown";
-		params["Exact Size"] = "Unknown";
+		params["Size"] = _("Unknown");
+		params["Exact Size"] = _("Unknown");
 	}
 	else
 	{
@@ -1245,22 +1248,22 @@ void DownloadQueue::getQueueParams_client(QueueItem *item, StringMap &params)
 	switch (item->getPriority())
 	{
 		case QueueItem::PAUSED:
-			params["Priority"] = "Paused";
+			params["Priority"] = _("Paused");
 			break;
 		case QueueItem::LOWEST:
-			params["Priority"] = "Lowest";
+			params["Priority"] = _("Lowest");
 			break;
 		case QueueItem::LOW:
-			params["Priority"] = "Low";
+			params["Priority"] = _("Low");
 			break;
 		case QueueItem::HIGH:
-			params["Priority"] = "High";
+			params["Priority"] = _("High");
 			break;
 		case QueueItem::HIGHEST:
-			params["Priority"] = "Highest";
+			params["Priority"] = _("Highest");
 			break;
 		default:
-			params["Priority"] = "Normal";
+			params["Priority"] = _("Normal");
 	}
 
 	// Error
@@ -1294,7 +1297,7 @@ void DownloadQueue::getQueueParams_client(QueueItem *item, StringMap &params)
 		}
 	}
 	if (params["Errors"].empty())
-		params["Errors"] = "No errors";
+		params["Errors"] = _("No errors");
 	badSources[item->getTarget()] = source;
 
 	// Added

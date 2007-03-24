@@ -92,7 +92,7 @@ void Util::initialize() {
 #else
 	systemPath = "/etc/";
 	char* home = getenv("HOME");
-	configPath = home ? Text::acpToUtf8(home) + "/.dc++/" : "/tmp/";
+	configPath = home ? Text::toUtf8(home) + "/.dc++/" : "/tmp/";
 	dataPath = configPath; // dataPath in linux is usually prefix + /share/app_name, so we can't represent it here
 #endif
 
@@ -277,7 +277,7 @@ string Util::getShortTimeString(time_t t) {
 	} else {
 		strftime(buf, 254, SETTING(TIME_STAMPS_FORMAT).c_str(), _tm);
 	}
-	return Text::acpToUtf8(buf);
+	return Text::toUtf8(buf);
 }
 
 /**
@@ -716,7 +716,7 @@ string Util::formatTime(const string &msg, const time_t t) {
 			buf = new char[bufsize];
 		}
 
-		return Text::acpToUtf8(string(buf));
+		return Text::toUtf8(string(buf));
 #endif
 	}
 	return Util::emptyString;
@@ -848,10 +848,9 @@ string Util::getOsVersion() {
 
 	if(uname(&n) != 0) {
 		os = "unix (unknown version)";
+	} else {
+		os = Text::toUtf8(string(n.sysname) + " " + n.release + " (" + n.machine + ")");
 	}
-
-	os = Text::acpToUtf8(string(n.sysname) + " " + n.release + " (" + n.machine + ")");
-
 #endif // _WIN32
 
 	return os;

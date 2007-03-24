@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,9 +36,10 @@ class WulforUtil
 		static std::string getHubNames(const CID& cid);
 		static std::string getHubNames(const User::Ptr& user);
 		static std::string getTextFromMenu(GtkMenuItem *item);
-		static std::vector<std::vector<std::string> >& getCharsets();
+		static std::vector<std::string>& getCharsets();
+		static void openURI(const std::string &uri);
 	private:
-		static std::vector<std::vector<std::string> > charsets;
+		static std::vector<std::string> charsets;
 };
 
 #endif

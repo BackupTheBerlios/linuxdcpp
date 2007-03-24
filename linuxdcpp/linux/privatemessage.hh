@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ class PrivateMessage:
 {
 	public:
 		PrivateMessage(User::Ptr user);
-		~PrivateMessage() {}
+		~PrivateMessage();
 
 		// GUI functions
 		void addMessage_gui(std::string message);
@@ -52,6 +52,7 @@ class PrivateMessage:
 		User::Ptr user;
 		std::vector<std::string> history;
 		int historyIndex;
+		bool sentAwayMessage;
 		static const int maxLines = 500; ///@todo: make these preferences
 		static const int maxHistory = 20;
 };

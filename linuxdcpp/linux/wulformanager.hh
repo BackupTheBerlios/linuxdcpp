@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ class WulforManager
 		BookEntry *addSearch_gui();
 		BookEntry *addShareBrowser_gui(User::Ptr user, const std::string &file, const std::string &dir, bool raise = TRUE);
 		BookEntry *addFinishedTransfers_gui(const std::string &title);
-		void deleteBookEntry_gui(BookEntry *entry);
+		void deleteEntry_gui(Entry *entry);
 
 		// DialogEntry functions
 		int openHashDialog_gui();
@@ -62,18 +62,13 @@ class WulforManager
 	private:
 		// MainWindow-related functions
 		void createMainWindow();
-		void deleteMainWindow();
 
-		// BookEntry functions
-		BookEntry *getBookEntry_gui(const std::string &id, bool raise = TRUE);
+		// Entry functions
 		void insertBookEntry_gui(BookEntry *entry, bool raise = TRUE);
-		void deleteAllBookEntries();
-
-		// DialogEntry functions
-		DialogEntry *getDialogEntry_gui(const std::string &id);
 		void insertDialogEntry_gui(DialogEntry *entry);
-		void deleteDialogEntry_gui(DialogEntry *entry);
-		void deleteAllDialogEntries();
+		BookEntry *getBookEntry_gui(const std::string &id, bool raise = TRUE);
+		DialogEntry *getDialogEntry_gui(const std::string &id);
+		void deleteAllEntries();
 
 		// Thread-related functions
 		static void *threadFunc_gui(void *data);
@@ -91,12 +86,11 @@ class WulforManager
 		std::string path;
 		std::vector<FuncBase *> guiFuncs;
 		std::vector<FuncBase *> clientFuncs;
-		hash_map<std::string, BookEntry *> bookEntries;
-		hash_map<std::string, DialogEntry *> dialogEntries;
+		hash_map<std::string, Entry *> entries;
 		pthread_mutex_t clientCallLock;
-		pthread_mutex_t guiQueueLock, clientQueueLock;
-		pthread_mutex_t bookEntryLock;
-		pthread_mutex_t dialogEntryLock;
+		pthread_rwlock_t guiQueueLock;
+		pthread_rwlock_t clientQueueLock;
+		pthread_rwlock_t entryLock;
 		sem_t guiSem, clientSem;
 		pthread_t guiThread, clientThread;
 };

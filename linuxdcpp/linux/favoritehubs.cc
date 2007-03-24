@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,14 +27,11 @@ FavoriteHubs::FavoriteHubs():
 	// Configure the dialogs
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("deleteFavoriteDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("favoriteHubsDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-	charsetStore = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
-	gtk_combo_box_set_model(GTK_COMBO_BOX(getWidget("comboboxEncoding")), GTK_TREE_MODEL(charsetStore));
-	g_object_unref(charsetStore);
 
-	GtkTreeIter iter;
-	vector<vector<string> > charsets = WulforUtil::getCharsets();
-	for (size_t i = 0; i < charsets.size(); i++)
-		gtk_list_store_insert_with_values(charsetStore, &iter, i, 0, charsets[i][0].c_str(), 1, charsets[i][1].c_str(), -1);
+	// Fill the charset drop-down list in edit fav hub dialog.
+	vector<string> &charsets = WulforUtil::getCharsets();
+	for (vector<string>::const_iterator it = charsets.begin(); it != charsets.end(); ++it)
+		gtk_combo_box_append_text(GTK_COMBO_BOX(getWidget("comboboxCharset")), it->c_str());
 
 	// Initialize favorite hub list treeview
 	GtkTreeView *view = GTK_TREE_VIEW(getWidget("favoriteView"));
@@ -98,14 +95,6 @@ void FavoriteHubs::addEntry_gui(StringMap params)
 
 void FavoriteHubs::editEntry_gui(StringMap &params, GtkTreeIter *iter)
 {
-	if (params.find("Hidden Password") != params.end())
-	{
-		if (!params["Hidden Password"].empty())
-			params["Password"] = string(8, '*');
-		else
-			params["Password"].clear();
-	}
-
 	gtk_list_store_set(favoriteStore, iter,
 		favoriteView.col("Auto Connect"), Util::toInt(params["Auto Connect"]),
 		favoriteView.col("Name"), params["Name"].c_str(),
@@ -115,7 +104,7 @@ void FavoriteHubs::editEntry_gui(StringMap &params, GtkTreeIter *iter)
 		favoriteView.col("Hidden Password"), params["Hidden Password"].c_str(),
 		favoriteView.col("Address"), params["Address"].c_str(),
 		favoriteView.col("User Description"), params["User Description"].c_str(),
-		favoriteView.col("Encoding"), params["Encoding"].empty() ? WGETS("default-charset").c_str() : params["Encoding"].c_str(),
+		favoriteView.col("Encoding"), params["Encoding"].c_str(),
 		-1);
 }
 
@@ -243,24 +232,8 @@ void FavoriteHubs::onAddEntry_gui(GtkWidget *widget, gpointer data)
 	gtk_entry_set_text(GTK_ENTRY(fh->getWidget("entryDescription")), "");
 	gtk_entry_set_text(GTK_ENTRY(fh->getWidget("entryNick")), "");
 	gtk_entry_set_text(GTK_ENTRY(fh->getWidget("entryPassword")), "");
-	gtk_entry_set_text(GTK_ENTRY(fh->getWidget("entryUDescription")), "");	
-
-	gchar *encoding;
-	GtkTreeIter iter;
-	GtkTreeModel *m = GTK_TREE_MODEL(fh->charsetStore);
-	bool valid = gtk_tree_model_get_iter_first(m, &iter);
-	while (valid)
-	{
-		gtk_tree_model_get(m, &iter, 1, &encoding, -1);
-		if (string(encoding) == WGETS("default-charset"))
-		{
-			gtk_combo_box_set_active_iter(GTK_COMBO_BOX(fh->getWidget("comboboxEncoding")), &iter);
-			g_free(encoding);
-			break;
-		}
-		g_free(encoding);
-		valid = gtk_tree_model_iter_next(m, &iter);
-	}
+	gtk_entry_set_text(GTK_ENTRY(fh->getWidget("entryUDescription")), "");
+	gtk_entry_set_text(GTK_ENTRY(fh->getWidget("comboboxentryCharset")), WGETS("default-charset").c_str());
 
 	int response = gtk_dialog_run(GTK_DIALOG(fh->getWidget("favoriteHubsDialog")));
 	gtk_widget_hide(fh->getWidget("favoriteHubsDialog"));
@@ -274,18 +247,14 @@ void FavoriteHubs::onAddEntry_gui(GtkWidget *widget, gpointer data)
 		params["Nick"] = gtk_entry_get_text(GTK_ENTRY(fh->getWidget("entryNick")));
 		params["Hidden Password"] = gtk_entry_get_text(GTK_ENTRY(fh->getWidget("entryPassword")));
 		params["User Description"] = gtk_entry_get_text(GTK_ENTRY(fh->getWidget("entryUDescription")));
-		if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(fh->getWidget("comboboxEncoding")), &iter))
-		{
-			gtk_tree_model_get(m, &iter, 1, &encoding, -1);
-			params["Encoding"] = string(encoding);
-			g_free(encoding);
-		}
-		else
-			params["Encoding"] = WGETS("default-charset");
+
+		gchar *encoding = gtk_combo_box_get_active_text(GTK_COMBO_BOX(fh->getWidget("comboboxCharset")));
+		params["Encoding"] = string(encoding);
+		g_free(encoding);
 
 		if (params["Name"].empty() || params["Address"].empty())
 		{
-			fh->showErrorDialog_gui("The name and address fields are required");
+			fh->showErrorDialog_gui(_("The name and address fields are required"));
 		}
 		else
 		{
@@ -319,23 +288,7 @@ void FavoriteHubs::onEditEntry_gui(GtkWidget *widget, gpointer data)
 	gtk_entry_set_text(GTK_ENTRY(fh->getWidget("entryNick")), params["Nick"].c_str());
 	gtk_entry_set_text(GTK_ENTRY(fh->getWidget("entryPassword")), params["Hidden Password"].c_str());
 	gtk_entry_set_text(GTK_ENTRY(fh->getWidget("entryUDescription")), params["User Description"].c_str());
-
-	gchar *encoding;
-	GtkTreeIter encodingIter;
-	GtkTreeModel *m = GTK_TREE_MODEL(fh->charsetStore);
-	bool valid = gtk_tree_model_get_iter_first(m, &encodingIter);
-	while (valid)
-	{
-		gtk_tree_model_get(m, &encodingIter, 1, &encoding, -1);
-		if (string(encoding) == params["Encoding"])
-		{
-			gtk_combo_box_set_active_iter(GTK_COMBO_BOX(fh->getWidget("comboboxEncoding")), &encodingIter);
-			g_free(encoding);
-			break;
-		}
-		g_free(encoding);
-		valid = gtk_tree_model_iter_next(m, &encodingIter);
-	}
+	gtk_entry_set_text(GTK_ENTRY(fh->getWidget("comboboxentryCharset")), params["Encoding"].c_str());
 
 	int response = gtk_dialog_run(GTK_DIALOG(fh->getWidget("favoriteHubsDialog")));
 	gtk_widget_hide(fh->getWidget("favoriteHubsDialog"));
@@ -349,18 +302,14 @@ void FavoriteHubs::onEditEntry_gui(GtkWidget *widget, gpointer data)
 		params["Nick"] = gtk_entry_get_text(GTK_ENTRY(fh->getWidget("entryNick")));
 		params["Hidden Password"] = gtk_entry_get_text(GTK_ENTRY(fh->getWidget("entryPassword")));
 		params["User Description"] = gtk_entry_get_text(GTK_ENTRY(fh->getWidget("entryUDescription")));
-		if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(fh->getWidget("comboboxEncoding")), &encodingIter))
-		{
-			gtk_tree_model_get(m, &encodingIter, 1, &encoding, -1);
-			params["Encoding"] = string(encoding);
-			g_free(encoding);
-		}
-		else
-			params["Encoding"] = WGETS("default-charset");
+
+		gchar *encoding = gtk_combo_box_get_active_text(GTK_COMBO_BOX(fh->getWidget("comboboxCharset")));
+		params["Encoding"] = string(encoding);
+		g_free(encoding);
 
 		if (params["Name"].empty() || params["Address"].empty())
 		{
-			fh->showErrorDialog_gui("The name and address fields are required");
+			fh->showErrorDialog_gui(_("The name and address fields are required"));
 		}
 		else
 		{
@@ -459,7 +408,7 @@ void FavoriteHubs::getFavHubParams_client(const FavoriteHubEntry *entry, StringM
 	params["Hidden Password"] = entry->getPassword();
 	params["Address"] = entry->getServer();
 	params["User Description"] = entry->getUserDescription();
-	params["Encoding"] = entry->getEncoding();
+	params["Encoding"] = entry->getEncoding().empty() ? WGETS("default-charset") : entry->getEncoding();
 }
 
 void FavoriteHubs::addEntry_client(StringMap params)

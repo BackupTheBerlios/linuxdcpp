@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -71,15 +71,10 @@ void Settings::saveSettings()
 		sm->set(SettingsManager::EMAIL, gtk_entry_get_text(GTK_ENTRY(getWidget("emailEntry"))));
 		sm->set(SettingsManager::DESCRIPTION, gtk_entry_get_text(GTK_ENTRY(getWidget("descriptionEntry"))));
 		sm->set(SettingsManager::UPLOAD_SPEED, SettingsManager::connectionSpeeds[gtk_combo_box_get_active(connectionSpeedComboBox)]);
-		if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(getWidget("comboboxCharset")), &iter))
-		{
-			gchar *encoding;
-			gtk_tree_model_get(GTK_TREE_MODEL(charsetStore), &iter, 1, &encoding, -1);
-			WSET("default-charset", string(encoding));
-			g_free(encoding);
-		}
-		else
-			WSET("default-charset", "System Default");
+
+		gchar *encoding = gtk_combo_box_get_active_text(GTK_COMBO_BOX(getWidget("comboboxCharset")));
+		WSET("default-charset", string(encoding));
+		g_free(encoding);
 	}
 
 	{ // Connection
@@ -338,32 +333,12 @@ void Settings::initPersonal_gui()
 			gtk_combo_box_set_active(connectionSpeedComboBox, i - SettingsManager::connectionSpeeds.begin());
 	}
 
-	charsetStore = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
-	GtkTreeModel *m = GTK_TREE_MODEL(charsetStore);
-	gtk_combo_box_set_model(GTK_COMBO_BOX(getWidget("comboboxCharset")), m);
-	g_object_unref(charsetStore);
+	// Fill charset drop-down list
+	vector<string> &charsets = WulforUtil::getCharsets();
+	for (vector<string>::const_iterator it = charsets.begin(); it != charsets.end(); ++it)
+		gtk_combo_box_append_text(GTK_COMBO_BOX(getWidget("comboboxCharset")), it->c_str());
 
-	GtkTreeIter iter;
-	vector<vector<string> > charsets = WulforUtil::getCharsets();
-	for (size_t i = 0; i < charsets.size(); i++)
-		gtk_list_store_insert_with_values(charsetStore, &iter, i, 0, charsets[i][0].c_str(), 1, charsets[i][1].c_str(), -1);
-
-	// Set charset to previously specified value.
-	gtk_combo_box_set_active(GTK_COMBO_BOX(getWidget("comboboxCharset")), 0);
-	gchar *encoding;
-	bool valid = gtk_tree_model_get_iter_first(m, &iter);
-	while (valid)
-	{
-		gtk_tree_model_get(m, &iter, 1, &encoding, -1);
-		if (string(encoding) == WGETS("default-charset"))
-		{
-			gtk_combo_box_set_active_iter(GTK_COMBO_BOX(getWidget("comboboxCharset")), &iter);
-			g_free(encoding);
-			break;
-		}
-		g_free(encoding);
-		valid = gtk_tree_model_iter_next(m, &iter);
-	}
+	gtk_entry_set_text(GTK_ENTRY(getWidget("comboboxentryCharset")), WGETS("default-charset").c_str());
 }
 
 void Settings::initConnection_gui()
@@ -504,17 +479,17 @@ void Settings::initDownloads_gui()
 		g_signal_connect(renderer, "toggled", G_CALLBACK(onQueueToggledClicked_gui), (gpointer)this);
 		g_list_free(list);
 
-		addOption_gui(queueStore, "Set lowest priority for newly added files larger than low priority size", SettingsManager::PRIO_LOWEST);
-		addOption_gui(queueStore, "Auto-drop slow sources for all queue items (except filelists)", SettingsManager::AUTODROP_ALL);
-		addOption_gui(queueStore, "Remove slow filelists", SettingsManager::AUTODROP_FILELISTS);
-		addOption_gui(queueStore, "Don't remove the source when auto-dropping, only disconnect", SettingsManager::AUTODROP_DISCONNECT);
-		addOption_gui(queueStore, "Automatically search for alternative download locations", SettingsManager::AUTO_SEARCH);
-		addOption_gui(queueStore, "Automatically match queue for auto search hits", SettingsManager::AUTO_SEARCH_AUTO_MATCH);
-		addOption_gui(queueStore, "Skip zero-byte files", SettingsManager::SKIP_ZERO_BYTE);
-		addOption_gui(queueStore, "Don't download files already in share", SettingsManager::DONT_DL_ALREADY_SHARED);
-		addOption_gui(queueStore, "Don't download files already in the queue", SettingsManager::DONT_DL_ALREADY_QUEUED);
-		addOption_gui(queueStore, "Use antifragmentation method for downloads", SettingsManager::ANTI_FRAG);
-		addOption_gui(queueStore, "Advanced resume using TTH", SettingsManager::ADVANCED_RESUME);
+		addOption_gui(queueStore, _("Set lowest priority for newly added files larger than low priority size"), SettingsManager::PRIO_LOWEST);
+		addOption_gui(queueStore, _("Auto-drop slow sources for all queue items (except filelists)"), SettingsManager::AUTODROP_ALL);
+		addOption_gui(queueStore, _("Remove slow filelists"), SettingsManager::AUTODROP_FILELISTS);
+		addOption_gui(queueStore, _("Don't remove the source when auto-dropping, only disconnect"), SettingsManager::AUTODROP_DISCONNECT);
+		addOption_gui(queueStore, _("Automatically search for alternative download locations"), SettingsManager::AUTO_SEARCH);
+		addOption_gui(queueStore, _("Automatically match queue for auto search hits"), SettingsManager::AUTO_SEARCH_AUTO_MATCH);
+		addOption_gui(queueStore, _("Skip zero-byte files"), SettingsManager::SKIP_ZERO_BYTE);
+		addOption_gui(queueStore, _("Don't download files already in share"), SettingsManager::DONT_DL_ALREADY_SHARED);
+		addOption_gui(queueStore, _("Don't download files already in the queue"), SettingsManager::DONT_DL_ALREADY_QUEUED);
+		addOption_gui(queueStore, _("Use antifragmentation method for downloads"), SettingsManager::ANTI_FRAG);
+		addOption_gui(queueStore, _("Advanced resume using TTH"), SettingsManager::ADVANCED_RESUME);
 	}
 }
 
@@ -576,18 +551,18 @@ void Settings::initAppearance_gui()
 		g_signal_connect(renderer, "toggled", G_CALLBACK(onAppearanceToggledClicked_gui), (gpointer)this);
 		g_list_free(list);
 
-		addOption_gui(appearanceStore, "Filter kick and NMDC debug messages", SettingsManager::FILTER_MESSAGES);
-		addOption_gui(appearanceStore, "Show tray icon", SettingsManager::MINIMIZE_TRAY);
-		addOption_gui(appearanceStore, "Show timestamps in chat by default", SettingsManager::TIME_STAMPS);
-		addOption_gui(appearanceStore, "View status messages in main chat", SettingsManager::STATUS_IN_CHAT);
-		addOption_gui(appearanceStore, "Show joins / parts in chat by default", SettingsManager::SHOW_JOINS);
-		addOption_gui(appearanceStore, "Only show joins / parts for favorite users", SettingsManager::FAV_SHOW_JOINS);
-		addOption_gui(appearanceStore, "Use OEM monospaced font for viewing text files", SettingsManager::USE_OEM_MONOFONT);
+		addOption_gui(appearanceStore, _("Filter kick and NMDC debug messages"), SettingsManager::FILTER_MESSAGES);
+		addOption_gui(appearanceStore, _("Show tray icon"), SettingsManager::MINIMIZE_TRAY);
+		addOption_gui(appearanceStore, _("Show timestamps in chat by default"), SettingsManager::TIME_STAMPS);
+		addOption_gui(appearanceStore, _("View status messages in main chat"), SettingsManager::STATUS_IN_CHAT);
+		addOption_gui(appearanceStore, _("Show joins / parts in chat by default"), SettingsManager::SHOW_JOINS);
+		addOption_gui(appearanceStore, _("Only show joins / parts for favorite users"), SettingsManager::FAV_SHOW_JOINS);
+		addOption_gui(appearanceStore, _("Use OEM monospaced font for viewing text files"), SettingsManager::USE_OEM_MONOFONT);
 		/// @todo: Uncomment when implemented
-		//addOption_gui(appearanceStore, "Minimize to tray", SettingsManager::MINIMIZE_TRAY);
-		//addOption_gui(appearanceStore, "Use system icons", SettingsManager::USE_SYSTEM_ICONS);
+		//addOption_gui(appearanceStore, _("Minimize to tray"), SettingsManager::MINIMIZE_TRAY);
+		//addOption_gui(appearanceStore, _("Use system icons"), SettingsManager::USE_SYSTEM_ICONS);
 		///@todo: uncomment when the save problem is solved. Using MINIMIZE_TRAY until then.
-		//addOption_gui(appearanceStore, "Show tray icon", WGETI("show-tray-icon"));
+		//addOption_gui(appearanceStore, _("Show tray icon"), WGETI("show-tray-icon"));
 
 		gtk_entry_set_text(GTK_ENTRY(getWidget("awayMessageEntry")), SETTING(DEFAULT_AWAY_MESSAGE).c_str());
 		gtk_entry_set_text(GTK_ENTRY(getWidget("timestampEntry")), SETTING(TIME_STAMPS_FORMAT).c_str());
@@ -621,12 +596,12 @@ void Settings::initAppearance_gui()
 		g_signal_connect(renderer, "toggled", G_CALLBACK(onColorToggledClicked_gui), (gpointer)this);
 		g_list_free(list);
 
-		addOption_gui(colorStore, "Finished downloads", SettingsManager::BOLD_FINISHED_DOWNLOADS);
-		addOption_gui(colorStore, "Finished Uploads", SettingsManager::BOLD_FINISHED_UPLOADS);
-		addOption_gui(colorStore, "Download Queue", SettingsManager::BOLD_QUEUE);
-		addOption_gui(colorStore, "Hub", SettingsManager::BOLD_HUB);
-		addOption_gui(colorStore, "Private message", SettingsManager::BOLD_PM);
-		addOption_gui(colorStore, "Search", SettingsManager::BOLD_SEARCH);
+		addOption_gui(colorStore, _("Finished Downloads"), SettingsManager::BOLD_FINISHED_DOWNLOADS);
+		addOption_gui(colorStore, _("Finished Uploads"), SettingsManager::BOLD_FINISHED_UPLOADS);
+		addOption_gui(colorStore, _("Download Queue"), SettingsManager::BOLD_QUEUE);
+		addOption_gui(colorStore, _("Hub"), SettingsManager::BOLD_HUB);
+		addOption_gui(colorStore, _("Private Message"), SettingsManager::BOLD_PM);
+		addOption_gui(colorStore, _("Search"), SettingsManager::BOLD_SEARCH);
 	}
 
 	{ // Window
@@ -646,13 +621,13 @@ void Settings::initAppearance_gui()
 		g_signal_connect(renderer, "toggled", G_CALLBACK(onWindowView1ToggledClicked_gui), (gpointer)this);
 		g_list_free(list);
 
-		addOption_gui(windowStore1, "Public Hubs", SettingsManager::OPEN_PUBLIC);
-		addOption_gui(windowStore1, "Favorite Hubs", SettingsManager::OPEN_FAVORITE_HUBS);
-		addOption_gui(windowStore1, "Download Queue", SettingsManager::OPEN_QUEUE);
-		addOption_gui(windowStore1, "Finished Downloads", SettingsManager::OPEN_FINISHED_DOWNLOADS);
-		addOption_gui(windowStore1, "Finished Uploads", SettingsManager::OPEN_FINISHED_UPLOADS);
+		addOption_gui(windowStore1, _("Public Hubs"), SettingsManager::OPEN_PUBLIC);
+		addOption_gui(windowStore1, _("Favorite Hubs"), SettingsManager::OPEN_FAVORITE_HUBS);
+		addOption_gui(windowStore1, _("Download Queue"), SettingsManager::OPEN_QUEUE);
+		addOption_gui(windowStore1, _("Finished Downloads"), SettingsManager::OPEN_FINISHED_DOWNLOADS);
+		addOption_gui(windowStore1, _("Finished Uploads"), SettingsManager::OPEN_FINISHED_UPLOADS);
 		/// @todo: Uncomment when implemented
-		//addOption_gui(windowStore1, "Favorite Users", SettingsManager::OPEN_FAVORITE_USERS);
+		//addOption_gui(windowStore1, _("Favorite Users"), SettingsManager::OPEN_FAVORITE_USERS);
 
 		// Window options
 		windowView2.setView(GTK_TREE_VIEW(getWidget("windowsOptionsTreeView")));
@@ -670,11 +645,11 @@ void Settings::initAppearance_gui()
 		g_signal_connect(renderer, "toggled", G_CALLBACK(onWindowView2ToggledClicked_gui), (gpointer)this);
 		g_list_free(list);
 
-		addOption_gui(windowStore2, "Open file list window in the background", SettingsManager::POPUNDER_FILELIST);
-		addOption_gui(windowStore2, "Open new private message windows in the background", SettingsManager::POPUNDER_PM);
-		addOption_gui(windowStore2, "Open new window when using /join", SettingsManager::JOIN_OPEN_NEW_WINDOW);
-		addOption_gui(windowStore2, "Ignore private messages from the hub", SettingsManager::IGNORE_HUB_PMS);
-		addOption_gui(windowStore2, "Ignore private messages from bots", SettingsManager::IGNORE_BOT_PMS);
+		addOption_gui(windowStore2, _("Open file list window in the background"), SettingsManager::POPUNDER_FILELIST);
+		addOption_gui(windowStore2, _("Open new private message windows in the background"), SettingsManager::POPUNDER_PM);
+		addOption_gui(windowStore2, _("Open new window when using /join"), SettingsManager::JOIN_OPEN_NEW_WINDOW);
+		addOption_gui(windowStore2, _("Ignore private messages from the hub"), SettingsManager::IGNORE_HUB_PMS);
+		addOption_gui(windowStore2, _("Ignore private messages from bots"), SettingsManager::IGNORE_BOT_PMS);
 
 		// Confirmation dialog
 		windowView3.setView(GTK_TREE_VIEW(getWidget("windowsConfirmTreeView")));
@@ -692,10 +667,10 @@ void Settings::initAppearance_gui()
 		g_signal_connect(renderer, "toggled", G_CALLBACK(onWindowView3ToggledClicked_gui), (gpointer)this);
 		g_list_free(list);
 
-		addOption_gui(windowStore3, "Confirm application exit", SettingsManager::CONFIRM_EXIT);
-		addOption_gui(windowStore3, "Confirm favorite hub removal", SettingsManager::CONFIRM_HUB_REMOVAL);
+		addOption_gui(windowStore3, _("Confirm application exit"), SettingsManager::CONFIRM_EXIT);
+		addOption_gui(windowStore3, _("Confirm favorite hub removal"), SettingsManager::CONFIRM_HUB_REMOVAL);
 		/// @todo: Uncomment when implemented
-		//addOption_gui(windowStore3, "Confirm item removal in download queue", SettingsManager::CONFIRM_ITEM_REMOVAL);
+		//addOption_gui(windowStore3, _("Confirm item removal in download queue"), SettingsManager::CONFIRM_ITEM_REMOVAL);
 	}
 }
 
@@ -750,24 +725,23 @@ void Settings::initAdvanced_gui()
 		g_signal_connect(renderer, "toggled", G_CALLBACK(onAdvancedToggledClicked_gui), (gpointer)this);
 		g_list_free(list);
 
-		addOption_gui(advancedStore, "Auto-away on minimize (and back on restore)", SettingsManager::AUTO_AWAY);
-		addOption_gui(advancedStore, "Automatically follow redirects", SettingsManager::AUTO_FOLLOW);
-		addOption_gui(advancedStore, "Clear search box after each search", SettingsManager::CLEAR_SEARCH);
-		addOption_gui(advancedStore, "Keep duplicate files in your file list (duplicates never count towards your share size)", SettingsManager::LIST_DUPES);
-		addOption_gui(advancedStore, "Don't delete file lists when exiting", SettingsManager::KEEP_LISTS);
-		addOption_gui(advancedStore, "Automatically disconnect users who leave the hub",
-			SettingsManager::AUTO_KICK);
-		addOption_gui(advancedStore, "Show progress bars for transfers", SettingsManager::SHOW_PROGRESS_BARS);
-		addOption_gui(advancedStore, "Enable automatic SFV checking", SettingsManager::SFV_CHECK);
-		addOption_gui(advancedStore, "Enable safe and compressed transfers", SettingsManager::COMPRESS_TRANSFERS);
-		addOption_gui(advancedStore, "Accept custom user commands from hub", SettingsManager::HUB_USER_COMMANDS);
-		addOption_gui(advancedStore, "Send unknown /commands to the hub", SettingsManager::SEND_UNKNOWN_COMMANDS);
-		addOption_gui(advancedStore, "Add finished files to share instantly (if shared)", SettingsManager::ADD_FINISHED_INSTANTLY);
+		addOption_gui(advancedStore, _("Auto-away on minimize (and back on restore)"), SettingsManager::AUTO_AWAY);
+		addOption_gui(advancedStore, _("Automatically follow redirects"), SettingsManager::AUTO_FOLLOW);
+		addOption_gui(advancedStore, _("Clear search box after each search"), SettingsManager::CLEAR_SEARCH);
+		addOption_gui(advancedStore, _("Keep duplicate files in your file list (duplicates never count towards your share size)"), SettingsManager::LIST_DUPES);
+		addOption_gui(advancedStore, _("Don't delete file lists when exiting"), SettingsManager::KEEP_LISTS);
+		addOption_gui(advancedStore, _("Automatically disconnect users who leave the hub"), SettingsManager::AUTO_KICK);
+		addOption_gui(advancedStore, _("Show progress bars for transfers"), SettingsManager::SHOW_PROGRESS_BARS);
+		addOption_gui(advancedStore, _("Enable automatic SFV checking"), SettingsManager::SFV_CHECK);
+		addOption_gui(advancedStore, _("Enable safe and compressed transfers"), SettingsManager::COMPRESS_TRANSFERS);
+		addOption_gui(advancedStore, _("Accept custom user commands from hub"), SettingsManager::HUB_USER_COMMANDS);
+		addOption_gui(advancedStore, _("Send unknown /commands to the hub"), SettingsManager::SEND_UNKNOWN_COMMANDS);
+		addOption_gui(advancedStore, _("Add finished files to share instantly (if shared)"), SettingsManager::ADD_FINISHED_INSTANTLY);
+		addOption_gui(advancedStore, _("Don't send the away message to bots"), SettingsManager::NO_AWAYMSG_TO_BOTS);
 		/// @todo: Uncomment when implemented
-		//addOption_gui(advancedStore, "Register with the OS to handle dchub:// and adc:// URL links", SettingsManager::URL_HANDLER);
-		//addOption_gui(advancedStore, "Register with the OS to handle magnet: URL links", SettingsManager::MAGNET_REGISTER);
-		//addOption_gui(advancedStore, "Don't send the away message to bots", SettingsManager::NO_AWAYMSG_TO_BOTS);
-		//addOption_gui(advancedStore, "Use CTRL for line history", SettingsManager::USE_CTRL_FOR_LINE_HISTORY);
+		//addOption_gui(advancedStore, _("Register with the OS to handle dchub:// and adc:// URL links"), SettingsManager::URL_HANDLER);
+		//addOption_gui(advancedStore, _("Register with the OS to handle magnet: URL links"), SettingsManager::MAGNET_REGISTER);
+		//addOption_gui(advancedStore, _("Use CTRL for line history"), SettingsManager::USE_CTRL_FOR_LINE_HISTORY);
 	}
 
 	{ // User Commands
@@ -816,9 +790,9 @@ void Settings::initAdvanced_gui()
 		g_signal_connect(renderer, "toggled", G_CALLBACK(onCertificatesToggledClicked_gui), (gpointer)this);
 		g_list_free(list);
 
-		addOption_gui(certificatesStore, "Use TLS when remote client supports it", SettingsManager::USE_TLS);
-		addOption_gui(certificatesStore, "Allow TLS connections to hubs without trusted certificate", SettingsManager::ALLOW_UNTRUSTED_HUBS);
-		addOption_gui(certificatesStore, "Allow TLS connections to clients without trusted certificate", SettingsManager::ALLOW_UNTRUSTED_CLIENTS);
+		addOption_gui(certificatesStore, _("Use TLS when remote client supports it"), SettingsManager::USE_TLS);
+		addOption_gui(certificatesStore, _("Allow TLS connections to hubs without trusted certificate"), SettingsManager::ALLOW_UNTRUSTED_HUBS);
+		addOption_gui(certificatesStore, _("Allow TLS connections to clients without trusted certificate"), SettingsManager::ALLOW_UNTRUSTED_CLIENTS);
 
 		g_signal_connect(getWidget("generateCertificatesButton"), "clicked", G_CALLBACK(onGenerateCertificatesClicked_gui), (gpointer)this);
 	}
@@ -1019,7 +993,7 @@ void Settings::onPublicAdd_gui(GtkWidget *widget, gpointer data)
 	GtkTreeViewColumn *col;
 
 	gtk_list_store_append(s->publicListStore, &iter);
-	gtk_list_store_set(s->publicListStore, &iter, s->publicListView.col("List"), "New list", -1);
+	gtk_list_store_set(s->publicListStore, &iter, s->publicListView.col("List"), _("New list"), -1);
 	path = gtk_tree_model_get_path(GTK_TREE_MODEL(s->publicListStore), &iter);
 	col = gtk_tree_view_get_column(s->publicListView.get(), 0);
 	gtk_tree_view_set_cursor(s->publicListView.get(), path, col, TRUE);
@@ -1112,7 +1086,7 @@ void Settings::onAddFavorite_gui(GtkWidget *widget, gpointer data)
 				else
 				{
 					GtkWidget *d = gtk_message_dialog_new(GTK_WINDOW(s->getWidget("dialog")), GTK_DIALOG_MODAL,
-						GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "Directory or favorite name already exists");
+						GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("Directory or favorite name already exists"));
 					gtk_dialog_run(GTK_DIALOG(d));
 					gtk_widget_destroy(d);
 				}
@@ -1243,8 +1217,8 @@ gboolean Settings::onShareHiddenPressed_gui(GtkToggleButton *togglebutton, gpoin
 			-1);
 	}
 
-	gtk_label_set_text(GTK_LABEL(s->getWidget("sharedSizeLabel")), string("Total size: " +
-		Util::formatBytes(ShareManager::getInstance()->getShareSize())).c_str());
+	string text = _("Total size: ") + Util::formatBytes(ShareManager::getInstance()->getShareSize());
+	gtk_label_set_text(GTK_LABEL(s->getWidget("sharedSizeLabel")), text.c_str());
 
 	return FALSE;
 }

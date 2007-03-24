@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2004 Jens Oknelid, paskharen@gmail.com
+* Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 #include "wulformanager.hh"
 
 #include <iostream>
+#include <glib/gi18n.h>
 #include "downloadqueue.hh"
 #include "favoritehubs.hh"
 #include "finishedtransfers.hh"
@@ -56,21 +57,54 @@ void WulforManager::stop()
 
 WulforManager *WulforManager::get()
 {
+	dcassert(manager);
 	return manager;
 }
 
 WulforManager::WulforManager()
 {
-	pthread_mutex_init(&guiQueueLock, NULL);
-	pthread_mutex_init(&clientQueueLock, NULL);
-	pthread_mutex_init(&clientCallLock, NULL);
-	pthread_mutex_init(&bookEntryLock, NULL);
-	pthread_mutex_init(&dialogEntryLock, NULL);
+	if (pthread_mutex_init(&clientCallLock, NULL) != 0)
+	{
+		perror("Unable to initialize clientCallLock");
+		exit(EXIT_FAILURE);
+	}
+	if (pthread_rwlock_init(&guiQueueLock, NULL) != 0)
+	{
+		perror("Unable to initialize guiQueueLock");
+		exit(EXIT_FAILURE);
+	}
+	if (pthread_rwlock_init(&clientQueueLock, NULL) != 0)
+	{
+		perror("Unable to initialize clientQueueLock");
+		exit(EXIT_FAILURE);
+	}
+	if (pthread_rwlock_init(&entryLock, NULL) != 0)
+	{
+		perror("Unable to initialize entryLock");
+		exit(EXIT_FAILURE);
+	}
 
-	sem_init(&guiSem, false, 0);
-	sem_init(&clientSem, false, 0);
-	pthread_create(&clientThread, NULL, &threadFunc_client, (void *)this);
-	pthread_create(&guiThread, NULL, &threadFunc_gui, (void *)this);
+	if (sem_init(&guiSem, false, 0) == -1)
+	{
+		perror("Unable to initialize guiSem");
+		exit(EXIT_FAILURE);
+	}
+	if (sem_init(&clientSem, false, 0) == -1)
+	{
+		perror("Unable to initialize clientSem");
+		exit(EXIT_FAILURE);
+	}
+
+	if (pthread_create(&clientThread, NULL, &threadFunc_client, (void *)this) != 0)
+	{
+		perror("Unable to create client thread");
+		exit(EXIT_FAILURE);
+	}
+	if (pthread_create(&guiThread, NULL, &threadFunc_gui, (void *)this) != 0)
+	{
+		perror("Unable to create gui thread");
+		exit(EXIT_FAILURE);
+	}
 
 	mainWin = NULL;
 
@@ -87,14 +121,13 @@ WulforManager::WulforManager()
 
 WulforManager::~WulforManager()
 {
-	pthread_mutex_destroy(&guiQueueLock);
-	pthread_mutex_destroy(&clientQueueLock);
-	pthread_mutex_destroy(&clientCallLock);
-	pthread_mutex_destroy(&bookEntryLock);
-	pthread_mutex_destroy(&dialogEntryLock);
-
 	sem_destroy(&guiSem);
 	sem_destroy(&clientSem);
+
+	pthread_mutex_destroy(&clientCallLock);
+	pthread_rwlock_destroy(&guiQueueLock);
+	pthread_rwlock_destroy(&clientQueueLock);
+	pthread_rwlock_destroy(&entryLock);
 }
 
 void WulforManager::createMainWindow()
@@ -112,50 +145,6 @@ void WulforManager::createMainWindow()
 
 	f0 = new F0(mainWin, &MainWindow::autoOpen_gui);
 	WulforManager::get()->dispatchGuiFunc(f0);
-}
-
-void WulforManager::deleteMainWindow()
-{
-	dcassert(mainWin);
-
-	string id = mainWin->getID();
-	vector<FuncBase *>::iterator fIt;
-
-	pthread_mutex_lock(&clientCallLock);
-
-	// Erase any pending calls to this entry.
-	pthread_mutex_lock(&clientQueueLock);
-	fIt = clientFuncs.begin();
-	while (fIt != clientFuncs.end())
-	{
-		if ((*fIt)->getID() == id)
-		{
-			delete *fIt;
-			clientFuncs.erase(fIt);
-		}
-		else
-			++fIt;
-	}
-	pthread_mutex_unlock(&clientQueueLock);
-
-	pthread_mutex_lock(&guiQueueLock);
-	fIt = guiFuncs.begin();
-	while (fIt != guiFuncs.end())
-	{
-		if ((*fIt)->getID() == id)
-		{
-			delete *fIt;
-			guiFuncs.erase(fIt);
-		}
-		else
-			++fIt;
-	}
-	pthread_mutex_unlock(&guiQueueLock);
-
-	delete mainWin;
-	mainWin = NULL;
-
-	pthread_mutex_unlock(&clientCallLock);
 }
 
 void *WulforManager::threadFunc_gui(void *data)
@@ -178,27 +167,32 @@ void WulforManager::processGuiQueue()
 
 	while (true)
 	{
-		sem_wait(&guiSem);
+		if (sem_wait(&guiSem) != 0)
+		{
+			if (errno == EINTR)
+				continue;
+			else
+				break;
+		}
 
 		// This must be taken before the queuelock to avoid deadlock.
 		gdk_threads_enter();
 
-		pthread_mutex_lock(&guiQueueLock);
+		pthread_rwlock_rdlock(&guiQueueLock);
 		if (guiFuncs.size() > 0)
 		{
 			func = guiFuncs.front();
-			pthread_mutex_unlock(&guiQueueLock);
+			pthread_rwlock_unlock(&guiQueueLock);
 
 			func->call();
 
-			pthread_mutex_lock(&guiQueueLock);
+			pthread_rwlock_wrlock(&guiQueueLock);
 			delete func;
 			guiFuncs.erase(guiFuncs.begin());
 		}
-		pthread_mutex_unlock(&guiQueueLock);
+		pthread_rwlock_unlock(&guiQueueLock);
 
 		gdk_flush();
-
 		gdk_threads_leave();
 	}
 }
@@ -209,73 +203,61 @@ void WulforManager::processClientQueue()
 
 	while (true)
 	{
-		sem_wait(&clientSem);
+		if (sem_wait(&clientSem) != 0)
+		{
+			if (errno == EINTR)
+				continue;
+			else
+				break;
+		}
 
 		pthread_mutex_lock(&clientCallLock);
-		pthread_mutex_lock(&clientQueueLock);
+		pthread_rwlock_rdlock(&clientQueueLock);
 		if (clientFuncs.size() > 0)
 		{
 			func = clientFuncs.front();
-			pthread_mutex_unlock(&clientQueueLock);
+			pthread_rwlock_unlock(&clientQueueLock);
 
 			func->call();
 
-			pthread_mutex_lock(&clientQueueLock);
+			pthread_rwlock_wrlock(&clientQueueLock);
 			delete func;
 			clientFuncs.erase(clientFuncs.begin());
 		}
-		pthread_mutex_unlock(&clientQueueLock);
+		pthread_rwlock_unlock(&clientQueueLock);
 		pthread_mutex_unlock(&clientCallLock);
 	}
 }
 
 void WulforManager::dispatchGuiFunc(FuncBase *func)
 {
-	pthread_mutex_lock(&guiQueueLock);
-	pthread_mutex_lock(&bookEntryLock);
-	pthread_mutex_lock(&dialogEntryLock);
-
-	string id = func->getID();
+	pthread_rwlock_wrlock(&guiQueueLock);
+	pthread_rwlock_rdlock(&entryLock);
 
 	// Make sure we're not adding functions to deleted objects.
-	if (id == "Main Window" || bookEntries.find(id) != bookEntries.end() ||
-		dialogEntries.find(id) != dialogEntries.end())
-	{
+	if (func->getID() == "Main Window" || entries.find(func->getID()) != entries.end())
 		guiFuncs.push_back(func);
-	}
 	else
-	{
 		delete func;
-	}
 
-	pthread_mutex_unlock(&dialogEntryLock);
-	pthread_mutex_unlock(&bookEntryLock);
-	pthread_mutex_unlock(&guiQueueLock);
+	pthread_rwlock_unlock(&entryLock);
+	pthread_rwlock_unlock(&guiQueueLock);
 	sem_post(&guiSem);
 }
 
 void WulforManager::dispatchClientFunc(FuncBase *func)
 {
-	pthread_mutex_lock(&clientQueueLock);
-	pthread_mutex_lock(&bookEntryLock);
-	pthread_mutex_lock(&dialogEntryLock);
-
-	string id = func->getID();
+	pthread_rwlock_wrlock(&clientQueueLock);
+	pthread_rwlock_rdlock(&entryLock);
 
 	// Make sure we're not adding functions to deleted objects.
-	if (id == "Main Window" || bookEntries.find(id) != bookEntries.end() ||
-		dialogEntries.find(id) != dialogEntries.end())
-	{
+	if (func->getID() == "Main Window" || entries.find(func->getID()) != entries.end())
 		clientFuncs.push_back(func);
-	}
 	else
-	{
 		delete func;
-	}
 
-	pthread_mutex_unlock(&dialogEntryLock);
-	pthread_mutex_unlock(&bookEntryLock);
-	pthread_mutex_unlock(&clientQueueLock);
+	pthread_rwlock_unlock(&entryLock);
+	pthread_rwlock_unlock(&clientQueueLock);
 	sem_post(&clientSem);
 }
 
@@ -286,16 +268,15 @@ MainWindow *WulforManager::getMainWindow()
 
 gboolean WulforManager::onCloseWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
-	get()->deleteAllDialogEntries();
-	get()->deleteAllBookEntries();
-	get()->deleteMainWindow();
+	get()->deleteAllEntries();
+	get()->deleteEntry_gui(get()->getMainWindow());
 	gtk_main_quit();
 	return TRUE;
 }
 
 void WulforManager::onCloseBookEntry_gui(GtkWidget *widget, gpointer data)
 {
-	get()->deleteBookEntry_gui((BookEntry *)data);
+	get()->deleteEntry_gui((Entry *)data);
 }
 
 void WulforManager::onCloseDialogEntry_gui(GtkDialog *dialog, gint response, gpointer data)
@@ -303,11 +284,11 @@ void WulforManager::onCloseDialogEntry_gui(GtkDialog *dialog, gint response, gpo
 	DialogEntry *entry = (DialogEntry *)data;
 	entry->setResponseID(response);
 
-	// We must save the settings if OK was clicked. Can't do this anywhere else.
+	// We must save the settings if OK was clicked. Can't do this anywhere else. ugh.
 	if (response == GTK_RESPONSE_OK && entry->getID() == "Settings")
-		((Settings *)entry)->saveSettings();
+		dynamic_cast<Settings *>(entry)->saveSettings();
 
-	get()->deleteDialogEntry_gui(entry);
+	get()->deleteEntry_gui(entry);
 }
 
 string WulforManager::getPath()
@@ -319,10 +300,10 @@ BookEntry *WulforManager::getBookEntry_gui(const string &id, bool raise)
 {
 	BookEntry *ret = NULL;
 
-	pthread_mutex_lock(&bookEntryLock);
-	if (bookEntries.find(id) != bookEntries.end())
-		ret = bookEntries[id];
-	pthread_mutex_unlock(&bookEntryLock);
+	pthread_rwlock_rdlock(&entryLock);
+	if (entries.find(id) != entries.end())
+		ret = dynamic_cast<BookEntry *>(entries[id]);
+	pthread_rwlock_unlock(&entryLock);
 
 	if (ret && raise)
 		mainWin->raisePage_gui(ret->getContainer());
@@ -338,23 +319,21 @@ void WulforManager::insertBookEntry_gui(BookEntry *entry, bool raise)
 	entry->applyCallback(G_CALLBACK(onCloseBookEntry_gui));
 	mainWin->addPage_gui(entry->getContainer(), entry->getTitle(), raise);
 
-	pthread_mutex_lock(&bookEntryLock);
-	bookEntries[entry->getID()] = entry;
-	pthread_mutex_unlock(&bookEntryLock);
+	pthread_rwlock_wrlock(&entryLock);
+	entries[entry->getID()] = entry;
+	pthread_rwlock_unlock(&entryLock);
 }
 
 // This is a callback, so gdk_threads_enter/leave is called automatically.
-void WulforManager::deleteBookEntry_gui(BookEntry *entry)
+void WulforManager::deleteEntry_gui(Entry *entry)
 {
-	// Save a pointer to the page before the entry is deleted
-	GtkWidget *notebookPage = entry->getContainer();
 	string id = entry->getID();
 	vector<FuncBase *>::iterator fIt;
 
 	pthread_mutex_lock(&clientCallLock);
 
 	// Erase any pending calls to this bookentry.
-	pthread_mutex_lock(&clientQueueLock);
+	pthread_rwlock_wrlock(&clientQueueLock);
 	fIt = clientFuncs.begin();
 	while (fIt != clientFuncs.end())
 	{
@@ -366,9 +345,9 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry)
 		else
 			++fIt;
 	}
-	pthread_mutex_unlock(&clientQueueLock);
+	pthread_rwlock_unlock(&clientQueueLock);
 
-	pthread_mutex_lock(&guiQueueLock);
+	pthread_rwlock_wrlock(&guiQueueLock);
 	fIt = guiFuncs.begin();
 	while (fIt != guiFuncs.end())
 	{
@@ -380,39 +359,34 @@ void WulforManager::deleteBookEntry_gui(BookEntry *entry)
 		else
 			++fIt;
 	}
-	pthread_mutex_unlock(&guiQueueLock);
+	pthread_rwlock_unlock(&guiQueueLock);
 
 	// Remove the bookentry from the list.
-	pthread_mutex_lock(&bookEntryLock);
-	if (bookEntries.find(id) != bookEntries.end())
-		bookEntries.erase(id);
-	pthread_mutex_unlock(&bookEntryLock);
-
-	delete entry;
+	pthread_rwlock_wrlock(&entryLock);
+	if (entries.find(id) != entries.end())
+		entries.erase(id);
+	pthread_rwlock_unlock(&entryLock);
 
 	pthread_mutex_unlock(&clientCallLock);
 
-	if (id.substr(0, 5) == "Hub: " || id.substr(0, 4) == "PM: ")
-		mainWin->removeWindowItem(notebookPage);
-
-	// Remove the flap from the notebook
-	mainWin->removePage_gui(notebookPage);
+	delete entry;
+	entry = NULL;
 }
 
-void WulforManager::deleteAllBookEntries()
+void WulforManager::deleteAllEntries()
 {
-	while (bookEntries.size() > 0)
-		deleteBookEntry_gui(bookEntries.begin()->second);
+	while (entries.size() > 0)
+		deleteEntry_gui(entries.begin()->second);
 }
 
 DialogEntry* WulforManager::getDialogEntry_gui(const string &id)
 {
 	DialogEntry *ret = NULL;
 
-	pthread_mutex_lock(&dialogEntryLock);
-	if (dialogEntries.find(id) != dialogEntries.end())
-		ret = dialogEntries[id];
-	pthread_mutex_unlock(&dialogEntryLock);
+	pthread_rwlock_rdlock(&entryLock);
+	if (entries.find(id) != entries.end())
+		ret = dynamic_cast<DialogEntry *>(entries[id]);
+	pthread_rwlock_unlock(&entryLock);
 
 	return ret;
 }
@@ -421,67 +395,11 @@ void WulforManager::insertDialogEntry_gui(DialogEntry *entry)
 {
 	entry->applyCallback(G_CALLBACK(onCloseDialogEntry_gui));
 
-	pthread_mutex_lock(&dialogEntryLock);
-	dialogEntries[entry->getID()] = entry;
-	pthread_mutex_unlock(&dialogEntryLock);
+	pthread_rwlock_wrlock(&entryLock);
+	entries[entry->getID()] = entry;
+	pthread_rwlock_unlock(&entryLock);
 
 	gtk_dialog_run(GTK_DIALOG(entry->getContainer()));
-}
-
-// This is a callback, so gdk_threads_enter/leave is called automatically.
-void WulforManager::deleteDialogEntry_gui(DialogEntry *entry)
-{
-	vector<FuncBase *>::iterator it;
-	string id = entry->getID();
-	GtkWidget *dialog = entry->getContainer();
-
-	pthread_mutex_lock(&clientCallLock);
-
-	// Erase any pending calls to this dialog.
-	pthread_mutex_lock(&clientQueueLock);
-	it = clientFuncs.begin();
-	while (it != clientFuncs.end())
-	{
-		if ((*it)->getID() == id)
-		{
-			delete *it;
-			clientFuncs.erase(it);
-		}
-		else
-			++it;
-	}
-	pthread_mutex_unlock(&clientQueueLock);
-
-	pthread_mutex_lock(&guiQueueLock);
-	it = guiFuncs.begin();
-	while (it != guiFuncs.end())
-	{
-		if ((*it)->getID() == id)
-		{
-			delete *it;
-			guiFuncs.erase(it);
-		}
-		else
-			++it;
-	}
-	pthread_mutex_unlock(&guiQueueLock);
-
-	pthread_mutex_lock(&dialogEntryLock);
-	if (dialogEntries.find(id) != dialogEntries.end())
-		dialogEntries.erase(id);
-	pthread_mutex_unlock(&dialogEntryLock);
-
-	delete entry;
-
-	pthread_mutex_unlock(&clientCallLock);
-
-	gtk_widget_destroy(dialog);
-}
-
-void WulforManager::deleteAllDialogEntries()
-{
-	while (dialogEntries.size() > 0)
-		deleteDialogEntry_gui(dialogEntries.begin()->second);
 }
 
 BookEntry *WulforManager::addPublicHubs_gui()
@@ -533,8 +451,10 @@ BookEntry *WulforManager::addHub_gui(const string &address, const string &encodi
 		charset = "UTF-8";
 	else if (encoding.empty())
 		charset = WGETS("default-charset");
-	else if (encoding == "System Default")
+	else if (encoding == _("System default"))
 		charset = Text::getSystemCharset();
+	else if (encoding.find(' ', 0) != string::npos)
+		charset = encoding.substr(0, encoding.find(' ', 0));
 	else
 		charset = encoding;
 

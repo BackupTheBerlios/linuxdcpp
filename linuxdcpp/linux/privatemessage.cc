@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,9 @@ using namespace std;
 
 PrivateMessage::PrivateMessage(User::Ptr user):
 	BookEntry("PM: " + WulforUtil::getNicks(user), "privatemessage.glade"),
-	user(user)
+	user(user),
+	historyIndex(0),
+	sentAwayMessage(FALSE)
 {
 	// Intialize the chat window
 	if (SETTING(USE_OEM_MONOFONT))
@@ -51,13 +53,18 @@ PrivateMessage::PrivateMessage(User::Ptr user):
 	g_signal_connect(getWidget("entry"), "key-press-event", G_CALLBACK(onKeyPress_gui), (gpointer)this);
 
 	gtk_widget_grab_focus(getWidget("entry"));
-
 	history.push_back("");
-	historyIndex = 0;
+}
+
+PrivateMessage::~PrivateMessage()
+{
+	WulforManager::get()->getMainWindow()->removeWindowItem(getContainer());
 }
 
 void PrivateMessage::addMessage_gui(string message)
 {
+	addLine_gui(message);
+
 	if (BOOLSETTING(LOG_PRIVATE_CHAT))
 	{
 		StringMap params;
@@ -70,7 +77,29 @@ void PrivateMessage::addMessage_gui(string message)
 		LOG(LogManager::PM, params);
 	}
 
-	addLine_gui(message);
+	if (BOOLSETTING(BOLD_PM))
+		setBold_gui();
+
+	// Send an away message, but only the first time after setting away mode.
+	if (!Util::getAway())
+	{
+		sentAwayMessage = FALSE;
+	}
+	else if (!sentAwayMessage && !(BOOLSETTING(NO_AWAYMSG_TO_BOTS) && user->isSet(User::BOT)))
+	{
+		sentAwayMessage = TRUE;
+		typedef Func1<PrivateMessage, string> F1;
+		F1 *func = new F1(this, &PrivateMessage::sendMessage_client, Util::getAwayMessage());
+		WulforManager::get()->dispatchClientFunc(func);
+	}
+
+	if (BOOLSETTING(PRIVATE_MESSAGE_BEEP))
+	{
+		MainWindow *mw = WulforManager::get()->getMainWindow();
+		GdkWindowState state = gdk_window_get_state(mw->getContainer()->window);
+	 	if ((state & GDK_WINDOW_STATE_ICONIFIED) || mw->currentPage_gui() != getContainer())
+			gdk_beep();
+	}
 }
 
 void PrivateMessage::addStatusMessage_gui(string message)
@@ -109,17 +138,6 @@ void PrivateMessage::addLine_gui(const string &message)
 		gtk_text_buffer_move_mark(buffer, mark, &iter);
 		gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(getWidget("text")), mark, 0, FALSE, 0, 0);
 	}
-
-	if (BOOLSETTING(BOLD_PM))
-		setBold_gui();
-
-	if (BOOLSETTING(PRIVATE_MESSAGE_BEEP))
-	{
-		MainWindow *mw = WulforManager::get()->getMainWindow();
-		GdkWindowState state = gdk_window_get_state(mw->getContainer()->window);
-	 	if ((state & GDK_WINDOW_STATE_ICONIFIED) || mw->currentPage_gui() != getContainer())
-			gdk_beep();
-	}
 }
 
 void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
@@ -142,26 +160,58 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
 	// Process special commands
 	if (text[0] == '/')
 	{
-		string command = text.substr(1);
+		string command, param;
+		string::size_type separator = text.find_first_of(' ');
+		if (separator != string::npos && text.size() > separator + 1)
+		{
+			command = text.substr(1, separator - 1);
+			param = text.substr(separator + 1);
+		}
+		else
+		{
+			command = text.substr(1);
+		}
 		std::transform(command.begin(), command.end(), command.begin(), (int(*)(int))tolower);
 
-		if (command == "clear")
+		if (command == _("away"))
+		{
+			if (Util::getAway() && param.empty())
+			{
+				Util::setAway(FALSE);
+				Util::setManualAway(FALSE);
+				pm->addStatusMessage_gui(_("Away mode off"));
+				pm->sentAwayMessage = FALSE;
+			}
+			else
+			{
+				Util::setAway(TRUE);
+				Util::setManualAway(TRUE);
+				Util::setAwayMessage(param);
+				pm->addStatusMessage_gui(_("Away mode on: ") + Util::getAwayMessage());
+			}
+		}
+		else if (command == _("back"))
+		{
+			Util::setAway(FALSE);
+			pm->addStatusMessage_gui(_("Away mode off"));
+		}
+		else if (command == _("clear"))
 		{
 			GtkTextIter startIter, endIter;
 			gtk_text_buffer_get_start_iter(pm->buffer, &startIter);
 			gtk_text_buffer_get_end_iter(pm->buffer, &endIter);
 			gtk_text_buffer_delete(pm->buffer, &startIter, &endIter);
 		}
-		else if (command == "close")
+		else if (command == _("close"))
 		{
-			WulforManager::get()->deleteBookEntry_gui((BookEntry *)pm);
+			WulforManager::get()->deleteEntry_gui(pm);
 		}
-		else if (command == "favorite" || text == "fav")
+		else if (command == _("favorite") || text == _("fav"))
 		{
 			FavoriteManager::getInstance()->addFavoriteUser(pm->user);
-			pm->addStatusMessage_gui("Added user to favorites list");
+			pm->addStatusMessage_gui(_("Added user to favorites list"));
 		}
-		else if (command == "getlist")
+		else if (command == _("getlist"))
 		{
 			try
 			{
@@ -172,18 +222,18 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
 				pm->addStatusMessage_gui(e.getError());
 			}
 		}
-		else if (command == "grant")
+		else if (command == _("grant"))
 		{
 			UploadManager::getInstance()->reserveSlot(pm->user);
-			pm->addStatusMessage_gui("Slot granted");
+			pm->addStatusMessage_gui(_("Slot granted"));
 		}
-		else if (command == "help")
+		else if (command == _("help"))
 		{
-			pm->addStatusMessage_gui("Available commands: /clear, /close, /favorite, /getlist, /grant, /help");
+			pm->addStatusMessage_gui(_("Available commands: /away <message>, /back, /clear, /close, /favorite, /getlist, /grant, /help"));
 		}
 		else
 		{
-			pm->addStatusMessage_gui("Unknown command " + text + ": type /help for a list of valid commands");
+			pm->addStatusMessage_gui(_("Unknown command ") + text + _(": type /help for a list of available commands"));
 		}
 	}
 	else if (pm->user->isOnline())
@@ -194,7 +244,7 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
 	}
 	else
 	{
-		pm->addStatusMessage_gui("User went offline");
+		pm->addStatusMessage_gui(_("User went offline"));
 	}
 }
 

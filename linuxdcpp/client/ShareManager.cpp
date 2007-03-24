@@ -578,7 +578,7 @@ public:
 	}
 
 	FileFindIter(const string& name) {
-		string filename = Text::utf8ToAcp(name);
+		string filename = Text::fromUtf8(name);
 		dir = opendir(filename.c_str());
 		if (!dir)
 			return;
@@ -610,7 +610,7 @@ public:
 		DirData() : ent(NULL) {}
 		string getFileName() {
 			if (!ent) return Util::emptyString;
-			return Text::acpToUtf8(ent->d_name);
+			return Text::toUtf8(ent->d_name);
 		}
 		bool isDirectory() {
 			struct stat inode;

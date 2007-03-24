@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -111,7 +111,7 @@ void FinishedTransfers::addItem_gui(StringMap params, bool update)
 
 void FinishedTransfers::updateStatus_gui()
 {
-	string status = Util::toString(items) + " Items";
+	string status = Util::toString(items) + _(" Items");
 	string size = Util::formatBytes(totalBytes);
 	string speed = Util::formatBytes((totalTime > 0) ? totalBytes * ((int64_t)1000) / totalTime : 0) + "/s";
 
@@ -308,7 +308,7 @@ void FinishedTransfers::getFinishedParams_client(FinishedItem *item, StringMap &
 	params["Hub"] = item->getHub();
 	params["Size"] = Util::formatBytes(item->getSize());
 	params["Speed"] = Util::formatBytes(item->getAvgSpeed()) + "/s";
-	params["CRC Checked"] = item->getCrc32Checked() ? "Yes" : "No";
+	params["CRC Checked"] = item->getCrc32Checked() ? _("Yes") : _("No");
 	params["Target"] = item->getTarget();
 	params["Chunk Size"] = Util::toString(item->getChunkSize());
 	params["Elapsed Time"] = Util::toString(item->getMilliSeconds());

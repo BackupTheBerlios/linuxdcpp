@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -140,7 +140,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, const std::string &file, const std::s
 	}
 	catch (const Exception &e)
 	{
-		setStatus_gui("mainStatus", "Unable to load file list: " + e.getError());
+		setStatus_gui("mainStatus", _("Unable to load file list: ") + e.getError());
 	}
 
 	updateStatus_gui();
@@ -231,7 +231,7 @@ void ShareBrowser::buildDirDownloadMenu_gui()
 		gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("dirDownloadMenu")), menuItem);
 	}
 
-	menuItem = gtk_menu_item_new_with_label("Browse...");
+	menuItem = gtk_menu_item_new_with_label(_("Browse..."));
 	g_signal_connect(menuItem, "activate", G_CALLBACK(onDownloadDirToClicked_gui), (gpointer)this);
 	gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("dirDownloadMenu")), menuItem);
 }
@@ -256,7 +256,7 @@ void ShareBrowser::buildFileDownloadMenu_gui()
 		gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("fileDownloadMenu")), menuItem);
 	}
 
-	menuItem = gtk_menu_item_new_with_label("Browse...");
+	menuItem = gtk_menu_item_new_with_label(_("Browse..."));
 	g_signal_connect(menuItem, "activate", G_CALLBACK(onDownloadToClicked_gui), (gpointer)this);
 	gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("fileDownloadMenu")), menuItem);
 }
@@ -295,7 +295,7 @@ void ShareBrowser::updateFiles_gui(DirectoryListing::Directory *dir)
 			fileView.col("Size"), Util::formatBytes(size).c_str(),
 			fileView.col("Exact Size"), Util::formatExactSize(size).c_str(),
 			fileView.col("Size Order"), size,
-			fileView.col("Type"), "Folder",
+			fileView.col("Type"), _("Folder"),
 			fileView.col("DL File"), (gpointer)(*it_dir),
 			-1);
 
@@ -342,18 +342,18 @@ void ShareBrowser::updateFiles_gui(DirectoryListing::Directory *dir)
 void ShareBrowser::updateStatus_gui()
 {
 	string items, files, size, total;
-	files = "Files: " + Util::toString(shareItems);
-	total = "Total: " + Util::formatBytes(shareSize);
+	files = _("Files: ") + Util::toString(shareItems);
+	total = _("Total: ") + Util::formatBytes(shareSize);
 
 	if (gtk_tree_selection_get_selected(dirSelection, NULL, NULL))
 	{
-		items = "Items: " + Util::toString(currentItems);
-		size = "Size: " + Util::formatBytes(currentSize);
+		items = _("Items: ") + Util::toString(currentItems);
+		size = _("Size: ") + Util::formatBytes(currentSize);
 	}
 	else
 	{
-		items = "Items: 0";
-		size = "Size: 0 B";
+		items = _("Items: 0");
+		size = _("Size: 0 B");
 	}
 
 	setStatus_gui("itemsStatus", items);
@@ -531,7 +531,7 @@ void ShareBrowser::find_gui()
 					gtk_widget_grab_focus(GTK_WIDGET(dirView.get()));
 					updateFileView = FALSE;
 					gtk_tree_path_free(dirPath);
-					setStatus_gui("mainStatus", "Found a match");
+					setStatus_gui("mainStatus", _("Found a match"));
 					return;
 				}
 				gtk_tree_path_down(dirPath);
@@ -543,7 +543,7 @@ void ShareBrowser::find_gui()
 		if (!gtk_tree_path_up(dirPath) || gtk_tree_path_get_depth(dirPath) == 0 ||
 			!gtk_tree_model_get_iter(m, &iter, dirPath))
 		{
-			setStatus_gui("mainStatus", "No matches");
+			setStatus_gui("mainStatus", _("No matches"));
 			gtk_tree_path_free(dirPath);
 			return;
 		}
@@ -574,7 +574,7 @@ void ShareBrowser::find_gui()
 				gtk_widget_grab_focus(GTK_WIDGET(fileView.get()));
 				gtk_tree_path_free(path);
 				gtk_tree_path_free(dirPath);
-				setStatus_gui("mainStatus", "Found a match");
+				setStatus_gui("mainStatus", _("Found a match"));
 				return;
 			}
 		}
@@ -731,7 +731,7 @@ void ShareBrowser::onFindButtonClicked_gui(GtkWidget *widget, gpointer data)
 		}
 		else
 		{
-			sb->setStatus_gui("mainStatus", "No matches");
+			sb->setStatus_gui("mainStatus", _("No matches"));
 		}
 	}
 }
@@ -742,7 +742,7 @@ void ShareBrowser::onNextButtonClicked_gui(GtkWidget *widget, gpointer data)
 	if (!sb->search.empty())
 		sb->find_gui();
 	else
-		sb->setStatus_gui("mainStatus", "No search text entered");
+		sb->setStatus_gui("mainStatus", _("No search text entered"));
 }
 
 void ShareBrowser::onDownloadClicked_gui(GtkMenuItem *item, gpointer data)
@@ -879,7 +879,7 @@ void ShareBrowser::downloadDir_client(DirectoryListing::Directory *dir, string t
 void ShareBrowser::matchQueue_client()
 {
 	int matched = QueueManager::getInstance()->matchListing(listing);
-	string message = "Matched " + Util::toString(matched) + " files";
+	string message = _("Matched ") + Util::toString(matched) + _(" files");
 
 	typedef Func2<ShareBrowser, string, string> F2;
 	F2 *f = new F2(this, &ShareBrowser::setStatus_gui, "mainStatus", message);

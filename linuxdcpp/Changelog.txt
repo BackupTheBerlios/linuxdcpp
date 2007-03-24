@@ -1,3 +1,15 @@
+2007-03-24 - Steven Sheehy
+* Fixed an issue with systems that dynamically link iconv.
+* Added /away and /back to pm commands.
+* Feature #3128: Auto-respond when in Away mode.
+* Added "Don't send the away message to bots" option.
+* Updated the copyright year to 2007.
+* Bug #10094: Duplicate entries in Download Queue.
+* Added the ability to specify a hub's charset if it's not in the drop-down.
+* Improved WulforManager (knock on wood).
+* Cleaned up Text conversion functions a bit.
+* Started i18n and l10n support (much more work to do).
+
 2007-02-06 - Steven Sheehy
 * Patch #1876: Fix compile on *BSD caused by inconsistent iconv API (thanks Mikael Eman).
 * Patch #1874: Fix dl queue folders from sometimes appearing empty (thanks naga).

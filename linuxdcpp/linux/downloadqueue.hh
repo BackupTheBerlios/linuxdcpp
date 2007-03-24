@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@ class DownloadQueue:
 		void buildDynamicMenu_gui();
 		void setStatus_gui(std::string text, std::string statusItem);
 		void updateStatus_gui();
-		void addFiles_gui(vector<StringMap> files);
+		void addFiles_gui(vector<StringMap> files, bool firstUpdate);
 		void addFile_gui(StringMap params, bool updateDirs);
 		void addDir_gui(const std::string &path, GtkTreeIter *parent);
 		void updateFile_gui(StringMap params);

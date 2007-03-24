@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,6 +47,12 @@ BookEntry::BookEntry(const string &title, const string &glade):
 	gtk_widget_show_all(box);
 
 	setLabel_gui(title);
+}
+
+BookEntry::~BookEntry()
+{
+	// Remove the flap from the notebook
+	WulforManager::get()->getMainWindow()->removePage_gui(getContainer());
 }
 
 GtkWidget* BookEntry::getContainer()

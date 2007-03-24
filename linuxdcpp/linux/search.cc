@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -284,7 +284,7 @@ void Search::buildDownloadMenu_gui()
 	}
 
 	// Add Browse item
-	menuItem = gtk_menu_item_new_with_label("Browse...");
+	menuItem = gtk_menu_item_new_with_label(_("Browse..."));
 	g_signal_connect(menuItem, "activate", G_CALLBACK(onDownloadToClicked_gui), (gpointer)this);
 	gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadMenu")), menuItem);
 
@@ -353,7 +353,7 @@ void Search::buildDownloadMenu_gui()
 		gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadDirMenu")), menuItem);
 	}
 
-	menuItem = gtk_menu_item_new_with_label("Browse...");
+	menuItem = gtk_menu_item_new_with_label(_("Browse..."));
 	g_signal_connect(menuItem, "activate", G_CALLBACK(onDownloadDirToClicked_gui), (gpointer)this);
 	gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadDirMenu")), menuItem);
 }
@@ -446,9 +446,9 @@ void Search::search_gui()
 
 	droppedResult = 0;
 	searchHits = 0;
-	setStatus_gui("statusbar1", "Searching for " + text + " ...");
-	setStatus_gui("statusbar2", "0 items");
-	setStatus_gui("statusbar3", "0 filtered");
+	setStatus_gui("statusbar1", _("Searching for ") + text + " ...");
+	setStatus_gui("statusbar2", _("0 items"));
+	setStatus_gui("statusbar3", _("0 filtered"));
 	setLabel_gui("Search: " + text);
 
 	if (SearchManager::getInstance()->okToSearch())
@@ -461,7 +461,7 @@ void Search::search_gui()
 	else
 	{
 		int32_t waitFor = SearchManager::getInstance()->timeToSearch();
-		string line = "Searching too soon, retry in " + Util::toString(waitFor) + " s";
+		string line = _("Searching too soon, retry in ") + Util::toString(waitFor) + " s";
 		setStatus_gui("statusbar1", line);
 		setStatus_gui("statusbar2", "");
 		setStatus_gui("statusbar3", "");
@@ -501,7 +501,7 @@ void Search::addResult_gui(SearchResult *result)
 		filename = WulforUtil::linuxSeparator(result->getFileName());
 		path = WulforUtil::linuxSeparator(result->getFile());
 		fileOrder = "d" + filename;
-		type = "Directory";
+		type = _("Directory");
 		icon = iconDirectory;
 		if (result->getSize() > 0)
 		{
@@ -556,7 +556,7 @@ void Search::addResult_gui(SearchResult *result)
 		-1);
 
 	++searchHits;
-	setStatus_gui("statusbar2", Util::toString(searchHits) + " items");
+	setStatus_gui("statusbar2", Util::toString(searchHits) + _(" items"));
 
 	if (BOOLSETTING(BOLD_SEARCH))
 		setBold_gui();
@@ -1318,7 +1318,7 @@ void Search::on(SearchManagerListener::SR, SearchResult *result) throw()
 		if (result->getType() != SearchResult::TYPE_FILE || TTHValue(searchlist[0]) != result->getTTH())
 		{
 			++droppedResult;
-			func = new F2(this, &Search::setStatus_gui, "statusbar3", Util::toString(droppedResult) + " filtered");
+			func = new F2(this, &Search::setStatus_gui, "statusbar3", Util::toString(droppedResult) + _(" filtered"));
 			WulforManager::get()->dispatchGuiFunc(func);
 			return;
 		}
@@ -1331,7 +1331,7 @@ void Search::on(SearchManagerListener::SR, SearchResult *result) throw()
 			    (*i->begin() == '-' && i->size() != 1 && Util::findSubString(result->getFile(), i->substr(1)) != (string::size_type)-1))
 			{
 				++droppedResult;
-				func = new F2(this, &Search::setStatus_gui, "statusbar3", Util::toString(droppedResult) + " filtered");
+				func = new F2(this, &Search::setStatus_gui, "statusbar3", Util::toString(droppedResult) + _(" filtered"));
 				WulforManager::get()->dispatchGuiFunc(func);
 				return;
 			}
@@ -1342,7 +1342,7 @@ void Search::on(SearchManagerListener::SR, SearchResult *result) throw()
 	if (onlyFree && result->getFreeSlots() < 1)
 	{
 		++droppedResult;
-		func = new F2(this, &Search::setStatus_gui, "statusbar3", Util::toString(droppedResult) + " filtered");
+		func = new F2(this, &Search::setStatus_gui, "statusbar3", Util::toString(droppedResult) + _(" filtered"));
 		WulforManager::get()->dispatchGuiFunc(func);
 		return;
 	}

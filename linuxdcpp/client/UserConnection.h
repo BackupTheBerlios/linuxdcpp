@@ -243,7 +243,7 @@ public:
 	uint16_t getNumber() { return static_cast<uint16_t>(((((size_t)this)>>2) & 0x7fff)); }
 
 	// NMDC stuff
-	void myNick(const string& aNick) { send("$MyNick " + Text::convert(aNick, "UTF-8", encoding) + '|'); }
+	void myNick(const string& aNick) { send("$MyNick " + Text::fromUtf8(aNick, encoding) + '|'); }
 	void lock(const string& aLock, const string& aPk) { send ("$Lock " + aLock + " Pk=" + aPk + '|'); }
 	void key(const string& aKey) { send("$Key " + aKey + '|'); }
 	void direction(const string& aDirection, int aNumber) { send("$Direction " + aDirection + " " + Util::toString(aNumber) + '|'); }

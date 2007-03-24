@@ -57,7 +57,7 @@ public:
 		CallBack& operator=(const CallBack&);
 	};
 
-	SimpleXMLReader(CallBack* callback) : cb(callback), encoding("UTF-8") { }
+	SimpleXMLReader(CallBack* callback) : cb(callback), encoding(Text::utf8) { }
 	virtual ~SimpleXMLReader() { }
 
 	string::size_type fromXML(const string& tmp, const string& n = Util::emptyString, string::size_type start = 0, int depth = 0) throw(SimpleXMLException);
@@ -172,21 +172,21 @@ public:
 	string toXML() { string tmp; StringOutputStream os(tmp); toXML(&os); return tmp; }
 	void toXML(OutputStream* f) throw(FileException) { if(!root.children.empty()) root.children[0]->toXML(0, f); }
 
-	static const string& escape(const string& str, string& tmp, bool aAttrib, bool aLoading = false, const string &encoding = "UTF-8") {
+	static const string& escape(const string& str, string& tmp, bool aAttrib, bool aLoading = false, const string &encoding = Text::utf8) {
 		if(needsEscape(str, aAttrib, aLoading, encoding)) {
 			tmp = str;
 			return escape(tmp, aAttrib, aLoading, encoding);
 		}
 		return str;
 	}
-	static string& escape(string& aString, bool aAttrib, bool aLoading = false, const string &encoding = "UTF-8");
+	static string& escape(string& aString, bool aAttrib, bool aLoading = false, const string &encoding = Text::utf8);
 	/**
 	 * This is a heuristic for whether escape needs to be called or not. The results are
  	 * only guaranteed for false, i e sometimes true might be returned even though escape
 	 * was not needed...
 	 */
-	static bool needsEscape(const string& aString, bool aAttrib, bool aLoading = false, const string &encoding = "UTF-8") {
-		return Util::stricmp(encoding, "UTF-8") != 0 || (((aLoading) ? aString.find('&') : aString.find_first_of(aAttrib ? "<&>'\"" : "<&>")) != string::npos);
+	static bool needsEscape(const string& aString, bool aAttrib, bool aLoading = false, const string &encoding = Text::utf8) {
+		return Util::stricmp(encoding, Text::utf8) != 0 || (((aLoading) ? aString.find('&') : aString.find_first_of(aAttrib ? "<&>'\"" : "<&>")) != string::npos);
 	}
 	static const string utf8Header;
 private:

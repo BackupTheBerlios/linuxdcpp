@@ -298,7 +298,7 @@ void ConnectionManager::adcConnect(const OnlineUser& aUser, uint16_t aPort, cons
 
 	UserConnection* uc = getConnection(false, secure);
 	uc->setToken(aToken);
-	uc->setEncoding("UTF-8");
+	uc->setEncoding(Text::utf8);
 	uc->setState(UserConnection::STATE_CONNECT);
 	if(aUser.getIdentity().isOp()) {
 		uc->setFlag(UserConnection::FLAG_OP);

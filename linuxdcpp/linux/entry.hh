@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,15 +22,18 @@
 #include <gtk/gtk.h>
 #include <glade/glade.h>
 #include <gdk/gdkkeysyms.h>
+#include <glib/gi18n.h>
 #include <string>
+
 
 class Entry
 {
 	public:
+
 		Entry() {}
 		Entry(const std::string &id, const std::string &glade);
 		virtual ~Entry();
-		std::string getID();
+		const std::string& getID();
 		virtual void applyCallback(GCallback closeCallback) = 0;
 		virtual GtkWidget *getContainer() = 0;
 

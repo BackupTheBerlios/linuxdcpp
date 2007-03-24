@@ -57,7 +57,7 @@ string& SimpleXML::escape(string& aString, bool aAttrib, bool aLoading /* = fals
 				}
 			}
 		}
-		aString = Text::convert(aString, encoding, "UTF-8");
+		aString = Text::toUtf8(aString, encoding);
 	} else {
 		while( (i = aString.find_first_of(chars, i)) != string::npos) {
 			switch(aString[i]) {

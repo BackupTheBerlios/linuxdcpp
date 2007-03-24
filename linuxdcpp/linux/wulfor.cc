@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 
 #include <gtk/gtk.h>
 #include <glade/glade.h>
+#include <glib/gi18n.h>
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
@@ -34,10 +35,14 @@ void callBack(void* x, const std::string& a)
 
 int main(int argc, char *argv[])
 {
+	// Initialize i18n support
+	bindtextdomain("linuxdcpp", _DATADIR "/locale");
+	textdomain("linuxdcpp");
+	bind_textdomain_codeset("linuxdcpp", "UTF-8");
+
 	// Start the DC++ client core
 	startup(callBack, NULL);
 
-	WulforSettingsManager::get()->load();
 	TimerManager::getInstance()->start();
 
 	g_thread_init(NULL);
@@ -47,14 +52,13 @@ int main(int argc, char *argv[])
 
 	signal(SIGPIPE, SIG_IGN);
 
+	WulforSettingsManager::newInstance();
 	WulforManager::start();
 	gdk_threads_enter();
 	gtk_main();
 	gdk_threads_leave();
 	WulforManager::stop();
-
-	WulforSettingsManager::get()->save();
-	delete WulforSettingsManager::get();
+	WulforSettingsManager::deleteInstance();
 
 	std::cout << "Shutting down..." << std::endl;
 	shutdown();

@@ -255,7 +255,7 @@ void FavoriteManager::onHttpFinished() throw() {
 		} else {
 			i = 0;
 
-			string utfText = Text::acpToUtf8(*x);
+			string utfText = Text::toUtf8(*x);
 
 			while( (i < utfText.size()) && ((j=utfText.find("\r\n", i)) != string::npos)) {
 				StringTokenizer<string> tok(utfText.substr(i, j-i), '|');

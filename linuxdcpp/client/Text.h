@@ -104,7 +104,7 @@ public:
 
 	static bool validateUtf8(const string& str) throw();
 
-	static char asciiToLower(char c) { dcassert((((uint8_t)c) & 0x80) == 0); return tolower(c); }
+	static char asciiToLower(char c) { dcassert((((uint8_t)c) & 0x80) == 0); return (char)tolower(c); }
 
 	static wchar_t toLower(wchar_t c) throw();
 	static wstring toLower(const wstring& str) throw() {
@@ -118,13 +118,17 @@ public:
 	}
 	static string& toLower(const string& str, string& tmp) throw();
 
-	static string& convert(const string& str, string& tmp, const string& fromCharset, const string& toCharset) throw();
+	static const string& convert(const string& str, string& tmp, const string& fromCharset, const string& toCharset) throw();
 	static string convert(const string& str, const string& fromCharset, const string& toCharset) throw() {
 		string tmp;
 		return convert(str, tmp, fromCharset, toCharset);
 	}
 
-	static string getSystemCharset() throw() { return systemCharset; }
+	static string toUtf8(const string& str, const string& charset = systemCharset) throw();
+	static string fromUtf8(const string& str, const string& charset = systemCharset) throw();
+
+	static const string& getSystemCharset() throw() { return systemCharset; }
+	static const string utf8;
 
 private:
 	static string systemCharset;

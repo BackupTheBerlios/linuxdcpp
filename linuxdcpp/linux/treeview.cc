@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
  */
 
 #include "treeview.hh"
-#include <iostream>
 #include "settingsmanager.hh"
 #include "WulforUtil.hh"
 
@@ -91,7 +90,9 @@ void TreeView::insertColumn(const string &title, const GType &gtype, const colum
 void TreeView::insertHiddenColumn(const string &title, const GType &gtype)
 {
 	// Title must be unique.
-	dcassert(!title.empty() && hiddenColumns.find(title) == hiddenColumns.end() && columns.find(title) == columns.end());
+	dcassert(!title.empty());
+	dcassert(hiddenColumns.find(title) == hiddenColumns.end());
+	dcassert(columns.find(title) == columns.end());
 
 	hiddenColumns[title] = Column(title, count, gtype);
 	sortedHiddenColumns[count] = title;
@@ -256,25 +257,19 @@ void TreeView::addColumn_gui(Column column)
 
 void TreeView::setSortColumn_gui(const string &column, const string &sortColumn)
 {
-	GtkTreeViewColumn *gtkColumn;
-	gtkColumn = gtk_tree_view_get_column(view, col(column));
+	GtkTreeViewColumn *gtkColumn = gtk_tree_view_get_column(view, col(column));
 	gtk_tree_view_column_set_sort_column_id(gtkColumn, col(sortColumn));
 }
 
 int TreeView::col(const string &title)
 {
 	dcassert(!title.empty());
+	dcassert(columns.find(title) != columns.end() || hiddenColumns.find(title) != hiddenColumns.end());
 
 	if (columns.find(title) != columns.end())
 		return columns[title].pos;
-	else if (hiddenColumns.find(title) != hiddenColumns.end())
-		return hiddenColumns[title].id;
 	else
-	{
-		cerr << "Invalid column accessed: " << title << endl;
-		gtk_main_quit();
-		return -1;
-	}
+		return hiddenColumns[title].id;
 }
 
 gboolean TreeView::popupMenu_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
@@ -339,11 +334,11 @@ void TreeView::restoreSettings()
 	columnWidth = WulforUtil::splitString(WGETS(name + "-width"), ",");
 	columnVisibility = WulforUtil::splitString(WGETS(name + "-visibility"), ",");
 
-	if (!columnOrder.empty() && columnOrder.size() == columns.size() &&
-		!columnWidth.empty() && columnWidth.size() == columns.size() &&
-		!columnVisibility.empty() && columnVisibility.size() == columns.size())
+	if (columns.size() == columnOrder.size() &&
+	    columnOrder.size() == columnWidth.size() &&
+	    columnWidth.size() == columnVisibility.size())
 	{
-		for (ColIter iter = columns.begin(); iter != columns.end(); iter++)
+		for (ColIter iter = columns.begin(); iter != columns.end(); ++iter)
 		{
 			for (size_t i = 0; i < columns.size(); i++)
 			{

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -138,6 +138,7 @@ MainWindow::MainWindow():
 	// In our case, this is just a placeholder, so we remove it.
 	gtk_notebook_remove_page(GTK_NOTEBOOK(getWidget("book")), -1);
 	g_object_set_data(G_OBJECT(getWidget("book")), "page-rotation-list", NULL);
+	gtk_widget_set_sensitive(getWidget("closeMenuItem"), FALSE);
 
 	// Connect the signals to their callback functions.
 	g_signal_connect(window, "delete-event", G_CALLBACK(onDeleteWindow_gui), (gpointer)this);
@@ -182,15 +183,14 @@ MainWindow::MainWindow():
 	g_signal_connect(getWidget("closeConnectionItem"), "activate", G_CALLBACK(onCloseConnectionClicked_gui), (gpointer)this);
 
 	// Load window state and position from settings manager
-	WulforSettingsManager *sm = WulforSettingsManager::get();
-	int posX = sm->getInt("main-window-pos-x");
-	int posY = sm->getInt("main-window-pos-y");
-	int sizeX = sm->getInt("main-window-size-x");
-	int sizeY = sm->getInt("main-window-size-y");
+	int posX = WGETI("main-window-pos-x");
+	int posY = WGETI("main-window-pos-y");
+	int sizeX = WGETI("main-window-size-x");
+	int sizeY = WGETI("main-window-size-y");
 
 	gtk_window_move(window, posX, posY);
 	gtk_window_resize(window, sizeX, sizeY);
-	if (sm->getInt("main-window-maximized"))
+	if (WGETI("main-window-maximized"))
 		gtk_window_maximize(window);
 
 	GtkWidget *dummy;
@@ -200,7 +200,7 @@ MainWindow::MainWindow():
 	gtk_widget_destroy(dummy);
 	emptyStatusWidth = req.width;
 
-	gtk_statusbar_push(GTK_STATUSBAR(getWidget("status1")), 0, "Welcome to LinuxDC++");
+	gtk_statusbar_push(GTK_STATUSBAR(getWidget("status1")), 0, _("Welcome to LinuxDC++"));
 
 	// Putting this after all the resizing and moving makes the window appear
 	// in the correct position instantly, looking slightly more cool
@@ -235,7 +235,6 @@ MainWindow::~MainWindow()
 	int posX, posY, sizeX, sizeY, transferPanePosition;
 	int state = 1;
 	GdkWindowState gdkState;
-	WulforSettingsManager *sm = WulforSettingsManager::get();
 
 	gtk_window_get_position(window, &posX, &posY);
 	gtk_window_get_size(window, &sizeX, &sizeY);
@@ -246,14 +245,14 @@ MainWindow::~MainWindow()
 	{
 		state = 0;
 		// The get pos/size functions return junk when window is maximized
-		sm->set("main-window-pos-x", posX);
-		sm->set("main-window-pos-y", posY);
-		sm->set("main-window-size-x", sizeX);
-		sm->set("main-window-size-y", sizeY);
+		WSET("main-window-pos-x", posX);
+		WSET("main-window-pos-y", posY);
+		WSET("main-window-size-x", sizeX);
+		WSET("main-window-size-y", sizeY);
 	}
 
-	sm->set("main-window-maximized", state);
-	sm->set("transfer-pane-position", transferPanePosition);
+	WSET("main-window-maximized", state);
+	WSET("transfer-pane-position", transferPanePosition);
 
 	// Make sure all windows are deallocated
 	gtk_widget_destroy(getWidget("connectDialog"));
@@ -297,6 +296,8 @@ void MainWindow::addPage_gui(GtkWidget *page, GtkWidget *label, bool raise)
 
 	if (raise)
 		gtk_notebook_set_current_page(GTK_NOTEBOOK(getWidget("book")), -1);
+
+	gtk_widget_set_sensitive(getWidget("closeMenuItem"), TRUE);
 
 #if GTK_CHECK_VERSION(2, 10, 0)
 	gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(getWidget("book")), page, TRUE);
@@ -343,6 +344,9 @@ void MainWindow::removePage_gui(GtkWidget *page)
 			}
 		}
 		gtk_notebook_remove_page(book, num);
+
+		if (gtk_notebook_get_n_pages(book) == 0)
+			gtk_widget_set_sensitive(getWidget("closeMenuItem"), FALSE);
 	}
 }
 
@@ -378,7 +382,7 @@ void MainWindow::createTrayIcon_gui()
 	string iconPath = WulforManager::get()->getPath() + "/pixmaps/linuxdcpp-icon.png";
 	trayToolTip = gtk_tooltips_new();
 
-	trayIcon = GTK_WIDGET(egg_tray_icon_new("Linux DC++"));
+	trayIcon = GTK_WIDGET(egg_tray_icon_new("LinuxDC++"));
 	GtkWidget *trayBox = gtk_event_box_new();
 	GtkWidget *trayImage = gtk_image_new_from_file(iconPath.c_str());
 	gtk_container_add(GTK_CONTAINER(trayBox), trayImage);
@@ -433,7 +437,7 @@ void MainWindow::addShareBrowser_gui(User::Ptr user, string listName, string ini
 	bool raise = useSetting ? !BOOLSETTING(POPUNDER_FILELIST) : TRUE;
 	WulforManager::get()->addShareBrowser_gui(user, listName, initialDir, raise);
 
-	setStatus_gui("status1", "File list loaded");
+	setStatus_gui("status1", _("File list loaded"));
 }
 
 void MainWindow::openHub_gui(string server, string encoding)
@@ -448,11 +452,11 @@ bool MainWindow::findTransfer_gui(const string &cid, bool download, GtkTreeIter 
 
 	while (valid)
 	{
-		if (cid == transferView.getString(iter,"CID"))
+		if (cid == transferView.getString(iter, "CID"))
 		{
-			if (download && transferView.getValue<GdkPixbuf*>(iter,"Icon") == downloadPic)
+			if (download && transferView.getValue<GdkPixbuf*>(iter, "Icon") == downloadPic)
 				return TRUE;
-			if (!download && transferView.getValue<GdkPixbuf*>(iter,"Icon") == uploadPic)
+			if (!download && transferView.getValue<GdkPixbuf*>(iter, "Icon") == uploadPic)
 				return TRUE;
 		}
 		valid = gtk_tree_model_iter_next(m, iter);
@@ -564,7 +568,7 @@ gboolean MainWindow::onButtonPressPage_gui(GtkWidget *widget, GdkEventButton *ev
 				BookEntry *entry = (BookEntry *)g_object_get_data(G_OBJECT(entryWidget), "entry");
 
 				if (entry)
-					WulforManager::get()->deleteBookEntry_gui(entry);
+					WulforManager::get()->deleteEntry_gui(entry);
 
 				return TRUE;
 			}
@@ -749,7 +753,7 @@ void MainWindow::onOpenFileListClicked_gui(GtkWidget *widget, gpointer data)
 			if (user)
 				WulforManager::get()->addShareBrowser_gui(user, path, "");
 			else
-				mw->setStatus_gui("status1", "Unable to open: Older file list format detected");
+				mw->setStatus_gui("status1", _("Unable to open: Older file list format detected"));
 		}
 	}
 }
@@ -761,7 +765,7 @@ void MainWindow::onOpenOwnListClicked_gui(GtkWidget *widget, gpointer data)
 	F0 *func = new F0(mw, &MainWindow::openOwnList_client);
 	WulforManager::get()->dispatchClientFunc(func);
 
-	mw->setStatus_gui("status1", "Loading file list");
+	mw->setStatus_gui("status1", _("Loading file list"));
 }
 
 void MainWindow::onRefreshFileListClicked_gui(GtkWidget *widget, gpointer data)
@@ -798,7 +802,7 @@ void MainWindow::onCloseClicked_gui(GtkWidget *widget, gpointer data)
 		BookEntry *entry = (BookEntry *)g_object_get_data(G_OBJECT(entryWidget), "entry");
 
 		if (entry)
-			WulforManager::get()->deleteBookEntry_gui(entry);
+			WulforManager::get()->deleteEntry_gui(entry);
 	}
 }
 
@@ -975,7 +979,7 @@ void MainWindow::onForceAttemptClicked_gui(GtkMenuItem *menuItem, gpointer data)
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(mw->transferStore), &iter, path))
 		{
 			cid = mw->transferView.getString(&iter, "CID");
-			gtk_list_store_set(mw->transferStore, &iter, mw->transferView.col("Status"), "Connecting (forced)...", -1);
+			gtk_list_store_set(mw->transferStore, &iter, mw->transferView.col("Status"), _("Connecting (forced)..."), -1);
 
 			func = new F1(mw, &MainWindow::forceAttempt_client, cid);
 			WulforManager::get()->dispatchClientFunc(func);
@@ -1003,7 +1007,7 @@ void MainWindow::onCloseConnectionClicked_gui(GtkMenuItem *menuItem, gpointer da
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(mw->transferStore), &iter, path))
 		{
 			cid = mw->transferView.getString(&iter, "CID");
-			gtk_list_store_set(mw->transferStore, &iter, mw->transferView.col("Status"), "Closing connection...", -1);
+			gtk_list_store_set(mw->transferStore, &iter, mw->transferView.col("Status"), _("Closing connection..."), -1);
 			if (mw->transferView.getValue<GdkPixbuf*>(&iter,"Icon") == mw->downloadPic)
 				download = TRUE;
 			else
@@ -1203,17 +1207,17 @@ void MainWindow::transferComplete_client(Transfer *t)
 
 	params["CID"] = user->getCID().toBase32();
 	params["Progress"] = "100";
-	params["Time Left"] = "Done";
+	params["Time Left"] = _("Done");
 	params["Sort Order"] = "w" + WulforUtil::getNicks(user) + WulforUtil::getHubNames(user);
 
 	if (t->getUserConnection().isSet(UserConnection::FLAG_DOWNLOAD))
 	{
-		params["Status"] = "Download finished, idle...";
+		params["Status"] = _("Download finished, idle...");
 		download = TRUE;
 	}
 	else
 	{
-		params["Status"] = "Upload finished, idle...";
+		params["Status"] = _("Upload finished, idle...");
 		download = FALSE;
 	}
 
@@ -1229,7 +1233,7 @@ void MainWindow::on(ConnectionManagerListener::Added, ConnectionQueueItem *cqi) 
 	params["CID"] = cqi->getUser()->getCID().toBase32();
 	params["User"] = WulforUtil::getNicks(cqi->getUser());
 	params["Hub Name"] = WulforUtil::getHubNames(cqi->getUser());
-	params["Status"] = "Connecting...";
+	params["Status"] = _("Connecting...");
 	params["Progress"] = "0";
 	params["Sort Order"] = "w" + params["User"] + params["Hub Name"];
 
@@ -1268,9 +1272,9 @@ void MainWindow::on(ConnectionManagerListener::StatusChanged, ConnectionQueueIte
 	params["CID"] = cqi->getUser()->getCID().toBase32();
 
 	if (cqi->getState() == ConnectionQueueItem::CONNECTING)
-		params["Status"] = "Connecting...";
+		params["Status"] = _("Connecting...");
 	else
-		params["Status"] = "Waiting to retry...";
+		params["Status"] = _("Waiting to retry...");
 
 	typedef Func2<MainWindow, StringMap, bool> F2;
 	F2 *func = new F2(this, &MainWindow::updateTransfer_gui, params, cqi->getDownload());
@@ -1283,7 +1287,7 @@ void MainWindow::on(DownloadManagerListener::Starting, Download *dl) throw()
 	User::Ptr user = dl->getUserConnection().getUser();
 
 	if (dl->isSet(Download::FLAG_USER_LIST))
-		params["Filename"] = "Filelist";
+		params["Filename"] = _("Filelist");
 	else if (dl->isSet(Download::FLAG_TREE_DOWNLOAD))
 		params["Filename"] = "TTH: " + Util::getFileName(dl->getTarget());
 	else
@@ -1291,7 +1295,7 @@ void MainWindow::on(DownloadManagerListener::Starting, Download *dl) throw()
 
 	params["CID"] = user->getCID().toBase32();
 	params["Path"] = Util::getFilePath(dl->getTarget());
-	params["Status"] = "Download starting...";
+	params["Status"] = _("Download starting...");
 	params["Size"] = Util::formatBytes(dl->getSize());
 	params["Size Order"] = Util::toString(dl->getSize());
 	params["Sort Order"] = "d" + WulforUtil::getNicks(user) + WulforUtil::getHubNames(user);
@@ -1338,7 +1342,7 @@ void MainWindow::on(DownloadManagerListener::Tick, const Download::List &list) t
 			percent = (double)(dl->getPos() * 100.0) / dl->getSize();
 
 		stream << setiosflags(ios::fixed) << setprecision(1);
-		stream << "Downloaded " << Util::formatBytes((dl->getPos())) << " (" << percent
+		stream << _("Downloaded ") << Util::formatBytes((dl->getPos())) << " (" << percent
 			<< "%) in " << Util::formatSeconds((GET_TICK() - dl->getStart()) / 1000);
 
 		params["CID"] = dl->getUserConnection().getUser()->getCID().toBase32();
@@ -1364,7 +1368,7 @@ void MainWindow::on(DownloadManagerListener::Failed, Download *dl, const string 
 	User::Ptr user = dl->getUserConnection().getUser();
 
 	if (dl->isSet(Download::FLAG_USER_LIST))
-		params["Filename"] = "Filelist";
+		params["Filename"] = _("Filelist");
 	else if (dl->isSet(Download::FLAG_TREE_DOWNLOAD))
 		params["Filename"] = "TTH: " + Util::getFileName(dl->getTarget());
 	else
@@ -1388,7 +1392,7 @@ void MainWindow::on(UploadManagerListener::Starting, Upload *ul) throw()
 	User::Ptr user = ul->getUser();
 
 	if (ul->isSet(Upload::FLAG_USER_LIST))
-		params["Filename"] = "Filelist";
+		params["Filename"] = _("Filelist");
 	else if (ul->isSet(Download::FLAG_TREE_DOWNLOAD))
 		params["Filename"] = "TTH: " + Util::getFileName(ul->getSourceFile());
 	else
@@ -1396,7 +1400,7 @@ void MainWindow::on(UploadManagerListener::Starting, Upload *ul) throw()
 
 	params["CID"] = user->getCID().toBase32();
 	params["Path"] = Util::getFilePath(ul->getSourceFile());
-	params["Status"] = "Upload starting...";
+	params["Status"] = _("Upload starting...");
 	params["Size"] = Util::formatBytes(ul->getSize());
 	params["Size Order"] = Util::toString(ul->getSize());
 	params["Sort Order"] = "u" + WulforUtil::getNicks(user) + WulforUtil::getHubNames(user);
@@ -1439,8 +1443,8 @@ void MainWindow::on(UploadManagerListener::Tick, const Upload::List &list) throw
 			percent = (double)(ul->getPos() * 100.0) / ul->getSize();
 
 		stream << setiosflags(ios::fixed) << setprecision(1);
-		stream << "Uploaded " << Util::formatBytes((ul->getPos())) << " (" << percent
-			<< "%) in " << Util::formatSeconds((GET_TICK() - ul->getStart()) / 1000);
+		stream << _("Uploaded ") << Util::formatBytes((ul->getPos())) << " (" << percent
+			<< _("%) in ") << Util::formatSeconds((GET_TICK() - ul->getStart()) / 1000);
 
 		params["CID"] = ul->getUser()->getCID().toBase32();
 		params["Status"] = status + stream.str();
@@ -1488,17 +1492,17 @@ void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw()
 	int64_t downdiff = Socket::getTotalDown() - lastDown;
 	string status1, status2, status3, status4, status5, status6;
 
-	status1 = "H: " + Client::getCounts();
-	status2 = "S: " + Util::toString(SETTING(SLOTS) -
+	status1 = _("H: ") + Client::getCounts();
+	status2 = _("S: ") + Util::toString(SETTING(SLOTS) -
 		UploadManager::getInstance()->getRunning()) + '/' +
 		Util::toString(SETTING(SLOTS));
-	status3 = "D: " + Util::formatBytes(Socket::getTotalDown());
-	status4 = "U: " + Util::formatBytes(Socket::getTotalUp());
+	status3 = _("D: ") + Util::formatBytes(Socket::getTotalDown());
+	status4 = _("U: ") + Util::formatBytes(Socket::getTotalUp());
 	if (diff > 0)
 	{
-		status5 = "D: " + Util::formatBytes((int64_t)((downdiff*1000)/diff)) + "/s (" +
+		status5 = _("D: ") + Util::formatBytes((int64_t)((downdiff*1000)/diff)) + "/s (" +
 			Util::toString(DownloadManager::getInstance()->getDownloadCount()) + ")";
-		status6 = "U: " + Util::formatBytes((int64_t)((updiff*1000)/diff)) + "/s (" +
+		status6 = _("U: ") + Util::formatBytes((int64_t)((updiff*1000)/diff)) + "/s (" +
 			Util::toString(UploadManager::getInstance()->getUploadCount()) + ")";
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,15 +18,12 @@
 
 #include "settingsmanager.hh"
 
-#include <client/stdinc.h>
-#include <client/DCPlusPlus.h>
+#include <glib/gi18n.h>
 #include <client/File.h>
 #include <client/SimpleXML.h>
 #include <client/Util.h>
 
 using namespace std;
-
-WulforSettingsManager *WulforSettingsManager::ptr = NULL;
 
 WulforSettingsManager::WulforSettingsManager()
 {
@@ -65,14 +62,14 @@ WulforSettingsManager::WulforSettingsManager()
 	defaultString["sharebrowser-order"] = "";
 	defaultString["sharebrowser-width"] = "";
 	defaultString["sharebrowser-visibility"] = "";
-	defaultString["default-charset"] = "System default";
+	defaultString["default-charset"] = _("System default");
+
+	load();
 }
 
-WulforSettingsManager *WulforSettingsManager::get()
+WulforSettingsManager::~WulforSettingsManager()
 {
-	if (ptr == NULL)
-		ptr = new WulforSettingsManager();
-	return ptr;
+	save();
 }
 
 int WulforSettingsManager::getInt(const string &key)
@@ -133,7 +130,7 @@ void WulforSettingsManager::load()
 			map<string, string>::iterator sit;
 			for (sit = defaultString.begin(); sit != defaultString.end(); ++sit)
 			{
-				if(xml.findChild(sit->first))
+				if (xml.findChild(sit->first))
 					stringMap[sit->first] = xml.getChildData();
 				xml.resetCurrentChild();
 			}

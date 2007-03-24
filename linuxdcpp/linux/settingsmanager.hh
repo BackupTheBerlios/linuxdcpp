@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004-2006 Jens Oknelid, paskharen@gmail.com
+ * Copyright © 2004-2007 Jens Oknelid, paskharen@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,28 +21,28 @@
 
 #include <string>
 #include <map>
+#include <client/stdinc.h>
+#include <client/DCPlusPlus.h>
+#include <client/Singleton.h>
 
-#define WSET(key, value) WulforSettingsManager::get()->set(key, value)
-#define WGETI(key) WulforSettingsManager::get()->getInt(key)
-#define WGETS(key) WulforSettingsManager::get()->getString(key)
+#define WSET(key, value) WulforSettingsManager::getInstance()->set(key, value)
+#define WGETI(key) WulforSettingsManager::getInstance()->getInt(key)
+#define WGETS(key) WulforSettingsManager::getInstance()->getString(key)
 
-class WulforSettingsManager
+class WulforSettingsManager : public Singleton<WulforSettingsManager>
 {
 	public:
-		static WulforSettingsManager *get();
+		WulforSettingsManager();
+		virtual ~WulforSettingsManager();
 
 		int getInt(const std::string &key);
 		std::string getString(const std::string &key);
 		void set(const std::string &key, int value);
 		void set(const std::string &key, const std::string &value);
-
 		void load();
 		void save();
 
 	private:
-		WulforSettingsManager();
-		static WulforSettingsManager *ptr;
-
 		std::map<std::string, int> intMap;
 		std::map<std::string, std::string> stringMap;
 		std::map<std::string, int> defaultInt;
