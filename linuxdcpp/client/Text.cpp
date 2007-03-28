@@ -25,6 +25,7 @@
 #ifndef _WIN32
 #include <errno.h>
 #include <iconv.h>
+#include <langinfo.h>
 
 #ifndef ICONV_CONST
  #define ICONV_CONST
@@ -38,12 +39,16 @@ const string Text::utf8 = "UTF-8"; // optimization
 void Text::initialize() {
 	setlocale(LC_ALL, "");
 
+#ifdef _WIN32
 	char *ctype = setlocale(LC_CTYPE, NULL);
 	if(ctype) {
 		systemCharset = string(ctype);
 	} else {
 		dcdebug("Unable to determine the program's locale");
 	}
+#else
+	systemCharset = string(nl_langinfo(CODESET));
+#endif
 }
 
 int Text::utf8ToWc(const char* str, wchar_t& c) {
