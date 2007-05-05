@@ -19,17 +19,21 @@
 #ifndef WULFOR_FUNC_HH
 #define WULFOR_FUNC_HH
 
-class FuncBase {
+class FuncBase
+{
 	public:
+		FuncBase() {}
 		virtual ~FuncBase() {}
-		virtual void call() {}
-		virtual std::string getID() { return ""; }
+		virtual void call() = 0;
+		virtual const std::string& getID() = 0;
 };
 
 template<class c>
-class Func0: public FuncBase {
+class Func0: public FuncBase
+{
 	public:
-		Func0(c *obj, void (c::*func)()) {
+		Func0(c *obj, void (c::*func)())
+		{
 			this->obj = obj;
 			this->func = func;
 		}
@@ -38,7 +42,7 @@ class Func0: public FuncBase {
 			(*obj.*func)();
 		}
 
-		std::string getID()
+		const std::string& getID()
 		{
 			return obj->getID();
 		}
@@ -49,7 +53,8 @@ class Func0: public FuncBase {
 };
 
 template<class c, typename p1>
-class Func1: public FuncBase {
+class Func1: public FuncBase
+{
 	public:
 		Func1(c *obj, void (c::*func)(p1), p1 param1):
 			_param1(param1)
@@ -62,7 +67,7 @@ class Func1: public FuncBase {
 			(*obj.*func)(_param1);
 		}
 
-		std::string getID()
+		const std::string& getID()
 		{
 			return obj->getID();
 		}
@@ -74,7 +79,8 @@ class Func1: public FuncBase {
 };
 
 template<class c, typename p1, typename p2>
-class Func2: public FuncBase {
+class Func2: public FuncBase
+{
 	public:
 		Func2(c *obj, void (c::*func)(p1, p2), p1 param1, p2 param2):
 			_param1(param1),
@@ -88,7 +94,7 @@ class Func2: public FuncBase {
 			(*obj.*func)(_param1, _param2);
 		}
 
-		std::string getID()
+		const std::string& getID()
 		{
 			return obj->getID();
 		}
@@ -101,7 +107,8 @@ class Func2: public FuncBase {
 };
 
 template<class c, typename p1, typename p2, typename p3>
-class Func3: public FuncBase {
+class Func3: public FuncBase 
+{
 	public:
 		Func3(c *obj, void (c::*func)(p1, p2, p3), p1 param1, p2 param2, p3 param3):
 			_param1(param1),
@@ -116,7 +123,7 @@ class Func3: public FuncBase {
 			(*obj.*func)(_param1, _param2, _param3);
 		}
 
-		std::string getID()
+		const std::string& getID()
 		{
 			return obj->getID();
 		}
@@ -130,7 +137,8 @@ class Func3: public FuncBase {
 };
 
 template<class c, typename p1, typename p2, typename p3, typename p4>
-class Func4: public FuncBase {
+class Func4: public FuncBase
+{
 	public:
 		Func4(c *obj, void (c::*func)(p1, p2, p3, p4),
 			p1 param1, p2 param2, p3 param3, p4 param4):
@@ -147,7 +155,7 @@ class Func4: public FuncBase {
 			(*obj.*func)(_param1, _param2, _param3, _param4);
 		}
 
-		std::string getID()
+		const std::string& getID()
 		{
 			return obj->getID();
 		}
@@ -162,7 +170,8 @@ class Func4: public FuncBase {
 };
 
 template<class c, typename p1, typename p2, typename p3, typename p4, typename p5>
-class Func5: public FuncBase {
+class Func5: public FuncBase
+{
 	public:
 		Func5(c *obj, void (c::*func)(p1, p2, p3, p4, p5),
 			p1 param1, p2 param2, p3 param3, p4 param4, p5 param5):
@@ -180,7 +189,7 @@ class Func5: public FuncBase {
 			(*obj.*func)(_param1, _param2, _param3, _param4, _param5);
 		}
 
-		std::string getID()
+		const std::string& getID()
 		{
 			return obj->getID();
 		}
@@ -196,7 +205,8 @@ class Func5: public FuncBase {
 };
 
 template<class c, typename p1, typename p2, typename p3, typename p4, typename p5, typename p6>
-class Func6: public FuncBase {
+class Func6: public FuncBase
+{
 	public:
 		Func6(c *obj, void (c::*func)(p1, p2, p3, p4, p5, p6),
 			p1 param1, p2 param2, p3 param3, p4 param4, p5 param5, p6 param6):
@@ -216,7 +226,7 @@ class Func6: public FuncBase {
 			(*obj.*func)(_param1, _param2, _param3, _param4, _param5, _param6);
 		}
 
-		std::string getID()
+		const std::string& getID()
 		{
 			return obj->getID();
 		}
@@ -233,7 +243,8 @@ class Func6: public FuncBase {
 };
 
 template<class c, typename p1, typename p2, typename p3, typename p4, typename p5, typename p6, typename p7>
-class Func7: public FuncBase {
+class Func7: public FuncBase
+{
 	public:
 		Func7(c *obj, void (c::*func)(p1, p2, p3, p4, p5, p6, p7),
 			p1 param1, p2 param2, p3 param3, p4 param4, p5 param5, p6 param6, p7 param7):
@@ -253,7 +264,7 @@ class Func7: public FuncBase {
 			(*obj.*func)(_param1, _param2, _param3, _param4, _param5, _param6, _param7);
 		}
 
-		std::string getID()
+		const std::string& getID()
 		{
 			return obj->getID();
 		}
@@ -272,7 +283,8 @@ class Func7: public FuncBase {
 
 template<class c, typename p1, typename p2, typename p3, typename p4,
 	typename p5, typename p6, typename p7, typename p8>
-class Func8: public FuncBase {
+class Func8: public FuncBase
+{
 	public:
 		Func8(c *obj, void (c::*func)(p1, p2, p3, p4, p5, p6, p7, p8),
 			p1 param1, p2 param2, p3 param3, p4 param4, p5 param5, p6 param6,
@@ -295,7 +307,7 @@ class Func8: public FuncBase {
 				_param7, _param8);
 		}
 
-		std::string getID()
+		const std::string& getID()
 		{
 			return obj->getID();
 		}
@@ -315,7 +327,8 @@ class Func8: public FuncBase {
 
 template<class c, typename p1, typename p2, typename p3, typename p4,
 	typename p5, typename p6, typename p7, typename p8, typename p9>
-class Func9: public FuncBase {
+class Func9: public FuncBase
+{
 	public:
 		Func9(c *obj, void (c::*func)(p1, p2, p3, p4, p5, p6, p7, p8, p9),
 			p1 param1, p2 param2, p3 param3, p4 param4, p5 param5, p6 param6,
@@ -340,7 +353,7 @@ class Func9: public FuncBase {
 				_param7, _param8, _param9);
 		}
 
-		std::string getID()
+		const std::string& getID()
 		{
 			return obj->getID();
 		}

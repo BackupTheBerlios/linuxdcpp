@@ -1,3 +1,15 @@
+2007-05-05 - Steven Sheehy
+* Fixed download delay in some cases (thanks Mikael Eman).
+* Added "Log filelist transfers" setting.
+* Bug #10891: Move of tree in dl queue flattens the tree.
+* Bug #10978: Incorrect charset names.
+* Bug #10261: ShareManager::checkTypes is not endian-safe (thanks Mikael Eman).
+* Patch #1953: Improve socket disconnections caused by EINTR (thanks Mikael Eman).
+* Fixed an encoding issue that could cause transfers to fail (thanks Stanislav Maslovski).
+
+2007-03-27 - Steven Sheehy
+* Fixed a text conversion regression.
+
 2007-03-24 - Steven Sheehy
 * Fixed an issue with systems that dynamically link iconv.
 * Added /away and /back to pm commands.

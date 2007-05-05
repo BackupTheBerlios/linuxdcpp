@@ -47,6 +47,7 @@ ShareManager::ShareManager() : hits(0), xmlListLen(0), bzXmlListLen(0),
 	xmlDirty(true), refreshDirs(false), update(false), initial(true), listN(0), refreshing(0), 
 	lastXmlUpdate(0), lastFullUpdate(GET_TICK()), bloom(1<<20)
 {
+	initTypeMap();
 	SettingsManager::getInstance()->addListener(this);
 	TimerManager::getInstance()->addListener(this);
 	DownloadManager::getInstance()->addListener(this);
@@ -976,93 +977,89 @@ void ShareManager::Directory::filesToXml(OutputStream& xmlFile, string& indent, 
 	}
 }
 
-// These ones we can look up as ints (4 bytes...)...
+void ShareManager::initTypeMap() {
+	// audio
+	typeMap["a52"] = SearchManager::TYPE_AUDIO;
+	typeMap["aac"] = SearchManager::TYPE_AUDIO;
+	typeMap["ac3"] = SearchManager::TYPE_AUDIO;
+	typeMap["au"] = SearchManager::TYPE_AUDIO;
+	typeMap["aiff"] = SearchManager::TYPE_AUDIO;
+	typeMap["dts"] = SearchManager::TYPE_AUDIO;
+	typeMap["flac"] = SearchManager::TYPE_AUDIO;
+	typeMap["mid"] = SearchManager::TYPE_AUDIO;
+	typeMap["mod"] = SearchManager::TYPE_AUDIO;
+	typeMap["mp1"] = SearchManager::TYPE_AUDIO;
+	typeMap["mp2"] = SearchManager::TYPE_AUDIO;
+	typeMap["mp3"] = SearchManager::TYPE_AUDIO;
+	typeMap["ogg"] = SearchManager::TYPE_AUDIO;
+	typeMap["spx"] = SearchManager::TYPE_AUDIO;
+	typeMap["wav"] = SearchManager::TYPE_AUDIO;
+	typeMap["wma"] = SearchManager::TYPE_AUDIO;
 
-static const char* typeAudio[] = { ".mp3", ".mp2", ".mid", ".wav", ".ogg", ".wma" };
-static const char* typeCompressed[] = { ".zip", ".ace", ".rar" };
-static const char* typeDocument[] = { ".htm", ".doc", ".txt", ".nfo" };
-static const char* typeExecutable[] = { ".exe" };
-static const char* typePicture[] = { ".jpg", ".gif", ".png", ".eps", ".img", ".pct", ".psp", ".pic", ".tif", ".rle", ".bmp", ".pcx" };
-static const char* typeVideo[] = { ".mpg", ".mov", ".asf", ".avi", ".pxp", ".wmv", ".ogm", ".mkv" };
+	// compressed
+	typeMap["ace"] = SearchManager::TYPE_COMPRESSED;
+	typeMap["bz2"] = SearchManager::TYPE_COMPRESSED;
+	typeMap["gz"] = SearchManager::TYPE_COMPRESSED;
+	typeMap["rar"] = SearchManager::TYPE_COMPRESSED;
+	typeMap["tar"] = SearchManager::TYPE_COMPRESSED;
+	typeMap["zip"] = SearchManager::TYPE_COMPRESSED;
 
-static const string type2Audio[] = { ".au", ".aiff", ".flac" };
-static const string type2Picture[] = { ".ai", ".ps", ".pict" };
-static const string type2Video[] = { ".rm", ".divx", ".mpeg" };
+	// document
+	typeMap["doc"] = SearchManager::TYPE_DOCUMENT;
+	typeMap["htm"] = SearchManager::TYPE_DOCUMENT;
+	typeMap["html"] = SearchManager::TYPE_DOCUMENT;
+	typeMap["nfo"] = SearchManager::TYPE_DOCUMENT;
+	typeMap["pdf"] = SearchManager::TYPE_DOCUMENT;
+	typeMap["sxw"] = SearchManager::TYPE_DOCUMENT;
+	typeMap["txt"] = SearchManager::TYPE_DOCUMENT;
 
-#define IS_TYPE(x) ( type == (*((uint32_t*)x)) )
-#define IS_TYPE2(x) (Util::stricmp(aString.c_str() + aString.length() - x.length(), x.c_str()) == 0)
+	// executable
+	typeMap["exe"] = SearchManager::TYPE_EXECUTABLE;
 
-static bool checkType(const string& aString, int aType) {
+	// picture
+	typeMap["ai"] = SearchManager::TYPE_PICTURE;
+	typeMap["bmp"] = SearchManager::TYPE_PICTURE;
+	typeMap["eps"] = SearchManager::TYPE_PICTURE;
+	typeMap["gif"] = SearchManager::TYPE_PICTURE;
+	typeMap["img"] = SearchManager::TYPE_PICTURE;
+	typeMap["jpg"] = SearchManager::TYPE_PICTURE;
+	typeMap["ps"] = SearchManager::TYPE_PICTURE;
+	typeMap["pct"] = SearchManager::TYPE_PICTURE;
+	typeMap["pcx"] = SearchManager::TYPE_PICTURE;
+	typeMap["pic"] = SearchManager::TYPE_PICTURE;
+	typeMap["pict"] = SearchManager::TYPE_PICTURE;
+	typeMap["png"] = SearchManager::TYPE_PICTURE;
+	typeMap["psp"] = SearchManager::TYPE_PICTURE;
+	typeMap["rle"] = SearchManager::TYPE_PICTURE;
+	typeMap["tif"] = SearchManager::TYPE_PICTURE;
+
+	// video
+	typeMap["asf"] = SearchManager::TYPE_VIDEO;
+	typeMap["avi"] = SearchManager::TYPE_VIDEO;
+	typeMap["divx"] = SearchManager::TYPE_VIDEO;
+	typeMap["dv"] = SearchManager::TYPE_VIDEO;
+	typeMap["mlv"] = SearchManager::TYPE_VIDEO;
+	typeMap["m2v"] = SearchManager::TYPE_VIDEO;
+	typeMap["m4v"] = SearchManager::TYPE_VIDEO;
+	typeMap["mkv"] = SearchManager::TYPE_VIDEO;
+	typeMap["mov"] = SearchManager::TYPE_VIDEO;
+	typeMap["mpeg"] = SearchManager::TYPE_VIDEO;
+	typeMap["mpeg1"] = SearchManager::TYPE_VIDEO;
+	typeMap["mpeg2"] = SearchManager::TYPE_VIDEO;
+	typeMap["mpeg4"] = SearchManager::TYPE_VIDEO;
+	typeMap["mpg"] = SearchManager::TYPE_VIDEO;
+	typeMap["ogm"] = SearchManager::TYPE_VIDEO;
+	typeMap["pxp"] = SearchManager::TYPE_VIDEO;
+	typeMap["rm"]  = SearchManager::TYPE_VIDEO;
+	typeMap["vob"] = SearchManager::TYPE_VIDEO;
+	typeMap["wmv"] = SearchManager::TYPE_VIDEO;
+}
+
+bool ShareManager::checkType(const string& aString, int aType) {
 	if(aType == SearchManager::TYPE_ANY)
 		return true;
-
-	if(aString.length() < 5)
-		return false;
-
-	const char* c = aString.c_str() + aString.length() - 3;
-	if(!Text::isAscii(c))
-		return false;
-
-	uint32_t type = '.' | (Text::asciiToLower(c[0]) << 8) | (Text::asciiToLower(c[1]) << 16) | (((uint32_t)Text::asciiToLower(c[2])) << 24);
-
-	switch(aType) {
-	case SearchManager::TYPE_AUDIO:
-		{
-			for(size_t i = 0; i < (sizeof(typeAudio) / sizeof(typeAudio[0])); i++) {
-				if(IS_TYPE(typeAudio[i])) {
-					return true;
-				}
-			}
-			if( IS_TYPE2(type2Audio[0]) || IS_TYPE2(type2Audio[1]) ) {
-				return true;
-			}
-		}
-		break;
-	case SearchManager::TYPE_COMPRESSED:
-		if( IS_TYPE(typeCompressed[0]) || IS_TYPE(typeCompressed[1]) || IS_TYPE(typeCompressed[2]) ) {
-			return true;
-		}
-		break;
-	case SearchManager::TYPE_DOCUMENT:
-		if( IS_TYPE(typeDocument[0]) || IS_TYPE(typeDocument[1]) ||
-			IS_TYPE(typeDocument[2]) || IS_TYPE(typeDocument[3]) ) {
-			return true;
-		}
-		break;
-	case SearchManager::TYPE_EXECUTABLE:
-		if(IS_TYPE(typeExecutable[0]) ) {
-			return true;
-		}
-		break;
-	case SearchManager::TYPE_PICTURE:
-		{
-			for(size_t i = 0; i < (sizeof(typePicture) / sizeof(typePicture[0])); i++) {
-				if(IS_TYPE(typePicture[i])) {
-					return true;
-				}
-			}
-			if( IS_TYPE2(type2Picture[0]) || IS_TYPE2(type2Picture[1]) || IS_TYPE2(type2Picture[2]) ) {
-				return true;
-			}
-		}
-		break;
-	case SearchManager::TYPE_VIDEO:
-		{
-			for(size_t i = 0; i < (sizeof(typeVideo) / sizeof(typeVideo[0])); i++) {
-				if(IS_TYPE(typeVideo[i])) {
-					return true;
-				}
-			}
-			if( IS_TYPE2(type2Video[0]) || IS_TYPE2(type2Video[1]) || IS_TYPE2(type2Video[2]) ) {
-				return true;
-			}
-		}
-		break;
-	default:
-		dcasserta(0);
-		break;
-	}
-	return false;
+	else
+		return (aType == getType(aString));
 }
 
 SearchManager::TypeModes ShareManager::getType(const string& aFileName) {
@@ -1070,18 +1067,16 @@ SearchManager::TypeModes ShareManager::getType(const string& aFileName) {
 		return SearchManager::TYPE_DIRECTORY;
 	}
 
-	if(checkType(aFileName, SearchManager::TYPE_VIDEO))
-		return SearchManager::TYPE_VIDEO;
-	else if(checkType(aFileName, SearchManager::TYPE_AUDIO))
-		return SearchManager::TYPE_AUDIO;
-	else if(checkType(aFileName, SearchManager::TYPE_COMPRESSED))
-		return SearchManager::TYPE_COMPRESSED;
-	else if(checkType(aFileName, SearchManager::TYPE_DOCUMENT))
-		return SearchManager::TYPE_DOCUMENT;
-	else if(checkType(aFileName, SearchManager::TYPE_EXECUTABLE))
-		return SearchManager::TYPE_EXECUTABLE;
-	else if(checkType(aFileName, SearchManager::TYPE_PICTURE))
-		return SearchManager::TYPE_PICTURE;
+	string::size_type i = aFileName.find_last_of('.');
+
+	if (i != string::npos)
+	{
+		const string &suffix = Text::toLower(aFileName.substr(i + 1));
+		TypeIter iter = typeMap.find(suffix);
+
+		if (iter != typeMap.end())
+			return iter->second;
+	}
 
 	return SearchManager::TYPE_ANY;
 }
@@ -1140,7 +1135,7 @@ void ShareManager::Directory::search(SearchResult::List& aResults, StringSearch:
 				continue;
 
 			// Check file type...
-			if(checkType(i->getName(), aFileType)) {
+			if(ShareManager::getInstance()->checkType(i->getName(), aFileType)) {
 				SearchResult* sr = new SearchResult(SearchResult::TYPE_FILE, i->getSize(), getFullName() + i->getName(), i->getTTH());
 				aResults.push_back(sr);
 				ShareManager::getInstance()->setHits(ShareManager::getInstance()->getHits()+1);

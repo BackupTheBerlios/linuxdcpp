@@ -26,8 +26,6 @@ FinishedTransfers::FinishedTransfers(const string &title):
 	totalBytes(0),
 	totalTime(0)
 {
-	FinishedManager::getInstance()->addListener(this);
-
 	// Configure the dialog
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("openWithDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
@@ -68,6 +66,8 @@ FinishedTransfers::FinishedTransfers(const string &title):
 	initializeList_client();
 	//Func0<FinishedTransfers> *func = new Func0<FinishedTransfers>(this, &FinishedTransfers::initializeList_client);
 	//WulforManager::get()->dispatchClientFunc(func);
+
+	FinishedManager::getInstance()->addListener(this);
 }
 
 FinishedTransfers::~FinishedTransfers()
@@ -206,7 +206,7 @@ void FinishedTransfers::onOpenWith_gui(GtkMenuItem *item, gpointer data)
 				target = ft->transferView.getString(&iter, "Target");
 				if (!command.empty() && !target.empty())
 				{
-					target = command + Text::utf8ToAcp(" \"" + target + "\"");
+					target = command + Text::fromUtf8(" \"" + target + "\"");
 					g_spawn_command_line_async(target.c_str(), NULL);
 				}
 			}

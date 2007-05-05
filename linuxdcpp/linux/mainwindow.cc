@@ -717,12 +717,12 @@ void MainWindow::onDownloadQueueClicked_gui(GtkWidget *widget, gpointer data)
 
 void MainWindow::onFinishedDownloadsClicked_gui(GtkWidget *widget, gpointer data)
 {
-	WulforManager::get()->addFinishedTransfers_gui("Finished Downloads");
+	WulforManager::get()->addFinishedTransfers_gui(_("Finished Downloads"));
 }
 
 void MainWindow::onFinishedUploadsClicked_gui(GtkWidget *widget, gpointer data)
 {
-	WulforManager::get()->addFinishedTransfers_gui("Finished Uploads");
+	WulforManager::get()->addFinishedTransfers_gui(_("Finished Uploads"));
 }
 
 void MainWindow::onQuitClicked_gui(GtkWidget *widget, gpointer data)
@@ -736,7 +736,7 @@ void MainWindow::onOpenFileListClicked_gui(GtkWidget *widget, gpointer data)
 {
 	MainWindow *mw = (MainWindow *)data;
 
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(mw->getWidget("flistDialog")), Text::utf8ToAcp(Util::getListPath()).c_str());
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(mw->getWidget("flistDialog")), Text::fromUtf8(Util::getListPath()).c_str());
 
  	int ret = gtk_dialog_run(GTK_DIALOG(mw->getWidget("flistDialog")));
 	gtk_widget_hide(mw->getWidget("flistDialog"));
@@ -746,7 +746,7 @@ void MainWindow::onOpenFileListClicked_gui(GtkWidget *widget, gpointer data)
 		gchar *temp = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(mw->getWidget("flistDialog")));
 		if (temp)
 		{
-			string path = Text::acpToUtf8(temp);
+			string path = Text::toUtf8(temp);
 			g_free(temp);
 
 			User::Ptr user = DirectoryListing::getUserFromFilename(path);
@@ -819,14 +819,13 @@ void MainWindow::onGetFileListClicked_gui(GtkMenuItem *item, gpointer data)
 	string cid;
 	GtkTreeIter iter;
 	GtkTreePath *path;
-	int count = gtk_tree_selection_count_selected_rows(mw->transferSelection);
 	GList *list = gtk_tree_selection_get_selected_rows(mw->transferSelection, NULL);
 	typedef Func1<MainWindow, string > F1;
 	F1 *func;
 
-	for (int i = 0; i < count; i++)
+	for (GList *i = list; i; i = i->next)
 	{
-		path = (GtkTreePath *)g_list_nth_data(list, i);
+		path = (GtkTreePath *)i->data;
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(mw->transferStore), &iter, path))
 		{
 			cid = mw->transferView.getString(&iter, "CID");
@@ -844,14 +843,13 @@ void MainWindow::onMatchQueueClicked_gui(GtkMenuItem *item, gpointer data)
 	string cid;
 	GtkTreeIter iter;
 	GtkTreePath *path;
-	int count = gtk_tree_selection_count_selected_rows(mw->transferSelection);
 	GList *list = gtk_tree_selection_get_selected_rows(mw->transferSelection, NULL);
 	typedef Func1<MainWindow, string > F1;
 	F1 *func;
 
-	for (int i = 0; i < count; i++)
+	for (GList *i = list; i; i = i->next)
 	{
-		path = (GtkTreePath *)g_list_nth_data(list, i);
+		path = (GtkTreePath *)i->data;
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(mw->transferStore), &iter, path))
 		{
 			cid = mw->transferView.getString(&iter, "CID");
@@ -870,12 +868,11 @@ void MainWindow::onPrivateMessageClicked_gui(GtkMenuItem *item, gpointer data)
 	User::Ptr user;
 	GtkTreeIter iter;
 	GtkTreePath *path;
-	int count = gtk_tree_selection_count_selected_rows(mw->transferSelection);
 	GList *list = gtk_tree_selection_get_selected_rows(mw->transferSelection, NULL);
 
-	for (int i = 0; i < count; i++)
+	for (GList *i = list; i; i = i->next)
 	{
-		path = (GtkTreePath *)g_list_nth_data(list, i);
+		path = (GtkTreePath *)i->data;
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(mw->transferStore), &iter, path))
 		{
 			cid = mw->transferView.getString(&iter, "CID");
@@ -893,14 +890,13 @@ void MainWindow::onAddFavoriteUserClicked_gui(GtkMenuItem *item, gpointer data)
 	string cid;
 	GtkTreeIter iter;
 	GtkTreePath *path;
-	int count = gtk_tree_selection_count_selected_rows(mw->transferSelection);
 	GList *list = gtk_tree_selection_get_selected_rows(mw->transferSelection, NULL);
 	typedef Func1<MainWindow, string > F1;
 	F1 *func;
 
-	for (int i = 0; i < count; i++)
+	for (GList *i = list; i; i = i->next)
 	{
-		path = (GtkTreePath *)g_list_nth_data(list, i);
+		path = (GtkTreePath *)i->data;
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(mw->transferStore), &iter, path))
 		{
 			cid = mw->transferView.getString(&iter, "CID");
@@ -918,14 +914,13 @@ void MainWindow::onGrantExtraSlotClicked_gui(GtkMenuItem *item, gpointer data)
 	string cid;
 	GtkTreeIter iter;
 	GtkTreePath *path;
-	int count = gtk_tree_selection_count_selected_rows(mw->transferSelection);
 	GList *list = gtk_tree_selection_get_selected_rows(mw->transferSelection, NULL);
 	typedef Func1<MainWindow, string > F1;
 	F1 *func;
 
-	for (int i = 0; i < count; i++)
+	for (GList *i = list; i; i = i->next)
 	{
-		path = (GtkTreePath *)g_list_nth_data(list, i);
+		path = (GtkTreePath *)i->data;
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(mw->transferStore), &iter, path))
 		{
 			cid = mw->transferView.getString(&iter, "CID");
@@ -943,14 +938,13 @@ void MainWindow::onRemoveUserFromQueueClicked_gui(GtkMenuItem *item, gpointer da
 	string cid;
 	GtkTreeIter iter;
 	GtkTreePath *path;
-	int count = gtk_tree_selection_count_selected_rows(mw->transferSelection);
 	GList *list = gtk_tree_selection_get_selected_rows(mw->transferSelection, NULL);
 	typedef Func1<MainWindow, string > F1;
 	F1 *func;
 
-	for (int i = 0; i < count; i++)
+	for (GList *i = list; i; i = i->next)
 	{
-		path = (GtkTreePath *)g_list_nth_data(list, i);
+		path = (GtkTreePath *)i->data;
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(mw->transferStore), &iter, path))
 		{
 			cid = mw->transferView.getString(&iter, "CID");
@@ -969,13 +963,12 @@ void MainWindow::onForceAttemptClicked_gui(GtkMenuItem *menuItem, gpointer data)
 	GtkTreeIter iter;
 	GtkTreePath *path;
 	GList *list = gtk_tree_selection_get_selected_rows(mw->transferSelection, NULL);
-	gint count = gtk_tree_selection_count_selected_rows(mw->transferSelection);
 	typedef Func1<MainWindow, string> F1;
 	F1 *func;
 
-	for (int i = 0; i < count; i++)
+	for (GList *i = list; i; i = i->next)
 	{
-		path = (GtkTreePath *)g_list_nth_data(list, i);
+		path = (GtkTreePath *)i->data;
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(mw->transferStore), &iter, path))
 		{
 			cid = mw->transferView.getString(&iter, "CID");
@@ -997,13 +990,12 @@ void MainWindow::onCloseConnectionClicked_gui(GtkMenuItem *menuItem, gpointer da
 	GtkTreePath *path;
 	bool download;
 	GList *list = gtk_tree_selection_get_selected_rows(mw->transferSelection, NULL);
-	gint count = gtk_tree_selection_count_selected_rows(mw->transferSelection);
 	typedef Func2<MainWindow, string, bool> F2;
 	F2 *func;
 
-	for (int i = 0; i < count; i++)
+	for (GList *i = list; i; i = i->next)
 	{
-		path = (GtkTreePath *)g_list_nth_data(list, i);
+		path = (GtkTreePath *)i->data;
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(mw->transferStore), &iter, path))
 		{
 			cid = mw->transferView.getString(&iter, "CID");
@@ -1058,15 +1050,18 @@ void MainWindow::onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data)
 
 void MainWindow::autoConnect_client()
 {
+	FavoriteHubEntry *hub;
 	FavoriteHubEntry::List &l = FavoriteManager::getInstance()->getFavoriteHubs();
 	typedef Func2<MainWindow, string, string> F2;
 	F2 *func;
 
 	for (FavoriteHubEntry::List::const_iterator it = l.begin(); it != l.end(); ++it)
 	{
-		if ((*it)->getConnect())
+		hub = *it;
+
+		if (hub->getConnect())
 		{
-			func = new F2(this, &MainWindow::openHub_gui, (*it)->getServer(), (*it)->getEncoding());
+			func = new F2(this, &MainWindow::openHub_gui, hub->getServer(), hub->getEncoding());
 			WulforManager::get()->dispatchGuiFunc(func);
 		}
 	}
@@ -1311,7 +1306,7 @@ void MainWindow::on(DownloadManagerListener::Tick, const Download::List &list) t
 	Download *dl;
 	StringMap params;
 	string status;
-	double percent = 0.0;
+	double percent;
 	typedef Func2<MainWindow, StringMap, bool> F2;
 	F2 *func;
 
@@ -1321,6 +1316,7 @@ void MainWindow::on(DownloadManagerListener::Tick, const Download::List &list) t
 		params.clear();
 		status.clear();
 		dl = *it;
+		percent = 0.0;
 
 		if (dl->getUserConnection().isSecure())
 		{
@@ -1342,8 +1338,8 @@ void MainWindow::on(DownloadManagerListener::Tick, const Download::List &list) t
 			percent = (double)(dl->getPos() * 100.0) / dl->getSize();
 
 		stream << setiosflags(ios::fixed) << setprecision(1);
-		stream << _("Downloaded ") << Util::formatBytes((dl->getPos())) << " (" << percent
-			<< "%) in " << Util::formatSeconds((GET_TICK() - dl->getStart()) / 1000);
+		stream << _("Downloaded ") << Util::formatBytes((dl->getPos())) << " (" << percent;
+		stream << "%) in " << Util::formatSeconds((GET_TICK() - dl->getStart()) / 1000);
 
 		params["CID"] = dl->getUserConnection().getUser()->getCID().toBase32();
 		params["Status"] = status + stream.str();
@@ -1426,6 +1422,7 @@ void MainWindow::on(UploadManagerListener::Tick, const Upload::List &list) throw
 		params.clear();
 		status.clear();
 		ul = *it;
+		percent = 0.0;
 
 		if (ul->getUserConnection().isSecure())
 		{
@@ -1443,8 +1440,8 @@ void MainWindow::on(UploadManagerListener::Tick, const Upload::List &list) throw
 			percent = (double)(ul->getPos() * 100.0) / ul->getSize();
 
 		stream << setiosflags(ios::fixed) << setprecision(1);
-		stream << _("Uploaded ") << Util::formatBytes((ul->getPos())) << " (" << percent
-			<< _("%) in ") << Util::formatSeconds((GET_TICK() - ul->getStart()) / 1000);
+		stream << _("Uploaded ") << Util::formatBytes((ul->getPos())) << " (" << percent;
+		stream << _("%) in ") << Util::formatSeconds((GET_TICK() - ul->getStart()) / 1000);
 
 		params["CID"] = ul->getUser()->getCID().toBase32();
 		params["Status"] = status + stream.str();
@@ -1487,10 +1484,10 @@ void MainWindow::on(QueueManagerListener::Finished, QueueItem *item, const strin
 
 void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw()
 {
+	string status1, status2, status3, status4, status5, status6;
 	int64_t diff = (int64_t)((lastUpdate == 0) ? ticks - 1000 : ticks - lastUpdate);
 	int64_t updiff = Socket::getTotalUp() - lastUp;
 	int64_t downdiff = Socket::getTotalDown() - lastDown;
-	string status1, status2, status3, status4, status5, status6;
 
 	status1 = _("H: ") + Client::getCounts();
 	status2 = _("S: ") + Util::toString(SETTING(SLOTS) -

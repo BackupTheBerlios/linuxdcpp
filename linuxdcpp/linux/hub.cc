@@ -29,7 +29,10 @@
 using namespace std;
 
 Hub::Hub(const string &address):
-	BookEntry("Hub: " + address, "hub.glade")
+	BookEntry(_("Hub: ") + address, "hub.glade"),
+	client(NULL),
+	historyIndex(0),
+	totalShared(0)
 {
 	// Configure the dialog
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("passwordDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
@@ -111,10 +114,7 @@ Hub::Hub(const string &address):
 	if (panePosition > 10)
 		gtk_paned_set_position(GTK_PANED(getWidget("pane")), panePosition);
 
-	client = NULL;
 	history.push_back("");
-	historyIndex = 0;
-	totalShared = 0;
 }
 
 Hub::~Hub()
@@ -136,7 +136,7 @@ Hub::~Hub()
 	if (panePosition > 10)
 		WSET("nick-pane-position", panePosition);
 
-	gtk_widget_destroy(GTK_WIDGET(GTK_DIALOG(getWidget("passwordDialog"))));
+	gtk_widget_destroy(getWidget("passwordDialog"));
 
 	WulforManager::get()->getMainWindow()->removeWindowItem(getContainer());
 }

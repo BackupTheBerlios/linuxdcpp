@@ -22,7 +22,7 @@
 #include "WulforUtil.hh"
 
 FavoriteHubs::FavoriteHubs():
-	BookEntry("Favorite Hubs", "favoritehubs.glade")
+	BookEntry(_("Favorite Hubs"), "favoritehubs.glade")
 {
 	// Configure the dialogs
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("deleteFavoriteDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
@@ -34,8 +34,7 @@ FavoriteHubs::FavoriteHubs():
 		gtk_combo_box_append_text(GTK_COMBO_BOX(getWidget("comboboxCharset")), it->c_str());
 
 	// Initialize favorite hub list treeview
-	GtkTreeView *view = GTK_TREE_VIEW(getWidget("favoriteView"));
-	favoriteView.setView(view, TRUE, "favoritehubs");
+	favoriteView.setView(GTK_TREE_VIEW(getWidget("favoriteView")), TRUE, "favoritehubs");
 	favoriteView.insertColumn("Auto Connect", G_TYPE_BOOLEAN, TreeView::BOOL, 100);
 	favoriteView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, 150);
 	favoriteView.insertColumn("Description", G_TYPE_STRING, TreeView::STRING, 250);

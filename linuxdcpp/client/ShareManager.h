@@ -81,7 +81,8 @@ public:
 
 	string getShareSizeString() { return Util::toString(getShareSize()); }
 	string getShareSizeString(const string& aDir) { return Util::toString(getShareSize(aDir)); }
-
+	void initTypeMap();
+	bool checkType(const string& aString, int aType);
 	SearchManager::TypeModes getType(const string& fileName);
 
 	string validateVirtual(const string& /*aVirt*/);
@@ -257,6 +258,11 @@ private:
 	uint32_t lastFullUpdate;
 
 	mutable CriticalSection cs;
+
+	typedef HASH_MAP<string, SearchManager::TypeModes> TypeMap;
+	typedef TypeMap::iterator TypeIter;
+
+	TypeMap typeMap;
 
 	// Map real name to directory structure
 	Directory::Map directories;

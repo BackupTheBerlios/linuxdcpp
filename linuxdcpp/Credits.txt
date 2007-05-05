@@ -30,6 +30,7 @@ Bart Vullings
 Razzloss
 Jussi Peltola
 Mattias Webjörn Eriksson
+Stanislav Maslovski
 
 DC++:
 -----

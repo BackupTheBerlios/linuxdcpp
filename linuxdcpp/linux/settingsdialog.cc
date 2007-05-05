@@ -258,6 +258,7 @@ void Settings::saveSettings()
 		sm->set(SettingsManager::LOG_FORMAT_POST_UPLOAD, string(gtk_entry_get_text(GTK_ENTRY(getWidget("logUploadsEntry")))));
 		sm->set(SettingsManager::LOG_SYSTEM, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("logSystemCheckButton"))));
 		sm->set(SettingsManager::LOG_STATUS_MESSAGES, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("logStatusCheckButton"))));
+		sm->set(SettingsManager::LOG_FILELIST_TRANSFERS, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("logFilelistTransfersCheckButton"))));
 	}
 
 	{ // Advanced
@@ -705,6 +706,7 @@ void Settings::initLog_gui()
 
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("logSystemCheckButton")), BOOLSETTING(LOG_SYSTEM));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("logStatusCheckButton")), BOOLSETTING(LOG_STATUS_MESSAGES));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("logFilelistTransfersCheckButton")), BOOLSETTING(LOG_FILELIST_TRANSFERS));
 }
 
 void Settings::initAdvanced_gui()
@@ -810,7 +812,7 @@ void Settings::onAddShare_gui(GtkWidget *widget, gpointer data)
 		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
 		if (temp)
 		{
-			string path = Text::acpToUtf8(temp);
+			string path = Text::toUtf8(temp);
 			g_free(temp);
 
 			if (path[path.length() - 1] != PATH_SEPARATOR)
@@ -929,7 +931,7 @@ void Settings::onBrowseFinished_gui(GtkWidget *widget, gpointer data)
 		gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
 		if (path)
 		{
-			gtk_entry_set_text(GTK_ENTRY(s->getWidget("finishedDownloadsEntry")), Text::acpToUtf8(path).c_str());
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("finishedDownloadsEntry")), Text::toUtf8(path).c_str());
 			g_free(path);
 		}
 	}
@@ -947,7 +949,7 @@ void Settings::onBrowseUnfinished_gui(GtkWidget *widget, gpointer data)
 		gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
 		if (path)
 		{
-			gtk_entry_set_text(GTK_ENTRY(s->getWidget("unfinishedDownloadsEntry")),  Text::acpToUtf8(path).c_str());
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("unfinishedDownloadsEntry")),  Text::toUtf8(path).c_str());
 			g_free(path);
 		}
 	}
@@ -1061,7 +1063,7 @@ void Settings::onAddFavorite_gui(GtkWidget *widget, gpointer data)
 		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
 		if (temp)
 		{
-			string path = Text::acpToUtf8(temp);
+			string path = Text::toUtf8(temp);
 			g_free(temp);
 
 			gtk_entry_set_text(GTK_ENTRY(s->getWidget("favoriteNameDialogEntry")), "");
@@ -1295,7 +1297,7 @@ void Settings::onLogBrowseClicked_gui(GtkWidget *widget, gpointer data)
 		gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
 		if (path)
 		{
-			gtk_entry_set_text(GTK_ENTRY(s->getWidget("logDirectoryEntry")), Text::acpToUtf8(path).c_str());
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("logDirectoryEntry")), Text::toUtf8(path).c_str());
 			g_free(path);
 		}
 	}
@@ -1357,7 +1359,7 @@ void Settings::onCertificatesPrivateBrowseClicked_gui(GtkWidget *widget, gpointe
 		gchar *path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(s->getWidget("fileChooserDialog")));
 		if (path)
 		{
-			gtk_entry_set_text(GTK_ENTRY(s->getWidget("privateKeyEntry")), Text::acpToUtf8(path).c_str());
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("privateKeyEntry")), Text::toUtf8(path).c_str());
 			g_free(path);
 		}
 	}
@@ -1375,7 +1377,7 @@ void Settings::onCertificatesFileBrowseClicked_gui(GtkWidget *widget, gpointer d
 		gchar *path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(s->getWidget("fileChooserDialog")));
 		if (path)
 		{
-			gtk_entry_set_text(GTK_ENTRY(s->getWidget("certificateFileEntry")), Text::acpToUtf8(path).c_str());
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("certificateFileEntry")), Text::toUtf8(path).c_str());
 			g_free(path);
 		}
 	}
@@ -1393,7 +1395,7 @@ void Settings::onCertificatesPathBrowseClicked_gui(GtkWidget *widget, gpointer d
 		gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(s->getWidget("dirChooserDialog")));
 		if (path)
 		{
-			gtk_entry_set_text(GTK_ENTRY(s->getWidget("trustedCertificatesPathEntry")), Text::acpToUtf8(path).c_str());
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("trustedCertificatesPathEntry")), Text::toUtf8(path).c_str());
 			g_free(path);
 		}
 	}

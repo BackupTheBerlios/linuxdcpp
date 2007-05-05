@@ -748,7 +748,7 @@ string NmdcHub::checkNick(const string& aNick) {
 void NmdcHub::connectToMe(const OnlineUser& aUser) {
 	checkstate();
 	dcdebug("NmdcHub::connectToMe %s\n", aUser.getIdentity().getNick().c_str());
-	ConnectionManager::getInstance()->nmdcExpect(aUser.getIdentity().getNick(), getMyNick(), getHubUrl());
+	ConnectionManager::getInstance()->nmdcExpect(fromUtf8(aUser.getIdentity().getNick()), getMyNick(), getHubUrl());
 	send("$ConnectToMe " + fromUtf8(aUser.getIdentity().getNick()) + " " + getLocalIp() + ":" + Util::toString(ConnectionManager::getInstance()->getPort()) + "|");
 }
 

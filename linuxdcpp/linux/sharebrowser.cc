@@ -29,7 +29,7 @@
 using namespace std;
 
 ShareBrowser::ShareBrowser(User::Ptr user, const std::string &file, const std::string &initialDir):
-	BookEntry("List: " + WulforUtil::getNicks(user), "sharebrowser.glade"),
+	BookEntry(_("List: ") + WulforUtil::getNicks(user), "sharebrowser.glade"),
 	listing(user),
 	shareSize(0),
 	currentSize(0),
@@ -40,7 +40,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, const std::string &file, const std::s
 	// Configure the dialogs
 	File::ensureDirectory(SETTING(DOWNLOAD_DIRECTORY));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("findDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(getWidget("dirChooserDialog")), Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY)).c_str());
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(getWidget("dirChooserDialog")), Text::fromUtf8(SETTING(DOWNLOAD_DIRECTORY)).c_str());
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("dirChooserDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	// Set the pane position
@@ -398,7 +398,7 @@ void ShareBrowser::fileViewSelected_gui()
 			updateFiles_gui((DirectoryListing::Directory *)ptr);
 		}
 		else
-			downloadSelectedFiles_gui(Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY)));
+			downloadSelectedFiles_gui(Text::fromUtf8(SETTING(DOWNLOAD_DIRECTORY)));
 	}
 
 	gtk_tree_path_free(path);
@@ -414,14 +414,12 @@ void ShareBrowser::downloadSelectedFiles_gui(const string &target)
 	GtkTreePath *path;
 	DirectoryListing::File *file;
 	DirectoryListing::Directory *dir;
-	GtkTreeModel *m = GTK_TREE_MODEL(fileStore);
 	GList *list = gtk_tree_selection_get_selected_rows(fileSelection, NULL);
-	gint count = gtk_tree_selection_count_selected_rows(fileSelection);
 
-	for (int i = 0; i < count; i++)
+	for (GList *i = list; i; i = i->next)
 	{
-		path = (GtkTreePath *)g_list_nth_data(list, i);
-		if (gtk_tree_model_get_iter(m, &iter, path))
+		path = (GtkTreePath *)i->data;
+		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(fileStore), &iter, path))
 		{
 			ptr = fileView.getValue<gpointer>(&iter, "DL File");
 			fileOrder = fileView.getString(&iter, "File Order");
@@ -748,7 +746,7 @@ void ShareBrowser::onNextButtonClicked_gui(GtkWidget *widget, gpointer data)
 void ShareBrowser::onDownloadClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	ShareBrowser *sb = (ShareBrowser *)data;
-	sb->downloadSelectedFiles_gui(Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY)));
+	sb->downloadSelectedFiles_gui(Text::fromUtf8(SETTING(DOWNLOAD_DIRECTORY)));
 }
 
 void ShareBrowser::onDownloadToClicked_gui(GtkMenuItem *item, gpointer data)
@@ -763,7 +761,7 @@ void ShareBrowser::onDownloadToClicked_gui(GtkMenuItem *item, gpointer data)
 		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(sb->getWidget("dirChooserDialog")));
 		if (temp)
 		{
-			string path = Text::acpToUtf8(temp);
+			string path = Text::toUtf8(temp);
 			g_free(temp);
 			if (path[path.length() - 1] != PATH_SEPARATOR)
 				path += PATH_SEPARATOR;
@@ -783,7 +781,7 @@ void ShareBrowser::onDownloadFavoriteClicked_gui(GtkMenuItem *item, gpointer dat
 void ShareBrowser::onDownloadDirClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	ShareBrowser *sb = (ShareBrowser *)data;
-	sb->downloadSelectedDirs_gui(Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY)));
+	sb->downloadSelectedDirs_gui(Text::fromUtf8(SETTING(DOWNLOAD_DIRECTORY)));
 }
 
 void ShareBrowser::onDownloadDirToClicked_gui(GtkMenuItem *item, gpointer data)
@@ -798,7 +796,7 @@ void ShareBrowser::onDownloadDirToClicked_gui(GtkMenuItem *item, gpointer data)
 		gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(sb->getWidget("dirChooserDialog")));
 		if (temp)
 		{
-			string path = Text::acpToUtf8(temp);
+			string path = Text::toUtf8(temp);
 			g_free(temp);
 			if (path[path.length() - 1] != PATH_SEPARATOR)
 				path += PATH_SEPARATOR;
@@ -824,14 +822,12 @@ void ShareBrowser::onSearchAlternatesClicked_gui(GtkMenuItem *item, gpointer dat
 	string fileOrder;
 	Search *s;
 	DirectoryListing::File *file;
-	GtkTreeModel *m = GTK_TREE_MODEL(sb->fileStore);
 	GList *list = gtk_tree_selection_get_selected_rows(sb->fileSelection, NULL);
-	gint count = gtk_tree_selection_count_selected_rows(sb->fileSelection);
 
-	for (int i = 0; i < count; i++)
+	for (GList *i = list; i; i = i->next)
 	{
-		path = (GtkTreePath *)g_list_nth_data(list, i);
-		if (gtk_tree_model_get_iter(m, &iter, path))
+		path = (GtkTreePath *)i->data;
+		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(sb->fileStore), &iter, path))
 		{
 			ptr = sb->fileView.getValue<gpointer>(&iter, "DL File");
 			fileOrder = sb->fileView.getString(&iter, "File Order");

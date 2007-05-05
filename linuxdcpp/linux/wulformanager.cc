@@ -263,6 +263,7 @@ void WulforManager::dispatchClientFunc(FuncBase *func)
 
 MainWindow *WulforManager::getMainWindow()
 {
+	dcassert(mainWin);
 	return mainWin;
 }
 
@@ -324,10 +325,10 @@ void WulforManager::insertBookEntry_gui(BookEntry *entry, bool raise)
 	pthread_rwlock_unlock(&entryLock);
 }
 
-// This is a callback, so gdk_threads_enter/leave is called automatically.
+// Should be called from a callback, so gdk_threads_enter/leave is called automatically.
 void WulforManager::deleteEntry_gui(Entry *entry)
 {
-	string id = entry->getID();
+	const string &id = entry->getID();
 	vector<FuncBase *>::iterator fIt;
 
 	pthread_mutex_lock(&clientCallLock);
@@ -373,6 +374,7 @@ void WulforManager::deleteEntry_gui(Entry *entry)
 	entry = NULL;
 }
 
+// Should be called from a callback, so gdk_threads_enter/leave is called automatically.
 void WulforManager::deleteAllEntries()
 {
 	while (entries.size() > 0)
@@ -404,7 +406,7 @@ void WulforManager::insertDialogEntry_gui(DialogEntry *entry)
 
 BookEntry *WulforManager::addPublicHubs_gui()
 {
-	BookEntry *entry = getBookEntry_gui("Public Hubs");
+	BookEntry *entry = getBookEntry_gui(_("Public Hubs"));
 	if (entry) return entry;
 
 	PublicHubs *pubHubs = new PublicHubs();
@@ -417,7 +419,7 @@ BookEntry *WulforManager::addPublicHubs_gui()
 
 BookEntry *WulforManager::addDownloadQueue_gui()
 {
-	BookEntry *entry = getBookEntry_gui("Download Queue");
+	BookEntry *entry = getBookEntry_gui(_("Download Queue"));
 	if (entry) return entry;
 
 	DownloadQueue *dlQueue = new DownloadQueue();
@@ -428,7 +430,7 @@ BookEntry *WulforManager::addDownloadQueue_gui()
 
 BookEntry *WulforManager::addFavoriteHubs_gui()
 {
-	BookEntry *entry = getBookEntry_gui("Favorite Hubs");
+	BookEntry *entry = getBookEntry_gui(_("Favorite Hubs"));
 	if (entry) return entry;
 
 	FavoriteHubs *favHubs = new FavoriteHubs();
@@ -439,7 +441,7 @@ BookEntry *WulforManager::addFavoriteHubs_gui()
 
 BookEntry *WulforManager::addHub_gui(const string &address, const string &encoding)
 {
-	BookEntry *entry = getBookEntry_gui("Hub: " + address);
+	BookEntry *entry = getBookEntry_gui(_("Hub: ") + address);
 	if (entry) return entry;
 
 	Hub *hub = new Hub(address);
@@ -453,10 +455,12 @@ BookEntry *WulforManager::addHub_gui(const string &address, const string &encodi
 		charset = WGETS("default-charset");
 	else if (encoding == _("System default"))
 		charset = Text::getSystemCharset();
-	else if (encoding.find(' ', 0) != string::npos)
-		charset = encoding.substr(0, encoding.find(' ', 0));
 	else
 		charset = encoding;
+
+	string::size_type i = charset.find(' ', 0);
+	if (i != string::npos)
+		charset = charset.substr(0, i);
 
 	typedef Func2<Hub, string, string> F2;
 	F2 *func = new F2(hub, &Hub::connectClient_client, address, charset);
@@ -467,7 +471,7 @@ BookEntry *WulforManager::addHub_gui(const string &address, const string &encodi
 
 BookEntry *WulforManager::addPrivMsg_gui(User::Ptr user, bool raise)
 {
-	BookEntry *entry = getBookEntry_gui("PM: " + WulforUtil::getNicks(user), FALSE);
+	BookEntry *entry = getBookEntry_gui(_("PM: ") + WulforUtil::getNicks(user), FALSE);
 	if (entry) return entry;
 
 	PrivateMessage *privMsg = new PrivateMessage(user);
@@ -479,7 +483,7 @@ BookEntry *WulforManager::addPrivMsg_gui(User::Ptr user, bool raise)
 
 BookEntry *WulforManager::addShareBrowser_gui(User::Ptr user, const string &file, const string &dir, bool raise)
 {
-	BookEntry *entry = getBookEntry_gui("List: " + WulforUtil::getNicks(user));
+	BookEntry *entry = getBookEntry_gui(_("List: ") + WulforUtil::getNicks(user));
 	if (entry) return entry;
 
 	ShareBrowser *browser = new ShareBrowser(user, file, dir);

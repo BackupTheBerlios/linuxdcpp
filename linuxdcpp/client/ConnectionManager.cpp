@@ -155,7 +155,7 @@ void ConnectionManager::on(TimerManagerListener::Second, uint32_t aTick) throw()
 					continue;
 				}
 
-				if( ((cqi->getLastAttempt() + 60*1000) < aTick) && !attemptDone ) {
+				if(cqi->getLastAttempt() == 0 || (((cqi->getLastAttempt() + 60*1000) < aTick) && !attemptDone)) {
 					cqi->setLastAttempt(aTick);
 
 					QueueItem::Priority prio = QueueManager::getInstance()->hasDownload(cqi->getUser());
@@ -414,8 +414,11 @@ void ConnectionManager::on(UserConnectionListener::MyNick, UserConnection* aSour
 		}
 		aSource->setToken(i.first);
 		aSource->setHubUrl(i.second);
+		aSource->setEncoding(ClientManager::getInstance()->findHubEncoding(i.second));
 	}
-	CID cid = ClientManager::getInstance()->makeCid(aNick, aSource->getHubUrl());
+
+	string nick = Text::convert(aNick, aSource->getEncoding(), "UTF-8");
+	CID cid = ClientManager::getInstance()->makeCid(nick, aSource->getHubUrl());
 
 	// First, we try looking in the pending downloads...hopefully it's one of them...
 	{
@@ -436,7 +439,7 @@ void ConnectionManager::on(UserConnectionListener::MyNick, UserConnection* aSour
 
 		aSource->setUser(ClientManager::getInstance()->findUser(cid));
 		if(!aSource->getUser() || !ClientManager::getInstance()->isOnline(aSource->getUser())) {
-			dcdebug("CM::onMyNick Incoming connection from unknown user %s\n", aNick.c_str());
+			dcdebug("CM::onMyNick Incoming connection from unknown user %s\n", nick.c_str());
 			putConnection(aSource);
 			return;
 		}

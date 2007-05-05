@@ -30,7 +30,7 @@ bool Search::onlyOp = FALSE;
 GtkTreeModel* Search::searchEntriesModel = NULL;
 
 Search::Search():
-	BookEntry("Search", "search.glade")
+	BookEntry(_("Search"), "search.glade")
 {
 	ClientManager::getInstance()->addListener(this);
 	SearchManager::getInstance()->addListener(this);
@@ -43,7 +43,7 @@ Search::Search():
 
 	// Configure the dialog
 	File::ensureDirectory(SETTING(DOWNLOAD_DIRECTORY));
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(getWidget("dirChooserDialog")), Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY)).c_str());
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(getWidget("dirChooserDialog")), Text::fromUtf8(SETTING(DOWNLOAD_DIRECTORY)).c_str());
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("dirChooserDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	// Initialize check button options.
@@ -784,7 +784,7 @@ void Search::onDownloadToClicked_gui(GtkMenuItem *item, gpointer data)
 
 		if (temp && count > 0)
 		{
-			string target = Text::acpToUtf8(temp);
+			string target = Text::toUtf8(temp);
 			g_free(temp);
 
 			if (target[target.length() - 1] != PATH_SEPARATOR)
@@ -927,7 +927,7 @@ void Search::onDownloadDirToClicked_gui(GtkMenuItem *item, gpointer data)
 
 		if (temp && count > 0)
 		{
-			string target = Text::acpToUtf8(temp);
+			string target = Text::toUtf8(temp);
 			g_free(temp);
 
 			if (target[target.length() - 1] != PATH_SEPARATOR)

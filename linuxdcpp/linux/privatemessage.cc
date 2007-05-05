@@ -26,7 +26,7 @@
 using namespace std;
 
 PrivateMessage::PrivateMessage(User::Ptr user):
-	BookEntry("PM: " + WulforUtil::getNicks(user), "privatemessage.glade"),
+	BookEntry(_("PM: ") + WulforUtil::getNicks(user), "privatemessage.glade"),
 	user(user),
 	historyIndex(0),
 	sentAwayMessage(FALSE)

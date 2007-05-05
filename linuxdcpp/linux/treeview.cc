@@ -368,6 +368,9 @@ void TreeView::saveSettings()
 	for (size_t i = 0; i < columns.size(); i++)
 	{
 		col = gtk_tree_view_get_column(view, i);
+		if (col == NULL)
+			continue;
+
 		title = string(gtk_tree_view_column_get_title(col));
 		width = gtk_tree_view_column_get_width(col);
 
@@ -383,11 +386,14 @@ void TreeView::saveSettings()
 		columnVisibility += Util::toString(gtk_tree_view_column_get_visible(col)) + ",";
 	}
 
-	columnOrder.erase(columnOrder.size() - 1, 1);
-	columnWidth.erase(columnWidth.size() - 1, 1);
-	columnVisibility.erase(columnVisibility.size() - 1, 1);
+	if (columnOrder.size() > 0)
+	{
+		columnOrder.erase(columnOrder.size() - 1, 1);
+		columnWidth.erase(columnWidth.size() - 1, 1);
+		columnVisibility.erase(columnVisibility.size() - 1, 1);
 
-	WSET(name + "-order", columnOrder);
-	WSET(name + "-width", columnWidth);
-	WSET(name + "-visibility", columnVisibility);
+		WSET(name + "-order", columnOrder);
+		WSET(name + "-width", columnWidth);
+		WSET(name + "-visibility", columnVisibility);
+	}
 }

@@ -25,7 +25,7 @@
 #include "WulforUtil.hh"
 
 DownloadQueue::DownloadQueue():
-	BookEntry("Download Queue", "downloadqueue.glade"),
+	BookEntry(_("Download Queue"), "downloadqueue.glade"),
 	currentItems(0),
 	totalItems(0),
 	currentSize(0),
@@ -33,7 +33,7 @@ DownloadQueue::DownloadQueue():
 {
 	// Configure the dialogs
 	File::ensureDirectory(SETTING(DOWNLOAD_DIRECTORY));
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(getWidget("dirChooserDialog")), Text::utf8ToAcp(SETTING(DOWNLOAD_DIRECTORY)).c_str());
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(getWidget("dirChooserDialog")), Text::fromUtf8(SETTING(DOWNLOAD_DIRECTORY)).c_str());
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("dirChooserDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	// Initialize directory treeview
@@ -419,9 +419,11 @@ void DownloadQueue::removeDir_gui(const string &path, GtkTreeIter *parent)
 		return;
 
 	GtkTreeIter iter;
+	string curPath;
+	int count = 0;
 	string::size_type i = path.find_first_of(PATH_SEPARATOR);
-	const string &dir = path.substr(0, i);
-	const string &fullpath = dirView.getString(parent, "Path") + path;
+	string dir = path.substr(0, i);
+	string fullpath = dirView.getString(parent, "Path") + path;
 	bool valid = gtk_tree_model_iter_children(GTK_TREE_MODEL(dirStore), &iter, parent);
 
 	while (valid)
@@ -430,8 +432,8 @@ void DownloadQueue::removeDir_gui(const string &path, GtkTreeIter *parent)
 		{
 			removeDir_gui(path.substr(i + 1), &iter);
 
-			const string &curPath = dirView.getString(&iter, "Path");
-			int count = dirView.getValue<gint>(&iter, "File Count");
+			curPath = dirView.getString(&iter, "Path");
+			count = dirView.getValue<gint>(&iter, "File Count");
 			if (curPath == fullpath)
 				gtk_tree_store_set(dirStore, &iter, dirView.col("File Count"), --count, -1);
 
@@ -636,7 +638,7 @@ void DownloadQueue::onDirMoveClicked_gui(GtkMenuItem *menuItem, gpointer data)
 
 	if (gtk_tree_selection_get_selected(dq->dirSelection, NULL, &iter))
 	{
-		string path = Text::utf8ToAcp(dq->dirView.getString(&iter, "Path"));
+		string path = Text::fromUtf8(dq->dirView.getString(&iter, "Path"));
 		GtkWidget *dialog = dq->getWidget("dirChooserDialog");
 		gtk_file_chooser_set_action(GTK_FILE_CHOOSER(dialog), GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
 		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), path.c_str());
@@ -648,7 +650,7 @@ void DownloadQueue::onDirMoveClicked_gui(GtkMenuItem *menuItem, gpointer data)
 			gchar *temp = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
 			if (temp)
 			{
-				string target = Text::acpToUtf8(temp);
+				string target = Text::toUtf8(temp);
 				g_free(temp);
 
 				if (target[target.length() - 1] != PATH_SEPARATOR)
@@ -718,7 +720,7 @@ void DownloadQueue::onFileMoveClicked_gui(GtkMenuItem *menuItem, gpointer data)
 
 	if (gtk_tree_selection_get_selected(dq->dirSelection, NULL, &iter))
 	{
-		string filepath = Text::utf8ToAcp(dq->dirView.getString(&iter, "Path"));
+		string filepath = Text::fromUtf8(dq->dirView.getString(&iter, "Path"));
 		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), filepath.c_str());
 	}
 
@@ -727,7 +729,7 @@ void DownloadQueue::onFileMoveClicked_gui(GtkMenuItem *menuItem, gpointer data)
 		path = (GtkTreePath *)list->data;
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(dq->fileStore), &iter, path))
 		{
-			string target = Text::utf8ToAcp(dq->fileView.getString(&iter, "Filename"));
+			string target = Text::fromUtf8(dq->fileView.getString(&iter, "Filename"));
 			gtk_file_chooser_set_action(GTK_FILE_CHOOSER(dialog), GTK_FILE_CHOOSER_ACTION_SAVE);
 			gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(dialog), target.c_str());
 			int response = gtk_dialog_run(GTK_DIALOG(dialog));
@@ -738,7 +740,7 @@ void DownloadQueue::onFileMoveClicked_gui(GtkMenuItem *menuItem, gpointer data)
 				gchar *tmp = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 				if (tmp)
 				{
-					target = Text::acpToUtf8(tmp);
+					target = Text::toUtf8(tmp);
 					g_free(tmp);
 					source = dq->fileView.getString(&iter, "Target");
 					func = new F2(dq, &DownloadQueue::move_client, source, target);
@@ -760,7 +762,7 @@ void DownloadQueue::onFileMoveClicked_gui(GtkMenuItem *menuItem, gpointer data)
 			if (tmp)
 			{
 				string filename;
-				string target = Text::acpToUtf8(tmp);
+				string target = Text::toUtf8(tmp);
 				g_free(tmp);
 
 				if (target[target.length() - 1] != PATH_SEPARATOR)
@@ -1005,21 +1007,23 @@ void DownloadQueue::move_client(string source, string target)
 
 void DownloadQueue::moveDir_client(string source, string target)
 {
-	if (!source.empty())
+	if (!source.empty() && !target.empty() && target[target.length() - 1] == PATH_SEPARATOR)
 	{
-		// Can't modify QueueItem::StringMap in the loop so we have to queue them.
-		vector<string> targets;
+		// Can't modify QueueItem::StringMap in the loop, so we have to queue them.
+		vector<string *> targets;
+		string *file;
 		const QueueItem::StringMap &ll = QueueManager::getInstance()->lockQueue();
 
 		for (QueueItem::StringMap::const_iterator it = ll.begin(); it != ll.end(); ++it)
 		{
-			if (it->first->length() >= source.length() && it->first->substr(0, source.length()) == source)
-				targets.push_back(*it->first);
+			file = it->first;
+			if (file->length() >= source.length() && file->substr(0, source.length()) == source)
+				targets.push_back(file);
 		}
 		QueueManager::getInstance()->unlockQueue();
 
-		for (vector<string>::const_iterator it = targets.begin(); it != targets.end(); ++it)
-			QueueManager::getInstance()->move(*it, target + Util::getFileName(*it));
+		for (vector<string *>::const_iterator it = targets.begin(); it != targets.end(); ++it)
+			QueueManager::getInstance()->move(**it, target + (*it)->substr(source.length()));
 	}
 }
 
@@ -1031,14 +1035,16 @@ void DownloadQueue::setPriority_client(string target, QueueItem::Priority p)
 
 void DownloadQueue::setPriorityDir_client(string path, QueueItem::Priority p)
 {
-	if (!path.empty())
+	if (!path.empty() && path[path.length() - 1] == PATH_SEPARATOR)
 	{
+		string *file;
 		const QueueItem::StringMap &ll = QueueManager::getInstance()->lockQueue();
 
 		for (QueueItem::StringMap::const_iterator it = ll.begin(); it != ll.end(); ++it)
 		{
-			if (it->first->length() >= path.length() && it->first->substr(0, path.length()) == path)
-				QueueManager::getInstance()->setPriority(*it->first, p);
+			file = it->first;
+			if (file->length() >= path.length() && file->substr(0, path.length()) == path)
+				QueueManager::getInstance()->setPriority(*file, p);
 		}
 		QueueManager::getInstance()->unlockQueue();
 	}
@@ -1146,18 +1152,20 @@ void DownloadQueue::removeDir_client(string path)
 {
 	if (!path.empty())
 	{
-		vector<string> targets;
+		string *file;
+		vector<string *> targets;
 		const QueueItem::StringMap &ll = QueueManager::getInstance()->lockQueue();
 
 		for (QueueItem::StringMap::const_iterator it = ll.begin(); it != ll.end(); ++it)
 		{
-			if (it->first->length() >= path.length() && it->first->substr(0, path.length()) == path)
-				targets.push_back(*it->first);
+			file = it->first;
+			if (file->length() >= path.length() && file->substr(0, path.length()) == path)
+				targets.push_back(file);
 		}
 		QueueManager::getInstance()->unlockQueue();
 
-		for (vector<string>::const_iterator it = targets.begin(); it != targets.end(); ++it)
-			QueueManager::getInstance()->remove(*it);
+		for (vector<string *>::const_iterator it = targets.begin(); it != targets.end(); ++it)
+			QueueManager::getInstance()->remove(**it);
 	}
 }
 
