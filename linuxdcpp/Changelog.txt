@@ -1,3 +1,6 @@
+2007-05-06 - Steven Sheehy
+* Fixed some download queue regressions.
+
 2007-05-05 - Steven Sheehy
 * Fixed download delay in some cases (thanks Mikael Eman).
 * Added "Log filelist transfers" setting.

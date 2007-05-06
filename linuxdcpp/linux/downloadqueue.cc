@@ -1010,7 +1010,7 @@ void DownloadQueue::moveDir_client(string source, string target)
 	if (!source.empty() && !target.empty() && target[target.length() - 1] == PATH_SEPARATOR)
 	{
 		// Can't modify QueueItem::StringMap in the loop, so we have to queue them.
-		vector<string *> targets;
+		vector<string> targets;
 		string *file;
 		const QueueItem::StringMap &ll = QueueManager::getInstance()->lockQueue();
 
@@ -1018,12 +1018,12 @@ void DownloadQueue::moveDir_client(string source, string target)
 		{
 			file = it->first;
 			if (file->length() >= source.length() && file->substr(0, source.length()) == source)
-				targets.push_back(file);
+				targets.push_back(*file);
 		}
 		QueueManager::getInstance()->unlockQueue();
 
-		for (vector<string *>::const_iterator it = targets.begin(); it != targets.end(); ++it)
-			QueueManager::getInstance()->move(**it, target + (*it)->substr(source.length()));
+		for (vector<string>::const_iterator it = targets.begin(); it != targets.end(); ++it)
+			QueueManager::getInstance()->move(*it, target + it->substr(source.length()));
 	}
 }
 
@@ -1153,19 +1153,19 @@ void DownloadQueue::removeDir_client(string path)
 	if (!path.empty())
 	{
 		string *file;
-		vector<string *> targets;
+		vector<string> targets;
 		const QueueItem::StringMap &ll = QueueManager::getInstance()->lockQueue();
 
 		for (QueueItem::StringMap::const_iterator it = ll.begin(); it != ll.end(); ++it)
 		{
 			file = it->first;
 			if (file->length() >= path.length() && file->substr(0, path.length()) == path)
-				targets.push_back(file);
+				targets.push_back(*file);
 		}
 		QueueManager::getInstance()->unlockQueue();
 
-		for (vector<string *>::const_iterator it = targets.begin(); it != targets.end(); ++it)
-			QueueManager::getInstance()->remove(**it);
+		for (vector<string>::const_iterator it = targets.begin(); it != targets.end(); ++it)
+			QueueManager::getInstance()->remove(*it);
 	}
 }
 
