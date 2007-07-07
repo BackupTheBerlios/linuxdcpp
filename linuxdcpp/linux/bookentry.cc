@@ -22,7 +22,9 @@
 using namespace std;
 
 BookEntry::BookEntry(const string &title, const string &glade):
-	Entry(title, glade)
+	Entry(title, glade),
+	windowItem(NULL),
+	bold(FALSE)
 {
 	bold = FALSE;
 	box = gtk_hbox_new(FALSE, 5);
@@ -53,6 +55,9 @@ BookEntry::~BookEntry()
 {
 	// Remove the flap from the notebook
 	WulforManager::get()->getMainWindow()->removePage_gui(getContainer());
+
+	if (windowItem)
+		WulforManager::get()->getMainWindow()->removeWindowItem(windowItem);
 }
 
 GtkWidget* BookEntry::getContainer()
@@ -63,6 +68,18 @@ GtkWidget* BookEntry::getContainer()
 GtkWidget *BookEntry::getTitle()
 {
 	return box;
+}
+
+void BookEntry::setWindowItem(GtkWidget *item)
+{
+	dcassert(windowItem == NULL);
+	windowItem = item;
+}
+
+GtkWidget *BookEntry::getWindowItem()
+{
+	dcassert(windowItem);
+	return windowItem;
 }
 
 void BookEntry::applyCallback(GCallback closeCallback)

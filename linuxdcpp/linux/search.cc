@@ -30,16 +30,14 @@ bool Search::onlyOp = FALSE;
 GtkTreeModel* Search::searchEntriesModel = NULL;
 
 Search::Search():
-	BookEntry(_("Search"), "search.glade")
+	BookEntry(_("Search: "), "search.glade")
 {
-	ClientManager::getInstance()->addListener(this);
-	SearchManager::getInstance()->addListener(this);
-
 	// Initialize the search entries combo box
 	if (searchEntriesModel == NULL)
 		searchEntriesModel = gtk_combo_box_get_model(GTK_COMBO_BOX(getWidget("comboboxentrySearch")));
 	gtk_combo_box_set_model(GTK_COMBO_BOX(getWidget("comboboxentrySearch")), searchEntriesModel);
 	searchEntry = gtk_bin_get_child(GTK_BIN(getWidget("comboboxentrySearch")));
+	gtk_widget_grab_focus(getWidget("comboboxentrySearch"));
 
 	// Configure the dialog
 	File::ensureDirectory(SETTING(DOWNLOAD_DIRECTORY));
@@ -142,7 +140,8 @@ Search::Search():
 
 	initHubs_gui();
 
-	gtk_widget_grab_focus(getWidget("comboboxentrySearch"));
+	ClientManager::getInstance()->addListener(this);
+	SearchManager::getInstance()->addListener(this);
 }
 
 Search::~Search()
@@ -449,7 +448,7 @@ void Search::search_gui()
 	setStatus_gui("statusbar1", _("Searching for ") + text + " ...");
 	setStatus_gui("statusbar2", _("0 items"));
 	setStatus_gui("statusbar3", _("0 filtered"));
-	setLabel_gui("Search: " + text);
+	setLabel_gui(_("Search: ") + text);
 
 	if (SearchManager::getInstance()->okToSearch())
 	{
@@ -995,7 +994,7 @@ void Search::onGetFileListClicked_gui(GtkMenuItem *item, gpointer data)
 		GtkTreeIter iter;
 		GtkTreePath *path;
 		GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
-		typedef Func3<Search, User::Ptr &, QueueItem::FileFlags, const string> F3;
+		typedef Func3<Search, User::Ptr &, QueueItem::FileFlags, string> F3;
 		F3 *func;
 
 		for (GList *i = list; i; i = i->next)
@@ -1028,7 +1027,7 @@ void Search::onMatchQueueClicked_gui(GtkMenuItem *item, gpointer data)
 		GtkTreeIter iter;
 		GtkTreePath *path;
 		GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
-		typedef Func3<Search, User::Ptr &, QueueItem::FileFlags, const string> F3;
+		typedef Func3<Search, User::Ptr &, QueueItem::FileFlags, string> F3;
 		F3 *func;
 
 		for (GList *i = list; i; i = i->next)

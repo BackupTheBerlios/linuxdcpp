@@ -61,7 +61,7 @@ FinishedTransfers::FinishedTransfers(const string &title):
 	g_signal_connect(transferView.get(), "button-release-event", G_CALLBACK(onButtonReleased_gui), (gpointer)this);
 	g_signal_connect(transferView.get(), "key-release-event", G_CALLBACK(onKeyReleased_gui), (gpointer)this);
 
-	isUpload = (getID() == string("Finished Uploads")) ? TRUE : FALSE;
+	isUpload = (getID() == _("Finished Uploads")) ? TRUE : FALSE;
 
 	initializeList_client();
 	//Func0<FinishedTransfers> *func = new Func0<FinishedTransfers>(this, &FinishedTransfers::initializeList_client);

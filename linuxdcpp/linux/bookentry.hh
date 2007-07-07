@@ -34,10 +34,16 @@ class BookEntry : public Entry
 		void setBold_gui();
 		void unsetBold_gui();
 		GtkWidget *getTitle();
+		void setWindowItem(GtkWidget *windowItem);
+
+	protected:
+		GtkWidget *getWindowItem();
 
 	private:
 		std::string title;
-		GtkWidget *box, *eventBox;
+		GtkWidget *box;
+		GtkWidget *eventBox;
+		GtkWidget *windowItem;
 		GtkButton *button;
 		GtkLabel *label;
 		GtkTooltips *tips;

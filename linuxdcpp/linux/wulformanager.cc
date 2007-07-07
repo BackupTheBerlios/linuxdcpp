@@ -445,7 +445,7 @@ BookEntry *WulforManager::addHub_gui(const string &address, const string &encodi
 	if (entry) return entry;
 
 	Hub *hub = new Hub(address);
-	mainWin->appendWindowItem(hub->getContainer(), hub->getID());
+	hub->setWindowItem(mainWin->appendWindowItem(hub->getID()));
 	insertBookEntry_gui(hub);
 
 	string charset;
@@ -475,7 +475,7 @@ BookEntry *WulforManager::addPrivMsg_gui(User::Ptr user, bool raise)
 	if (entry) return entry;
 
 	PrivateMessage *privMsg = new PrivateMessage(user);
-	mainWin->appendWindowItem(privMsg->getContainer(), privMsg->getID());
+	privMsg->setWindowItem(mainWin->appendWindowItem(privMsg->getID()));
 	insertBookEntry_gui(privMsg, raise);
 
 	return privMsg;

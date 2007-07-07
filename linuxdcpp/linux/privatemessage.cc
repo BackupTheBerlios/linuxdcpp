@@ -58,7 +58,6 @@ PrivateMessage::PrivateMessage(User::Ptr user):
 
 PrivateMessage::~PrivateMessage()
 {
-	WulforManager::get()->getMainWindow()->removeWindowItem(getContainer());
 }
 
 void PrivateMessage::addMessage_gui(string message)

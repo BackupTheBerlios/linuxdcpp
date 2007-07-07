@@ -137,8 +137,6 @@ Hub::~Hub()
 		WSET("nick-pane-position", panePosition);
 
 	gtk_widget_destroy(getWidget("passwordDialog"));
-
-	WulforManager::get()->getMainWindow()->removeWindowItem(getContainer());
 }
 
 void Hub::setStatus_gui(string statusBar, string text)
@@ -1104,7 +1102,7 @@ void Hub::on(ClientListener::HubUpdated, Client *) throw()
 	F1 *func1 = new F1(this, &BookEntry::setLabel_gui, hubName);
 	WulforManager::get()->dispatchGuiFunc(func1);
 
-	F2 *func2 = new F2(WulforManager::get()->getMainWindow(), &MainWindow::modifyWindowItem, getWidget("mainBox"), hubName);
+	F2 *func2 = new F2(WulforManager::get()->getMainWindow(), &MainWindow::modifyWindowItem, getWindowItem(), hubName);
 	WulforManager::get()->dispatchGuiFunc(func2);
 }
 

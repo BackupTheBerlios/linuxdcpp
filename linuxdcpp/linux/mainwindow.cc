@@ -91,6 +91,8 @@ MainWindow::MainWindow():
 	GdkPixbuf *logo = gdk_pixbuf_new_from_file(file.c_str(), NULL);
 	gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(getWidget("aboutDialog")), logo);
 	g_object_unref(logo);
+	gtk_about_dialog_set_email_hook((GtkAboutDialogActivateLinkFunc)onAboutDialogActivateLink_gui, (gpointer)this, NULL);
+	gtk_about_dialog_set_url_hook((GtkAboutDialogActivateLinkFunc)onAboutDialogActivateLink_gui, (gpointer)this, NULL);
 
 	// Set all windows to the default icon
 	file = path + "linuxdcpp-icon.png";
@@ -286,7 +288,7 @@ void MainWindow::autoOpen_gui()
 	if (BOOLSETTING(OPEN_FAVORITE_HUBS))
 		WulforManager::get()->addFavoriteHubs_gui();
 	if (BOOLSETTING(OPEN_FINISHED_DOWNLOADS))
-		WulforManager::get()->addFinishedTransfers_gui("Finished Downloads");
+		WulforManager::get()->addFinishedTransfers_gui(_("Finished Downloads"));
 }
 
 void MainWindow::addPage_gui(GtkWidget *page, GtkWidget *label, bool raise)
@@ -350,26 +352,25 @@ void MainWindow::removePage_gui(GtkWidget *page)
 	}
 }
 
-void MainWindow::appendWindowItem(GtkWidget *page, const string &title)
+GtkWidget *MainWindow::appendWindowItem(const string &title)
 {
 	GtkWidget *menuItem = gtk_menu_item_new_with_label(title.c_str());
-	g_signal_connect(menuItem, "activate", G_CALLBACK(onRaisePage_gui), (gpointer)page);
+	g_signal_connect(menuItem, "activate", G_CALLBACK(onRaisePage_gui), NULL);
 	gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("windowMenu")), menuItem);
 	gtk_widget_show_all(getWidget("windowMenu"));
-	g_object_set_data(G_OBJECT(page), "menuItem", menuItem);
+
+	return menuItem;
 }
 
-void MainWindow::modifyWindowItem(GtkWidget *page, string title)
+void MainWindow::modifyWindowItem(GtkWidget *menuItem, string title)
 {
-	GtkBin *menuItem = (GtkBin *)g_object_get_data(G_OBJECT(page), "menuItem");
-	GtkWidget *child = gtk_bin_get_child(menuItem);
+	GtkWidget *child = gtk_bin_get_child(GTK_BIN(menuItem));
 	if (child && GTK_IS_LABEL(child))
 		gtk_label_set_text(GTK_LABEL(child), title.c_str());
 }
 
-void MainWindow::removeWindowItem(GtkWidget *page)
+void MainWindow::removeWindowItem(GtkWidget *menuItem)
 {
-	GtkWidget *menuItem = (GtkWidget *)g_object_get_data(G_OBJECT(page), "menuItem");
 	gtk_container_remove(GTK_CONTAINER(getWidget("windowMenu")), menuItem);
 }
 
@@ -751,7 +752,7 @@ void MainWindow::onOpenFileListClicked_gui(GtkWidget *widget, gpointer data)
 
 			User::Ptr user = DirectoryListing::getUserFromFilename(path);
 			if (user)
-				WulforManager::get()->addShareBrowser_gui(user, path, "");
+				WulforManager::get()->addShareBrowser_gui(user, path);
 			else
 				mw->setStatus_gui("status1", _("Unable to open: Older file list format detected"));
 		}
@@ -784,7 +785,7 @@ void MainWindow::onReconnectClicked_gui(GtkWidget *widget, gpointer data)
 	{
 		BookEntry *entry = (BookEntry *)g_object_get_data(G_OBJECT(entryWidget), "entry");
 
-		if (entry && entry->getID().substr(0, 5) == "Hub: ")
+		if (entry && entry->getID().substr(0, 5) == _("Hub: "))
 		{
 			Func0<Hub> *func = new Func0<Hub>(dynamic_cast<Hub *>(entry), &Hub::reconnect_client);
 			WulforManager::get()->dispatchClientFunc(func);
@@ -811,6 +812,11 @@ void MainWindow::onAboutClicked_gui(GtkWidget *widget, gpointer data)
 	MainWindow *mw = (MainWindow *)data;
 	gtk_dialog_run(GTK_DIALOG(mw->getWidget("aboutDialog")));
 	gtk_widget_hide(mw->getWidget("aboutDialog"));
+}
+
+void MainWindow::onAboutDialogActivateLink_gui(GtkAboutDialog *dialog, const gchar *link, gpointer data)
+{
+	WulforUtil::openURI(link);
 }
 
 void MainWindow::onGetFileListClicked_gui(GtkMenuItem *item, gpointer data)

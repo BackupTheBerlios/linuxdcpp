@@ -54,9 +54,9 @@ class MainWindow:
 		GtkWidget *currentPage_gui();
 		void raisePage_gui(GtkWidget *page);
 		void removePage_gui(GtkWidget *page);
-		void appendWindowItem(GtkWidget *page, const std::string &title);
-		void modifyWindowItem(GtkWidget *page, std::string title);
-		void removeWindowItem(GtkWidget *page);
+		GtkWidget *appendWindowItem(const std::string &title);
+		void modifyWindowItem(GtkWidget *menuItem, std::string title);
+		void removeWindowItem(GtkWidget *menuItem);
 
 		// Client functions
 		void autoConnect_client();
@@ -99,6 +99,7 @@ class MainWindow:
 		static void onReconnectClicked_gui(GtkWidget *widget, gpointer data);
 		static void onCloseClicked_gui(GtkWidget *widget, gpointer data);
 		static void onAboutClicked_gui(GtkWidget *widget, gpointer data);
+		static void onAboutDialogActivateLink_gui(GtkAboutDialog *dialog, const gchar *link, gpointer data);
 		static void onGetFileListClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onMatchQueueClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onPrivateMessageClicked_gui(GtkMenuItem *item, gpointer data);

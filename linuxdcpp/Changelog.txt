@@ -1,3 +1,7 @@
+2007-07-07 - Steven Sheehy
+* Bug #11382: Filelists are not removed when closing (thanks piotrp).
+* Some more translation work.
+
 2007-05-06 - Steven Sheehy
 * Fixed some download queue regressions.
 
@@ -9,6 +13,7 @@
 * Bug #10261: ShareManager::checkTypes is not endian-safe (thanks Mikael Eman).
 * Patch #1953: Improve socket disconnections caused by EINTR (thanks Mikael Eman).
 * Fixed an encoding issue that could cause transfers to fail (thanks Stanislav Maslovski).
+* Fixed a compile error on gcc 4.3.
 
 2007-03-27 - Steven Sheehy
 * Fixed a text conversion regression.
@@ -36,7 +41,7 @@
 * Fixed "Remove user from queue" regression in hub nicklist.
 * Fixed /commands regression in pm window.
 * Fixed address binding failures in core (thanks Mikael Eman).
-* Fixed scons not checking for dependencies during scons install.
+* Fixed scons from checking for dependencies during scons install.
 * Fixed scons from recompiling if scons install is specified but the executable
   is not up-to-date.
 * Character encoding fixes:
