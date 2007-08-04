@@ -92,8 +92,6 @@ public:
 
 	Client::List& getClients() { return clients; }
 
-	string getCachedIp() const { Lock l(cs); return cachedIp; }
-
 	CID getMyCID();
 	const CID& getMyPID();
 
@@ -120,7 +118,6 @@ private:
 
 	Socket udp;
 
-	string cachedIp;
 	CID pid;
 
 	friend class Singleton<ClientManager>;
@@ -134,8 +131,6 @@ private:
 		SettingsManager::getInstance()->removeListener(this);
 		TimerManager::getInstance()->removeListener(this);
 	}
-
-	void updateCachedIp();
 
 	// SettingsManagerListener
 	virtual void on(Load, SimpleXML&) throw();

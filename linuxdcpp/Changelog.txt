@@ -1,3 +1,13 @@
+2007-08-04 - Steven Sheehy
+* Fixed a character encoding issue when "System default" was selected.
+* Fixed a window menu regression.
+* Patch #2099: Make all dialogs accept enter (thanks kotnik).
+* Improve active searches when using multiple IPs (thanks Stanislav Maslovski).
+* Patch #2121: Make the trayicon transparent (thanks Bart Vulling and Gaim/Pidgin team).
+* Connect dialog now highlights old text upon re-opening.
+* Converted u_int*_t to uint*_t C99 types.
+* Bug #11597: Disconnected showing before no slots available (thanks Razzloss).
+
 2007-07-07 - Steven Sheehy
 * Bug #11382: Filelists are not removed when closing (thanks piotrp).
 * Some more translation work.

@@ -117,6 +117,7 @@
                         <child internal-child="entry">
                           <widget class="GtkEntry" id="comboboxentryCharset">
                             <property name="visible">True</property>
+                            <property name="activates_default">True</property>
                             <property name="can_focus">True</property>
                             <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_ENTER_NOTIFY_MASK</property>
                           </widget>
@@ -133,6 +134,7 @@
                       <widget class="GtkEntry" id="entryDescription">
                         <property name="width_request">200</property>
                         <property name="visible">True</property>
+                        <property name="activates_default">True</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">*</property>
                       </widget>
@@ -148,6 +150,7 @@
                       <widget class="GtkEntry" id="entryAddress">
                         <property name="width_request">200</property>
                         <property name="visible">True</property>
+                        <property name="activates_default">True</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">*</property>
                       </widget>
@@ -163,6 +166,7 @@
                       <widget class="GtkEntry" id="entryName">
                         <property name="width_request">200</property>
                         <property name="visible">True</property>
+                        <property name="activates_default">True</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">*</property>
                       </widget>
@@ -247,6 +251,7 @@
                     <child>
                       <widget class="GtkEntry" id="entryUDescription">
                         <property name="visible">True</property>
+                        <property name="activates_default">True</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">*</property>
                       </widget>
@@ -261,6 +266,7 @@
                     <child>
                       <widget class="GtkEntry" id="entryPassword">
                         <property name="visible">True</property>
+                        <property name="activates_default">True</property>
                         <property name="can_focus">True</property>
                         <property name="visibility">False</property>
                         <property name="invisible_char">*</property>
@@ -276,6 +282,7 @@
                     <child>
                       <widget class="GtkEntry" id="entryNick">
                         <property name="visible">True</property>
+                        <property name="activates_default">True</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">*</property>
                       </widget>
@@ -363,6 +370,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="can_default">True</property>
+                <property name="has_default">True</property>
                 <property name="label">gtk-ok</property>
                 <property name="use_stock">True</property>
                 <property name="response_id">-5</property>
@@ -417,6 +425,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="can_default">True</property>
+                <property name="has_default">True</property>
                 <property name="label">gtk-ok</property>
                 <property name="use_stock">True</property>
                 <property name="response_id">-5</property>
@@ -462,6 +471,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="can_default">True</property>
+                <property name="has_default">True</property>
                 <property name="label">gtk-ok</property>
                 <property name="use_stock">True</property>
                 <property name="response_id">-5</property>

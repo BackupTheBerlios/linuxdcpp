@@ -35,14 +35,14 @@ class Hash:
 
 	private:
 		// GUI functions
-		void updateStats_gui(std::string file, int64_t bytes, size_t files, u_int32_t tick);
+		void updateStats_gui(std::string file, int64_t bytes, size_t files, uint32_t tick);
 
 		// Client callbacks
-		virtual void on(TimerManagerListener::Second, u_int32_t tics) throw();
+		virtual void on(TimerManagerListener::Second, uint32_t tics) throw();
 
 		int64_t startBytes;
 		size_t startFiles;
-		u_int32_t startTime;
+		uint32_t startTime;
 };
 
 #else

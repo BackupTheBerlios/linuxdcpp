@@ -352,10 +352,10 @@ void MainWindow::removePage_gui(GtkWidget *page)
 	}
 }
 
-GtkWidget *MainWindow::appendWindowItem(const string &title)
+GtkWidget *MainWindow::appendWindowItem(GtkWidget *page, const string &title)
 {
 	GtkWidget *menuItem = gtk_menu_item_new_with_label(title.c_str());
-	g_signal_connect(menuItem, "activate", G_CALLBACK(onRaisePage_gui), NULL);
+	g_signal_connect(menuItem, "activate", G_CALLBACK(onRaisePage_gui), (gpointer)page);
 	gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("windowMenu")), menuItem);
 	gtk_widget_show_all(getWidget("windowMenu"));
 
@@ -638,6 +638,8 @@ void MainWindow::onConnectClicked_gui(GtkWidget *widget, gpointer data)
 {
 	MainWindow *mw = (MainWindow *)data;
 
+	gtk_editable_select_region(GTK_EDITABLE(mw->getWidget("connectEntry")), 0, -1);
+	gtk_widget_grab_focus(mw->getWidget("connectEntry"));
 	int response = gtk_dialog_run(GTK_DIALOG(mw->getWidget("connectDialog")));
 	gtk_widget_hide(mw->getWidget("connectDialog"));
 
@@ -1488,7 +1490,7 @@ void MainWindow::on(QueueManagerListener::Finished, QueueItem *item, const strin
 	}
 }
 
-void MainWindow::on(TimerManagerListener::Second, u_int32_t ticks) throw()
+void MainWindow::on(TimerManagerListener::Second, uint32_t ticks) throw()
 {
 	string status1, status2, status3, status4, status5, status6;
 	int64_t diff = (int64_t)((lastUpdate == 0) ? ticks - 1000 : ticks - lastUpdate);

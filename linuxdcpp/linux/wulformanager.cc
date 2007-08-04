@@ -445,7 +445,8 @@ BookEntry *WulforManager::addHub_gui(const string &address, const string &encodi
 	if (entry) return entry;
 
 	Hub *hub = new Hub(address);
-	hub->setWindowItem(mainWin->appendWindowItem(hub->getID()));
+	GtkWidget *item = mainWin->appendWindowItem(hub->getContainer(), hub->getID());
+	hub->setWindowItem(item);
 	insertBookEntry_gui(hub);
 
 	string charset;
@@ -453,10 +454,11 @@ BookEntry *WulforManager::addHub_gui(const string &address, const string &encodi
 		charset = "UTF-8";
 	else if (encoding.empty())
 		charset = WGETS("default-charset");
-	else if (encoding == _("System default"))
-		charset = Text::getSystemCharset();
 	else
 		charset = encoding;
+
+	if (charset == _("System default"))
+		charset = Text::getSystemCharset();
 
 	string::size_type i = charset.find(' ', 0);
 	if (i != string::npos)
@@ -475,7 +477,8 @@ BookEntry *WulforManager::addPrivMsg_gui(User::Ptr user, bool raise)
 	if (entry) return entry;
 
 	PrivateMessage *privMsg = new PrivateMessage(user);
-	privMsg->setWindowItem(mainWin->appendWindowItem(privMsg->getID()));
+	GtkWidget *item = mainWin->appendWindowItem(privMsg->getContainer(), privMsg->getID());
+	privMsg->setWindowItem(item);
 	insertBookEntry_gui(privMsg, raise);
 
 	return privMsg;

@@ -54,7 +54,7 @@ class MainWindow:
 		GtkWidget *currentPage_gui();
 		void raisePage_gui(GtkWidget *page);
 		void removePage_gui(GtkWidget *page);
-		GtkWidget *appendWindowItem(const std::string &title);
+		GtkWidget *appendWindowItem(GtkWidget *page, const std::string &title);
 		void modifyWindowItem(GtkWidget *menuItem, std::string title);
 		void removeWindowItem(GtkWidget *menuItem);
 
@@ -138,7 +138,7 @@ class MainWindow:
 		virtual void on(UploadManagerListener::Complete, Upload *ul) throw();
 		virtual void on(LogManagerListener::Message, time_t t, const std::string &m) throw();
 		virtual void on(QueueManagerListener::Finished, QueueItem *item, const string& dir, int64_t avSpeed) throw();
-		virtual void on(TimerManagerListener::Second, u_int32_t ticks) throw();
+		virtual void on(TimerManagerListener::Second, uint32_t ticks) throw();
 
 		GtkWindow *window;
 		TreeView transferView;

@@ -633,7 +633,10 @@ void ConnectionManager::on(UserConnectionListener::Failed, UserConnection* aSour
 			ConnectionQueueItem* cqi = *i;
 			cqi->setState(ConnectionQueueItem::WAITING);
 			cqi->setLastAttempt(GET_TICK());
-			fire(ConnectionManagerListener::Failed(), cqi, aError);
+
+			// Don't overwrite no slots message with disconnected...
+			if (!aSource->getHasMaxedOut())
+				fire(ConnectionManagerListener::Failed(), cqi, aError);
 		} else if(aSource->isSet(UserConnection::FLAG_UPLOAD)) {
 			ConnectionQueueItem::Iter i = find(uploads.begin(), uploads.end(), aSource->getUser());
 			dcassert(i != uploads.end());

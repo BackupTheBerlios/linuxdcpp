@@ -179,6 +179,7 @@ void UserConnection::on(BufferedSocketListener::Line, const string& aLine) throw
 			bytes = Util::toInt64(param);
 		fire(UserConnectionListener::Sending(), this, bytes);
 	} else if(cmd == "$MaxedOut") {
+		hasMaxedOut = true;
 		fire(UserConnectionListener::MaxedOut(), this);
 	} else if(cmd == "$Supports") {
 		if(!param.empty()) {

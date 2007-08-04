@@ -317,6 +317,7 @@ public:
 	GETSET(string, encoding, Encoding);
 	GETSET(States, state, State);
 	GETSET(uint32_t, lastActivity, LastActivity);
+	GETSET(bool, hasMaxedOut, HasMaxedOut);
 private:
 	BufferedSocket* socket;
 	bool secure;
@@ -331,7 +332,7 @@ private:
 
 	// We only want ConnectionManager to create this...
 	UserConnection(bool secure_) throw() : encoding(Text::getSystemCharset()), state(STATE_UNCONNECTED),
-		lastActivity(0), socket(0), secure(secure_), download(NULL) {
+		lastActivity(0), hasMaxedOut(false), socket(0), secure(secure_), download(NULL)  {
 	}
 
 	virtual ~UserConnection() throw() {

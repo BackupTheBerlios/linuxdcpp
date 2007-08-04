@@ -32,6 +32,7 @@ Jussi Peltola
 Mattias Webjörn Eriksson
 Stanislav Maslovski
 piotrp
+kotnik
 
 DC++:
 -----
