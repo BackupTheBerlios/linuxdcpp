@@ -73,6 +73,8 @@ class MainWindow:
 		bool findTransfer_gui(const std::string &cid, bool download, GtkTreeIter *iter);
 		void updateTransfer_gui(StringMap params, bool download);
 		void removeTransfer_gui(std::string cid, bool download);
+		void setTabPosition_gui(int position);
+		void setToolbarStyle_gui(int style);
 
 		// GUI Callbacks
 		static gboolean onDeleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data);

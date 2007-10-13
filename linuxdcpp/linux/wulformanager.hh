@@ -22,6 +22,7 @@
 #include <gtk/gtk.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <sys/stat.h>
 #include <string>
 
 #include "bookentry.hh"
@@ -91,7 +92,7 @@ class WulforManager
 		pthread_rwlock_t guiQueueLock;
 		pthread_rwlock_t clientQueueLock;
 		pthread_rwlock_t entryLock;
-		sem_t guiSem, clientSem;
+		sem_t *guiSem, *clientSem;
 		pthread_t guiThread, clientThread;
 };
 

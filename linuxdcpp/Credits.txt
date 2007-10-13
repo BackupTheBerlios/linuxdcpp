@@ -33,6 +33,8 @@ Mattias Webjörn Eriksson
 Stanislav Maslovski
 piotrp
 kotnik
+jikaheim
+gasol
 
 DC++:
 -----

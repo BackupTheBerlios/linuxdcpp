@@ -38,6 +38,8 @@ WulforSettingsManager::WulforSettingsManager()
 	defaultInt["sharebrowser-pane-position"] = 200;
 	defaultInt["show-tray-icon"] = 1;
 	defaultInt["use-stock-icons"] = 0;
+	defaultInt["tab-position"] = 1;
+	defaultInt["toolbar-style"] = 2;
 	defaultString["downloadqueue-order"] = "";
 	defaultString["downloadqueue-width"] = "";
 	defaultString["downloadqueue-visibility"] = "";

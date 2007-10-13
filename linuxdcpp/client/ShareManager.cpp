@@ -554,6 +554,10 @@ public:
 			return ((dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) || (cFileName[0] == L'.'));
 		}
 
+		bool isLink() {
+			return false;
+		}
+
 		int64_t getSize() {
 			return (int64_t)nFileSizeLow | ((int64_t)nFileSizeHigh)<<32;
 		}
@@ -623,6 +627,12 @@ public:
 			if (!ent) return false;
 			return ent->d_name[0] == '.';
 		}
+		bool isLink() {
+			struct stat inode;
+			if (!ent) return false;
+			if (lstat((base + PATH_SEPARATOR + ent->d_name).c_str(), &inode) == -1) return false;
+			return S_ISLNK(inode.st_mode);
+		}
 		int64_t getSize() {
 			struct stat inode;
 			if (!ent) return false;
@@ -676,6 +686,8 @@ ShareManager::Directory* ShareManager::buildTree(const string& aName, Directory*
 			continue;
 		}
 		if(!BOOLSETTING(SHARE_HIDDEN) && i->isHidden() )
+			continue;
+		if(!BOOLSETTING(FOLLOW_LINKS) && i->isLink())
 			continue;
 
 		if(i->isDirectory()) {

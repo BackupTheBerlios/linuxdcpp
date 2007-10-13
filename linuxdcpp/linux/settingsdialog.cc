@@ -163,6 +163,7 @@ void Settings::saveSettings()
 	}
 
 	{ // Sharing
+		sm->set(SettingsManager::FOLLOW_LINKS, (int)gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("followLinksCheckButton"))));
 		sm->set(SettingsManager::MIN_UPLOAD_SPEED, (int)gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("sharedExtraSlotSpinButton"))));
 		sm->set(SettingsManager::SLOTS, (int)gtk_spin_button_get_value(GTK_SPIN_BUTTON(getWidget("sharedUploadSlotsSpinButton"))));
 	}
@@ -181,6 +182,10 @@ void Settings::saveSettings()
 
 		///@todo: figre out how to use this...
 		//WSET("show-tray-icon", appearanceView.getValue<gboolean>(&iter, "Use"););
+
+		WSET("tab-position", gtk_combo_box_get_active(GTK_COMBO_BOX(getWidget("tabPositionComboBox"))));
+		WSET("toolbar-style", gtk_combo_box_get_active(GTK_COMBO_BOX(getWidget("toolbarStyleComboBox"))));
+
 		sm->set(SettingsManager::DEFAULT_AWAY_MESSAGE, string(gtk_entry_get_text(GTK_ENTRY(getWidget("awayMessageEntry")))));
 		sm->set(SettingsManager::TIME_STAMPS_FORMAT, string(gtk_entry_get_text(GTK_ENTRY(getWidget("timestampEntry")))));
 
@@ -528,6 +533,7 @@ void Settings::initSharing_gui()
 
 	gtk_label_set_text(GTK_LABEL(getWidget("sharedSizeLabel")), string("Total size: " + Util::formatBytes(ShareManager::getInstance()->getShareSize())).c_str());
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("shareHiddenCheckButton")), BOOLSETTING(SHARE_HIDDEN));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("followLinksCheckButton")), BOOLSETTING(FOLLOW_LINKS));
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("sharedExtraSlotSpinButton")), (double)SETTING(MIN_UPLOAD_SPEED));
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("sharedUploadSlotsSpinButton")), (double)SETTING(SLOTS));
 }
@@ -558,12 +564,15 @@ void Settings::initAppearance_gui()
 		addOption_gui(appearanceStore, _("View status messages in main chat"), SettingsManager::STATUS_IN_CHAT);
 		addOption_gui(appearanceStore, _("Show joins / parts in chat by default"), SettingsManager::SHOW_JOINS);
 		addOption_gui(appearanceStore, _("Only show joins / parts for favorite users"), SettingsManager::FAV_SHOW_JOINS);
-		addOption_gui(appearanceStore, _("Use OEM monospaced font for viewing text files"), SettingsManager::USE_OEM_MONOFONT);
+		addOption_gui(appearanceStore, _("Use OEM monospaced font for chat windows"), SettingsManager::USE_OEM_MONOFONT);
 		/// @todo: Uncomment when implemented
 		//addOption_gui(appearanceStore, _("Minimize to tray"), SettingsManager::MINIMIZE_TRAY);
 		//addOption_gui(appearanceStore, _("Use system icons"), SettingsManager::USE_SYSTEM_ICONS);
 		///@todo: uncomment when the save problem is solved. Using MINIMIZE_TRAY until then.
 		//addOption_gui(appearanceStore, _("Show tray icon"), WGETI("show-tray-icon"));
+
+		gtk_combo_box_set_active(GTK_COMBO_BOX(getWidget("tabPositionComboBox")), WGETI("tab-position"));
+		gtk_combo_box_set_active(GTK_COMBO_BOX(getWidget("toolbarStyleComboBox")), WGETI("toolbar-style"));
 
 		gtk_entry_set_text(GTK_ENTRY(getWidget("awayMessageEntry")), SETTING(DEFAULT_AWAY_MESSAGE).c_str());
 		gtk_entry_set_text(GTK_ENTRY(getWidget("timestampEntry")), SETTING(TIME_STAMPS_FORMAT).c_str());
@@ -818,7 +827,8 @@ void Settings::onAddShare_gui(GtkWidget *widget, gpointer data)
 			if (path[path.length() - 1] != PATH_SEPARATOR)
 				path += PATH_SEPARATOR;
 
-			gtk_entry_set_text(GTK_ENTRY(s->getWidget("virtualNameDialogEntry")), "");
+			gtk_entry_set_text(GTK_ENTRY(s->getWidget("virtualNameDialogEntry")), Util::getLastDir(path).c_str());
+			gtk_editable_select_region(GTK_EDITABLE(s->getWidget("virtualNameDialogEntry")), 0, -1);
 			response = gtk_dialog_run(GTK_DIALOG(s->getWidget("virtualNameDialog")));
 			gtk_widget_hide(s->getWidget("virtualNameDialog"));
 

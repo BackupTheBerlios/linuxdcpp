@@ -64,6 +64,10 @@ opts.AddOptions(
 
 env = Environment(ENV = os.environ, options = opts)
 
+env.SConsignFile('build/sconf/.sconsign')
+opts.Save('build/sconf/scache.conf', env)
+Help(opts.GenerateHelpText(env))
+
 conf = Configure(env,
 	custom_tests =
 	{
@@ -75,15 +79,16 @@ conf = Configure(env,
 	log_file = 'build/sconf/config.log')
 
 if os.environ.has_key('CXX'):
-	env['CXX'] = os.environ['CXX']
+	conf.env['CXX'] = os.environ['CXX']
 
 if os.environ.has_key('CXXFLAGS'):
-	env['CXXFLAGS'] = os.environ['CXXFLAGS'].split()
+	conf.env['CXXFLAGS'] = os.environ['CXXFLAGS'].split()
 
-env.SConsignFile('build/sconf/.sconsign')
-opts.Save('build/sconf/scache.conf', env)
-Help(opts.GenerateHelpText(env))
+if os.environ.has_key('LDFLAGS'):
+	conf.env['LINKFLAGS'] = os.environ['LDFLAGS'].split()
 
+if os.environ.has_key('CFLAGS'):
+	conf.env['CFLAGS'] = os.environ['CFLAGS'].split()
 
 # ----------------------------------------------------------------------
 # Dependencies
@@ -91,9 +96,9 @@ Help(opts.GenerateHelpText(env))
 
 if not 'install' in COMMAND_LINE_TARGETS:
 
-	if not (env.has_key('CXX') and env['CXX']):
+	if not (conf.env.has_key('CXX') and conf.env['CXX']):
 		print 'CXX env variable is not set, attempting to use g++'
-		env['CXX'] = 'g++'
+		conf.env['CXX'] = 'g++'
 
 	if not conf.CheckCXXVersion(env['CXX'], 3, 4):
 		print 'Compiler version check failed. g++ 3.4 or later is needed'
@@ -147,6 +152,10 @@ if not 'install' in COMMAND_LINE_TARGETS:
 		print '\tNote: You might have the lib but not the headers'
 		Exit(1)
 
+	if not conf.CheckLib('crypto'):
+		print '\tcrypto library not found'
+		Exit(1)
+
 	if not conf.CheckHeader('iconv.h'):
 		Exit(1)
 	elif conf.CheckLibWithHeader('iconv', 'iconv.h', 'c', 'iconv(0, (const char **)0, 0, (char**)0, 0);'):
@@ -159,18 +168,18 @@ if not 'install' in COMMAND_LINE_TARGETS:
 # Compile and link flags
 # ----------------------------------------------------------------------
 
-	env.Append(CXXFLAGS = Split('-I. -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_REENTRANT'))
+	env.Append(CXXFLAGS = ['-I.', '-D_GNU_SOURCE', '-D_FILE_OFFSET_BITS=64', '-D_REENTRANT'])
 	env.Append(LINKFLAGS = ['-Wl,--as-needed'])
 
 	if env.has_key('ICONV_CONST') and env['ICONV_CONST']:
 		env.Append(CXXFLAGS = '-DICONV_CONST=' + env['ICONV_CONST'])
 
 	if env.has_key('debug') and env['debug']:
-		env.Append(CXXFLAGS = Split('-g -ggdb -D_DEBUG -Wall'))
-		env.Append(LINKFLAGS = Split('-g -ggdb -Wall'))
+		env.Append(CXXFLAGS = ['-g', '-ggdb', '-D_DEBUG', '-Wall'])
+		env.Append(LINKFLAGS = ['-g', '-ggdb' '-Wall'])
 
 	if env.has_key('release') and env['release']:
-		env.Append(CXXFLAGS = '-O3')
+		env.Append(CXXFLAGS = ['-O3', '-fomit-frame-pointer'])
 
 	if env.has_key('profile') and env['profile']:
 		env.Append(CXXFLAGS = '-pg')

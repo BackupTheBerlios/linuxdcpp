@@ -716,7 +716,7 @@
     <property name="copyright" translatable="yes">Copyright © 2004-2007 Jens Oknelid</property>
     <property name="comments" translatable="yes">A DC++ port for Linux
 
-LinuxDC++ version: see Changelog.txt
+LinuxDC++ version: 1.0.0
 Core version: 0.698</property>
     <property name="website">http://linuxdcpp.berlios.de</property>
     <property name="license" translatable="yes">
@@ -759,6 +759,8 @@ Contributors:
   Stanislav Maslovski
   piotrp
   kotnik
+  jikaheim
+  gasol
 </property>
     <property name="artists">Johannes Sjölund</property>
     <property name="wrap_license">True</property>

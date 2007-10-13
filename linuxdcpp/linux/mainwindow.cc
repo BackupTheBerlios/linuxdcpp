@@ -195,6 +195,9 @@ MainWindow::MainWindow():
 	if (WGETI("main-window-maximized"))
 		gtk_window_maximize(window);
 
+	setTabPosition_gui(WGETI("tab-position"));
+	setToolbarStyle_gui(WGETI("toolbar-style"));
+
 	GtkWidget *dummy;
 	GtkRequisition req;
 	dummy = gtk_statusbar_new();
@@ -499,6 +502,61 @@ void MainWindow::removeTransfer_gui(string cid, bool download)
 		gtk_list_store_remove(transferStore, &iter);
 }
 
+void MainWindow::setTabPosition_gui(int position)
+{
+	GtkPositionType tabPosition;
+
+	switch (position)
+	{
+		case 0:
+			tabPosition = GTK_POS_TOP;
+			break;
+		case 1:
+			tabPosition = GTK_POS_LEFT;
+			break;
+		case 2:
+			tabPosition = GTK_POS_RIGHT;
+			break;
+		case 3:
+			tabPosition = GTK_POS_BOTTOM;
+			break;
+		default:
+			tabPosition = GTK_POS_TOP;
+	}
+
+	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(getWidget("book")), tabPosition);
+}
+
+void MainWindow::setToolbarStyle_gui(int style)
+{
+	GtkToolbarStyle toolbarStyle;
+	gtk_widget_show(getWidget("toolbar1"));
+
+	switch (style)
+	{
+		case 0:
+			toolbarStyle = GTK_TOOLBAR_ICONS;
+			break;
+		case 1:
+			toolbarStyle = GTK_TOOLBAR_TEXT;
+			break;
+		case 2:
+			toolbarStyle = GTK_TOOLBAR_BOTH;
+			break;
+		case 3:
+			toolbarStyle = GTK_TOOLBAR_BOTH_HORIZ;
+			break;
+		case 4:
+			toolbarStyle = gtk_toolbar_get_style(GTK_TOOLBAR(getWidget("toolbar1")));
+			gtk_widget_hide(getWidget("toolbar1"));
+			break;
+		default:
+			toolbarStyle = GTK_TOOLBAR_BOTH;
+	}
+
+	gtk_toolbar_set_style(GTK_TOOLBAR(getWidget("toolbar1")), toolbarStyle);
+}
+
 gboolean MainWindow::onDeleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
 	MainWindow *mw = (MainWindow *)data;
@@ -700,6 +758,9 @@ void MainWindow::onPreferencesClicked_gui(GtkWidget *widget, gpointer data)
 			gtk_widget_show_all(mw->trayIcon);
 		else
 			gtk_widget_hide_all(mw->trayIcon);
+
+		mw->setTabPosition_gui(WGETI("tab-position"));
+		mw->setToolbarStyle_gui(WGETI("toolbar-style"));
 	}
 }
 

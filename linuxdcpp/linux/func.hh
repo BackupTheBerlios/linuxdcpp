@@ -107,7 +107,7 @@ class Func2: public FuncBase
 };
 
 template<class c, typename p1, typename p2, typename p3>
-class Func3: public FuncBase 
+class Func3: public FuncBase
 {
 	public:
 		Func3(c *obj, void (c::*func)(p1, p2, p3), p1 param1, p2 param2, p3 param3):
@@ -216,7 +216,6 @@ class Func6: public FuncBase
 			_param4(param4),
 			_param5(param5),
 			_param6(param6)
-			
 		{
 			this->obj = obj;
 			this->func = func;
@@ -342,7 +341,6 @@ class Func9: public FuncBase
 			_param7(param7),
 			_param8(param8),
 			_param9(param9)
-			
 		{
 			this->obj = obj;
 			this->func = func;

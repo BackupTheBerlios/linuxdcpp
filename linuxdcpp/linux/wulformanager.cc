@@ -84,16 +84,21 @@ WulforManager::WulforManager()
 		exit(EXIT_FAILURE);
 	}
 
-	if (sem_init(&guiSem, false, 0) == -1)
+	guiSem = sem_open("/linuxdcppGuiSem",  O_CREAT | O_EXCL, S_IRWXU | S_IRWXG, 0);
+	if (guiSem == SEM_FAILED)
 	{
 		perror("Unable to initialize guiSem");
 		exit(EXIT_FAILURE);
 	}
-	if (sem_init(&clientSem, false, 0) == -1)
+	sem_unlink("/linuxdcppGuiSem");
+
+	clientSem = sem_open("/linuxdcppClientSem",  O_CREAT | O_EXCL, S_IRWXU | S_IRWXG, 0);
+	if (clientSem == SEM_FAILED)
 	{
 		perror("Unable to initialize clientSem");
 		exit(EXIT_FAILURE);
 	}
+	sem_unlink("/linuxdcppClientSem");
 
 	if (pthread_create(&clientThread, NULL, &threadFunc_client, (void *)this) != 0)
 	{
@@ -121,8 +126,8 @@ WulforManager::WulforManager()
 
 WulforManager::~WulforManager()
 {
-	sem_destroy(&guiSem);
-	sem_destroy(&clientSem);
+	sem_close(guiSem);
+	sem_close(clientSem);
 
 	pthread_mutex_destroy(&clientCallLock);
 	pthread_rwlock_destroy(&guiQueueLock);
@@ -167,7 +172,7 @@ void WulforManager::processGuiQueue()
 
 	while (true)
 	{
-		if (sem_wait(&guiSem) != 0)
+		if (sem_wait(guiSem) != 0)
 		{
 			if (errno == EINTR)
 				continue;
@@ -178,17 +183,17 @@ void WulforManager::processGuiQueue()
 		// This must be taken before the queuelock to avoid deadlock.
 		gdk_threads_enter();
 
-		pthread_rwlock_rdlock(&guiQueueLock);
-		if (guiFuncs.size() > 0)
+		pthread_rwlock_wrlock(&guiQueueLock);
+		while (guiFuncs.size() > 0)
 		{
 			func = guiFuncs.front();
+			guiFuncs.erase(guiFuncs.begin());
 			pthread_rwlock_unlock(&guiQueueLock);
 
 			func->call();
+			delete func;
 
 			pthread_rwlock_wrlock(&guiQueueLock);
-			delete func;
-			guiFuncs.erase(guiFuncs.begin());
 		}
 		pthread_rwlock_unlock(&guiQueueLock);
 
@@ -203,7 +208,7 @@ void WulforManager::processClientQueue()
 
 	while (true)
 	{
-		if (sem_wait(&clientSem) != 0)
+		if (sem_wait(clientSem) != 0)
 		{
 			if (errno == EINTR)
 				continue;
@@ -212,17 +217,17 @@ void WulforManager::processClientQueue()
 		}
 
 		pthread_mutex_lock(&clientCallLock);
-		pthread_rwlock_rdlock(&clientQueueLock);
-		if (clientFuncs.size() > 0)
+		pthread_rwlock_wrlock(&clientQueueLock);
+		while (clientFuncs.size() > 0)
 		{
 			func = clientFuncs.front();
+			clientFuncs.erase(clientFuncs.begin());
 			pthread_rwlock_unlock(&clientQueueLock);
 
 			func->call();
+			delete func;
 
 			pthread_rwlock_wrlock(&clientQueueLock);
-			delete func;
-			clientFuncs.erase(clientFuncs.begin());
 		}
 		pthread_rwlock_unlock(&clientQueueLock);
 		pthread_mutex_unlock(&clientCallLock);
@@ -242,7 +247,7 @@ void WulforManager::dispatchGuiFunc(FuncBase *func)
 
 	pthread_rwlock_unlock(&entryLock);
 	pthread_rwlock_unlock(&guiQueueLock);
-	sem_post(&guiSem);
+	sem_post(guiSem);
 }
 
 void WulforManager::dispatchClientFunc(FuncBase *func)
@@ -258,7 +263,7 @@ void WulforManager::dispatchClientFunc(FuncBase *func)
 
 	pthread_rwlock_unlock(&entryLock);
 	pthread_rwlock_unlock(&clientQueueLock);
-	sem_post(&clientSem);
+	sem_post(clientSem);
 }
 
 MainWindow *WulforManager::getMainWindow()

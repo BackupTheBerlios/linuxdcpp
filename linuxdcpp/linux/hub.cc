@@ -948,10 +948,7 @@ void Hub::reconnect_client()
 	WulforManager::get()->dispatchGuiFunc(func);
 
 	if (client)
-	{
-		client->disconnect(FALSE);
-		client->connect();
-	}
+		client->reconnect();
 }
 
 void Hub::checkFavoriteUserJoin_client(string cid)
@@ -1112,6 +1109,18 @@ void Hub::on(ClientListener::Message, Client *, const OnlineUser &from, const st
 	{
 		string line = "<" + from.getIdentity().getNick() + "> " + message;
 
+		if (BOOLSETTING(FILTER_MESSAGES))
+		{
+			if ((message.find("Hub-Security") != string::npos && message.find("was kicked by") != string::npos) ||
+				(message.find("is kicking") != string::npos && message.find("because:") != string::npos))
+			{
+				typedef Func1<Hub, string> F1;
+				F1 *func = new F1(this, &Hub::addStatusMessage_gui, line);
+				WulforManager::get()->dispatchGuiFunc(func);
+				return;
+			}
+		}
+
 		if (BOOLSETTING(LOG_MAIN_CHAT))
 		{
 			StringMap params;
@@ -1137,6 +1146,9 @@ void Hub::on(ClientListener::StatusMessage, Client *, const string &message) thr
 			if ((message.find("Hub-Security") != string::npos && message.find("was kicked by") != string::npos) ||
 				(message.find("is kicking") != string::npos && message.find("because:") != string::npos))
 			{
+				typedef Func1<Hub, string> F1;
+				F1 *func = new F1(this, &Hub::addStatusMessage_gui, message);
+				WulforManager::get()->dispatchGuiFunc(func);
 				return;
 			}
 		}

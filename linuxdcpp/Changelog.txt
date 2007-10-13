@@ -1,3 +1,16 @@
+2007-10-13 - Steven Sheehy
+* Use strtoll instead of atoll to enable build on HPUX (thanks Tobias Nygren).
+* Dispatcher optimizations (thanks jikaheim).
+* Bug #12058: Hubs are not removed from search list after reconnection.
+* Moved preference notebook tabs position to the left.
+* Changed reference to "Windows" in preferences to "Tabs."
+* Added an option to specify the main window notebook tabs position.
+* Added an option to specify the main toolbar style.
+* Bug #11126: don't follow symlinks (thanks gasol).
+* Improved display of kick messages (thanks naga).
+* Default for virtual name entry (thanks Razzloss).
+* First attempt at adding Mac OS X support (thanks Jammnrose).
+
 2007-08-04 - Steven Sheehy
 * Fixed a character encoding issue when "System default" was selected.
 * Fixed a window menu regression.

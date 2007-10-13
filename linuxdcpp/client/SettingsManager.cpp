@@ -75,7 +75,7 @@ const string SettingsManager::settingTags[] =
 	"OpenWaitingUsers", "BoldWaitingUsers", "OpenSystemLog", "BoldSystemLog", "AutoRefreshTime",
 	"UseTLS", "AutoSearchLimit", "AltSortOrder", "AutoKickNoFavs", "PromptPassword", "SpyFrameIgnoreTthSearches",
 	"DontDlAlreadyQueued", "MaxCommandLength", "AllowUntrustedHubs", "AllowUntrustedClients",
-	"TLSPort", "FastHash",
+	"TLSPort", "FastHash", "FollowLinks",
 	"SENTRY",
 	// Int64
 	"TotalUpload", "TotalDownload",
@@ -270,6 +270,7 @@ SettingsManager::SettingsManager()
 	setDefault(ALLOW_UNTRUSTED_HUBS, true);
 	setDefault(ALLOW_UNTRUSTED_CLIENTS, true);
 	setDefault(FAST_HASH, true);
+	setDefault(FOLLOW_LINKS, false);
 
 #ifdef _WIN32
 	setDefault(MAIN_WINDOW_STATE, SW_SHOWNORMAL);
