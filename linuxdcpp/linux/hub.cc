@@ -21,6 +21,7 @@
 #include <client/FavoriteManager.h>
 #include <client/HashManager.h>
 #include <client/ShareManager.h>
+#include <client/UserCommand.h>
 #include "privatemessage.hh"
 #include "settingsmanager.hh"
 #include "wulformanager.hh"
@@ -114,6 +115,10 @@ Hub::Hub(const string &address):
 	if (panePosition > 10)
 		gtk_paned_set_position(GTK_PANED(getWidget("pane")), panePosition);
 
+	GtkWidget *menuItem = gtk_menu_item_new_with_label(_("User commands"));
+	subMenu = gtk_menu_new();
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(menuItem), subMenu);
+	gtk_menu_append(GTK_MENU(getWidget("nickMenu")), menuItem);
 	history.push_back("");
 }
 
@@ -141,7 +146,7 @@ Hub::~Hub()
 
 void Hub::setStatus_gui(string statusBar, string text)
 {
-	if (!text.empty())
+	if (!statusBar.empty() && !text.empty())
 	{
 		gtk_statusbar_pop(GTK_STATUSBAR(getWidget(statusBar)), 0);
 		gtk_statusbar_push(GTK_STATUSBAR(getWidget(statusBar)), 0, text.c_str());
@@ -244,6 +249,40 @@ void Hub::clearNickList_gui()
 	totalShared = 0;
 	setStatus_gui("statusUsers", _("0 Users"));
 	setStatus_gui("statusShared", "0 B");
+}
+
+void Hub::popupNickMenu_gui()
+{
+	gtk_container_foreach(GTK_CONTAINER(subMenu), (GtkCallback)gtk_widget_destroy, NULL);
+
+	// Add user commands.
+	::UserCommand::List list = FavoriteManager::getInstance()->
+		getUserCommands(::UserCommand::CONTEXT_CHAT, StringList(1, client->getHubUrl()));
+
+	if (!list.empty())
+	{
+		GtkWidget *menuItem;
+
+		for (::UserCommand::Iter i = list.begin(); i != list.end(); ++i)
+		{
+			::UserCommand& uc = *i;
+			if (uc.getType() == ::UserCommand::TYPE_SEPARATOR)
+			{
+				menuItem = gtk_separator_menu_item_new();
+				gtk_menu_shell_append(GTK_MENU_SHELL(subMenu), menuItem);
+			}
+			else
+			{
+				menuItem = gtk_menu_item_new_with_label(uc.getName().c_str());
+				g_signal_connect(menuItem, "activate", G_CALLBACK(onUserCommandClick_gui), (gpointer)this);
+				g_object_set_data_full(G_OBJECT(menuItem), "command", g_strdup(uc.getCommand().c_str()), g_free);
+				gtk_menu_shell_append(GTK_MENU_SHELL(subMenu), menuItem);
+			}
+		}
+	}
+
+	gtk_menu_popup(GTK_MENU(getWidget("nickMenu")), NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
+	gtk_widget_show_all(getWidget("nickMenu"));
 }
 
 void Hub::getPassword_gui()
@@ -520,8 +559,7 @@ gboolean Hub::onNickListButtonRelease_gui(GtkWidget *widget, GdkEventButton *eve
 		}
 		else if (event->button == 3 && event->type == GDK_BUTTON_RELEASE)
 		{
-			gtk_menu_popup(GTK_MENU(hub->getWidget("nickMenu")), NULL, NULL, NULL, NULL, 0, event->time);
-			gtk_widget_show_all(hub->getWidget("nickMenu"));
+			hub->popupNickMenu_gui();
 		}
 	}
 
@@ -536,8 +574,7 @@ gboolean Hub::onNickListKeyRelease_gui(GtkWidget *widget, GdkEventKey *event, gp
 	{
 		if (event->keyval == GDK_Menu || (event->keyval == GDK_F10 && event->state & GDK_SHIFT_MASK))
 		{
-			gtk_menu_popup(GTK_MENU(hub->getWidget("nickMenu")), NULL, NULL, NULL, NULL, 0, event->time);
-			gtk_widget_show_all(hub->getWidget("nickMenu"));
+			hub->popupNickMenu_gui();
 		}
 		else if (event->keyval == GDK_Return || event->keyval == GDK_KP_Enter)
 		{
@@ -725,6 +762,36 @@ void Hub::onMsgItemClicked_gui(GtkMenuItem *item, gpointer data)
 	}
 }
 
+void Hub::onUserCommandClick_gui(GtkMenuItem *item, gpointer data)
+{
+	Hub *hub = (Hub *)data;
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	string cid;
+	string commandName = WulforUtil::getTextFromMenu(item);
+	string command = (gchar *)g_object_get_data(G_OBJECT(item), "command");
+	GList *list = gtk_tree_selection_get_selected_rows(hub->nickSelection, NULL);
+	MainWindow *mw = WulforManager::get()->getMainWindow();
+
+	for (GList *i = list; i; i = i->next)
+	{
+		path = (GtkTreePath *)i->data;
+		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(hub->nickStore), &iter, path))
+		{
+			cid = hub->nickView.getString(&iter, "CID");
+			StringMap params;
+			if (mw->getUserCommandLines_gui(command, params))
+			{
+				typedef Func3<Hub, string, string, StringMap> F3;
+				F3 *func = new F3(hub, &Hub::sendUserCommand_client, cid, commandName, params);
+				WulforManager::get()->dispatchClientFunc(func);
+			}
+		}
+		gtk_tree_path_free(path);
+	}
+	g_list_free(list);
+}
+
 void Hub::onGrantItemClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	Hub *hub = (Hub *)data;
@@ -792,7 +859,7 @@ void Hub::connectClient_client(string address, string encoding)
 
 void Hub::setPassword_client(string password)
 {
-	if (client)
+	if (client && !password.empty())
 	{
 		client->setPassword(password);
 		client->password(password);
@@ -801,8 +868,24 @@ void Hub::setPassword_client(string password)
 
 void Hub::sendMessage_client(string message)
 {
-	if (client)
+	if (client && !message.empty())
 		client->hubMessage(message);
+}
+
+void Hub::sendUserCommand_client(string cid, string commandName, StringMap params)
+{
+	if (!cid.empty() && !commandName.empty())
+	{
+		int id = FavoriteManager::getInstance()->findUserCommand(commandName);
+		::UserCommand uc;
+
+		if (id == -1 || !FavoriteManager::getInstance()->getUserCommand(id, uc))
+			return;
+
+		User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
+		if (user)
+			ClientManager::getInstance()->userCommand(user, uc, params, true);
+	}
 }
 
 void Hub::getFileList_client(string cid, bool match)
@@ -997,7 +1080,7 @@ void Hub::getParams_client(StringMap &params, Identity &id)
 void Hub::on(ClientListener::Connecting, Client *) throw()
 {
 	typedef Func1<Hub, string> F1;
-	F1 *f1 = new F1(this, &Hub::addStatusMessage_gui, _("Connecting"));
+	F1 *f1 = new F1(this, &Hub::addStatusMessage_gui, _("Connecting to ") + client->getHubUrl() + "...");
 	WulforManager::get()->dispatchGuiFunc(f1);
 }
 
@@ -1096,6 +1179,9 @@ void Hub::on(ClientListener::HubUpdated, Client *) throw()
 	else
 		hubName += client->getHubName();
 
+	if (!client->getHubDescription().empty())
+		hubName += " - " + client->getHubDescription();
+
 	F1 *func1 = new F1(this, &BookEntry::setLabel_gui, hubName);
 	WulforManager::get()->dispatchGuiFunc(func1);
 
@@ -1169,7 +1255,7 @@ void Hub::on(ClientListener::StatusMessage, Client *, const string &message) thr
 	}
 }
 
-void Hub::on(ClientListener::PrivateMessage,	Client *, const OnlineUser &from,
+void Hub::on(ClientListener::PrivateMessage, Client *, const OnlineUser &from,
 	const OnlineUser& to, const OnlineUser& replyTo, const string &msg) throw()
 {
 	string error;

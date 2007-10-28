@@ -35,6 +35,8 @@ piotrp
 kotnik
 jikaheim
 gasol
+stoft
+David Grundberg
 
 DC++:
 -----

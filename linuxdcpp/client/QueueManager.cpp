@@ -380,7 +380,7 @@ void QueueManager::addList(const User::Ptr& aUser, int aFlags, const string& aIn
 	string target = Util::getListPath() + Util::validateFileName(aUser->getFirstNick()) + "." + aUser->getCID().toBase32();
 
 	if (!aInitialDir.empty()) {
-		dirMap[target] = aInitialDir;
+		dirMap[Util::validateFileName(target)] = aInitialDir;
 	}
 
 	add(target, -1, TTHValue(), aUser, QueueItem::FLAG_USER_LIST | aFlags);

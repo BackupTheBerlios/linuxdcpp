@@ -28,7 +28,7 @@
 
 using namespace std;
 
-ShareBrowser::ShareBrowser(User::Ptr user, const std::string &file, const std::string &initialDir):
+ShareBrowser::ShareBrowser(User::Ptr user, const std::string &file):
 	BookEntry(_("List: ") + WulforUtil::getNicks(user), "sharebrowser.glade"),
 	listing(user),
 	shareSize(0),
@@ -109,34 +109,10 @@ ShareBrowser::ShareBrowser(User::Ptr user, const std::string &file, const std::s
 
 		// Set name of root entry to user nick.
 		listing.getRoot()->setName(WulforUtil::getNicks(user));
-		
+
 		// Add entries to dir tree view starting with the root entry.
 		buildDirs_gui(listing.getRoot(), NULL);
-
-		GtkTreeIter iter;
-
-		if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(dirStore), &iter))
-		{
-			GtkTreePath *path;
-			DirectoryListing::Directory *directory;
-
-			if (findDir_gui(initialDir, &iter))
-				path = gtk_tree_model_get_path(GTK_TREE_MODEL(dirStore), &iter);
-			else
-				path = gtk_tree_path_new_first();
-
-			directory = dirView.getValue<gpointer, DirectoryListing::Directory *>(&iter, "DL Dir");
-
-			gtk_tree_view_expand_to_path(dirView.get(), path);
-			gtk_tree_view_scroll_to_cell(dirView.get(), path, gtk_tree_view_get_column(dirView.get(), 0), FALSE, 0.0, 0.0);
-			gtk_tree_view_set_cursor(dirView.get(), path, NULL, FALSE);
-			gtk_tree_path_free(path);
-
-			// Show entries in file view. fileView isn't realized yet so we have
-			// to queue it for later. Not sure why it isn't realized, though...
-			typedef Func1<ShareBrowser, DirectoryListing::Directory *> F1;
-			WulforManager::get()->dispatchGuiFunc(new F1(this, &ShareBrowser::updateFiles_gui, directory));
-		}
+		openDir_gui("");
 	}
 	catch (const Exception &e)
 	{
@@ -159,6 +135,34 @@ ShareBrowser::~ShareBrowser()
 
 	gtk_widget_destroy(getWidget("findDialog"));
 	gtk_widget_destroy(getWidget("dirChooserDialog"));
+}
+
+/*
+ * Selects the directory in the tree view, and shows that directory's contents.
+ */
+void ShareBrowser::openDir_gui(const string &dir)
+{
+	GtkTreeIter iter;
+
+	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(dirStore), &iter))
+	{
+		GtkTreePath *path;
+		DirectoryListing::Directory *directory;
+
+		if (findDir_gui(dir, &iter))
+			path = gtk_tree_model_get_path(GTK_TREE_MODEL(dirStore), &iter);
+		else
+			path = gtk_tree_path_new_first();
+
+		directory = dirView.getValue<gpointer, DirectoryListing::Directory *>(&iter, "DL Dir");
+
+		gtk_tree_view_expand_to_path(dirView.get(), path);
+		gtk_tree_view_scroll_to_cell(dirView.get(), path, gtk_tree_view_get_column(dirView.get(), 0), FALSE, 0.0, 0.0);
+		gtk_tree_view_set_cursor(dirView.get(), path, NULL, FALSE);
+		gtk_tree_path_free(path);
+
+		updateFiles_gui(directory);
+	}
 }
 
 bool ShareBrowser::findDir_gui(const string &dir, GtkTreeIter *parent)
@@ -334,7 +338,8 @@ void ShareBrowser::updateFiles_gui(DirectoryListing::Directory *dir)
 	}
 
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(fileStore), sortColumn, sortType);
-	gtk_tree_view_scroll_to_point(fileView.get(), 0, 0);
+	if (GTK_WIDGET_REALIZED(fileView.get()))
+		gtk_tree_view_scroll_to_point(fileView.get(), 0, 0);
 	updateStatus_gui();
 	updateFileView = TRUE;
 }
@@ -600,12 +605,12 @@ gboolean ShareBrowser::onButtonPressed_gui(GtkWidget *widget, GdkEventButton *ev
 		{
 			bool selected = gtk_tree_selection_path_is_selected(sb->fileSelection, path);
 			gtk_tree_path_free(path);
-			
+
 			if (selected)
 				return TRUE;
 		}
 	}
-	
+
 	return FALSE;
 }
 

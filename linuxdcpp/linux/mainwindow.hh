@@ -57,6 +57,7 @@ class MainWindow:
 		GtkWidget *appendWindowItem(GtkWidget *page, const std::string &title);
 		void modifyWindowItem(GtkWidget *menuItem, std::string title);
 		void removeWindowItem(GtkWidget *menuItem);
+		bool getUserCommandLines_gui(const std::string &command, StringMap &ucParams);
 
 		// Client functions
 		void autoConnect_client();
@@ -68,7 +69,7 @@ class MainWindow:
 		void setStatus_gui(std::string statusBar, std::string text);
 		void setStats_gui(std::string hub, std::string slot,
 			std::string dTot, std::string uTot, std::string dl, std::string ul);
-		void addShareBrowser_gui(User::Ptr user, std::string listName, std::string initialDir, bool useSetting);
+		void addShareBrowser_gui(User::Ptr user, std::string filename, std::string dir, bool useSetting);
 		void openHub_gui(std::string server, std::string encoding);
 		bool findTransfer_gui(const std::string &cid, bool download, GtkTreeIter *iter);
 		void updateTransfer_gui(StringMap params, bool download);

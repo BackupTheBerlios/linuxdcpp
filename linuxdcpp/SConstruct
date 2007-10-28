@@ -64,10 +64,6 @@ opts.AddOptions(
 
 env = Environment(ENV = os.environ, options = opts)
 
-env.SConsignFile('build/sconf/.sconsign')
-opts.Save('build/sconf/scache.conf', env)
-Help(opts.GenerateHelpText(env))
-
 conf = Configure(env,
 	custom_tests =
 	{
@@ -89,6 +85,10 @@ if os.environ.has_key('LDFLAGS'):
 
 if os.environ.has_key('CFLAGS'):
 	conf.env['CFLAGS'] = os.environ['CFLAGS'].split()
+
+env.SConsignFile('build/sconf/.sconsign')
+opts.Save('build/sconf/scache.conf', env)
+Help(opts.GenerateHelpText(env))
 
 # ----------------------------------------------------------------------
 # Dependencies

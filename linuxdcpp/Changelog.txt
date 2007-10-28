@@ -1,3 +1,12 @@
+2007-10-28 - Steven Sheehy
+* Fixed wrong default value of main window notebook tabs.
+* Fixed build error "*** Error writing options to file: build/sconf/scache.conf".
+* Added hub url to "Connecting to" text when loading a hub.
+* Patch #2216: add hub topic to tab name (thanks stoft).
+* Bug #12151: Get file list won't show directory right (thanks David Grundberg)
+* Bug #12152: Superfluous / in $HOME causes file browsing problems.
+* Added user commands (thanks Bart Vulling).
+
 2007-10-13 - Steven Sheehy
 * Use strtoll instead of atoll to enable build on HPUX (thanks Tobias Nygren).
 * Dispatcher optimizations (thanks jikaheim).

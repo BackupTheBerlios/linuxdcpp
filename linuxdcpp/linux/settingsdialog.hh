@@ -22,6 +22,7 @@
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/SettingsManager.h>
+#include <client/UserCommand.h>
 
 #include "dialogentry.hh"
 #include "treeview.hh"
@@ -46,6 +47,10 @@ class Settings:
 		void initLog_gui();
 		void initAdvanced_gui();
 		void addShare_gui(std::string path, std::string name, std::string error);
+		void loadUserCommands_gui();
+		void saveUserCommand(UserCommand *uc);
+		void updateUserCommandTextSent_gui();
+		void showErrorDialog(const std::string &error);
 
 		// GUI callbacks
 		static void onInDirect_gui(GtkToggleButton *button, gpointer data);
@@ -87,6 +92,16 @@ class Settings:
 		static void onLogDownloadClicked_gui(GtkToggleButton *button, gpointer data);
 		static void onLogUploadClicked_gui(GtkToggleButton *button, gpointer data);
 		static void onAdvancedToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path, gpointer data);
+		static void onUserCommandAdd_gui(GtkWidget *widget, gpointer data);
+		static void onUserCommandEdit_gui(GtkWidget *widget, gpointer data);
+		static void onUserCommandMoveUp_gui(GtkWidget *widget, gpointer data);
+		static void onUserCommandMoveDown_gui(GtkWidget *widget, gpointer data);
+		static void onUserCommandRemove_gui(GtkWidget *widget, gpointer data);
+		static void onUserCommandTypeSeparator_gui(GtkWidget *widget, gpointer data);
+		static void onUserCommandTypeRaw_gui(GtkWidget *widget, gpointer data);
+		static void onUserCommandTypeChat_gui(GtkWidget *widget, gpointer data);
+		static void onUserCommandTypePM_gui(GtkWidget *widget, gpointer data);
+		static gboolean onUserCommandKeyPress_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
 		static void onCertificatesPrivateBrowseClicked_gui(GtkWidget *widget, gpointer data);
 		static void onCertificatesFileBrowseClicked_gui(GtkWidget *widget, gpointer data);
 		static void onCertificatesPathBrowseClicked_gui(GtkWidget *widget, gpointer data);
@@ -96,15 +111,17 @@ class Settings:
 		// Client functions
 		void shareHidden_client(bool show);
 		void addShare_client(std::string path, std::string name);
+		void removeUserCommand_client(std::string name);
+		void moveUserCommand_client(std::string name, int pos);
 		void generateCertificates_client();
 
 		GtkComboBox *connectionSpeedComboBox;
 		GtkListStore *downloadToStore, *publicListStore, *queueStore,
 			*shareStore, *appearanceStore, *colorStore, *windowStore1,
-			*windowStore2, *windowStore3, *advancedStore, *certificatesStore;
+			*windowStore2, *windowStore3, *advancedStore, *certificatesStore, *userCommandStore;
 		TreeView downloadToView, publicListView, queueView, shareView,
 			appearanceView, colorView, windowView1, windowView2,
-			windowView3, advancedView, certificatesView;
+			windowView3, advancedView, certificatesView, userCommandView;
 };
 
 #else

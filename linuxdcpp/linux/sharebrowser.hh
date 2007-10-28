@@ -30,8 +30,11 @@ class ShareBrowser:
 	public BookEntry
 {
 	public:
-		ShareBrowser(User::Ptr user, const std::string &file, const std::string &initialDir);
+		ShareBrowser(User::Ptr user, const std::string &file);
 		~ShareBrowser();
+
+		// GUI functions
+		void openDir_gui(const std::string &dir);
 
 	private:
 		// GUI functions

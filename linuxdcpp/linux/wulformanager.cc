@@ -84,18 +84,22 @@ WulforManager::WulforManager()
 		exit(EXIT_FAILURE);
 	}
 
-	guiSem = sem_open("/linuxdcppGuiSem",  O_CREAT | O_EXCL, S_IRWXU | S_IRWXG, 0);
+	guiSem = sem_open("/linuxdcppGuiSem", O_CREAT | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO, 0);
 	if (guiSem == SEM_FAILED)
 	{
 		perror("Unable to initialize guiSem");
+		if (errno == EACCES)
+			printf("Note: You may need write permission in /dev/shm\n");
 		exit(EXIT_FAILURE);
 	}
 	sem_unlink("/linuxdcppGuiSem");
 
-	clientSem = sem_open("/linuxdcppClientSem",  O_CREAT | O_EXCL, S_IRWXU | S_IRWXG, 0);
+	clientSem = sem_open("/linuxdcppClientSem", O_CREAT | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO, 0);
 	if (clientSem == SEM_FAILED)
 	{
 		perror("Unable to initialize clientSem");
+		if (errno == EACCES)
+			printf("Note: You may need write permission in /dev/shm\n");
 		exit(EXIT_FAILURE);
 	}
 	sem_unlink("/linuxdcppClientSem");
@@ -489,12 +493,12 @@ BookEntry *WulforManager::addPrivMsg_gui(User::Ptr user, bool raise)
 	return privMsg;
 }
 
-BookEntry *WulforManager::addShareBrowser_gui(User::Ptr user, const string &file, const string &dir, bool raise)
+BookEntry *WulforManager::addShareBrowser_gui(User::Ptr user, const string &file, bool raise)
 {
-	BookEntry *entry = getBookEntry_gui(_("List: ") + WulforUtil::getNicks(user));
+	BookEntry *entry = getBookEntry_gui(_("List: ") + WulforUtil::getNicks(user), raise);
 	if (entry) return entry;
 
-	ShareBrowser *browser = new ShareBrowser(user, file, dir);
+	ShareBrowser *browser = new ShareBrowser(user, file);
 	insertBookEntry_gui(browser, raise);
 
 	return browser;

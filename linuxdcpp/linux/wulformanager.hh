@@ -52,7 +52,7 @@ class WulforManager
 		BookEntry *addDownloadQueue_gui();
 		BookEntry *addFavoriteHubs_gui();
 		BookEntry *addSearch_gui();
-		BookEntry *addShareBrowser_gui(User::Ptr user, const std::string &file, const std::string &dir = "", bool raise = TRUE);
+		BookEntry *addShareBrowser_gui(User::Ptr user, const std::string &file, bool raise = TRUE);
 		BookEntry *addFinishedTransfers_gui(const std::string &title);
 		void deleteEntry_gui(Entry *entry);
 

@@ -20,6 +20,7 @@
 
 #include <client/CryptoManager.h>
 #include <client/FavoriteManager.h>
+#include <client/NmdcHub.h>
 #include <client/ShareManager.h>
 #include "settingsmanager.hh"
 #include "wulformanager.hh"
@@ -54,7 +55,7 @@ Settings::~Settings()
 	gtk_widget_destroy(getWidget("virtualNameDialog"));
 	gtk_widget_destroy(getWidget("dirChooserDialog"));
 	gtk_widget_destroy(getWidget("fileChooserDialog"));
-	gtk_widget_destroy(getWidget("commandDialog")); // Never actually used
+	gtk_widget_destroy(getWidget("commandDialog"));
 }
 
 void Settings::saveSettings()
@@ -756,11 +757,32 @@ void Settings::initAdvanced_gui()
 	}
 
 	{ // User Commands
-		gtk_widget_set_sensitive(getWidget("buttonAddUC"), FALSE);
-		gtk_widget_set_sensitive(getWidget("buttonChangeUC"), FALSE);
-		gtk_widget_set_sensitive(getWidget("buttonMUUC"), FALSE);
-		gtk_widget_set_sensitive(getWidget("buttonMDUC"), FALSE);
-		gtk_widget_set_sensitive(getWidget("buttonRemoveUC"), FALSE);
+		userCommandView.setView(GTK_TREE_VIEW(getWidget("userCommandTreeView")));
+		userCommandView.insertColumn("Name", G_TYPE_STRING, TreeView::STRING, -1);
+		userCommandView.insertColumn("Hub", G_TYPE_STRING, TreeView::STRING, -1);
+		userCommandView.insertColumn("Command", G_TYPE_STRING, TreeView::STRING, -1);
+		userCommandView.finalize();
+		userCommandStore = gtk_list_store_newv(userCommandView.getColCount(), userCommandView.getGTypes());
+		gtk_tree_view_set_model(userCommandView.get(), GTK_TREE_MODEL(userCommandStore));
+		g_object_unref(userCommandStore);
+
+		// Don't allow the columns to be sorted since we use move up/down functions 
+		gtk_tree_view_column_set_sort_column_id(gtk_tree_view_get_column(userCommandView.get(), userCommandView.col("Name")), -1);
+		gtk_tree_view_column_set_sort_column_id(gtk_tree_view_get_column(userCommandView.get(), userCommandView.col("Command")), -1);
+		gtk_tree_view_column_set_sort_column_id(gtk_tree_view_get_column(userCommandView.get(), userCommandView.col("Hub")), -1);
+
+		g_signal_connect(getWidget("userCommandAddButton"), "clicked", G_CALLBACK(onUserCommandAdd_gui), (gpointer)this);
+		g_signal_connect(getWidget("userCommandRemoveButton"), "clicked", G_CALLBACK(onUserCommandRemove_gui), (gpointer)this);
+		g_signal_connect(getWidget("userCommandEditButton"), "clicked", G_CALLBACK(onUserCommandEdit_gui), (gpointer)this);
+		g_signal_connect(getWidget("userCommandUpButton"), "clicked", G_CALLBACK(onUserCommandMoveUp_gui), (gpointer)this);
+		g_signal_connect(getWidget("userCommandDownButton"), "clicked", G_CALLBACK(onUserCommandMoveDown_gui), (gpointer)this);
+		g_signal_connect(getWidget("commandDialogSeparator"), "toggled", G_CALLBACK(onUserCommandTypeSeparator_gui), (gpointer)this);
+		g_signal_connect(getWidget("commandDialogRaw"), "toggled", G_CALLBACK(onUserCommandTypeRaw_gui), (gpointer)this);
+		g_signal_connect(getWidget("commandDialogChat"), "toggled", G_CALLBACK(onUserCommandTypeChat_gui), (gpointer)this);
+		g_signal_connect(getWidget("commandDialogPM"), "toggled", G_CALLBACK(onUserCommandTypePM_gui), (gpointer)this);
+		g_signal_connect(getWidget("commandDialogCommand"), "key-release-event", G_CALLBACK(onUserCommandKeyPress_gui), (gpointer)this);
+		g_signal_connect(getWidget("commandDialogTo"), "key-release-event", G_CALLBACK(onUserCommandKeyPress_gui), (gpointer)this);
+		loadUserCommands_gui();
 	}
 
 	{ // Experts
@@ -841,6 +863,129 @@ void Settings::onAddShare_gui(GtkWidget *widget, gpointer data)
 			}
 		}
 	}
+}
+
+void Settings::loadUserCommands_gui()
+{
+	GtkTreeIter iter;
+	gtk_list_store_clear(userCommandStore);
+	UserCommand::List userCommands = FavoriteManager::getInstance()->getUserCommands();
+
+	for (UserCommand::Iter i = userCommands.begin(); i != userCommands.end(); ++i)
+	{
+		UserCommand &uc = *i;
+		if (!uc.isSet(UserCommand::FLAG_NOSAVE))
+		{
+			gtk_list_store_append(userCommandStore, &iter);
+			gtk_list_store_set(userCommandStore, &iter,
+				userCommandView.col("Name"), uc.getName().c_str(),
+				userCommandView.col("Hub"), uc.getHub().c_str(),
+				userCommandView.col("Command"), uc.getCommand().c_str(),
+				-1);
+		}
+	}
+}
+
+void Settings::saveUserCommand(UserCommand *uc)
+{
+	string name, command, hub;
+	int ctx = 0;
+	int type = 0;
+	GtkTreeIter iter;
+
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("commandDialogHubMenu"))))
+		ctx |= UserCommand::CONTEXT_HUB;
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("commandDialogUserMenu"))))
+		ctx |= UserCommand::CONTEXT_CHAT;
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("commandDialogSearchMenu"))))
+		ctx |= UserCommand::CONTEXT_SEARCH;
+
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("commandDialogSeparator"))))
+	{
+		name = _("Separator");
+		type = UserCommand::TYPE_SEPARATOR;
+	}
+	else
+	{
+		name = gtk_entry_get_text(GTK_ENTRY(getWidget("commandDialogName")));
+		command = gtk_entry_get_text(GTK_ENTRY(getWidget("commandDialogCommand")));
+		hub = gtk_entry_get_text(GTK_ENTRY(getWidget("commandDialogHub")));
+
+		if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("commandDialogChat"))))
+		{
+			command = "<%[myNI]> " + NmdcHub::validateMessage(command, FALSE) + "|";
+		}
+		else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("commandDialogPM"))))
+		{
+			string to = gtk_entry_get_text(GTK_ENTRY(getWidget("commandDialogTo")));
+			if (to.length() == 0)
+				to = "%[userNI]";
+
+			command = "$To: " + to + " From: %[myNI] $<%[myNI]> " + NmdcHub::validateMessage(command, FALSE) + "|";
+		}
+
+		if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("commandDialogOnce"))))
+			type = UserCommand::TYPE_RAW_ONCE;
+		else
+			type = UserCommand::TYPE_RAW;
+	}
+
+	if (uc == NULL)
+	{
+		FavoriteManager::getInstance()->addUserCommand(type, ctx, 0, name, command, hub);
+		gtk_list_store_append(userCommandStore, &iter);
+	}
+	else
+	{
+		uc->setType(type);
+		uc->setCtx(ctx);
+		uc->setName(name);
+		uc->setCommand(command);
+		uc->setHub(hub);
+		FavoriteManager::getInstance()->updateUserCommand(*uc);
+
+		GtkTreeSelection *selection = gtk_tree_view_get_selection(userCommandView.get());
+		if (!gtk_tree_selection_get_selected(selection, NULL, &iter))
+			return;
+	}
+
+	gtk_list_store_set(userCommandStore, &iter,
+		userCommandView.col("Name"), name.c_str(),
+		userCommandView.col("Hub"), hub.c_str(),
+		userCommandView.col("Command"), command.c_str(),
+		-1);
+}
+
+
+void Settings::updateUserCommandTextSent_gui()
+{
+	string command = gtk_entry_get_text(GTK_ENTRY(getWidget("commandDialogCommand")));
+
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("commandDialogSeparator"))))
+	{
+		command.clear();
+	}
+	else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("commandDialogChat"))))
+	{
+		command = "<%[myNI]> " + NmdcHub::validateMessage(command, FALSE) + "|";
+	}
+	else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("commandDialogPM"))))
+	{
+		string to = gtk_entry_get_text(GTK_ENTRY(getWidget("commandDialogTo")));
+		if (to.length() == 0)
+			to = "%[userNI]";
+		command = "$To: " + to + " From: %[myNI] $<%[myNI]> " + NmdcHub::validateMessage(command, FALSE) + "|";
+	}
+
+	gtk_entry_set_text(GTK_ENTRY(getWidget("commandDialogTextSent")), command.c_str());
+}
+
+void Settings::showErrorDialog(const std::string &error)
+{
+	GtkWidget *errorDialog = gtk_message_dialog_new(GTK_WINDOW(getWidget("dialog")),
+		GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, error.c_str());
+	gtk_dialog_run(GTK_DIALOG(errorDialog));
+	gtk_widget_destroy(errorDialog);
 }
 
 void Settings::onInDirect_gui(GtkToggleButton *button, gpointer data)
@@ -1097,10 +1242,7 @@ void Settings::onAddFavorite_gui(GtkWidget *widget, gpointer data)
 				}
 				else
 				{
-					GtkWidget *d = gtk_message_dialog_new(GTK_WINDOW(s->getWidget("dialog")), GTK_DIALOG_MODAL,
-						GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("Directory or favorite name already exists"));
-					gtk_dialog_run(GTK_DIALOG(d));
-					gtk_widget_destroy(d);
+					s->showErrorDialog(_("Directory or favorite name already exists"));
 				}
 			}
 		}
@@ -1167,10 +1309,7 @@ void Settings::addShare_gui(string path, string name, string error)
 	}
 	else
 	{
-		GtkWidget *d = gtk_message_dialog_new(GTK_WINDOW(getWidget("dialog")),
-			GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, error.c_str());
-		gtk_dialog_run(GTK_DIALOG(d));
-		gtk_widget_destroy(d);
+		showErrorDialog(error.c_str());
 	}
 }
 
@@ -1357,6 +1496,284 @@ void Settings::onAdvancedToggledClicked_gui(GtkCellRendererToggle *cell, gchar *
 	}
 }
 
+void Settings::onUserCommandAdd_gui(GtkWidget *widget, gpointer data)
+{
+	Settings *s = (Settings *)data;
+
+	// Reset dialog to default
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogSeparator")), TRUE);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogHubMenu")), TRUE);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogUserMenu")), TRUE);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogSearchMenu")), TRUE);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogOnce")), FALSE);
+	gtk_entry_set_text(GTK_ENTRY(s->getWidget("commandDialogName")), "");
+	gtk_entry_set_text(GTK_ENTRY(s->getWidget("commandDialogCommand")), "");
+	gtk_entry_set_text(GTK_ENTRY(s->getWidget("commandDialogHub")), "");
+	gtk_entry_set_text(GTK_ENTRY(s->getWidget("commandDialogTo")), "");
+	gtk_widget_set_sensitive(s->getWidget("commandDialogName"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("commandDialogCommand"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("commandDialogHub"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("commandDialogTo"), FALSE);
+	gtk_widget_set_sensitive(s->getWidget("commandDialogOnce"), FALSE);
+
+	gint response = gtk_dialog_run(GTK_DIALOG(s->getWidget("commandDialog")));
+	gtk_widget_hide(s->getWidget("commandDialog"));
+
+	if (response == GTK_RESPONSE_OK)
+	{
+		if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogSeparator"))))
+		{
+			string name = gtk_entry_get_text(GTK_ENTRY(s->getWidget("commandDialogName")));
+			string command = gtk_entry_get_text(GTK_ENTRY(s->getWidget("commandDialogName")));
+
+			if (name.length() == 0 || command.length() == 0)
+			{
+				s->showErrorDialog(_("Name and command must not be empty"));
+				return;
+			}
+
+			if (FavoriteManager::getInstance()->findUserCommand(name) != -1)
+			{
+				s->showErrorDialog(_("Command name already exists"));
+				return;
+			}
+		}
+
+		s->saveUserCommand(NULL);
+	}
+}
+
+void Settings::onUserCommandEdit_gui(GtkWidget *widget, gpointer data)
+{
+	Settings *s = (Settings *)data;
+	GtkTreeIter iter;
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->userCommandView.get());
+
+	if (gtk_tree_selection_get_selected(selection, NULL, &iter))
+	{
+		string name = s->userCommandView.getString(&iter, "Name");
+		int cid = FavoriteManager::getInstance()->findUserCommand(name);
+		if (cid < 0)
+			return;
+
+		UserCommand uc;
+		string command, nick;
+		FavoriteManager::getInstance()->getUserCommand(cid, uc);
+		bool hub = uc.getCtx() & UserCommand::CONTEXT_HUB;
+		bool user = uc.getCtx() & UserCommand::CONTEXT_CHAT;
+		bool search = uc.getCtx() & UserCommand::CONTEXT_SEARCH;
+
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogHubMenu")), hub);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogUserMenu")), user);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogSearchMenu")), search);
+
+		if (uc.getType() == UserCommand::TYPE_SEPARATOR)
+		{
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogSeparator")), TRUE);
+		}
+		else
+		{
+			command = uc.getCommand();
+			bool once = uc.getType() == UserCommand::TYPE_RAW_ONCE;
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogOnce")), once);
+
+			// Chat Command
+			if ((strncmp(command.c_str(), "<%[mynick]> ", 12) == 0 ||
+				strncmp(command.c_str(), "<%[myNI]> ", 10) == 0) &&
+				command.find('|') == command.length() - 1)
+			{
+				string::size_type i = command.find('>') + 2;
+				command = NmdcHub::validateMessage(command.substr(i, command.length() - i - 1), TRUE);;
+				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogChat")), TRUE);
+			}
+			// PM command
+			else if (strncmp(command.c_str(), "$To: ", 5) == 0 && (
+				command.find(" From: %[myNI] $<%[myNI]> ") != string::npos ||
+				command.find(" From: %[mynick] $<%[mynick]> ") != string::npos) && 
+				command.find('|') == command.length() - 1)
+			{
+				string::size_type i = command.find(' ', 5);
+				nick = command.substr(5, i - 5);
+				i = command.find('>', 5) + 2;
+				command = NmdcHub::validateMessage(command.substr(i, command.length() - i - 1), FALSE);
+				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogPM")), TRUE);
+			}
+			// Raw command
+			else
+			{
+				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogRaw")), TRUE);
+			}
+		}
+
+		gtk_entry_set_text(GTK_ENTRY(s->getWidget("commandDialogName")), name.c_str());
+		gtk_entry_set_text(GTK_ENTRY(s->getWidget("commandDialogCommand")), command.c_str());
+		gtk_entry_set_text(GTK_ENTRY(s->getWidget("commandDialogHub")), uc.getHub().c_str());
+		gtk_entry_set_text(GTK_ENTRY(s->getWidget("commandDialogTo")), nick.c_str());
+
+		s->updateUserCommandTextSent_gui();
+
+		gint response = gtk_dialog_run(GTK_DIALOG(s->getWidget("commandDialog")));
+		gtk_widget_hide(s->getWidget("commandDialog"));
+
+		if (response == GTK_RESPONSE_OK)
+		{
+			if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogSeparator"))))
+			{
+				string newName = gtk_entry_get_text(GTK_ENTRY(s->getWidget("commandDialogName")));
+				string command = gtk_entry_get_text(GTK_ENTRY(s->getWidget("commandDialogName")));
+
+				if (newName.length() == 0 || command.length() == 0)
+				{
+					s->showErrorDialog(_("Name and command must not be empty"));
+					return;
+				}
+
+				if (newName != name && FavoriteManager::getInstance()->findUserCommand(newName) != -1)
+				{
+					s->showErrorDialog(_("Command name already exists"));
+					return;
+				}
+			}
+
+			s->saveUserCommand(&uc);
+		}
+	}
+}
+
+void Settings::onUserCommandMoveUp_gui(GtkWidget *widget, gpointer data)
+{
+	Settings *s = (Settings *)data;
+	GtkTreeIter prev, current;
+	GtkTreeModel *m = GTK_TREE_MODEL(s->userCommandStore);
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->userCommandView.get());
+
+	if (gtk_tree_selection_get_selected(selection, NULL, &current))
+	{
+		GtkTreePath *path = gtk_tree_model_get_path(m, &current);
+		if (gtk_tree_path_prev(path) && gtk_tree_model_get_iter(m, &prev, path))
+		{
+			string name = s->userCommandView.getString(&current, "Name");
+			gtk_list_store_swap(s->userCommandStore, &current, &prev);
+
+			typedef Func2<Settings, string, int> F2;
+			F2 *func = new F2(s, &Settings::moveUserCommand_client, name, -1);
+			WulforManager::get()->dispatchClientFunc(func);
+		}
+		gtk_tree_path_free(path);
+	}
+}
+
+void Settings::onUserCommandMoveDown_gui(GtkWidget *widget, gpointer data)
+{
+	Settings *s = (Settings *)data;
+	GtkTreeIter current, next;
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->userCommandView.get());
+
+	if (gtk_tree_selection_get_selected(selection, NULL, &current))
+	{
+		next = current;
+		if (gtk_tree_model_iter_next(GTK_TREE_MODEL(s->userCommandStore), &next))
+		{
+			string name = s->userCommandView.getString(&current, "Name");
+			gtk_list_store_swap(s->userCommandStore, &current, &next);
+
+			typedef Func2<Settings, string, int> F2;
+			F2 *func = new F2(s, &Settings::moveUserCommand_client, name, 1);
+			WulforManager::get()->dispatchClientFunc(func);
+		}
+	}
+}
+
+void Settings::onUserCommandRemove_gui(GtkWidget *widget, gpointer data)
+{
+	Settings *s = (Settings *)data;
+	GtkTreeIter iter;
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(s->userCommandView.get());
+
+	if (gtk_tree_selection_get_selected(selection, NULL, &iter))
+	{
+		string name = s->userCommandView.getString(&iter, "Name");
+		gtk_list_store_remove(s->userCommandStore, &iter);
+
+		typedef Func1<Settings, string> F1;
+		F1 *func = new F1(s, &Settings::removeUserCommand_client, name);
+		WulforManager::get()->dispatchClientFunc(func);
+	}
+}
+
+void Settings::onUserCommandTypeSeparator_gui(GtkWidget *widget, gpointer data)
+{
+	Settings *s = (Settings *)data;
+
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
+	{
+		gtk_widget_set_sensitive(s->getWidget("commandDialogName"), FALSE);
+		gtk_widget_set_sensitive(s->getWidget("commandDialogCommand"), FALSE);
+		gtk_widget_set_sensitive(s->getWidget("commandDialogHub"), FALSE);
+		gtk_widget_set_sensitive(s->getWidget("commandDialogTo"), FALSE);
+		gtk_widget_set_sensitive(s->getWidget("commandDialogOnce"), FALSE);
+
+		s->updateUserCommandTextSent_gui();
+	}
+}
+
+void Settings::onUserCommandTypeRaw_gui(GtkWidget *widget, gpointer data)
+{
+	Settings *s = (Settings *)data;
+
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
+	{
+		gtk_widget_set_sensitive(s->getWidget("commandDialogName"), TRUE);
+		gtk_widget_set_sensitive(s->getWidget("commandDialogCommand"), TRUE);
+		gtk_widget_set_sensitive(s->getWidget("commandDialogHub"), TRUE);
+		gtk_widget_set_sensitive(s->getWidget("commandDialogTo"), FALSE);
+		gtk_widget_set_sensitive(s->getWidget("commandDialogOnce"), TRUE);
+
+		s->updateUserCommandTextSent_gui();
+	}
+}
+
+void Settings::onUserCommandTypeChat_gui(GtkWidget *widget, gpointer data)
+{
+	Settings *s = (Settings *)data;
+
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
+	{
+		gtk_widget_set_sensitive(s->getWidget("commandDialogName"), TRUE);
+		gtk_widget_set_sensitive(s->getWidget("commandDialogCommand"), TRUE);
+		gtk_widget_set_sensitive(s->getWidget("commandDialogHub"), FALSE);
+		gtk_widget_set_sensitive(s->getWidget("commandDialogTo"), FALSE);
+		gtk_widget_set_sensitive(s->getWidget("commandDialogOnce"), TRUE);
+
+		s->updateUserCommandTextSent_gui();
+	}
+}
+
+void Settings::onUserCommandTypePM_gui(GtkWidget *widget, gpointer data)
+{
+	Settings *s = (Settings *)data;
+
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
+	{
+		gtk_widget_set_sensitive(s->getWidget("commandDialogName"), TRUE);
+		gtk_widget_set_sensitive(s->getWidget("commandDialogCommand"), TRUE);
+		gtk_widget_set_sensitive(s->getWidget("commandDialogHub"), TRUE);
+		gtk_widget_set_sensitive(s->getWidget("commandDialogTo"), TRUE);
+		gtk_widget_set_sensitive(s->getWidget("commandDialogOnce"), TRUE);
+
+		s->updateUserCommandTextSent_gui();
+	}
+}
+
+gboolean Settings::onUserCommandKeyPress_gui(GtkWidget *widget, GdkEventKey *event, gpointer data)
+{
+	Settings *s = (Settings *)data;
+
+	s->updateUserCommandTextSent_gui();
+
+	return FALSE;
+}
+
 void Settings::onCertificatesPrivateBrowseClicked_gui(GtkWidget *widget, gpointer data)
 {
 	Settings *s = (Settings *)data;
@@ -1453,6 +1870,24 @@ void Settings::addShare_client(string path, string name)
 	typedef Func3<Settings, string, string, string> F3;
 	F3 *func = new F3(this, &Settings::addShare_gui, path, name, error);
 	WulforManager::get()->dispatchGuiFunc(func);
+}
+
+void Settings::removeUserCommand_client(std::string name)
+{
+	if (!name.empty())
+	{
+		FavoriteManager *fm = FavoriteManager::getInstance();
+		fm->removeUserCommand(fm->findUserCommand(name));
+	}
+}
+
+void Settings::moveUserCommand_client(std::string name, int pos)
+{
+	if (!name.empty())
+	{
+		FavoriteManager *fm = FavoriteManager::getInstance();
+		fm->moveUserCommand(fm->findUserCommand(name), pos);
+	}
 }
 
 void Settings::generateCertificates_client()

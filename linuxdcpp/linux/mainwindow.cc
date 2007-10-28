@@ -436,10 +436,13 @@ void MainWindow::setStats_gui(std::string hub, std::string slot,
 	setStatus_gui("status7", dl);
 }
 
-void MainWindow::addShareBrowser_gui(User::Ptr user, string listName, string initialDir, bool useSetting)
+void MainWindow::addShareBrowser_gui(User::Ptr user, string filename, string dir, bool useSetting)
 {
 	bool raise = useSetting ? !BOOLSETTING(POPUNDER_FILELIST) : TRUE;
-	WulforManager::get()->addShareBrowser_gui(user, listName, initialDir, raise);
+	BookEntry *entry = WulforManager::get()->addShareBrowser_gui(user, filename, raise);
+
+	if (!dir.empty())
+		dynamic_cast<ShareBrowser *>(entry)->openDir_gui(dir);
 
 	setStatus_gui("status1", _("File list loaded"));
 }
@@ -555,6 +558,53 @@ void MainWindow::setToolbarStyle_gui(int style)
 	}
 
 	gtk_toolbar_set_style(GTK_TOOLBAR(getWidget("toolbar1")), toolbarStyle);
+}
+
+bool MainWindow::getUserCommandLines_gui(const string &command, StringMap &ucParams)
+{
+	string name;
+	string label;
+	string line;
+	StringMap done;
+	string::size_type i = 0;
+	string::size_type j = 0;
+	string text = string("<b>") + _("Enter value for ") + "\'";
+
+	while ((i = command.find("%[line:", i)) != string::npos)
+	{
+		i += 7;
+		j = command.find(']', i);
+		if (j == string::npos)
+			break;
+
+		name = command.substr(i, j - i);
+		if (done.find(name) == done.end())
+		{
+			line.clear();
+			label = text + name + "\'</b>";
+
+			gtk_label_set_label(GTK_LABEL(getWidget("ucLabel")), label.c_str());
+			gtk_entry_set_text(GTK_ENTRY(getWidget("ucLineEntry")), "");
+			gtk_widget_grab_focus(getWidget("ucLineEntry"));
+
+			gint response = gtk_dialog_run(GTK_DIALOG(getWidget("ucLineDialog")));
+			gtk_widget_hide(getWidget("ucLineDialog"));
+
+			if (response == GTK_RESPONSE_OK)
+				line = gtk_entry_get_text(GTK_ENTRY(getWidget("ucLineEntry")));
+
+			if (!line.empty())
+			{
+				ucParams["line:" + name] = line;
+				done[name] = line;
+			}
+			else
+				return false;
+		}
+		i = j + 1;
+	}
+
+	return true;
 }
 
 gboolean MainWindow::onDeleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data)
@@ -815,7 +865,7 @@ void MainWindow::onOpenFileListClicked_gui(GtkWidget *widget, gpointer data)
 
 			User::Ptr user = DirectoryListing::getUserFromFilename(path);
 			if (user)
-				WulforManager::get()->addShareBrowser_gui(user, path);
+				mw->addShareBrowser_gui(user, path, "", FALSE);
 			else
 				mw->setStatus_gui("status1", _("Unable to open: Older file list format detected"));
 		}

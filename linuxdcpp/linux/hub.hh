@@ -45,6 +45,7 @@ class Hub:
 		void updateUser_gui(StringMap id);
 		void removeUser_gui(std::string nick);
 		void clearNickList_gui();
+		void popupNickMenu_gui();
 		void getPassword_gui();
 		void addMessage_gui(std::string message);
 		void addStatusMessage_gui(std::string message);
@@ -61,10 +62,12 @@ class Hub:
 		static void onMsgItemClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onGrantItemClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onRemoveUserItemClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onUserCommandClick_gui(GtkMenuItem *item, gpointer data);
 
 		// Client functions
 		void setPassword_client(std::string password);
 		void sendMessage_client(std::string message);
+		void sendUserCommand_client(std::string cid, std::string commandName, StringMap params);
 		void getFileList_client(std::string cid, bool match);
 		void grantSlot_client(std::string cid);
 		void removeUserFromQueue_client(std::string cid);
@@ -101,6 +104,7 @@ class Hub:
 		GtkTreeSelection *nickSelection;
 		GtkTextBuffer *chatBuffer;
 		GtkTextMark *chatMark;
+		GtkWidget *subMenu;
 		gint oldType;
 		std::vector<std::string> history;
 		int historyIndex;
