@@ -28,7 +28,7 @@ Entry::Entry(const string &id, const string &glade):
 	xml(NULL)
 {
 	// Special case: Allow search tab to have many tabs with the same title.
-	if (id == "Search")
+	if (id == _("Search: "))
 		this->id = id + Util::toString((long)this);
 	else
 		this->id = id;

@@ -1,31 +1,31 @@
-2007-10-28 - Steven Sheehy
-* Fixed wrong default value of main window notebook tabs.
-* Fixed build error "*** Error writing options to file: build/sconf/scache.conf".
-* Added hub url to "Connecting to" text when loading a hub.
-* Patch #2216: add hub topic to tab name (thanks stoft).
-* Bug #12151: Get file list won't show directory right (thanks David Grundberg)
-* Bug #12152: Superfluous / in $HOME causes file browsing problems.
-* Added user commands (thanks Bart Vulling).
+*** 1.0.X 2007-XX-XX ***
+[2007-10-13] Use strtoll instead of atoll to enable build on HPUX (thanks Tobias Nygren).
+[2007-10-13] Dispatcher optimizations (thanks jikaheim).
+[2007-10-13] Bug #12058: Hubs are not removed from search list after reconnection.
+[2007-10-13] Moved preference notebook tabs position to the left.
+[2007-10-13] Changed reference to "Windows" in preferences to "Tabs."
+[2007-10-13] Added an option to specify the main window notebook tabs position.
+[2007-10-13] Added an option to specify the main toolbar style.
+[2007-10-13] Bug #11126: don't follow symlinks (thanks gasol).
+[2007-10-13] Improved display of kick messages (thanks naga).
+[2007-10-13] Default for virtual name entry (thanks Razzloss).
+[2007-10-13] First attempt at adding Mac OS X support (thanks Jammnrose).
+[2007-10-28] Fixed wrong default value of main window notebook tabs.
+[2007-10-28] Fixed build error "*** Error writing options to file: build/sconf/scache.conf".
+[2007-10-28] Added hub url to "Connecting to" text when loading a hub.
+[2007-10-28] Patch #2216: add hub topic to tab name (thanks stoft).
+[2007-10-28] Bug #12151: Get file list won't show directory right (thanks David Grundberg)
+[2007-10-28] Bug #12152: Superfluous / in $HOME causes file browsing problems.
+[2007-10-28] Added user commands (thanks Bart Vullings).
+[2007-11-07] Fixed search results from sometimes never appearing in the GUI.
 
-2007-10-13 - Steven Sheehy
-* Use strtoll instead of atoll to enable build on HPUX (thanks Tobias Nygren).
-* Dispatcher optimizations (thanks jikaheim).
-* Bug #12058: Hubs are not removed from search list after reconnection.
-* Moved preference notebook tabs position to the left.
-* Changed reference to "Windows" in preferences to "Tabs."
-* Added an option to specify the main window notebook tabs position.
-* Added an option to specify the main toolbar style.
-* Bug #11126: don't follow symlinks (thanks gasol).
-* Improved display of kick messages (thanks naga).
-* Default for virtual name entry (thanks Razzloss).
-* First attempt at adding Mac OS X support (thanks Jammnrose).
-
+*** 1.0.0 2007-09-23 ***
 2007-08-04 - Steven Sheehy
 * Fixed a character encoding issue when "System default" was selected.
 * Fixed a window menu regression.
 * Patch #2099: Make all dialogs accept enter (thanks kotnik).
 * Improve active searches when using multiple IPs (thanks Stanislav Maslovski).
-* Patch #2121: Make the trayicon transparent (thanks Bart Vulling and Gaim/Pidgin team).
+* Patch #2121: Make the trayicon transparent (thanks Bart Vullings and Gaim/Pidgin team).
 * Connect dialog now highlights old text upon re-opening.
 * Converted u_int*_t to uint*_t C99 types.
 * Bug #11597: Disconnected showing before no slots available (thanks Razzloss).
