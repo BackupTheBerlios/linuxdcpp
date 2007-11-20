@@ -42,7 +42,13 @@ class PrivateMessage:
 
 		// GUI callbacks
 		static void onSendMessage_gui(GtkEntry *entry, gpointer data);
+		static void onSearchMagnetClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onCopyMagnetClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onMagnetPropertiesClicked_gui(GtkMenuItem *item, gpointer data);
 		static gboolean onKeyPress_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
+		static gboolean onMagnetTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data);
+		static gboolean onChatPointerMoved_gui(GtkWidget *widget, GdkEventMotion *event, gpointer data);
+		static gboolean onChatVisibilityChanged_gui(GtkWidget* widget, GdkEventVisibility* event, gpointer data);
 
 		// Client functions
 		void sendMessage_client(std::string message);
@@ -55,6 +61,9 @@ class PrivateMessage:
 		bool sentAwayMessage;
 		static const int maxLines = 500; ///@todo: make these preferences
 		static const int maxHistory = 20;
+		GdkCursor* handCursor;
+		bool aboveMagnet;
+		std::string selectedMagnet;
 };
 
 #else

@@ -59,6 +59,7 @@ class DownloadQueue:
 		static void onDirMoveClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onDirRemoveClicked_gui(GtkMenuItem *menuitem, gpointer data);
 		static void onFileSearchAlternatesClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onCopyMagnetClicked_gui(GtkMenuItem* item, gpointer data);
 		static void onFileMoveClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onFilePriorityClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onFileGetListClicked_gui(GtkMenuItem *item, gpointer data);

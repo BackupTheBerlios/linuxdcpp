@@ -97,6 +97,7 @@ DownloadQueue::DownloadQueue():
 	g_signal_connect(getWidget("fileHighPriorityItem"), "activate", G_CALLBACK(onFilePriorityClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("fileHighestPriorityItem"), "activate", G_CALLBACK(onFilePriorityClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("fileRemoveItem"), "activate", G_CALLBACK(onFileRemoveClicked_gui), (gpointer)this);
+ 	g_signal_connect(getWidget("copyMagnetItem"), "activate", G_CALLBACK(onCopyMagnetClicked_gui), (gpointer)this);
  	g_signal_connect(dirView.get(), "button-press-event", G_CALLBACK(onDirButtonPressed_gui), (gpointer)this);
 	g_signal_connect(dirView.get(), "button-release-event", G_CALLBACK(onDirButtonReleased_gui), (gpointer)this);
 	g_signal_connect(dirView.get(), "key-release-event", G_CALLBACK(onDirKeyReleased_gui), (gpointer)this);
@@ -704,6 +705,40 @@ void DownloadQueue::onFileSearchAlternatesClicked_gui(GtkMenuItem *item, gpointe
 		gtk_tree_path_free(path);
 	}
 	g_list_free(list);
+}
+
+void DownloadQueue::onCopyMagnetClicked_gui(GtkMenuItem* item, gpointer data)
+{
+	DownloadQueue *dq = (DownloadQueue *)data;
+	GtkTreePath *path;
+	GtkTreeIter iter;
+	string magnets, magnet, filename, tth;
+	int64_t size;
+	GList *list = gtk_tree_selection_get_selected_rows(dq->fileSelection, NULL);
+
+	for (GList *i = list; i; i = i->next)
+	{
+		path = (GtkTreePath *)i->data;
+		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(dq->fileStore), &iter, path))
+		{
+			filename = dq->fileView.getString(&iter, "Filename");
+			size = dq->fileView.getValue<int64_t>(&iter, "Size Sort");
+			tth = dq->fileView.getString(&iter, "TTH");
+			magnet = WulforUtil::makeMagnet(filename, size, tth);
+
+			if (!magnet.empty())
+			{
+				if (!magnets.empty())
+					magnets += '\n';
+				magnets += magnet;
+			}
+		}
+		gtk_tree_path_free(path);
+	}
+	g_list_free(list);
+
+	if (!magnets.empty())
+		gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), magnets.c_str(), magnets.length());
 }
 
 void DownloadQueue::onFileMoveClicked_gui(GtkMenuItem *menuItem, gpointer data)

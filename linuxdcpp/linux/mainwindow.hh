@@ -58,6 +58,7 @@ class MainWindow:
 		void modifyWindowItem(GtkWidget *menuItem, std::string title);
 		void removeWindowItem(GtkWidget *menuItem);
 		bool getUserCommandLines_gui(const std::string &command, StringMap &ucParams);
+		void openMagnetDialog_gui(const std::string &magnet);
 
 		// Client functions
 		void autoConnect_client();

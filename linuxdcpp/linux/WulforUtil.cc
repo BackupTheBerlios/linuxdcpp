@@ -19,8 +19,10 @@
 #include "WulforUtil.hh"
 #include <glib/gi18n.h>
 #include <client/ClientManager.h>
+#include <client/Util.h>
 
 std::vector<std::string> WulforUtil::charsets;
+const std::string WulforUtil::magnetSignature = "magnet:?xt=urn:tree:tiger:";
 
 vector<int> WulforUtil::splitString(const string &str, const string &delimiter)
 {
@@ -121,9 +123,72 @@ vector<string>& WulforUtil::getCharsets()
 void WulforUtil::openURI(const std::string &uri)
 {
 	gchar *argv[3];
-	argv[0] = "gnome-open";
+	argv[0] = "xdg-open";
 	argv[1] = (gchar *)uri.c_str();
 	argv[2] = NULL;
 
 	g_spawn_async(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
 }
+
+string WulforUtil::makeMagnet(const string &name, const int64_t size, const string &tth)
+{
+	if (name.empty() || tth.empty())
+		return string();
+
+	// other clients can return paths with different separators, so we should catch both cases
+	string::size_type i = name.find_last_of("/\\");
+	string path = (i != string::npos) ? name.substr(i + 1) : name;
+
+	return magnetSignature + tth + "&xl=" + Util::toString(size) + "&dn=" + Util::encodeURI(path);
+}
+
+bool WulforUtil::splitMagnet(const string &magnet, string &name, int64_t &size, string &tth)
+{
+	if (!isMagnet(magnet.c_str()) || magnet.size() <= magnetSignature.length())
+		return FALSE;
+
+	string::size_type nextpos = 0;
+	size = 0;
+	name = _("Unknown");
+
+	for (string::size_type pos = magnetSignature.length(); pos < magnet.size(); pos = nextpos + 1)
+	{
+		nextpos = magnet.find('&', pos);
+		if (nextpos == string::npos)
+			nextpos = magnet.size();
+
+    	if (pos == magnetSignature.length())
+			tth = magnet.substr(magnetSignature.length(), nextpos - magnetSignature.length());
+		else if (magnet.compare(pos, 3, "xl=") == 0)
+			size = Util::toInt64(magnet.substr(pos + 3, nextpos - pos - 3));
+		else if (magnet.compare(pos, 3, "dn=") == 0)
+			name = Util::encodeURI(magnet.substr(pos + 3, nextpos - pos - 3), TRUE);
+	}
+
+	return TRUE;
+}
+
+vector<int> WulforUtil::findMagnets(const string &line)
+{
+	vector<int> result;
+	string::size_type pos = 0, start, end;
+
+	while ((start = line.find(magnetSignature, pos)) != string::npos)
+	{
+		end = line.find_first_of(" \n\r\t", start);
+		if (end == string::npos)
+			end = line.size();
+
+		result.push_back(start);
+		result.push_back(end);
+		pos = end;
+	}
+
+	return result;
+}
+
+bool WulforUtil::isMagnet(const string &text)
+{
+	return strncmp(text.c_str(), magnetSignature.c_str(), magnetSignature.length()) == 0;
+}
+

@@ -70,6 +70,7 @@ class Search:
 		static void onDownloadFavoriteDirClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onDownloadDirToClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onSearchByTTHClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onCopyMagnetClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onGetFileListClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onMatchQueueClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onPrivateMessageClicked_gui(GtkMenuItem *item, gpointer data);

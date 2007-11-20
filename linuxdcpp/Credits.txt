@@ -37,6 +37,7 @@ jikaheim
 gasol
 stoft
 David Grundberg
+Max Lapan
 
 DC++:
 -----

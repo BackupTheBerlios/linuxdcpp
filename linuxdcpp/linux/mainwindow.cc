@@ -607,6 +607,24 @@ bool MainWindow::getUserCommandLines_gui(const string &command, StringMap &ucPar
 	return true;
 }
 
+void MainWindow::openMagnetDialog_gui(const string &magnet)
+{
+	string name;
+	int64_t size;
+	string tth;
+
+	WulforUtil::splitMagnet(magnet, name, size, tth);
+
+	gtk_entry_set_text(GTK_ENTRY(getWidget("magnetEntry")), magnet.c_str());
+	gtk_entry_set_text(GTK_ENTRY(getWidget("magnetNameEntry")), name.c_str());
+	gtk_entry_set_text(GTK_ENTRY(getWidget("magnetSizeEntry")), Util::formatBytes(size).c_str());
+	gtk_entry_set_text(GTK_ENTRY(getWidget("exactSizeEntry")), Util::formatExactSize(size).c_str());
+	gtk_entry_set_text(GTK_ENTRY(getWidget("tthEntry")), tth.c_str());
+
+	gtk_dialog_run(GTK_DIALOG(getWidget("magnetDialog")));
+	gtk_widget_hide(getWidget("magnetDialog"));
+}
+
 gboolean MainWindow::onDeleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
 	MainWindow *mw = (MainWindow *)data;

@@ -126,6 +126,7 @@ Search::Search():
 	g_signal_connect(getWidget("downloadItem"), "activate", G_CALLBACK(onDownloadClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("downloadWholeDirItem"), "activate", G_CALLBACK(onDownloadDirClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("searchByTTHItem"), "activate", G_CALLBACK(onSearchByTTHClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("copyMagnetItem"), "activate", G_CALLBACK(onCopyMagnetClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("getFileListItem"), "activate", G_CALLBACK(onGetFileListClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("matchQueueItem"), "activate", G_CALLBACK(onMatchQueueClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("sendPrivateMessageItem"), "activate", G_CALLBACK(onPrivateMessageClicked_gui), (gpointer)this);
@@ -1193,6 +1194,44 @@ void Search::onRemoveClicked_gui(GtkMenuItem *item, gpointer data)
 			gtk_tree_path_free(path);
 		}
 		g_list_free(list);
+	}
+}
+
+void Search::onCopyMagnetClicked_gui(GtkMenuItem* item, gpointer data)
+{
+	Search *s = (Search *)data;
+
+	if (gtk_tree_selection_count_selected_rows(s->selection) > 0)
+	{
+		int64_t size;
+		string magnets, magnet, filename, tth;
+		GtkTreeIter iter;
+		GtkTreePath *path;
+		GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
+
+		for (GList *i = list; i; i = i->next)
+		{
+			path = (GtkTreePath *)i->data;
+			if (gtk_tree_model_get_iter(s->sortedFilterModel, &iter, path))
+			{
+				filename = s->resultView.getString(&iter, "Filename");
+				size = s->resultView.getValue<int64_t>(&iter, "Real Size");
+				tth = s->resultView.getString(&iter, "TTH");
+				magnet = WulforUtil::makeMagnet(filename, size, tth);
+
+				if (!magnet.empty())
+				{
+					if (!magnets.empty())
+						magnets += '\n';
+					magnets += magnet;
+				}
+			}
+			gtk_tree_path_free(path);
+		}
+		g_list_free(list);
+
+		if (!magnets.empty())
+			gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), magnets.c_str(), magnets.length());
 	}
 }
 

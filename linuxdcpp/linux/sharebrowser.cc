@@ -101,6 +101,7 @@ ShareBrowser::ShareBrowser(User::Ptr user, const std::string &file):
 	g_signal_connect(getWidget("dirDownloadItem"), "activate", G_CALLBACK(onDownloadDirClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("fileDownloadItem"), "activate", G_CALLBACK(onDownloadClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("searchForAlternatesItem"), "activate", G_CALLBACK(onSearchAlternatesClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("copyMagnetItem"), "activate", G_CALLBACK(onCopyMagnetClicked_gui), (gpointer)this);
 
 	// Load the xml file containing the share list.
 	try
@@ -301,6 +302,7 @@ void ShareBrowser::updateFiles_gui(DirectoryListing::Directory *dir)
 			fileView.col("Size Order"), size,
 			fileView.col("Type"), _("Folder"),
 			fileView.col("DL File"), (gpointer)(*it_dir),
+			fileView.col("TTH"), "",
 			-1);
 
 		currentSize += size;
@@ -823,7 +825,6 @@ void ShareBrowser::onSearchAlternatesClicked_gui(GtkMenuItem *item, gpointer dat
 	ShareBrowser *sb = (ShareBrowser *)data;
 	GtkTreeIter iter;
 	GtkTreePath *path;
-	gpointer ptr;
 	string fileOrder;
 	Search *s;
 	DirectoryListing::File *file;
@@ -834,12 +835,11 @@ void ShareBrowser::onSearchAlternatesClicked_gui(GtkMenuItem *item, gpointer dat
 		path = (GtkTreePath *)i->data;
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(sb->fileStore), &iter, path))
 		{
-			ptr = sb->fileView.getValue<gpointer>(&iter, "DL File");
 			fileOrder = sb->fileView.getString(&iter, "File Order");
 
 			if (fileOrder[0] == 'f')
 			{
-				file = (DirectoryListing::File *)ptr;
+				file = sb->fileView.getValue<gpointer, DirectoryListing::File *>(&iter, "DL File");
 				s = dynamic_cast<Search *>(WulforManager::get()->addSearch_gui());
 				s->putValue_gui(file->getTTH().toBase32(), 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
 			}
@@ -847,6 +847,40 @@ void ShareBrowser::onSearchAlternatesClicked_gui(GtkMenuItem *item, gpointer dat
 		gtk_tree_path_free(path);
 	}
 	g_list_free(list);
+}
+
+void ShareBrowser::onCopyMagnetClicked_gui(GtkMenuItem* item, gpointer data)
+{
+	ShareBrowser *sb = (ShareBrowser *)data;
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	int64_t size;
+	string magnets, magnet, filename, tth;
+	GList *list = gtk_tree_selection_get_selected_rows(sb->fileSelection, NULL);
+
+	for (GList *i = list; i; i = i->next)
+	{
+		path = (GtkTreePath *)i->data;
+		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(sb->fileStore), &iter, path))
+		{
+			filename = sb->fileView.getString(&iter, "Filename");
+			size = sb->fileView.getValue<int64_t>(&iter, "Size Order");
+			tth = sb->fileView.getString(&iter, "TTH");
+			magnet = WulforUtil::makeMagnet(filename, size, tth);
+
+			if (!magnet.empty())
+			{
+				if (!magnets.empty())
+					magnets += '\n';
+				magnets += magnet;
+			}
+		}
+		gtk_tree_path_free(path);
+	}
+	g_list_free(list);
+
+	if (!magnets.empty())
+		gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), magnets.c_str(), magnets.length());
 }
 
 void ShareBrowser::downloadFile_client(DirectoryListing::File *file, string target)
