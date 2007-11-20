@@ -25,7 +25,7 @@ class DialogEntry : public Entry
 {
 	public:
 		DialogEntry() {}
-		DialogEntry(const std::string &id, const std::string &glade) : Entry(id, glade) {}
+		DialogEntry(const std::string &id, const std::string &glade);
 		virtual ~DialogEntry();
 
 		GtkWidget *getContainer();

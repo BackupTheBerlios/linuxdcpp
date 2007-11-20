@@ -46,6 +46,7 @@ MainWindow::MainWindow():
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("flistDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	window = GTK_WINDOW(getWidget("mainWindow"));
+	gtk_window_set_role(window, getID().c_str());
 
 	// Load icons. We need to do this in the code and not in the .glade file,
 	// otherwise we won't always find the images.

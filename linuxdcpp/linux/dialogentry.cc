@@ -22,6 +22,12 @@ using namespace std;
 
 int DialogEntry::responseID = GTK_RESPONSE_NONE;
 
+DialogEntry::DialogEntry(const std::string &id, const std::string &glade):
+	Entry(id, glade)
+{
+	gtk_window_set_role(GTK_WINDOW(getContainer()), getID().c_str());
+}
+
 DialogEntry::~DialogEntry()
 {
 	gtk_widget_destroy(getContainer());
