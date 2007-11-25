@@ -110,7 +110,6 @@ class Hub:
 		GtkTreeSelection *nickSelection;
 		GtkTextBuffer *chatBuffer;
 		GtkTextMark *chatMark;
-		GtkWidget *subMenu;
 		gint oldType;
 		std::vector<std::string> history;
 		int historyIndex;

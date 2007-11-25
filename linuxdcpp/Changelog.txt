@@ -20,6 +20,7 @@
 [2007-11-07] Fixed search results from sometimes never appearing in the GUI.
 [2007-11-20] Added magnet links support (thanks Max Lapan).
 [2007-11-20] Feature Request #3840: Define WM_WINDOW_ROLE for main window.
+[2007-11-25] Added user commands to search menu (thanks Bart Vullings).
 
 *** 1.0.0 2007-09-23 ***
 2007-08-04 - Steven Sheehy

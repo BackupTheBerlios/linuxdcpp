@@ -23,6 +23,7 @@
 #include <client/ShareManager.h>
 #include <client/StringTokenizer.h>
 #include <client/Text.h>
+#include <client/UserCommand.h>
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
 
@@ -94,6 +95,8 @@ Search::Search():
 	resultView.insertHiddenColumn("Slots Order", G_TYPE_INT);
 	resultView.insertHiddenColumn("File Order", G_TYPE_STRING);
 	resultView.insertHiddenColumn("SearchResult", G_TYPE_POINTER);
+	resultView.insertHiddenColumn("Hub URL", G_TYPE_STRING);
+	resultView.insertHiddenColumn("CID", G_TYPE_STRING);
 	resultView.finalize();
 	resultStore = gtk_list_store_newv(resultView.getColCount(), resultView.getGTypes());
 	searchFilterModel = gtk_tree_model_filter_new(GTK_TREE_MODEL(resultStore), NULL);
@@ -239,7 +242,6 @@ void Search::removeHub_gui(string url)
 
 void Search::buildDownloadMenu_gui()
 {
-	GtkWidget *menuItem;
 	int count = gtk_tree_selection_count_selected_rows(selection);
 
 	if (count < 1)
@@ -265,6 +267,15 @@ void Search::buildDownloadMenu_gui()
 		gtk_widget_set_sensitive(getWidget("removeUserFromQueueItem"), FALSE);
 	}
 
+	GtkWidget *menuItem;
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	GList *list;
+	string tth;
+	bool firstTTH;
+	bool hasTTH;
+	StringList hubList;
+
 	// Build "Download to..." submenu
 	gtk_container_foreach(GTK_CONTAINER(getWidget("downloadMenu")), (GtkCallback)gtk_widget_destroy, NULL);
 
@@ -289,18 +300,16 @@ void Search::buildDownloadMenu_gui()
 	gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadMenu")), menuItem);
 
 	// Add search results with the same TTH to menu
-	string tth;
-	bool firstTTH = TRUE;
-	bool hasTTH = FALSE;
-	GtkTreeIter iter;
-	GtkTreePath *path;
-	GList *list = gtk_tree_selection_get_selected_rows(selection, NULL);
+	firstTTH = TRUE;
+	hasTTH = FALSE;
+	list = gtk_tree_selection_get_selected_rows(selection, NULL);
 
 	for (GList *i = list; i; i = i->next)
 	{
 		path = (GtkTreePath *)i->data;
-		if ((hasTTH || firstTTH) && gtk_tree_model_get_iter(sortedFilterModel, &iter, path))
+		if (gtk_tree_model_get_iter(sortedFilterModel, &iter, path))
 		{
+			hubList.push_back(resultView.getString(&iter, "Hub URL"));
 			if (firstTTH)
 			{
 				tth = resultView.getString(&iter, "TTH");
@@ -356,6 +365,29 @@ void Search::buildDownloadMenu_gui()
 	menuItem = gtk_menu_item_new_with_label(_("Browse..."));
 	g_signal_connect(menuItem, "activate", G_CALLBACK(onDownloadDirToClicked_gui), (gpointer)this);
 	gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadDirMenu")), menuItem);
+
+	// Add user commands.
+	gtk_container_foreach(GTK_CONTAINER(getWidget("usercommandMenu")), (GtkCallback)gtk_widget_destroy, NULL);
+
+	::UserCommand::List usercommandList = FavoriteManager::getInstance()->
+		getUserCommands(::UserCommand::CONTEXT_SEARCH, hubList);
+
+	for (::UserCommand::Iter i = usercommandList.begin(); i != usercommandList.end(); ++i)
+	{
+		::UserCommand& uc = *i;
+		if (uc.getType() == ::UserCommand::TYPE_SEPARATOR)
+		{
+			menuItem = gtk_separator_menu_item_new();
+			gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("usercommandMenu")), menuItem);
+		}
+		else
+		{
+			menuItem = gtk_menu_item_new_with_label(uc.getName().c_str());
+			g_signal_connect(menuItem, "activate", G_CALLBACK(onUserCommandClicked_gui), (gpointer)this);
+			g_object_set_data_full(G_OBJECT(menuItem), "command", g_strdup(uc.getCommand().c_str()), g_free);
+			gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("usercommandMenu")), menuItem);
+		}
+	}
 }
 
 void Search::popupMenu_gui()
@@ -473,7 +505,7 @@ void Search::addResult_gui(SearchResult *result)
 	if (!result)
 		return;
 
-	string filename, fileOrder, path, type, size, exactSize, nick, connection, hubName, slots, ip, TTH;
+	string filename, fileOrder, path, type, size, exactSize, nick, cid, connection, hubName, hubURL, slots, ip, TTH;
 	GdkPixbuf *icon;
 	int actualSlots;
 
@@ -511,9 +543,11 @@ void Search::addResult_gui(SearchResult *result)
 	}
 
 	nick = WulforUtil::getNicks(result->getUser());
+	cid = result->getUser()->getCID().toBase32();
 	slots = result->getSlotString();
 	connection = ClientManager::getInstance()->getConnection(result->getUser()->getCID());
 	hubName = result->getHubName().empty() ? result->getHubURL().c_str() : result->getHubName().c_str();
+	hubURL = result->getHubURL();
 	ip = result->getIP();
 	if (result->getType() == SearchResult::TYPE_FILE)
 		TTH = result->getTTH().toBase32();
@@ -553,6 +587,8 @@ void Search::addResult_gui(SearchResult *result)
 		resultView.col("Real Size"), result->getSize(),
 		resultView.col("Slots Order"), actualSlots,
 		resultView.col("SearchResult"), (gpointer)result,
+		resultView.col("Hub URL"), hubURL.c_str(),
+		resultView.col("CID"), cid.c_str(),
 		-1);
 
 	++searchHits;
@@ -991,11 +1027,11 @@ void Search::onGetFileListClicked_gui(GtkMenuItem *item, gpointer data)
 
 	if (gtk_tree_selection_count_selected_rows(s->selection) > 0)
 	{
-		SearchResult *result;
+		string cid, dir;
 		GtkTreeIter iter;
 		GtkTreePath *path;
 		GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
-		typedef Func3<Search, User::Ptr &, QueueItem::FileFlags, string> F3;
+		typedef Func3<Search, string, string, bool> F3;
 		F3 *func;
 
 		for (GList *i = list; i; i = i->next)
@@ -1003,14 +1039,10 @@ void Search::onGetFileListClicked_gui(GtkMenuItem *item, gpointer data)
 			path = (GtkTreePath *)i->data;
 			if (gtk_tree_model_get_iter(s->sortedFilterModel, &iter, path))
 			{
-				result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
-				if (result)
-				{
-					string dir = Util::getFilePath(WulforUtil::linuxSeparator(result->getFile()));
-
-					func = new F3(s, &Search::getFileList_client, result->getUser(), QueueItem::FLAG_CLIENT_VIEW, dir);
-					WulforManager::get()->dispatchClientFunc(func);
-				}
+				cid = s->resultView.getString(&iter, "CID");
+				dir = s->resultView.getString(&iter, "Path");
+				func = new F3(s, &Search::getFileList_client, cid, dir, FALSE);
+				WulforManager::get()->dispatchClientFunc(func);
 			}
 			gtk_tree_path_free(path);
 		}
@@ -1024,11 +1056,11 @@ void Search::onMatchQueueClicked_gui(GtkMenuItem *item, gpointer data)
 
 	if (gtk_tree_selection_count_selected_rows(s->selection) > 0)
 	{
-		SearchResult *result;
+		string cid;
 		GtkTreeIter iter;
 		GtkTreePath *path;
 		GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
-		typedef Func3<Search, User::Ptr &, QueueItem::FileFlags, string> F3;
+		typedef Func3<Search, string, string, bool> F3;
 		F3 *func;
 
 		for (GList *i = list; i; i = i->next)
@@ -1036,12 +1068,9 @@ void Search::onMatchQueueClicked_gui(GtkMenuItem *item, gpointer data)
 			path = (GtkTreePath *)i->data;
 			if (gtk_tree_model_get_iter(s->sortedFilterModel, &iter, path))
 			{
-				result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
-				if (result)
-				{
-					func = new F3(s, &Search::getFileList_client, result->getUser(), QueueItem::FLAG_MATCH_QUEUE, "");
-					WulforManager::get()->dispatchClientFunc(func);
-				}
+				cid = s->resultView.getString(&iter, "CID");
+				func = new F3(s, &Search::getFileList_client, cid, "", TRUE);
+				WulforManager::get()->dispatchClientFunc(func);
 			}
 			gtk_tree_path_free(path);
 		}
@@ -1081,11 +1110,11 @@ void Search::onAddFavoriteUserClicked_gui(GtkMenuItem *item, gpointer data)
 
 	if (gtk_tree_selection_count_selected_rows(s->selection) > 0)
 	{
-		SearchResult *result;
+		string cid;
 		GtkTreeIter iter;
 		GtkTreePath *path;
 		GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
-		typedef Func1<Search, User::Ptr &> F1;
+		typedef Func1<Search, string> F1;
 		F1 *func;
 
 		for (GList *i = list; i; i = i->next)
@@ -1093,12 +1122,9 @@ void Search::onAddFavoriteUserClicked_gui(GtkMenuItem *item, gpointer data)
 			path = (GtkTreePath *)i->data;
 			if (gtk_tree_model_get_iter(s->sortedFilterModel, &iter, path))
 			{
-				result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
-				if (result)
-				{
-					func = new F1(s, &Search::addFavUser_client, result->getUser());
-					WulforManager::get()->dispatchClientFunc(func);
-				}
+				cid = s->resultView.getString(&iter, "CID");
+				func = new F1(s, &Search::addFavUser_client, cid);
+				WulforManager::get()->dispatchClientFunc(func);
 			}
 			gtk_tree_path_free(path);
 		}
@@ -1112,11 +1138,11 @@ void Search::onGrantExtraSlotClicked_gui(GtkMenuItem *item, gpointer data)
 
 	if (gtk_tree_selection_count_selected_rows(s->selection) > 0)
 	{
-		SearchResult *result;
+		string cid;
 		GtkTreeIter iter;
 		GtkTreePath *path;
 		GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
-		typedef Func1<Search, User::Ptr &> F1;
+		typedef Func1<Search, string> F1;
 		F1 *func;
 
 		for (GList *i = list; i; i = i->next)
@@ -1124,12 +1150,9 @@ void Search::onGrantExtraSlotClicked_gui(GtkMenuItem *item, gpointer data)
 			path = (GtkTreePath *)i->data;
 			if (gtk_tree_model_get_iter(s->sortedFilterModel, &iter, path))
 			{
-				result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
-				if (result)
-				{
-					func = new F1(s, &Search::grantSlot_client, result->getUser());
-					WulforManager::get()->dispatchClientFunc(func);
-				}
+				cid = s->resultView.getString(&iter, "CID");
+				func = new F1(s, &Search::grantSlot_client, cid);
+				WulforManager::get()->dispatchClientFunc(func);
 			}
 			gtk_tree_path_free(path);
 		}
@@ -1143,11 +1166,11 @@ void Search::onRemoveUserFromQueueClicked_gui(GtkMenuItem *item, gpointer data)
 
 	if (gtk_tree_selection_count_selected_rows(s->selection) > 0)
 	{
-		SearchResult *result;
+		string cid;
 		GtkTreeIter iter;
 		GtkTreePath *path;
 		GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
-		typedef Func1<Search, User::Ptr &> F1;
+		typedef Func1<Search, string> F1;
 		F1 *func;
 
 		for (GList *i = list; i; i = i->next)
@@ -1155,12 +1178,9 @@ void Search::onRemoveUserFromQueueClicked_gui(GtkMenuItem *item, gpointer data)
 			path = (GtkTreePath *)i->data;
 			if (gtk_tree_model_get_iter(s->sortedFilterModel, &iter, path))
 			{
-				result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
-				if (result)
-				{
-					func = new F1(s, &Search::removeSource_client, result->getUser());
-					WulforManager::get()->dispatchClientFunc(func);
-				}
+				cid = s->resultView.getString(&iter, "CID");
+				func = new F1(s, &Search::removeSource_client, cid);
+				WulforManager::get()->dispatchClientFunc(func);
 			}
 			gtk_tree_path_free(path);
 		}
@@ -1190,6 +1210,41 @@ void Search::onRemoveClicked_gui(GtkMenuItem *item, gpointer data)
 				gtk_tree_model_sort_convert_iter_to_child_iter(GTK_TREE_MODEL_SORT(s->sortedFilterModel), &filterIter, &iter);
 				gtk_tree_model_filter_convert_iter_to_child_iter(GTK_TREE_MODEL_FILTER(s->searchFilterModel), &iter, &filterIter);
 				gtk_list_store_remove(s->resultStore, &iter);
+			}
+			gtk_tree_path_free(path);
+		}
+		g_list_free(list);
+	}
+}
+
+void Search::onUserCommandClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Search *s = (Search *)data;
+
+	if (gtk_tree_selection_count_selected_rows(s->selection) > 0)
+	{
+		MainWindow *mw = WulforManager::get()->getMainWindow();
+		string cid;
+		string commandName = WulforUtil::getTextFromMenu(item);
+		string command = (gchar *)g_object_get_data(G_OBJECT(item), "command");
+		GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
+		GtkTreeIter iter;
+		GtkTreePath *path;
+		typedef Func3<Search, string, string, StringMap> F3;
+		F3 *func;
+
+		for (GList *i = list; i; i = i->next)
+		{
+			path = (GtkTreePath *)i->data;
+			if (gtk_tree_model_get_iter(s->sortedFilterModel, &iter, path))
+			{
+				cid = s->resultView.getString(&iter, "CID");
+				StringMap params;
+				if (mw->getUserCommandLines_gui(command, params))
+				{
+					func = new F3(s, &Search::sendUserCommand_client, cid, commandName, params);
+					WulforManager::get()->dispatchClientFunc(func);
+				}
 			}
 			gtk_tree_path_free(path);
 		}
@@ -1287,30 +1342,74 @@ void Search::addSource_client(string source, SearchResult *result)
 	}
 }
 
-void Search::getFileList_client(User::Ptr &user, QueueItem::FileFlags flags, string dir)
+void Search::getFileList_client(string cid, string dir, bool match)
 {
-	try
+	if (!cid.empty())
 	{
-		QueueManager::getInstance()->addList(user, flags, dir);
+		try
+		{
+			User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
+			if (user)
+			{
+				QueueItem::FileFlags flags;
+				if (match)
+					flags = QueueItem::FLAG_MATCH_QUEUE;
+				else
+					flags = QueueItem::FLAG_CLIENT_VIEW;
+
+				QueueManager::getInstance()->addList(user, flags, dir);
+			}
+		}
+		catch (const Exception&)
+		{
+		}
 	}
-	catch (const Exception&)
+}
+
+void Search::grantSlot_client(string cid)
+{
+	if (!cid.empty())
 	{
+		User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
+		if (user)
+			UploadManager::getInstance()->reserveSlot(user);
 	}
 }
 
-void Search::grantSlot_client(User::Ptr &user)
+void Search::addFavUser_client(string cid)
 {
-	UploadManager::getInstance()->reserveSlot(user);
+	if (!cid.empty())
+	{
+		User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
+		if (user)
+			FavoriteManager::getInstance()->addFavoriteUser(user);
+	}
 }
 
-void Search::addFavUser_client(User::Ptr &user)
+void Search::removeSource_client(string cid)
 {
-	FavoriteManager::getInstance()->addFavoriteUser(user);
+	if (!cid.empty())
+	{
+		User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
+		if (user)
+			QueueManager::getInstance()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
+	}
 }
 
-void Search::removeSource_client(User::Ptr &user)
+void Search::sendUserCommand_client(string cid, string commandName, StringMap params)
 {
-	QueueManager::getInstance()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
+	if (!cid.empty() && !commandName.empty())
+	{
+		int id = FavoriteManager::getInstance()->findUserCommand(commandName);
+		::UserCommand uc;
+
+		if (id == -1 || !FavoriteManager::getInstance()->getUserCommand(id, uc))
+			return;
+
+		User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
+		if (user)
+			ClientManager::getInstance()->userCommand(user, uc, params, true);
+	}
 }
 
 void Search::on(ClientManagerListener::ClientConnected, Client *client) throw()

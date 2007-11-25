@@ -124,10 +124,6 @@ Hub::Hub(const string &address):
 	if (panePosition > 10)
 		gtk_paned_set_position(GTK_PANED(getWidget("pane")), panePosition);
 
-	GtkWidget *menuItem = gtk_menu_item_new_with_label(_("User commands"));
-	subMenu = gtk_menu_new();
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(menuItem), subMenu);
-	gtk_menu_append(GTK_MENU(getWidget("nickMenu")), menuItem);
 	history.push_back("");
 }
 
@@ -268,7 +264,7 @@ void Hub::clearNickList_gui()
 
 void Hub::popupNickMenu_gui()
 {
-	gtk_container_foreach(GTK_CONTAINER(subMenu), (GtkCallback)gtk_widget_destroy, NULL);
+	gtk_container_foreach(GTK_CONTAINER(getWidget("usercommandMenu")), (GtkCallback)gtk_widget_destroy, NULL);
 
 	// Add user commands.
 	::UserCommand::List list = FavoriteManager::getInstance()->
@@ -284,14 +280,14 @@ void Hub::popupNickMenu_gui()
 			if (uc.getType() == ::UserCommand::TYPE_SEPARATOR)
 			{
 				menuItem = gtk_separator_menu_item_new();
-				gtk_menu_shell_append(GTK_MENU_SHELL(subMenu), menuItem);
+				gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("usercommandMenu")), menuItem);
 			}
 			else
 			{
 				menuItem = gtk_menu_item_new_with_label(uc.getName().c_str());
 				g_signal_connect(menuItem, "activate", G_CALLBACK(onUserCommandClick_gui), (gpointer)this);
 				g_object_set_data_full(G_OBJECT(menuItem), "command", g_strdup(uc.getCommand().c_str()), g_free);
-				gtk_menu_shell_append(GTK_MENU_SHELL(subMenu), menuItem);
+				gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("usercommandMenu")), menuItem);
 			}
 		}
 	}
@@ -817,6 +813,8 @@ void Hub::onUserCommandClick_gui(GtkMenuItem *item, gpointer data)
 	string command = (gchar *)g_object_get_data(G_OBJECT(item), "command");
 	GList *list = gtk_tree_selection_get_selected_rows(hub->nickSelection, NULL);
 	MainWindow *mw = WulforManager::get()->getMainWindow();
+	typedef Func3<Hub, string, string, StringMap> F3;
+	F3 *func;
 
 	for (GList *i = list; i; i = i->next)
 	{
@@ -827,8 +825,7 @@ void Hub::onUserCommandClick_gui(GtkMenuItem *item, gpointer data)
 			StringMap params;
 			if (mw->getUserCommandLines_gui(command, params))
 			{
-				typedef Func3<Hub, string, string, StringMap> F3;
-				F3 *func = new F3(hub, &Hub::sendUserCommand_client, cid, commandName, params);
+				func = new F3(hub, &Hub::sendUserCommand_client, cid, commandName, params);
 				WulforManager::get()->dispatchClientFunc(func);
 			}
 		}
@@ -933,6 +930,7 @@ gboolean Hub::onChatPointerMoved_gui(GtkWidget *widget, GdkEventMotion *event, g
 {
 	Hub *hub = (Hub *)data;
 
+	// Change back to the regular cursor when the cursor moves off of the magnet.
 	if (hub->aboveMagnet)
 	{
 		hub->aboveMagnet = FALSE;
@@ -1424,3 +1422,4 @@ void Hub::on(ClientListener::SearchFlood, Client *, const string &msg) throw()
 	F1 *func = new F1(this, &Hub::addStatusMessage_gui, _("Search spam from ") + msg);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
+

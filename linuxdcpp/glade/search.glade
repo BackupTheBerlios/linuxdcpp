@@ -447,6 +447,17 @@ TTH</property>
       </widget>
     </child>
     <child>
+      <widget class="GtkMenuItem" id="usercommandItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">User commands</property>
+        <property name="use_underline">True</property>
+        <child>
+          <widget class="GtkMenu" id="usercommandMenu">
+          </widget>
+        </child>
+      </widget>
+    </child>
+    <child>
       <widget class="GtkSeparatorMenuItem" id="separator4">
         <property name="visible">True</property>
       </widget>

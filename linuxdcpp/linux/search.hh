@@ -78,15 +78,17 @@ class Search:
 		static void onGrantExtraSlotClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onRemoveUserFromQueueClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onRemoveClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onUserCommandClicked_gui(GtkMenuItem *item, gpointer data);
 
 		// Client functions
 		void download_client(std::string target, SearchResult *result);
 		void downloadDir_client(std::string target, SearchResult *result);
 		void addSource_client(std::string source, SearchResult *result);
-		void getFileList_client(User::Ptr &user, QueueItem::FileFlags flags, std::string dir);
-		void addFavUser_client(User::Ptr &user);
-		void grantSlot_client(User::Ptr &user);
-		void removeSource_client(User::Ptr &user);
+		void getFileList_client(std::string cid, std::string dir, bool match);
+		void addFavUser_client(std::string cid);
+		void grantSlot_client(std::string cid);
+		void removeSource_client(std::string cid);
+		void sendUserCommand_client(std::string cid, std::string commandName, StringMap params);
 
 		// Client callbacks
 		virtual void on(ClientManagerListener::ClientConnected, Client *client) throw();
