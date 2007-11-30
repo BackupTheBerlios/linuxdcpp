@@ -49,8 +49,6 @@ void WulforManager::start()
 void WulforManager::stop()
 {
 	dcassert(manager);
-	pthread_detach(manager->guiThread);
-	pthread_detach(manager->clientThread);
 	delete manager;
 	manager = NULL;
 }
@@ -63,55 +61,37 @@ WulforManager *WulforManager::get()
 
 WulforManager::WulforManager()
 {
-	if (pthread_mutex_init(&clientCallLock, NULL) != 0)
+	abort = FALSE;
+
+	// Initialize sempahore variables
+	guiCondValue = 0;
+	clientCondValue = 0;
+	guiCond = g_cond_new();
+	clientCond = g_cond_new();
+	guiCondMutex = g_mutex_new();
+	clientCondMutex = g_mutex_new();
+
+	clientCallMutex = g_mutex_new();
+	guiQueueMutex = g_mutex_new();
+	clientQueueMutex = g_mutex_new();
+	g_static_rw_lock_init(&entryMutex);
+
+	GError *error = NULL;
+	guiThread = g_thread_create(threadFunc_gui, (gpointer)this, TRUE, &error);
+	if (error != NULL)
 	{
-		perror("Unable to initialize clientCallLock");
-		exit(EXIT_FAILURE);
-	}
-	if (pthread_rwlock_init(&guiQueueLock, NULL) != 0)
-	{
-		perror("Unable to initialize guiQueueLock");
-		exit(EXIT_FAILURE);
-	}
-	if (pthread_rwlock_init(&clientQueueLock, NULL) != 0)
-	{
-		perror("Unable to initialize clientQueueLock");
-		exit(EXIT_FAILURE);
-	}
-	if (pthread_rwlock_init(&entryLock, NULL) != 0)
-	{
-		perror("Unable to initialize entryLock");
+		cerr << "Unable to create gui thread: " << error->message << endl;
+		g_error_free(error);
 		exit(EXIT_FAILURE);
 	}
 
-	guiSem = sem_open("/linuxdcppGuiSem", O_CREAT | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO, 0);
-	if (guiSem == SEM_FAILED)
-	{
-		perror("Unable to initialize guiSem");
-		if (errno == EACCES)
-			printf("Note: You may need write permission in /dev/shm\n");
-		exit(EXIT_FAILURE);
-	}
-	sem_unlink("/linuxdcppGuiSem");
+	g_clear_error(&error);
 
-	clientSem = sem_open("/linuxdcppClientSem", O_CREAT | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO, 0);
-	if (clientSem == SEM_FAILED)
+	clientThread = g_thread_create(threadFunc_client, (gpointer)this, TRUE, &error);
+	if (error != NULL)
 	{
-		perror("Unable to initialize clientSem");
-		if (errno == EACCES)
-			printf("Note: You may need write permission in /dev/shm\n");
-		exit(EXIT_FAILURE);
-	}
-	sem_unlink("/linuxdcppClientSem");
-
-	if (pthread_create(&clientThread, NULL, &threadFunc_client, (void *)this) != 0)
-	{
-		perror("Unable to create client thread");
-		exit(EXIT_FAILURE);
-	}
-	if (pthread_create(&guiThread, NULL, &threadFunc_gui, (void *)this) != 0)
-	{
-		perror("Unable to create gui thread");
+		cerr << "Unable to create client thread: " << error->message << endl;
+		g_error_free(error);
 		exit(EXIT_FAILURE);
 	}
 
@@ -119,9 +99,7 @@ WulforManager::WulforManager()
 
 	// Determine path to data files
 	path = string(_DATADIR) + PATH_SEPARATOR_STR + "linuxdcpp";
-
-	struct stat s;
-	if (stat(path.c_str(), &s) == -1)
+	if (!g_file_test(path.c_str(), G_FILE_TEST_EXISTS))
 	{
 		cerr << path << " is inaccessible, falling back to current directory instead.\n";
 		path = ".";
@@ -130,13 +108,29 @@ WulforManager::WulforManager()
 
 WulforManager::~WulforManager()
 {
-	sem_close(guiSem);
-	sem_close(clientSem);
+	abort = TRUE;
 
-	pthread_mutex_destroy(&clientCallLock);
-	pthread_rwlock_destroy(&guiQueueLock);
-	pthread_rwlock_destroy(&clientQueueLock);
-	pthread_rwlock_destroy(&entryLock);
+	g_mutex_lock(guiCondMutex);
+	guiCondValue++;
+	g_cond_signal(guiCond);
+	g_mutex_unlock(guiCondMutex);
+
+	g_mutex_lock(clientCondMutex);
+	clientCondValue++;
+	g_cond_signal(clientCond);
+	g_mutex_unlock(clientCondMutex);
+
+	g_thread_join(guiThread);
+	g_thread_join(clientThread);
+
+	g_cond_free(guiCond);
+	g_cond_free(clientCond);
+	g_mutex_free(clientCondMutex);
+	g_mutex_free(guiCondMutex);
+	g_mutex_free(clientCallMutex);
+	g_mutex_free(guiQueueMutex);
+	g_mutex_free(clientQueueMutex);
+	g_static_rw_lock_free(&entryMutex);
 }
 
 void WulforManager::createMainWindow()
@@ -156,92 +150,92 @@ void WulforManager::createMainWindow()
 	WulforManager::get()->dispatchGuiFunc(f0);
 }
 
-void *WulforManager::threadFunc_gui(void *data)
+gpointer WulforManager::threadFunc_gui(gpointer data)
 {
 	WulforManager *man = (WulforManager *)data;
 	man->processGuiQueue();
-	pthread_exit(NULL);
+	return NULL;
 }
 
-void *WulforManager::threadFunc_client(void *data)
+gpointer WulforManager::threadFunc_client(gpointer data)
 {
 	WulforManager *man = (WulforManager *)data;
 	man->processClientQueue();
-	pthread_exit(NULL);
+	return NULL;
 }
 
 void WulforManager::processGuiQueue()
 {
 	FuncBase *func;
 
-	while (true)
+	while (!abort)
 	{
-		if (sem_wait(guiSem) != 0)
-		{
-			if (errno == EINTR)
-				continue;
-			else
-				break;
-		}
+		g_mutex_lock(guiCondMutex);
+		while (guiCondValue < 1)
+			g_cond_wait(guiCond, guiCondMutex);
+		guiCondValue--;
+		g_mutex_unlock(guiCondMutex);
 
 		// This must be taken before the queuelock to avoid deadlock.
 		gdk_threads_enter();
 
-		pthread_rwlock_wrlock(&guiQueueLock);
+		g_mutex_lock(guiQueueMutex);
 		while (guiFuncs.size() > 0)
 		{
 			func = guiFuncs.front();
 			guiFuncs.erase(guiFuncs.begin());
-			pthread_rwlock_unlock(&guiQueueLock);
+			g_mutex_unlock(guiQueueMutex);
 
 			func->call();
 			delete func;
 
-			pthread_rwlock_wrlock(&guiQueueLock);
+			g_mutex_lock(guiQueueMutex);
 		}
-		pthread_rwlock_unlock(&guiQueueLock);
+		g_mutex_unlock(guiQueueMutex);
 
 		gdk_flush();
 		gdk_threads_leave();
 	}
+
+	g_thread_exit(NULL);
 }
 
 void WulforManager::processClientQueue()
 {
 	FuncBase *func;
 
-	while (true)
+	while (!abort)
 	{
-		if (sem_wait(clientSem) != 0)
-		{
-			if (errno == EINTR)
-				continue;
-			else
-				break;
-		}
+		g_mutex_lock(clientCondMutex);
+		while (clientCondValue < 1)
+			g_cond_wait(clientCond, clientCondMutex);
+		clientCondValue--;
+		g_mutex_unlock(clientCondMutex);
 
-		pthread_mutex_lock(&clientCallLock);
-		pthread_rwlock_wrlock(&clientQueueLock);
+		g_mutex_lock(clientCallMutex);
+		g_mutex_lock(clientQueueMutex);
 		while (clientFuncs.size() > 0)
 		{
 			func = clientFuncs.front();
 			clientFuncs.erase(clientFuncs.begin());
-			pthread_rwlock_unlock(&clientQueueLock);
+			g_mutex_unlock(clientQueueMutex);
 
 			func->call();
 			delete func;
 
-			pthread_rwlock_wrlock(&clientQueueLock);
+			g_mutex_lock(clientQueueMutex);
 		}
-		pthread_rwlock_unlock(&clientQueueLock);
-		pthread_mutex_unlock(&clientCallLock);
+		g_mutex_unlock(clientQueueMutex);
+		g_mutex_unlock(clientCallMutex);
 	}
+
+	g_thread_exit(NULL);
 }
 
 void WulforManager::dispatchGuiFunc(FuncBase *func)
 {
-	pthread_rwlock_wrlock(&guiQueueLock);
-	pthread_rwlock_rdlock(&entryLock);
+	g_mutex_lock(guiQueueMutex);
+	g_static_rw_lock_reader_lock(&entryMutex);
 
 	// Make sure we're not adding functions to deleted objects.
 	if (func->getID() == "Main Window" || entries.find(func->getID()) != entries.end())
@@ -249,15 +243,19 @@ void WulforManager::dispatchGuiFunc(FuncBase *func)
 	else
 		delete func;
 
-	pthread_rwlock_unlock(&entryLock);
-	pthread_rwlock_unlock(&guiQueueLock);
-	sem_post(guiSem);
+	g_static_rw_lock_reader_unlock(&entryMutex);
+	g_mutex_unlock(guiQueueMutex);
+
+	g_mutex_lock(guiCondMutex);
+	guiCondValue++;
+	g_cond_signal(guiCond);
+	g_mutex_unlock(guiCondMutex);
 }
 
 void WulforManager::dispatchClientFunc(FuncBase *func)
 {
-	pthread_rwlock_wrlock(&clientQueueLock);
-	pthread_rwlock_rdlock(&entryLock);
+	g_mutex_lock(clientQueueMutex);
+	g_static_rw_lock_reader_lock(&entryMutex);
 
 	// Make sure we're not adding functions to deleted objects.
 	if (func->getID() == "Main Window" || entries.find(func->getID()) != entries.end())
@@ -265,9 +263,13 @@ void WulforManager::dispatchClientFunc(FuncBase *func)
 	else
 		delete func;
 
-	pthread_rwlock_unlock(&entryLock);
-	pthread_rwlock_unlock(&clientQueueLock);
-	sem_post(clientSem);
+	g_static_rw_lock_reader_unlock(&entryMutex);
+	g_mutex_unlock(clientQueueMutex);
+
+	g_mutex_lock(clientCondMutex);
+	clientCondValue++;
+	g_cond_signal(clientCond);
+	g_mutex_unlock(clientCondMutex);
 }
 
 MainWindow *WulforManager::getMainWindow()
@@ -310,10 +312,10 @@ BookEntry *WulforManager::getBookEntry_gui(const string &id, bool raise)
 {
 	BookEntry *ret = NULL;
 
-	pthread_rwlock_rdlock(&entryLock);
+	g_static_rw_lock_reader_lock(&entryMutex);
 	if (entries.find(id) != entries.end())
 		ret = dynamic_cast<BookEntry *>(entries[id]);
-	pthread_rwlock_unlock(&entryLock);
+	g_static_rw_lock_reader_unlock(&entryMutex);
 
 	if (ret && raise)
 		mainWin->raisePage_gui(ret->getContainer());
@@ -329,9 +331,9 @@ void WulforManager::insertBookEntry_gui(BookEntry *entry, bool raise)
 	entry->applyCallback(G_CALLBACK(onCloseBookEntry_gui));
 	mainWin->addPage_gui(entry->getContainer(), entry->getTitle(), raise);
 
-	pthread_rwlock_wrlock(&entryLock);
+	g_static_rw_lock_writer_lock(&entryMutex);
 	entries[entry->getID()] = entry;
-	pthread_rwlock_unlock(&entryLock);
+	g_static_rw_lock_writer_unlock(&entryMutex);
 }
 
 // Should be called from a callback, so gdk_threads_enter/leave is called automatically.
@@ -340,10 +342,10 @@ void WulforManager::deleteEntry_gui(Entry *entry)
 	const string &id = entry->getID();
 	vector<FuncBase *>::iterator fIt;
 
-	pthread_mutex_lock(&clientCallLock);
+	g_mutex_lock(clientCallMutex);
 
 	// Erase any pending calls to this bookentry.
-	pthread_rwlock_wrlock(&clientQueueLock);
+	g_mutex_lock(clientQueueMutex);
 	fIt = clientFuncs.begin();
 	while (fIt != clientFuncs.end())
 	{
@@ -355,9 +357,9 @@ void WulforManager::deleteEntry_gui(Entry *entry)
 		else
 			++fIt;
 	}
-	pthread_rwlock_unlock(&clientQueueLock);
+	g_mutex_unlock(clientQueueMutex);
 
-	pthread_rwlock_wrlock(&guiQueueLock);
+	g_mutex_lock(guiQueueMutex);
 	fIt = guiFuncs.begin();
 	while (fIt != guiFuncs.end())
 	{
@@ -369,15 +371,15 @@ void WulforManager::deleteEntry_gui(Entry *entry)
 		else
 			++fIt;
 	}
-	pthread_rwlock_unlock(&guiQueueLock);
+	g_mutex_unlock(guiQueueMutex);
 
 	// Remove the bookentry from the list.
-	pthread_rwlock_wrlock(&entryLock);
+	g_static_rw_lock_writer_lock(&entryMutex);
 	if (entries.find(id) != entries.end())
 		entries.erase(id);
-	pthread_rwlock_unlock(&entryLock);
+	g_static_rw_lock_writer_unlock(&entryMutex);
 
-	pthread_mutex_unlock(&clientCallLock);
+	g_mutex_unlock(clientCallMutex);
 
 	delete entry;
 	entry = NULL;
@@ -394,10 +396,10 @@ DialogEntry* WulforManager::getDialogEntry_gui(const string &id)
 {
 	DialogEntry *ret = NULL;
 
-	pthread_rwlock_rdlock(&entryLock);
+	g_static_rw_lock_reader_lock(&entryMutex);
 	if (entries.find(id) != entries.end())
 		ret = dynamic_cast<DialogEntry *>(entries[id]);
-	pthread_rwlock_unlock(&entryLock);
+	g_static_rw_lock_reader_unlock(&entryMutex);
 
 	return ret;
 }
@@ -406,9 +408,9 @@ void WulforManager::insertDialogEntry_gui(DialogEntry *entry)
 {
 	entry->applyCallback(G_CALLBACK(onCloseDialogEntry_gui));
 
-	pthread_rwlock_wrlock(&entryLock);
+	g_static_rw_lock_writer_lock(&entryMutex);
 	entries[entry->getID()] = entry;
-	pthread_rwlock_unlock(&entryLock);
+	g_static_rw_lock_writer_unlock(&entryMutex);
 
 	gtk_dialog_run(GTK_DIALOG(entry->getContainer()));
 }

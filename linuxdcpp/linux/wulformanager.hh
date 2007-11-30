@@ -20,9 +20,7 @@
 #define WULFOR_MANAGER_HH
 
 #include <gtk/gtk.h>
-#include <pthread.h>
-#include <semaphore.h>
-#include <sys/stat.h>
+#include <glib.h>
 #include <string>
 
 #include "bookentry.hh"
@@ -72,8 +70,8 @@ class WulforManager
 		void deleteAllEntries();
 
 		// Thread-related functions
-		static void *threadFunc_gui(void *data);
-		static void *threadFunc_client(void *data);
+		static gpointer threadFunc_gui(gpointer data);
+		static gpointer threadFunc_client(gpointer data);
 		void processGuiQueue();
 		void processClientQueue();
 
@@ -88,12 +86,19 @@ class WulforManager
 		std::vector<FuncBase *> guiFuncs;
 		std::vector<FuncBase *> clientFuncs;
 		hash_map<std::string, Entry *> entries;
-		pthread_mutex_t clientCallLock;
-		pthread_rwlock_t guiQueueLock;
-		pthread_rwlock_t clientQueueLock;
-		pthread_rwlock_t entryLock;
-		sem_t *guiSem, *clientSem;
-		pthread_t guiThread, clientThread;
+		gint guiCondValue;
+		gint clientCondValue;
+		GCond *guiCond;
+		GCond *clientCond;
+		GMutex *guiCondMutex;
+		GMutex *clientCondMutex;
+		GMutex *clientCallMutex;
+		GMutex *guiQueueMutex;
+		GMutex *clientQueueMutex;
+		GStaticRWLock entryMutex;
+		GThread *guiThread;
+		GThread *clientThread;
+		bool abort;
 };
 
 #else

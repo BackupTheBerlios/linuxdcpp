@@ -78,7 +78,7 @@ if os.environ.has_key('CXX'):
 	conf.env['CXX'] = os.environ['CXX']
 
 if os.environ.has_key('CXXFLAGS'):
-	conf.env['CXXFLAGS'] = os.environ['CXXFLAGS'].split()
+	conf.env['CPPFLAGS'] = conf.env['CXXFLAGS'] = os.environ['CXXFLAGS'].split()
 
 if os.environ.has_key('LDFLAGS'):
 	conf.env['LINKFLAGS'] = os.environ['LDFLAGS'].split()
@@ -147,13 +147,13 @@ if not 'install' in COMMAND_LINE_TARGETS:
 		print '\tNote: You might have the lib but not the headers'
 		Exit(1)
 
+	if not conf.CheckLib('crypto'):
+		print '\tcrypto library not found'
+		Exit(1)
+
 	if not conf.CheckLibWithHeader('ssl', 'openssl/ssl.h', 'c'):
 		print '\tOpenSSL library (libssl) not found'
 		print '\tNote: You might have the lib but not the headers'
-		Exit(1)
-
-	if not conf.CheckLib('crypto'):
-		print '\tcrypto library not found'
 		Exit(1)
 
 	if not conf.CheckHeader('iconv.h'):
