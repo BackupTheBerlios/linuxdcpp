@@ -19,6 +19,7 @@
 #include "finishedtransfers.hh"
 #include <client/Text.h>
 #include "wulformanager.hh"
+#include "WulforUtil.hh"
 
 FinishedTransfers::FinishedTransfers(const string &title):
 	BookEntry(title, "finishedtransfers.glade"),
@@ -26,9 +27,6 @@ FinishedTransfers::FinishedTransfers(const string &title):
 	totalBytes(0),
 	totalTime(0)
 {
-	// Configure the dialog
-	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("openWithDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-
 	// Initialize transfer treeview
 	transferView.setView(GTK_TREE_VIEW(getWidget("view")), true, "finished");
 	transferView.insertColumn("Time", G_TYPE_STRING, TreeView::STRING, 150);
@@ -54,7 +52,7 @@ FinishedTransfers::FinishedTransfers(const string &title):
 	transferView.setSortColumn_gui("Size", "Chunk Size");
 
 	// Connect the signals to their callback functions.
-	g_signal_connect(getWidget("openWithItem"), "activate", G_CALLBACK(onOpenWith_gui), (gpointer)this);
+	g_signal_connect(getWidget("openItem"), "activate", G_CALLBACK(onOpen_gui), (gpointer)this);
 	g_signal_connect(getWidget("removeItem"), "activate", G_CALLBACK(onRemoveItems_gui), (gpointer)this);
 	g_signal_connect(getWidget("removeAllItem"), "activate", G_CALLBACK(onRemoveAll_gui), (gpointer)this);
 	g_signal_connect(transferView.get(), "button-press-event", G_CALLBACK(onButtonPressed_gui), (gpointer)this);
@@ -73,7 +71,6 @@ FinishedTransfers::FinishedTransfers(const string &title):
 FinishedTransfers::~FinishedTransfers()
 {
 	FinishedManager::getInstance()->removeListener(this);
-	gtk_widget_destroy(getWidget("openWithDialog"));
 }
 
 void FinishedTransfers::addItem_gui(StringMap params, bool update)
@@ -163,7 +160,7 @@ gboolean FinishedTransfers::onKeyReleased_gui(GtkWidget *widget, GdkEventKey *ev
 	{
 		if (event->keyval == GDK_Return || event->keyval == GDK_KP_Enter)
 		{
-			onOpenWith_gui(NULL, data);
+			onOpen_gui(NULL, data);
 		}
 		else if (event->keyval == GDK_Delete || event->keyval == GDK_BackSpace)
 		{
@@ -179,7 +176,7 @@ gboolean FinishedTransfers::onKeyReleased_gui(GtkWidget *widget, GdkEventKey *ev
 	return FALSE;
 }
 
-void FinishedTransfers::onOpenWith_gui(GtkMenuItem *item, gpointer data)
+void FinishedTransfers::onOpen_gui(GtkMenuItem *item, gpointer data)
 {
 	FinishedTransfers *ft = (FinishedTransfers *)data;
 	int count = gtk_tree_selection_count_selected_rows(ft->transferSelection);
@@ -187,33 +184,22 @@ void FinishedTransfers::onOpenWith_gui(GtkMenuItem *item, gpointer data)
 	if (count <= 0)
 		return;
 
-	int ret = gtk_dialog_run(GTK_DIALOG(ft->getWidget("openWithDialog")));
-	gtk_widget_hide(ft->getWidget("openWithDialog"));
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	GList *list = gtk_tree_selection_get_selected_rows(ft->transferSelection, NULL);
 
-	if (ret == GTK_RESPONSE_OK)
+	for (GList *i = list; i; i = i->next)
 	{
-		string target;
-		string command = gtk_entry_get_text(GTK_ENTRY(ft->getWidget("openWithEntry")));
-		GtkTreeIter iter;
-		GtkTreePath *path;
-		GList *list = gtk_tree_selection_get_selected_rows(ft->transferSelection, NULL);
-
-		for (GList *i = list; i; i = i->next)
+		path = (GtkTreePath *)i->data;
+		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(ft->transferStore), &iter, path))
 		{
-			path = (GtkTreePath *)i->data;
-			if (gtk_tree_model_get_iter(GTK_TREE_MODEL(ft->transferStore), &iter, path))
-			{
-				target = ft->transferView.getString(&iter, "Target");
-				if (!command.empty() && !target.empty())
-				{
-					target = command + Text::fromUtf8(" \"" + target + "\"");
-					g_spawn_command_line_async(target.c_str(), NULL);
-				}
-			}
-			gtk_tree_path_free(path);
+			string target = ft->transferView.getString(&iter, "Target");
+			if (!target.empty())
+				WulforUtil::openURI(target);
 		}
-		g_list_free(list);
+		gtk_tree_path_free(path);
 	}
+	g_list_free(list);
 }
 
 void FinishedTransfers::onRemoveItems_gui(GtkMenuItem *item, gpointer data)

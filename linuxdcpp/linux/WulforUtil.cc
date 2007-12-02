@@ -20,6 +20,9 @@
 #include <glib/gi18n.h>
 #include <client/ClientManager.h>
 #include <client/Util.h>
+#include <iostream>
+
+using namespace std;
 
 std::vector<std::string> WulforUtil::charsets;
 const std::string WulforUtil::magnetSignature = "magnet:?xt=urn:tree:tiger:";
@@ -122,12 +125,19 @@ vector<string>& WulforUtil::getCharsets()
 
 void WulforUtil::openURI(const std::string &uri)
 {
+	GError* error = NULL;
 	gchar *argv[3];
 	argv[0] = "xdg-open";
-	argv[1] = (gchar *)uri.c_str();
+	argv[1] = (gchar *)Text::fromUtf8(uri).c_str();
 	argv[2] = NULL;
 
-	g_spawn_async(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
+	g_spawn_async(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, &error);
+
+	if (error != NULL)
+	{
+		cerr << "Failed to open URI: " << error->message << endl;
+		g_error_free(error);
+	}
 }
 
 string WulforUtil::makeMagnet(const string &name, const int64_t size, const string &tth)

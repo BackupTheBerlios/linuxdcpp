@@ -22,6 +22,7 @@
 [2007-11-20] Feature Request #3840: Define WM_WINDOW_ROLE for main window.
 [2007-11-25] Added user commands to search menu (thanks Bart Vullings).
 [2007-11-30] Fixes to allow compilation on OpenBSD (thanks Jeremy Evans).
+[2007-12-02] Open finished files w/ the default application (thanks David Grundberg).
 
 *** 1.0.0 2007-09-23 ***
 2007-08-04 - Steven Sheehy
