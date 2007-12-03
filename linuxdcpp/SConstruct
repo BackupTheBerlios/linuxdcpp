@@ -169,7 +169,13 @@ if not 'install' in COMMAND_LINE_TARGETS:
 # ----------------------------------------------------------------------
 
 	env.Append(CXXFLAGS = ['-I.', '-D_GNU_SOURCE', '-D_FILE_OFFSET_BITS=64', '-D_REENTRANT'])
-	env.Append(LINKFLAGS = ['-Wl,--as-needed'])
+
+	if os.sys.platform == 'linux2':
+		env.Append(LINKFLAGS = ['-Wl,--as-needed'])
+
+	if os.name == 'mac' or os.sys.platform == 'darwin':
+		env['ICONV_CONST'] = ''
+		env.Append(LINKFLAGS = ['-L/usr/lib'])
 
 	if env.has_key('ICONV_CONST') and env['ICONV_CONST']:
 		env.Append(CXXFLAGS = '-DICONV_CONST=' + env['ICONV_CONST'])

@@ -39,6 +39,7 @@ stoft
 David Grundberg
 Max Lapan
 Jeremy Evans
+Per Göransson
 
 DC++:
 -----
