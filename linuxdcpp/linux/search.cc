@@ -1084,7 +1084,7 @@ void Search::onPrivateMessageClicked_gui(GtkMenuItem *item, gpointer data)
 
 	if (gtk_tree_selection_count_selected_rows(s->selection) > 0)
 	{
-		SearchResult *result;
+		string cid;
 		GtkTreeIter iter;
 		GtkTreePath *path;
 		GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
@@ -1094,9 +1094,8 @@ void Search::onPrivateMessageClicked_gui(GtkMenuItem *item, gpointer data)
 			path = (GtkTreePath *)i->data;
 			if (gtk_tree_model_get_iter(s->sortedFilterModel, &iter, path))
 			{
-				result = s->resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
-				if (result)
-					WulforManager::get()->addPrivMsg_gui(result->getUser());
+				cid = s->resultView.getString(&iter, "CID");
+				WulforManager::get()->addPrivMsg_gui(cid);
 			}
 			gtk_tree_path_free(path);
 		}

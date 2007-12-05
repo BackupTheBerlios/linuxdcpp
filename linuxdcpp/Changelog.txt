@@ -24,6 +24,7 @@
 [2007-11-30] Fixes to allow compilation on OpenBSD (thanks Jeremy Evans).
 [2007-12-02] Open finished files w/ the default application (thanks David Grundberg).
 [2007-12-03] Fixes to allow compilation on Mac OS X (thanks Per Göransson).
+[2007-12-04] Display hub name(s) on private message tab.
 
 *** 1.0.0 2007-09-23 ***
 2007-08-04 - Steven Sheehy

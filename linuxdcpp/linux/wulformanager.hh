@@ -46,7 +46,7 @@ class WulforManager
 		// BookEntry functions
 		BookEntry *addPublicHubs_gui();
 		BookEntry *addHub_gui(const std::string &address, const std::string &encoding = "");
-		BookEntry *addPrivMsg_gui(User::Ptr user, bool raise = TRUE);
+		BookEntry *addPrivMsg_gui(const std::string &cid, bool raise = TRUE);
 		BookEntry *addDownloadQueue_gui();
 		BookEntry *addFavoriteHubs_gui();
 		BookEntry *addSearch_gui();

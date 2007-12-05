@@ -1014,8 +1014,7 @@ void MainWindow::onPrivateMessageClicked_gui(GtkMenuItem *item, gpointer data)
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(mw->transferStore), &iter, path))
 		{
 			cid = mw->transferView.getString(&iter, "CID");
-			user = ClientManager::getInstance()->getUser(CID(cid));
-			WulforManager::get()->addPrivMsg_gui(user);
+			WulforManager::get()->addPrivMsg_gui(cid);
 		}
 		gtk_tree_path_free(path);
 	}

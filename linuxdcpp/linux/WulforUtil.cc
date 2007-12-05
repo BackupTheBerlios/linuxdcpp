@@ -64,6 +64,11 @@ string WulforUtil::windowsSeparator(const string &ps)
 	return str;
 }
 
+string WulforUtil::getNicks(const string &cid)
+{
+	return getNicks(CID(cid));
+}
+
 string WulforUtil::getNicks(const CID& cid)
 {
 	return Util::toString(ClientManager::getInstance()->getNicks(cid));
@@ -72,6 +77,11 @@ string WulforUtil::getNicks(const CID& cid)
 string WulforUtil::getNicks(const User::Ptr& user)
 {
 	return getNicks(user->getCID());
+}
+
+string WulforUtil::getHubNames(const string &cid)
+{
+	return getHubNames(CID(cid));
 }
 
 string WulforUtil::getHubNames(const CID& cid)

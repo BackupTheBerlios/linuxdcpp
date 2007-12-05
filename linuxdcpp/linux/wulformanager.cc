@@ -482,12 +482,12 @@ BookEntry *WulforManager::addHub_gui(const string &address, const string &encodi
 	return hub;
 }
 
-BookEntry *WulforManager::addPrivMsg_gui(User::Ptr user, bool raise)
+BookEntry *WulforManager::addPrivMsg_gui(const std::string &cid, bool raise)
 {
-	BookEntry *entry = getBookEntry_gui(_("PM: ") + WulforUtil::getNicks(user), FALSE);
+	BookEntry *entry = getBookEntry_gui(_("PM: ") + WulforUtil::getNicks(cid), FALSE);
 	if (entry) return entry;
 
-	PrivateMessage *privMsg = new PrivateMessage(user);
+	PrivateMessage *privMsg = new PrivateMessage(cid);
 	GtkWidget *item = mainWin->appendWindowItem(privMsg->getContainer(), privMsg->getID());
 	privMsg->setWindowItem(item);
 	insertBookEntry_gui(privMsg, raise);

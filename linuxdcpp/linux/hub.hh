@@ -71,6 +71,7 @@ class Hub:
 		static void onMagnetPropertiesClicked_gui(GtkMenuItem *item, gpointer data);
 
 		// Client functions
+		void disconnect_client();
 		void setPassword_client(std::string password);
 		void sendMessage_client(std::string message);
 		void sendUserCommand_client(std::string cid, std::string commandName, StringMap params);

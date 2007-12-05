@@ -31,8 +31,10 @@ class WulforUtil
 		static std::vector<int> splitString(const std::string &str, const std::string &delimiter);
 		static std::string linuxSeparator(const std::string &ps);
 		static std::string windowsSeparator(const std::string &ps);
+		static std::string getNicks(const std::string &cid);
 		static std::string getNicks(const CID& cid);
 		static std::string getNicks(const User::Ptr& user);
+		static std::string getHubNames(const std::string &cid);
 		static std::string getHubNames(const CID& cid);
 		static std::string getHubNames(const User::Ptr& user);
 		static std::string getTextFromMenu(GtkMenuItem *item);

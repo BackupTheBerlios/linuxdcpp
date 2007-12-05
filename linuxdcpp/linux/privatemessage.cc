@@ -26,9 +26,9 @@
 
 using namespace std;
 
-PrivateMessage::PrivateMessage(User::Ptr user):
-	BookEntry(_("PM: ") + WulforUtil::getNicks(user), "privatemessage.glade"),
-	user(user),
+PrivateMessage::PrivateMessage(const string &cid):
+	BookEntry(_("PM: ") + WulforUtil::getNicks(cid), "privatemessage.glade"),
+	cid(cid),
 	historyIndex(0),
 	sentAwayMessage(FALSE)
 {
@@ -61,6 +61,10 @@ PrivateMessage::PrivateMessage(User::Ptr user):
 
 	gtk_widget_grab_focus(getWidget("entry"));
 	history.push_back("");
+	User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
+	isBot = user ? user->isSet(User::BOT) : FALSE;
+
+	setLabel_gui(_("PM: ") + WulforUtil::getNicks(cid) + " [" + WulforUtil::getHubNames(cid) + "]");
 }
 
 PrivateMessage::~PrivateMessage()
@@ -80,10 +84,10 @@ void PrivateMessage::addMessage_gui(string message)
 	{
 		StringMap params;
 		params["message"] = message;
-		params["hubNI"] = Util::toString(ClientManager::getInstance()->getHubNames(user->getCID()));
-		params["hubURL"] = Util::toString(ClientManager::getInstance()->getHubs(user->getCID()));
-		params["userCID"] = user->getCID().toBase32();
-		params["userNI"] = ClientManager::getInstance()->getNicks(user->getCID())[0];
+		params["hubNI"] = WulforUtil::getHubNames(cid);
+		params["hubURL"] = Util::toString(ClientManager::getInstance()->getHubs(CID(cid)));
+		params["userCID"] = cid;
+		params["userNI"] = ClientManager::getInstance()->getNicks(CID(cid))[0];
 		params["myCID"] = ClientManager::getInstance()->getMe()->getCID().toBase32();
 		LOG(LogManager::PM, params);
 	}
@@ -96,7 +100,7 @@ void PrivateMessage::addMessage_gui(string message)
 	{
 		sentAwayMessage = FALSE;
 	}
-	else if (!sentAwayMessage && !(BOOLSETTING(NO_AWAYMSG_TO_BOTS) && user->isSet(User::BOT)))
+	else if (!sentAwayMessage && !(BOOLSETTING(NO_AWAYMSG_TO_BOTS) && isBot))
 	{
 		sentAwayMessage = TRUE;
 		typedef Func1<PrivateMessage, string> F1;
@@ -249,24 +253,21 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
 		}
 		else if (command == _("favorite") || text == _("fav"))
 		{
-			FavoriteManager::getInstance()->addFavoriteUser(pm->user);
-			pm->addStatusMessage_gui(_("Added user to favorites list"));
+			typedef Func0<PrivateMessage> F0;
+			F0 *func = new F0(pm, &PrivateMessage::addFavoriteUser_client);
+			WulforManager::get()->dispatchClientFunc(func);
 		}
 		else if (command == _("getlist"))
 		{
-			try
-			{
-				QueueManager::getInstance()->addList(pm->user, QueueItem::FLAG_CLIENT_VIEW);
-			}
-			catch (const Exception& e)
-			{
-				pm->addStatusMessage_gui(e.getError());
-			}
+			typedef Func0<PrivateMessage> F0;
+			F0 *func = new F0(pm, &PrivateMessage::getFileList_client);
+			WulforManager::get()->dispatchClientFunc(func);
 		}
 		else if (command == _("grant"))
 		{
-			UploadManager::getInstance()->reserveSlot(pm->user);
-			pm->addStatusMessage_gui(_("Slot granted"));
+			typedef Func0<PrivateMessage> F0;
+			F0 *func = new F0(pm, &PrivateMessage::grantSlot_client);
+			WulforManager::get()->dispatchClientFunc(func);
 		}
 		else if (command == _("help"))
 		{
@@ -277,15 +278,11 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
 			pm->addStatusMessage_gui(_("Unknown command ") + text + _(": type /help for a list of available commands"));
 		}
 	}
-	else if (pm->user->isOnline())
+	else
 	{
 		typedef Func1<PrivateMessage, string> F1;
 		F1 *func = new F1(pm, &PrivateMessage::sendMessage_client, text);
 		WulforManager::get()->dispatchClientFunc(func);
-	}
-	else
-	{
-		pm->addStatusMessage_gui(_("User went offline"));
 	}
 }
 
@@ -405,6 +402,62 @@ void PrivateMessage::onMagnetPropertiesClicked_gui(GtkMenuItem *item, gpointer d
 
 void PrivateMessage::sendMessage_client(std::string message)
 {
-	ClientManager::getInstance()->privateMessage(user, message);
+	User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
+	if (user && user->isOnline())
+	{
+		ClientManager::getInstance()->privateMessage(user, message);
+	}
+	else
+	{
+		typedef Func1<PrivateMessage, string> F1;
+		F1 *func = new F1(this, &PrivateMessage::addStatusMessage_gui, _("User went offline"));
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
+}
+
+void PrivateMessage::addFavoriteUser_client()
+{
+	User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
+	if (user)
+	{
+		FavoriteManager::getInstance()->addFavoriteUser(user);
+	}
+	else
+	{
+		typedef Func1<PrivateMessage, string> F1;
+		F1 *func = new F1(this, &PrivateMessage::addStatusMessage_gui, _("Added user to favorites list"));
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
+}
+
+void PrivateMessage::getFileList_client()
+{
+	try
+	{
+		User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
+		if (user)
+			QueueManager::getInstance()->addList(user, QueueItem::FLAG_CLIENT_VIEW);
+	}
+	catch (const Exception& e)
+	{
+		typedef Func1<PrivateMessage, string> F1;
+		F1 *func = new F1(this, &PrivateMessage::addStatusMessage_gui, e.getError());
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
+}
+
+void PrivateMessage::grantSlot_client()
+{
+	User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
+	if (user)
+	{
+		UploadManager::getInstance()->reserveSlot(user);
+	}
+	else
+	{
+		typedef Func1<PrivateMessage, string> F1;
+		F1 *func = new F1(this, &PrivateMessage::addStatusMessage_gui, _("Slot granted"));
+		WulforManager::get()->dispatchGuiFunc(func);
+	}
 }
 

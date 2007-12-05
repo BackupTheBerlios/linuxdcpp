@@ -129,13 +129,7 @@ Hub::Hub(const string &address):
 
 Hub::~Hub()
 {
-	if (client)
-	{
-		client->removeListener(this);
-		client->disconnect(TRUE);
-		ClientManager::getInstance()->putClient(client);
-		client = NULL;
-	}
+	disconnect_client();
 
 	hash_map<string, GdkPixbuf *>::iterator it;
 	for (it = userIcons.begin(); it != userIcons.end(); ++it)
@@ -401,13 +395,9 @@ void Hub::addPrivateMessage_gui(string cid, string msg)
 {
 	if (!cid.empty())
 	{
-		User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
-		if (user)
-		{
-			BookEntry *entry = WulforManager::get()->addPrivMsg_gui(user, !BOOLSETTING(POPUNDER_PM));
-			if (!msg.empty())
-				dynamic_cast< ::PrivateMessage *>(entry)->addMessage_gui(msg);
-		}
+		BookEntry *entry = WulforManager::get()->addPrivMsg_gui(cid, !BOOLSETTING(POPUNDER_PM));
+		if (!msg.empty())
+			dynamic_cast< ::PrivateMessage *>(entry)->addMessage_gui(msg);
 	}
 }
 
@@ -795,7 +785,7 @@ void Hub::onMsgItemClicked_gui(GtkMenuItem *item, gpointer data)
 			if (gtk_tree_model_get_iter(GTK_TREE_MODEL(hub->nickStore), &iter, path))
 			{
 				cid = hub->nickView.getString(&iter, "CID");
-				WulforManager::get()->addPrivMsg_gui(ClientManager::getInstance()->getUser(CID(cid)));
+				hub->addPrivateMessage_gui(cid, "");
 			}
 			gtk_tree_path_free(path);
 		}
@@ -982,6 +972,17 @@ void Hub::connectClient_client(string address, string encoding)
 	client->connect();
 }
 
+void Hub::disconnect_client()
+{
+	if (client)
+	{
+		client->removeListener(this);
+		client->disconnect(TRUE);
+		ClientManager::getInstance()->putClient(client);
+		client = NULL;
+	}
+}
+
 void Hub::setPassword_client(string password)
 {
 	if (client && !password.empty())
@@ -1093,16 +1094,12 @@ void Hub::redirect_client(string address)
 		{
 			// the client is dead, long live the client!
 			string encoding = client->getEncoding();
-			client->removeListener(this);
-			ClientManager::getInstance()->putClient(client);
+			disconnect_client();
 
 			Func0<Hub> *func = new Func0<Hub>(this, &Hub::clearNickList_gui);
 			WulforManager::get()->dispatchGuiFunc(func);
 
-			client = ClientManager::getInstance()->getClient(address);
-			client->setEncoding(encoding);
-			client->addListener(this);
-			client->connect();
+			connectClient_client(address, encoding);
 		}
 	}
 }

@@ -21,15 +21,13 @@
 
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
-#include <client/User.h>
-
 #include "bookentry.hh"
 
 class PrivateMessage:
 	public BookEntry
 {
 	public:
-		PrivateMessage(User::Ptr user);
+		PrivateMessage(const std::string &cid);
 		~PrivateMessage();
 
 		// GUI functions
@@ -52,10 +50,14 @@ class PrivateMessage:
 
 		// Client functions
 		void sendMessage_client(std::string message);
+		void addFavoriteUser_client();
+		void getFileList_client();
+		void grantSlot_client();
 
 		GtkTextBuffer *buffer;
 		GtkTextMark *mark;
-		User::Ptr user;
+		std::string cid;
+		bool isBot;
 		std::vector<std::string> history;
 		int historyIndex;
 		bool sentAwayMessage;

@@ -46,7 +46,7 @@ class DownloadQueue:
 		void removeFile_gui(std::string path, int64_t size);
 		void removeDir_gui(const std::string &path, GtkTreeIter *parent);
 		void updateFileView_gui();
-		void sendMessage_gui(User::Ptr user);
+		void sendMessage_gui(std::string cid);
 
 		// GUI callbacks
 		static gboolean onDirButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);

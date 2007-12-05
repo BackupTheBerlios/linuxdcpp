@@ -476,9 +476,10 @@ void DownloadQueue::updateFileView_gui()
 	}
 }
 
-void DownloadQueue::sendMessage_gui(User::Ptr user)
+void DownloadQueue::sendMessage_gui(string cid)
 {
-	WulforManager::get()->addPrivMsg_gui(user);
+	if (!cid.empty())
+		WulforManager::get()->addPrivMsg_gui(cid);
 }
 
 gboolean DownloadQueue::onDirButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
@@ -1115,13 +1116,9 @@ void DownloadQueue::sendMessage_client(string target, string nick)
 		SourceIter it = sources[target].find(nick);
 		if (it != sources[target].end())
 		{
-			User::Ptr user = ClientManager::getInstance()->findUser(CID(it->second));
-			if (user)
-			{
-				typedef Func1<DownloadQueue, User::Ptr> F1;
-				F1 *func = new F1(this, &DownloadQueue::sendMessage_gui, user);
-				WulforManager::get()->dispatchGuiFunc(func);
-			}
+			typedef Func1<DownloadQueue, string> F1;
+			F1 *func = new F1(this, &DownloadQueue::sendMessage_gui, it->second);
+			WulforManager::get()->dispatchGuiFunc(func);
 		}
 	}
 }
