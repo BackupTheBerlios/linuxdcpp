@@ -308,7 +308,7 @@ string Text::fromUtf8(const string& str, const string& charset) throw() {
 }
 
 const string& Text::convert(const string& str, string& tmp, const string& fromCharset, const string& toCharset) throw() {
-	if(str.empty() || Util::stricmp(fromCharset, toCharset) == 0)
+	if(str.empty())
 		return str;
 
 #ifdef _WIN32
