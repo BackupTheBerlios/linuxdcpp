@@ -50,6 +50,7 @@ class Hub:
 		void addMessage_gui(std::string message);
 		void addStatusMessage_gui(std::string message);
 		void addPrivateMessage_gui(std::string cid, std::string message);
+		void updateCursor(bool onTagMotion);
 
 		// GUI callbacks
 		static void onSendMessage_gui(GtkEntry *entry, gpointer data);
@@ -57,6 +58,8 @@ class Hub:
 		static gboolean onNickListButtonRelease_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onNickListKeyRelease_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
 		static gboolean onEntryKeyPress_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
+		static gboolean onLinkTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data);
+		static gboolean onHubTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data);
 		static gboolean onMagnetTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data);
 		static gboolean onChatPointerMoved_gui(GtkWidget *widget, GdkEventMotion *event, gpointer data);
 		static gboolean onChatVisibilityChanged_gui(GtkWidget *widget, GdkEventVisibility *event, gpointer data);
@@ -66,8 +69,10 @@ class Hub:
 		static void onGrantItemClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onRemoveUserItemClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onUserCommandClick_gui(GtkMenuItem *item, gpointer data);
+		static void onCopyURIClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onOpenLinkClicked_gui(GtkMenuItem *item, gpointer data);
+		static void onOpenHubClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onSearchMagnetClicked_gui(GtkMenuItem *item, gpointer data);
-		static void onCopyMagnetClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onMagnetPropertiesClicked_gui(GtkMenuItem *item, gpointer data);
 
 		// Client functions
@@ -118,8 +123,8 @@ class Hub:
 		static const int maxHistory = 20;
 		int64_t totalShared;
 		GdkCursor *handCursor;
-		bool aboveMagnet;
-		std::string selectedMagnet;
+		bool aboveURI;
+		std::string selectedURI;
 };
 
 #else

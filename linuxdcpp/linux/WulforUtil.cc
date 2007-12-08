@@ -88,7 +88,7 @@ string WulforUtil::getHubNames(const CID& cid)
 {
 	StringList hubs = ClientManager::getInstance()->getHubNames(cid);
 	if (hubs.empty())
-		return "Offline";
+		return _("Offline");
 	else
 		return Util::toString(hubs);
 }
@@ -164,12 +164,14 @@ string WulforUtil::makeMagnet(const string &name, const int64_t size, const stri
 
 bool WulforUtil::splitMagnet(const string &magnet, string &name, int64_t &size, string &tth)
 {
+	name = _("Unknown");
+	size = 0;
+	tth = _("Unknown");
+
 	if (!isMagnet(magnet.c_str()) || magnet.size() <= magnetSignature.length())
 		return FALSE;
 
 	string::size_type nextpos = 0;
-	size = 0;
-	name = _("Unknown");
 
 	for (string::size_type pos = magnetSignature.length(); pos < magnet.size(); pos = nextpos + 1)
 	{
@@ -188,27 +190,29 @@ bool WulforUtil::splitMagnet(const string &magnet, string &name, int64_t &size, 
 	return TRUE;
 }
 
-vector<int> WulforUtil::findMagnets(const string &line)
-{
-	vector<int> result;
-	string::size_type pos = 0, start, end;
-
-	while ((start = line.find(magnetSignature, pos)) != string::npos)
-	{
-		end = line.find_first_of(" \n\r\t", start);
-		if (end == string::npos)
-			end = line.size();
-
-		result.push_back(start);
-		result.push_back(end);
-		pos = end;
-	}
-
-	return result;
-}
-
 bool WulforUtil::isMagnet(const string &text)
 {
-	return strncmp(text.c_str(), magnetSignature.c_str(), magnetSignature.length()) == 0;
+	return g_ascii_strncasecmp(text.c_str(), magnetSignature.c_str(), magnetSignature.length()) == 0;
+}
+
+bool WulforUtil::isLink(const string &text)
+{
+	return g_ascii_strncasecmp(text.c_str(), "http://", 7) == 0 ||
+		g_ascii_strncasecmp(text.c_str(), "https://", 8) == 0 ||
+		g_ascii_strncasecmp(text.c_str(), "www.", 4) == 0 ||
+		g_ascii_strncasecmp(text.c_str(), "ftp://", 6) == 0 ||
+		g_ascii_strncasecmp(text.c_str(), "sftp://", 7) == 0 ||
+		g_ascii_strncasecmp(text.c_str(), "irc://", 6) == 0 ||
+		g_ascii_strncasecmp(text.c_str(), "ircs://", 7) == 0 ||
+		g_ascii_strncasecmp(text.c_str(), "im:", 3) == 0 ||
+		g_ascii_strncasecmp(text.c_str(), "mailto:", 7) == 0 ||
+		g_ascii_strncasecmp(text.c_str(), "news:", 5) == 0;
+}
+
+bool WulforUtil::isHubURL(const string &text)
+{
+	return g_ascii_strncasecmp(text.c_str(), "dchub://", 8) == 0 ||
+		g_ascii_strncasecmp(text.c_str(), "adc://", 6) == 0 ||
+		g_ascii_strncasecmp(text.c_str(), "adcs://", 7) == 0;
 }
 

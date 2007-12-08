@@ -65,4 +65,36 @@
       </widget>
     </child>
   </widget>
+  <widget class="GtkMenu" id="linkMenu">
+    <child>
+      <widget class="GtkMenuItem" id="copyLinkItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">_Copy link</property>
+        <property name="use_underline">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="openLinkItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">_Open link in default application</property>
+        <property name="use_underline">True</property>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkMenu" id="hubMenu">
+    <child>
+      <widget class="GtkMenuItem" id="copyhubItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">_Copy link</property>
+        <property name="use_underline">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="openhubItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">_Open hub</property>
+        <property name="use_underline">True</property>
+      </widget>
+    </child>
+  </widget>
 </glade-interface>
