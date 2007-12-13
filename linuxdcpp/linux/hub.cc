@@ -36,7 +36,7 @@ Hub::Hub(const string &address):
 	client(NULL),
 	historyIndex(0),
 	totalShared(0),
-	aboveURI(FALSE)
+	aboveTag(FALSE)
 {
 	// Configure the dialog
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("passwordDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
@@ -166,6 +166,9 @@ bool Hub::findUser_gui(const string &nick, GtkTreeIter *iter)
 {
 	if (userMap.find(nick) != userMap.end())
 	{
+		if (iter == NULL)
+			return TRUE;
+
 		GtkTreeModel *m = GTK_TREE_MODEL(nickStore);
 		gboolean valid = gtk_tree_model_get_iter_first(m, iter);
 
@@ -180,7 +183,6 @@ bool Hub::findUser_gui(const string &nick, GtkTreeIter *iter)
 
 	return FALSE;
 }
-
 
 void Hub::updateUser_gui(StringMap params)
 {
@@ -335,8 +337,6 @@ void Hub::addMessage_gui(string message)
 	GtkAdjustment *adj;
 	bool setBottom;
 	string line = "";
-	string::size_type start, end = 0;
-	GtkTextIter i_start, i_end;
 
 	if (BOOLSETTING(TIME_STAMPS))
 		line = "[" + Util::getShortTimeString() + "] ";
@@ -348,42 +348,11 @@ void Hub::addMessage_gui(string message)
 	gtk_text_buffer_get_end_iter(chatBuffer, &iter);
 	gtk_text_buffer_insert(chatBuffer, &iter, line.c_str(), line.size());
 
+	applyTags_gui(line);
+
 	gtk_text_buffer_get_end_iter(chatBuffer, &iter);
 
-	while ((start = line.find_first_not_of(" \n\r\t", end)) != string::npos)
-	{
-		end = line.find_first_of(" \n\r\t", start);
-		if (end == string::npos)
-			end = line.size();
-
-		string uri = line.substr(start, end - start);
-		GCallback callback = NULL;
-
-		if (WulforUtil::isLink(uri))
-			callback = G_CALLBACK(onLinkTagEvent_gui);
-		else if (WulforUtil::isHubURL(uri))
-			callback = G_CALLBACK(onHubTagEvent_gui);
-		else if (WulforUtil::isMagnet(uri))
-			callback = G_CALLBACK(onMagnetTagEvent_gui);
-
-		if (callback)
-		{
-			// check for the URI in our buffer
-			GtkTextTag *tag = gtk_text_tag_table_lookup(gtk_text_buffer_get_tag_table(chatBuffer), uri.c_str());
-
-			if (!tag)
-			{
-				tag = gtk_text_buffer_create_tag(chatBuffer, uri.c_str(), "foreground", "blue", "underline", PANGO_UNDERLINE_SINGLE, NULL);
-				g_signal_connect(tag, "event", callback, (gpointer)this);
-			}
-
-			i_start = i_end = iter;
-			gtk_text_iter_backward_chars(&i_start, g_utf8_strlen(line.c_str() + start, -1));
-			gtk_text_iter_backward_chars(&i_end, g_utf8_strlen(line.c_str() + end, -1));
-			gtk_text_buffer_apply_tag(chatBuffer, tag, &i_start, &i_end);
-		}
-	}
-
+	// Limit size of chat text
 	if (gtk_text_buffer_get_line_count(chatBuffer) > maxLines)
 	{
 		GtkTextIter next;
@@ -392,6 +361,7 @@ void Hub::addMessage_gui(string message)
 		gtk_text_buffer_delete(chatBuffer, &iter, &next);
 	}
 
+	// Scroll to the bottom
 	if (setBottom)
 	{
 		gtk_text_buffer_get_end_iter(chatBuffer, &iter);
@@ -401,6 +371,74 @@ void Hub::addMessage_gui(string message)
 
 	if (BOOLSETTING(BOLD_HUB))
 		setBold_gui();
+}
+
+void Hub::applyTags_gui(const string &line)
+{
+	GtkTextIter iter;
+	GtkTextIter startIter;
+	GtkTextIter endIter;
+	bool firstNick = FALSE;
+	string::size_type start;
+	string::size_type end = 0;
+
+	gtk_text_buffer_get_end_iter(chatBuffer, &iter);
+
+	// Tag nicknames and URIs
+	while ((start = line.find_first_not_of(" \n\r\t", end)) != string::npos)
+	{
+		end = line.find_first_of(" \n\r\t", start);
+		if (end == string::npos)
+			end = line.size();
+
+		// Special case: catch nicks in the form <nick> at the beginning of the line.
+		if (!firstNick && start < end - 1 && line[start] == '<' && line[end - 1] == '>')
+		{
+			++start;
+			--end;
+			firstNick = TRUE;
+		}
+
+		GCallback callback = NULL;
+		bool isNick = FALSE;
+		string tagName = line.substr(start, end - start);
+
+		if (findUser_gui(tagName, NULL))
+		{
+			isNick = TRUE;
+			callback = G_CALLBACK(onNickTagEvent_gui);
+		}
+		else
+		{
+			if (WulforUtil::isLink(tagName))
+				callback = G_CALLBACK(onLinkTagEvent_gui);
+			else if (WulforUtil::isHubURL(tagName))
+				callback = G_CALLBACK(onHubTagEvent_gui);
+			else if (WulforUtil::isMagnet(tagName))
+				callback = G_CALLBACK(onMagnetTagEvent_gui);
+		}
+
+		if (callback)
+		{
+			// check for the tag in our buffer
+			GtkTextTag *tag = gtk_text_tag_table_lookup(gtk_text_buffer_get_tag_table(chatBuffer), tagName.c_str());
+
+			if (!tag)
+			{
+				if (isNick)
+					tag = gtk_text_buffer_create_tag(chatBuffer, tagName.c_str(), "style", PANGO_STYLE_ITALIC, NULL);
+				else
+					tag = gtk_text_buffer_create_tag(chatBuffer, tagName.c_str(), "foreground", "blue", "underline", PANGO_UNDERLINE_SINGLE, NULL);
+
+				g_signal_connect(tag, "event", callback, (gpointer)this);
+			}
+
+			startIter = endIter = iter;
+			gtk_text_iter_backward_chars(&startIter, g_utf8_strlen(line.c_str() + start, -1));
+			gtk_text_iter_backward_chars(&endIter, g_utf8_strlen(line.c_str() + end, -1));
+			gtk_text_buffer_apply_tag(chatBuffer, tag, &startIter, &endIter);
+		}
+	}
 }
 
 void Hub::addPrivateMessage_gui(string cid, string msg)
@@ -413,17 +451,23 @@ void Hub::addPrivateMessage_gui(string cid, string msg)
 	}
 }
 
-void Hub::updateCursor(bool onTagMotion)
+/*
+ * Unfortunately, we can't underline the tag on mouse over since it would
+ * underline all the tags with that name.
+ */
+void Hub::updateCursor_gui(GtkTextTag *tag)
 {
-	// Change to a hand cursor when the cursor first moves over the uri.
-	if (onTagMotion && !aboveURI)
+	// Change to a hand cursor when the cursor first moves over the tag
+	if (tag && !aboveTag)
 	{
-		aboveURI = TRUE;
+		aboveTag = TRUE;
+		selectedTag = tag->name;
 		gdk_window_set_cursor(gtk_text_view_get_window(GTK_TEXT_VIEW(getWidget("chatText")), GTK_TEXT_WINDOW_TEXT), handCursor);
 	}
-	else if (!onTagMotion && aboveURI)
+	// Change back to regular cursor when moving off of the tag
+	else if (!tag && aboveTag)
 	{
-		aboveURI = FALSE;
+		aboveTag = FALSE;
 		gdk_window_set_cursor(gtk_text_view_get_window(GTK_TEXT_VIEW(getWidget("chatText")), GTK_TEXT_WINDOW_TEXT), NULL);
 	}
 }
@@ -907,14 +951,42 @@ void Hub::onRemoveUserItemClicked_gui(GtkMenuItem *item, gpointer data)
 	}
 }
 
+gboolean Hub::onNickTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data)
+{
+	Hub *hub = (Hub *)data;
+
+	if (event->type == GDK_BUTTON_PRESS)
+	{
+		GtkTreeIter nickIter;
+		if (hub->findUser_gui(tag->name, &nickIter))
+		{
+			// Select the user in the nick list view
+			GtkTreePath *path = gtk_tree_model_get_path(GTK_TREE_MODEL(hub->nickStore), &nickIter);
+			gtk_tree_view_scroll_to_cell(hub->nickView.get(), path, gtk_tree_view_get_column(hub->nickView.get(), hub->nickView.col("Nick")), FALSE, 0.0, 0.0);
+			gtk_tree_view_set_cursor(hub->nickView.get(), path, NULL, FALSE);
+			gtk_tree_path_free(path);
+		}
+
+		if (event->button.button == 3)
+			hub->popupNickMenu_gui();
+
+		return TRUE;
+	}
+	else if (event->type == GDK_MOTION_NOTIFY)
+	{
+		hub->updateCursor_gui(tag);
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
 gboolean Hub::onLinkTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data)
 {
 	Hub *hub = (Hub *)data;
 
 	if (event->type == GDK_BUTTON_PRESS)
 	{
-		hub->selectedURI = tag->name;
-
 		switch (event->button.button)
 		{
 			case 1:
@@ -930,7 +1002,7 @@ gboolean Hub::onLinkTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *e
 	}
 	else if (event->type == GDK_MOTION_NOTIFY)
 	{
-		hub->updateCursor(TRUE);
+		hub->updateCursor_gui(tag);
 		return TRUE;
 	}
 
@@ -943,8 +1015,6 @@ gboolean Hub::onHubTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *ev
 
 	if (event->type == GDK_BUTTON_PRESS)
 	{
-		hub->selectedURI = tag->name;
-
 		switch (event->button.button)
 		{
 			case 1:
@@ -960,7 +1030,7 @@ gboolean Hub::onHubTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *ev
 	}
 	else if (event->type == GDK_MOTION_NOTIFY)
 	{
-		hub->updateCursor(TRUE);
+		hub->updateCursor_gui(tag);
 		return TRUE;
 	}
 
@@ -973,8 +1043,6 @@ gboolean Hub::onMagnetTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent 
 
 	if (event->type == GDK_BUTTON_PRESS)
 	{
-		hub->selectedURI = tag->name;
-
 		switch (event->button.button)
 		{
 			case 1:
@@ -991,7 +1059,7 @@ gboolean Hub::onMagnetTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent 
 	}
 	else if (event->type == GDK_MOTION_NOTIFY)
 	{
-		hub->updateCursor(TRUE);
+		hub->updateCursor_gui(tag);
 		return TRUE;
 	}
 
@@ -1002,7 +1070,7 @@ gboolean Hub::onChatPointerMoved_gui(GtkWidget *widget, GdkEventMotion *event, g
 {
 	Hub *hub = (Hub *)data;
 
-	hub->updateCursor(FALSE);
+	hub->updateCursor_gui(NULL);
 
 	return FALSE;
 }
@@ -1011,7 +1079,7 @@ gboolean Hub::onChatVisibilityChanged_gui(GtkWidget *widget, GdkEventVisibility 
 {
 	Hub *hub = (Hub *)data;
 
-	hub->updateCursor(FALSE);
+	hub->updateCursor_gui(NULL);
 
 	return FALSE;
 }
@@ -1020,21 +1088,21 @@ void Hub::onCopyURIClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	Hub *hub = (Hub *)data;
 
-	gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), hub->selectedURI.c_str(), hub->selectedURI.length());
+	gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), hub->selectedTag.c_str(), hub->selectedTag.length());
 }
 
 void Hub::onOpenLinkClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	Hub *hub = (Hub *)data;
 
-	WulforUtil::openURI(hub->selectedURI);
+	WulforUtil::openURI(hub->selectedTag);
 }
 
 void Hub::onOpenHubClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	Hub *hub = (Hub *)data;
 
-	WulforManager::get()->addHub_gui(hub->selectedURI);
+	WulforManager::get()->addHub_gui(hub->selectedTag);
 }
 
 void Hub::onSearchMagnetClicked_gui(GtkMenuItem *item, gpointer data)
@@ -1044,7 +1112,7 @@ void Hub::onSearchMagnetClicked_gui(GtkMenuItem *item, gpointer data)
 	int64_t size;
 	string tth;
 
-	if (WulforUtil::splitMagnet(hub->selectedURI, name, size, tth))
+	if (WulforUtil::splitMagnet(hub->selectedTag, name, size, tth))
 	{
 		Search *s = dynamic_cast<Search *>(WulforManager::get()->addSearch_gui());
 		s->putValue_gui(tth, 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
@@ -1055,7 +1123,7 @@ void Hub::onMagnetPropertiesClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	Hub *hub = (Hub *)data;
 
-	WulforManager::get()->getMainWindow()->openMagnetDialog_gui(hub->selectedURI);
+	WulforManager::get()->getMainWindow()->openMagnetDialog_gui(hub->selectedTag);
 }
 
 void Hub::connectClient_client(string address, string encoding)

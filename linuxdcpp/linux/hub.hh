@@ -48,9 +48,10 @@ class Hub:
 		void popupNickMenu_gui();
 		void getPassword_gui();
 		void addMessage_gui(std::string message);
+		void applyTags_gui(const string &line);
 		void addStatusMessage_gui(std::string message);
 		void addPrivateMessage_gui(std::string cid, std::string message);
-		void updateCursor(bool onTagMotion);
+		void updateCursor_gui(GtkTextTag *tag);
 
 		// GUI callbacks
 		static void onSendMessage_gui(GtkEntry *entry, gpointer data);
@@ -58,6 +59,7 @@ class Hub:
 		static gboolean onNickListButtonRelease_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onNickListKeyRelease_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
 		static gboolean onEntryKeyPress_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
+		static gboolean onNickTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data);
 		static gboolean onLinkTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data);
 		static gboolean onHubTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data);
 		static gboolean onMagnetTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data);
@@ -123,8 +125,8 @@ class Hub:
 		static const int maxHistory = 20;
 		int64_t totalShared;
 		GdkCursor *handCursor;
-		bool aboveURI;
-		std::string selectedURI;
+		bool aboveTag;
+		std::string selectedTag;
 };
 
 #else
