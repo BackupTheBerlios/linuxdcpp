@@ -51,7 +51,7 @@ class Hub:
 		void applyTags_gui(const string &line);
 		void addStatusMessage_gui(std::string message);
 		void addPrivateMessage_gui(std::string cid, std::string message);
-		void updateCursor_gui(GtkTextTag *tag);
+		void updateCursor_gui(GtkWidget *widget);
 
 		// GUI callbacks
 		static void onSendMessage_gui(GtkEntry *entry, gpointer data);

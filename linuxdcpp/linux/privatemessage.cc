@@ -198,19 +198,36 @@ void PrivateMessage::addLine_gui(const string &message)
 	}
 }
 
-void PrivateMessage::updateCursor(bool onTagMotion)
+void PrivateMessage::updateCursor(GtkWidget *widget)
 {
-	// Change to a hand cursor when the cursor first moves over the uri.
-	if (onTagMotion && !aboveURI)
+	gint x, y, buf_x, buf_y;
+	GtkTextIter iter;
+	GSList *tagList;
+	bool above;
+
+	gdk_window_get_pointer (widget->window, &x, &y, NULL);
+
+	// check for tags under the cursor, and change mouse cursor apropriately
+	gtk_text_view_window_to_buffer_coords(GTK_TEXT_VIEW(widget), GTK_TEXT_WINDOW_WIDGET, x, y, &buf_x, &buf_y);
+	gtk_text_view_get_iter_at_location(GTK_TEXT_VIEW(widget), &iter, buf_x, buf_y);
+	tagList = gtk_text_iter_get_tags(&iter);
+
+	above = tagList != NULL;
+
+	if (aboveURI != above)
 	{
-		aboveURI = TRUE;
-		gdk_window_set_cursor(gtk_text_view_get_window(GTK_TEXT_VIEW(getWidget("text")), GTK_TEXT_WINDOW_TEXT), handCursor);
+		aboveURI = above;
+		if (aboveURI)
+		{
+			selectedURI = GTK_TEXT_TAG(tagList->data)->name;
+			gdk_window_set_cursor(gtk_text_view_get_window(GTK_TEXT_VIEW(widget), GTK_TEXT_WINDOW_TEXT), handCursor);
+		}
+		else
+			gdk_window_set_cursor(gtk_text_view_get_window(GTK_TEXT_VIEW(widget), GTK_TEXT_WINDOW_TEXT), NULL);
 	}
-	else if (!onTagMotion && aboveURI)
-	{
-		aboveURI = FALSE;
-		gdk_window_set_cursor(gtk_text_view_get_window(GTK_TEXT_VIEW(getWidget("text")), GTK_TEXT_WINDOW_TEXT), NULL);
-	}
+
+	if (tagList)
+		g_slist_free(tagList);
 }
 
 void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
@@ -367,12 +384,6 @@ gboolean PrivateMessage::onLinkTagEvent_gui(GtkTextTag *tag, GObject *textView, 
 		}
 		return TRUE;
 	}
-	else if (event->type == GDK_MOTION_NOTIFY)
-	{
-		pm->updateCursor(TRUE);
-		return TRUE;
-	}
-
 	return FALSE;
 }
 
@@ -397,12 +408,6 @@ gboolean PrivateMessage::onHubTagEvent_gui(GtkTextTag *tag, GObject *textView, G
 		}
 		return TRUE;
 	}
-	else if (event->type == GDK_MOTION_NOTIFY)
-	{
-		pm->updateCursor(TRUE);
-		return TRUE;
-	}
-
 	return FALSE;
 }
 
@@ -428,12 +433,6 @@ gboolean PrivateMessage::onMagnetTagEvent_gui(GtkTextTag *tag, GObject *textView
 		}
 		return TRUE;
 	}
-	else if (event->type == GDK_MOTION_NOTIFY)
-	{
-		pm->updateCursor(TRUE);
-		return TRUE;
-	}
-
 	return FALSE;
 }
 
@@ -441,7 +440,7 @@ gboolean PrivateMessage::onChatPointerMoved_gui(GtkWidget* widget, GdkEventMotio
 {
 	PrivateMessage *pm = (PrivateMessage *)data;
 
-	pm->updateCursor(FALSE);
+	pm->updateCursor(widget);
 
 	return FALSE;
 }
@@ -450,7 +449,7 @@ gboolean PrivateMessage::onChatVisibilityChanged_gui(GtkWidget* widget, GdkEvent
 {
 	PrivateMessage *pm = (PrivateMessage *)data;
 
-	pm->updateCursor(FALSE);
+	pm->updateCursor(widget);
 
 	return FALSE;
 }

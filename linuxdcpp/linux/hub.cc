@@ -455,21 +455,36 @@ void Hub::addPrivateMessage_gui(string cid, string msg)
  * Unfortunately, we can't underline the tag on mouse over since it would
  * underline all the tags with that name.
  */
-void Hub::updateCursor_gui(GtkTextTag *tag)
+void Hub::updateCursor_gui(GtkWidget *widget)
 {
-	// Change to a hand cursor when the cursor first moves over the tag
-	if (tag && !aboveTag)
+	gint x, y, buf_x, buf_y;
+	GtkTextIter iter;
+	GSList *tagList;
+	bool above;
+
+	gdk_window_get_pointer (widget->window, &x, &y, NULL);
+
+	// check for tags under the cursor, and change mouse cursor apropriately
+	gtk_text_view_window_to_buffer_coords(GTK_TEXT_VIEW(widget), GTK_TEXT_WINDOW_WIDGET, x, y, &buf_x, &buf_y);
+	gtk_text_view_get_iter_at_location(GTK_TEXT_VIEW(widget), &iter, buf_x, buf_y);
+	tagList = gtk_text_iter_get_tags(&iter);
+
+	above = tagList != NULL;
+
+	if (aboveTag != above)
 	{
-		aboveTag = TRUE;
-		selectedTag = tag->name;
-		gdk_window_set_cursor(gtk_text_view_get_window(GTK_TEXT_VIEW(getWidget("chatText")), GTK_TEXT_WINDOW_TEXT), handCursor);
+		aboveTag = above;
+		if (aboveTag)
+		{
+			selectedTag = GTK_TEXT_TAG(tagList->data)->name;
+			gdk_window_set_cursor(gtk_text_view_get_window(GTK_TEXT_VIEW(widget), GTK_TEXT_WINDOW_TEXT), handCursor);
+		}
+		else
+			gdk_window_set_cursor(gtk_text_view_get_window(GTK_TEXT_VIEW(widget), GTK_TEXT_WINDOW_TEXT), NULL);
 	}
-	// Change back to regular cursor when moving off of the tag
-	else if (!tag && aboveTag)
-	{
-		aboveTag = FALSE;
-		gdk_window_set_cursor(gtk_text_view_get_window(GTK_TEXT_VIEW(getWidget("chatText")), GTK_TEXT_WINDOW_TEXT), NULL);
-	}
+
+	if (tagList)
+		g_slist_free(tagList);
 }
 
 void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
@@ -972,12 +987,6 @@ gboolean Hub::onNickTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *e
 
 		return TRUE;
 	}
-	else if (event->type == GDK_MOTION_NOTIFY)
-	{
-		hub->updateCursor_gui(tag);
-		return TRUE;
-	}
-
 	return FALSE;
 }
 
@@ -1000,12 +1009,6 @@ gboolean Hub::onLinkTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *e
 		}
 		return TRUE;
 	}
-	else if (event->type == GDK_MOTION_NOTIFY)
-	{
-		hub->updateCursor_gui(tag);
-		return TRUE;
-	}
-
 	return FALSE;
 }
 
@@ -1028,12 +1031,6 @@ gboolean Hub::onHubTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *ev
 		}
 		return TRUE;
 	}
-	else if (event->type == GDK_MOTION_NOTIFY)
-	{
-		hub->updateCursor_gui(tag);
-		return TRUE;
-	}
-
 	return FALSE;
 }
 
@@ -1057,12 +1054,6 @@ gboolean Hub::onMagnetTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent 
 		}
 		return TRUE;
 	}
-	else if (event->type == GDK_MOTION_NOTIFY)
-	{
-		hub->updateCursor_gui(tag);
-		return TRUE;
-	}
-
 	return FALSE;
 }
 
@@ -1070,7 +1061,7 @@ gboolean Hub::onChatPointerMoved_gui(GtkWidget *widget, GdkEventMotion *event, g
 {
 	Hub *hub = (Hub *)data;
 
-	hub->updateCursor_gui(NULL);
+	hub->updateCursor_gui(widget);
 
 	return FALSE;
 }
@@ -1079,7 +1070,7 @@ gboolean Hub::onChatVisibilityChanged_gui(GtkWidget *widget, GdkEventVisibility 
 {
 	Hub *hub = (Hub *)data;
 
-	hub->updateCursor_gui(NULL);
+	hub->updateCursor_gui(widget);
 
 	return FALSE;
 }

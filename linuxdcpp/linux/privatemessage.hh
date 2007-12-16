@@ -37,7 +37,7 @@ class PrivateMessage:
 	private:
 		// GUI functions
 		void addLine_gui(const std::string &line);
-		void updateCursor(bool onTagMotion);
+		void updateCursor(GtkWidget *widget);
 
 		// GUI callbacks
 		static gboolean onKeyPress_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
