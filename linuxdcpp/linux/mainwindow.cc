@@ -401,9 +401,11 @@ void MainWindow::createTrayIcon_gui()
 		gtk_widget_show_all(trayIcon);
 }
 
-void MainWindow::updateTrayToolTip_gui(string toolTip)
+void MainWindow::updateTrayToolTip_gui(string download, string upload)
 {
-	gtk_tooltips_set_tip(trayToolTip, trayIcon, toolTip.c_str(), NULL);
+	ostringstream toolTip;
+	toolTip << "LinuxDC++" << endl << _("Download: ") << download << endl << _("Upload: ") << upload;
+	gtk_tooltips_set_tip(trayToolTip, trayIcon, toolTip.str().c_str(), NULL);
 }
 
 void MainWindow::setStatus_gui(string statusBar, std::string text)
@@ -1634,9 +1636,9 @@ void MainWindow::on(TimerManagerListener::Second, uint32_t ticks) throw()
 	status4 = _("U: ") + Util::formatBytes(Socket::getTotalUp());
 	if (diff > 0)
 	{
-		status5 = _("D: ") + Util::formatBytes((int64_t)((downdiff*1000)/diff)) + "/s (" +
+		status5 = Util::formatBytes((int64_t)((downdiff*1000)/diff)) + "/s (" +
 			Util::toString(DownloadManager::getInstance()->getDownloadCount()) + ")";
-		status6 = _("U: ") + Util::formatBytes((int64_t)((updiff*1000)/diff)) + "/s (" +
+		status6 = Util::formatBytes((int64_t)((updiff*1000)/diff)) + "/s (" +
 			Util::toString(UploadManager::getInstance()->getUploadCount()) + ")";
 	}
 
@@ -1650,9 +1652,9 @@ void MainWindow::on(TimerManagerListener::Second, uint32_t ticks) throw()
 
 	if (BOOLSETTING(MINIMIZE_TRAY) && !status5.empty() && !status6.empty())
 	{
-		string toolTip = status5 + " " + status6;
-		typedef Func1<MainWindow, string> F1;
-		F1 *f1 = new F1(this, &MainWindow::updateTrayToolTip_gui, toolTip);
-		WulforManager::get()->dispatchGuiFunc(f1);
+		typedef Func2<MainWindow, string, string> F2;
+		F2 *f2 = new F2(this, &MainWindow::updateTrayToolTip_gui, status5, status6);
+		WulforManager::get()->dispatchGuiFunc(f2);
 	}
 }
+

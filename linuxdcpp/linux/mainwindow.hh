@@ -66,7 +66,7 @@ class MainWindow:
 	private:
 		// GUI functions
 		void createTrayIcon_gui();
-		void updateTrayToolTip_gui(std::string);
+		void updateTrayToolTip_gui(std::string download, std::string upload);
 		void setStatus_gui(std::string statusBar, std::string text);
 		void setStats_gui(std::string hub, std::string slot,
 			std::string dTot, std::string uTot, std::string dl, std::string ul);

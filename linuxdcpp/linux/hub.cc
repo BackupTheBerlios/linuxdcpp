@@ -462,9 +462,9 @@ void Hub::updateCursor_gui(GtkWidget *widget)
 	GSList *tagList;
 	bool above;
 
-	gdk_window_get_pointer (widget->window, &x, &y, NULL);
+	gdk_window_get_pointer(widget->window, &x, &y, NULL);
 
-	// check for tags under the cursor, and change mouse cursor apropriately
+	// Check for tags under the cursor, and change mouse cursor appropriately
 	gtk_text_view_window_to_buffer_coords(GTK_TEXT_VIEW(widget), GTK_TEXT_WINDOW_WIDGET, x, y, &buf_x, &buf_y);
 	gtk_text_view_get_iter_at_location(GTK_TEXT_VIEW(widget), &iter, buf_x, buf_y);
 	tagList = gtk_text_iter_get_tags(&iter);
