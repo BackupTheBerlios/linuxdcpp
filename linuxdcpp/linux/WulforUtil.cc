@@ -21,6 +21,8 @@
 #include <client/ClientManager.h>
 #include <client/Util.h>
 #include <iostream>
+#include <arpa/inet.h>
+#include <ifaddrs.h>
 
 using namespace std;
 
@@ -62,6 +64,32 @@ string WulforUtil::windowsSeparator(const string &ps)
 		if ((*it) == '/')
 			(*it) = '\\';
 	return str;
+}
+
+vector<string> WulforUtil::getLocalIPs()
+{
+	vector<string> addresses;
+	struct ifaddrs *ifap;
+
+	if (getifaddrs(&ifap) == 0)
+	{
+		while (ifap)
+		{
+			struct sockaddr *ifa_addr = ifap->ifa_addr;
+			if (ifa_addr && ifa_addr->sa_family == AF_INET)
+			{
+				struct sockaddr_in *addr_in = (struct sockaddr_in *)ifa_addr;
+				string address = inet_ntoa(addr_in->sin_addr);
+
+				if (address != "127.0.0.1")
+					addresses.push_back(address);
+			}
+			ifap = ifap->ifa_next;
+		}
+		freeifaddrs(ifap);
+	}
+
+	return addresses;
 }
 
 string WulforUtil::getNicks(const string &cid)

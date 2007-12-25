@@ -357,6 +357,12 @@ void Settings::initConnection_gui()
 	g_signal_connect(getWidget("portForwardRadioButton"), "toggled", G_CALLBACK(onInFW_NAT_gui), (gpointer)this);
 	g_signal_connect(getWidget("passiveRadioButton"), "toggled", G_CALLBACK(onInPassive_gui), (gpointer)this);
 	gtk_entry_set_text(GTK_ENTRY(getWidget("ipEntry")), SETTING(EXTERNAL_IP).c_str());
+
+	// Fill IP address combo box
+	vector<string> addresses = WulforUtil::getLocalIPs();
+	for (vector<string>::const_iterator it = addresses.begin(); it != addresses.end(); ++it)
+		gtk_combo_box_append_text(GTK_COMBO_BOX(getWidget("ipComboboxEntry")), it->c_str());
+
 	gtk_entry_set_text(GTK_ENTRY(getWidget("tcpEntry")), Util::toString(SETTING(TCP_PORT)).c_str());
 	gtk_entry_set_text(GTK_ENTRY(getWidget("udpEntry")), Util::toString(SETTING(UDP_PORT)).c_str());
 	gtk_entry_set_text(GTK_ENTRY(getWidget("tlsEntry")), Util::toString(SETTING(TLS_PORT)).c_str());
