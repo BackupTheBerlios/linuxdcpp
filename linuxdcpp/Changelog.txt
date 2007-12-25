@@ -1,4 +1,4 @@
-*** 1.0.X 2007-XX-XX ***
+*** 1.0.1 2007-12-25 ***
 [2007-10-13] Use strtoll instead of atoll to enable build on HPUX (thanks Tobias Nygren).
 [2007-10-13] Dispatcher optimizations (thanks jikaheim).
 [2007-10-13] Bug #12058: Hubs are not removed from search list after reconnection.

@@ -7,7 +7,7 @@ user-interface. LinuxDC++ is free and open source software licensed under the
 GPL.
 
 Direct connect is a peer-to-peer file-sharing protocol. The most popular Windows
-client implementing this protocol currently is DC++. Direct connect clients
+client implementing this protocol currently is DC++. Direct Connect clients
 connect to a central hub where they can view a list of clients or users
 connected to them. Users can search for files and download them from other
 clients, as well as chat with other users.
