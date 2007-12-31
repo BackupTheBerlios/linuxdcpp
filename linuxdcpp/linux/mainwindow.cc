@@ -198,9 +198,6 @@ MainWindow::MainWindow():
 	if (WGETI("main-window-maximized"))
 		gtk_window_maximize(window);
 
-	setTabPosition_gui(WGETI("tab-position"));
-	setToolbarStyle_gui(WGETI("toolbar-style"));
-
 	GtkWidget *dummy;
 	GtkRequisition req;
 	dummy = gtk_statusbar_new();
@@ -213,6 +210,9 @@ MainWindow::MainWindow():
 	// Putting this after all the resizing and moving makes the window appear
 	// in the correct position instantly, looking slightly more cool
 	gtk_widget_show_all(GTK_WIDGET(window));
+
+	setTabPosition_gui(WGETI("tab-position"));
+	setToolbarStyle_gui(WGETI("toolbar-style"));
 
 	createTrayIcon_gui();
 
@@ -538,7 +538,6 @@ void MainWindow::setTabPosition_gui(int position)
 void MainWindow::setToolbarStyle_gui(int style)
 {
 	GtkToolbarStyle toolbarStyle;
-	gtk_widget_show(getWidget("toolbar1"));
 
 	switch (style)
 	{
@@ -555,14 +554,17 @@ void MainWindow::setToolbarStyle_gui(int style)
 			toolbarStyle = GTK_TOOLBAR_BOTH_HORIZ;
 			break;
 		case 4:
-			toolbarStyle = gtk_toolbar_get_style(GTK_TOOLBAR(getWidget("toolbar1")));
 			gtk_widget_hide(getWidget("toolbar1"));
 			break;
 		default:
 			toolbarStyle = GTK_TOOLBAR_BOTH;
 	}
 
-	gtk_toolbar_set_style(GTK_TOOLBAR(getWidget("toolbar1")), toolbarStyle);
+	if (style != 4)
+	{
+		gtk_widget_show(getWidget("toolbar1"));
+		gtk_toolbar_set_style(GTK_TOOLBAR(getWidget("toolbar1")), toolbarStyle);
+	}
 }
 
 bool MainWindow::getUserCommandLines_gui(const string &command, StringMap &ucParams)

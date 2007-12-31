@@ -34,6 +34,7 @@
 [2007-12-23] Improved tray icon text.
 [2007-12-23] Fixed website link in about menu.
 [2007-12-25] Show WAN IPs in drop-down box (thanks Jussi Peltola).
+[2007-12-30] Bug #12815: Hide main toolbar option doesn't work after restart.
 
 *** 1.0.0 2007-09-23 ***
 2007-08-04 - Steven Sheehy
