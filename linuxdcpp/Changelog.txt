@@ -1,3 +1,6 @@
+*** 1.0.X 2008-XX-XX ***
+[2008-01-05] GCC 4.3 compile fix.
+
 *** 1.0.1 2007-12-25 ***
 [2007-10-13] Use strtoll instead of atoll to enable build on HPUX (thanks Tobias Nygren).
 [2007-10-13] Dispatcher optimizations (thanks jikaheim).

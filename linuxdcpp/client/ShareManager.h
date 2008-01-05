@@ -37,6 +37,8 @@
 #include "FastAlloc.h"
 #include "MerkleTree.h"
 
+#include <memory>
+
 STANDARD_EXCEPTION(ShareException);
 
 class SimpleXML;
