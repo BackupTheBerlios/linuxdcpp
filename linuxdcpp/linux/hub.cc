@@ -107,6 +107,7 @@ Hub::Hub(const string &address):
 	g_signal_connect(getWidget("chatEntry"), "key-press-event", G_CALLBACK(onEntryKeyPress_gui), (gpointer)this);
 	g_signal_connect(getWidget("chatText"), "motion-notify-event", G_CALLBACK(onChatPointerMoved_gui), (gpointer)this);
 	g_signal_connect(getWidget("chatText"), "visibility-notify-event", G_CALLBACK(onChatVisibilityChanged_gui), (gpointer)this);
+	g_signal_connect(getWidget("copyNickItem"), "activate", G_CALLBACK(onCopyNickItemClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("browseItem"), "activate", G_CALLBACK(onBrowseItemClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("matchItem"), "activate", G_CALLBACK(onMatchItemClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("msgItem"), "activate", G_CALLBACK(onMsgItemClicked_gui), (gpointer)this);
@@ -796,6 +797,31 @@ gboolean Hub::onEntryKeyPress_gui(GtkWidget *entry, GdkEventKey *event, gpointer
 
 	hub->completionKey.clear();
 	return FALSE;
+}
+
+void Hub::onCopyNickItemClicked_gui(GtkMenuItem *item, gpointer data)
+{
+	Hub *hub = (Hub *)data;
+
+	if (gtk_tree_selection_count_selected_rows(hub->nickSelection) > 0)
+	{
+		string nick;
+		GtkTreeIter iter;
+		GtkTreePath *path;
+		GList *list = gtk_tree_selection_get_selected_rows(hub->nickSelection, NULL);
+
+		for (GList *i = list; i; i = i->next)
+		{
+			path = (GtkTreePath *)i->data;
+			if (gtk_tree_model_get_iter(GTK_TREE_MODEL(hub->nickStore), &iter, path))
+			{
+				nick = hub->nickView.getString(&iter, "Nick");
+				gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), nick.c_str(), nick.length());
+			}
+			gtk_tree_path_free(path);
+		}
+		g_list_free(list);
+	}
 }
 
 void Hub::onBrowseItemClicked_gui(GtkMenuItem *item, gpointer data)
