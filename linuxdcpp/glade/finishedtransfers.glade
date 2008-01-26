@@ -83,6 +83,13 @@
       </widget>
     </child>
     <child>
+      <widget class="GtkImageMenuItem" id="openFolderItem">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Open containing _folder</property>
+        <property name="use_underline">True</property>
+      </widget>
+    </child>
+    <child>
       <widget class="GtkImageMenuItem" id="removeItem">
         <property name="visible">True</property>
         <property name="label">gtk-remove</property>

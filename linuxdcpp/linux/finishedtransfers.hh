@@ -44,6 +44,7 @@ class FinishedTransfers:
 		static gboolean onButtonReleased_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
 		static void onOpen_gui(GtkMenuItem *item, gpointer data);
+		static void onOpenFolder_gui(GtkMenuItem *item, gpointer data);
 		static void onRemoveItems_gui(GtkMenuItem *item, gpointer data);
 		static void onRemoveAll_gui(GtkMenuItem *item, gpointer data);
 

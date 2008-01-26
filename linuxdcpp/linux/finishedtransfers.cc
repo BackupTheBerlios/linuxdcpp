@@ -53,6 +53,7 @@ FinishedTransfers::FinishedTransfers(const string &title):
 
 	// Connect the signals to their callback functions.
 	g_signal_connect(getWidget("openItem"), "activate", G_CALLBACK(onOpen_gui), (gpointer)this);
+	g_signal_connect(getWidget("openFolderItem"), "activate", G_CALLBACK(onOpenFolder_gui), (gpointer)this);
 	g_signal_connect(getWidget("removeItem"), "activate", G_CALLBACK(onRemoveItems_gui), (gpointer)this);
 	g_signal_connect(getWidget("removeAllItem"), "activate", G_CALLBACK(onRemoveAll_gui), (gpointer)this);
 	g_signal_connect(transferView.get(), "button-press-event", G_CALLBACK(onButtonPressed_gui), (gpointer)this);
@@ -194,6 +195,32 @@ void FinishedTransfers::onOpen_gui(GtkMenuItem *item, gpointer data)
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(ft->transferStore), &iter, path))
 		{
 			string target = ft->transferView.getString(&iter, "Target");
+			if (!target.empty())
+				WulforUtil::openURI(target);
+		}
+		gtk_tree_path_free(path);
+	}
+	g_list_free(list);
+}
+
+void FinishedTransfers::onOpenFolder_gui(GtkMenuItem *item, gpointer data)
+{
+	FinishedTransfers *ft = (FinishedTransfers *)data;
+	int count = gtk_tree_selection_count_selected_rows(ft->transferSelection);
+
+	if (count <= 0)
+		return;
+
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	GList *list = gtk_tree_selection_get_selected_rows(ft->transferSelection, NULL);
+
+	for (GList *i = list; i; i = i->next)
+	{
+		path = (GtkTreePath *)i->data;
+		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(ft->transferStore), &iter, path))
+		{
+			string target = ft->transferView.getString(&iter, "Path");
 			if (!target.empty())
 				WulforUtil::openURI(target);
 		}
