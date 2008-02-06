@@ -758,7 +758,7 @@ gboolean Hub::onEntryKeyPress_gui(GtkWidget *entry, GdkEventKey *event, gpointer
 		{
 			current = text.substr(start, end - start);
 
-			if (hub->completionKey.empty() || Text::toLower(current).find(Text::toLower(hub->completionKey)) != 0)
+			if (hub->completionKey.empty() || Text::toLower(current).find(Text::toLower(hub->completionKey)) == string::npos)
 				hub->completionKey = current;
 
 			GtkTreeIter iter;
@@ -770,13 +770,16 @@ gboolean Hub::onEntryKeyPress_gui(GtkWidget *entry, GdkEventKey *event, gpointer
 			while (valid)
 			{
 				string nick = hub->nickView.getString(&iter, "Nick");
-				if (useNext && Text::toLower(nick).find(key) == 0)
+				string::size_type tagEnd = 0;
+				if (useNext && (tagEnd = Text::toLower(nick).find(key)) != string::npos)
 				{
-					complete = nick;
-					if (start <= 0)
-						complete.append(": ");
-
-					break;
+					if (tagEnd == 0 || nick.find_first_of("]})", tagEnd - 1) == tagEnd - 1)
+					{
+						complete = nick;
+						if (start <= 0)
+							complete.append(": ");
+						break;
+					}
 				}
 
 				if (nick == current)
