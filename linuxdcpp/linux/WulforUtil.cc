@@ -18,11 +18,13 @@
 
 #include "WulforUtil.hh"
 #include <glib/gi18n.h>
+#include <glib/gstdio.h>
 #include <client/ClientManager.h>
 #include <client/Util.h>
 #include <iostream>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
+#include <fcntl.h>
 
 using namespace std;
 
@@ -242,5 +244,40 @@ bool WulforUtil::isHubURL(const string &text)
 	return g_ascii_strncasecmp(text.c_str(), "dchub://", 8) == 0 ||
 		g_ascii_strncasecmp(text.c_str(), "adc://", 6) == 0 ||
 		g_ascii_strncasecmp(text.c_str(), "adcs://", 7) == 0;
+}
+
+bool WulforUtil::profileIsLocked()
+{
+	static bool profileIsLocked = false;
+
+	if (profileIsLocked)
+		return TRUE;
+
+	// We can't use Util::getConfigPath() since the core has not been started yet.
+	// Also, Util::getConfigPath() is utf8 and we need system encoding for g_open().
+	char *home = getenv("HOME");
+	string configPath = home ? string(home) + "/.dc++/" : "/tmp/";
+	string profileLockingFile = configPath + "profile.lck";
+	int flags = O_WRONLY | O_CREAT;
+	int mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+
+	int fd = g_open(profileLockingFile.c_str(), flags, mode);
+	if (fd != -1) // read error
+	{
+		struct flock lock;
+		lock.l_start = 0;
+		lock.l_len = 0;
+		lock.l_type = F_WRLCK;
+		lock.l_whence = SEEK_SET;
+		struct flock testlock = lock;
+
+		if (fcntl(fd, F_GETLK, &testlock) != -1) // Locking not supported
+		{
+			if (fcntl(fd, F_SETLK, &lock) == -1)
+				profileIsLocked = true;
+		}
+	}
+
+	return profileIsLocked;
 }
 

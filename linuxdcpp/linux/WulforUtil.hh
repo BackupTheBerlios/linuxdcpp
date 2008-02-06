@@ -47,6 +47,9 @@ class WulforUtil
 		static bool isMagnet(const std::string &text);
 		static bool isLink(const std::string &text);
 		static bool isHubURL(const std::string &text);
+		// Profile locking
+		static bool profileIsLocked();
+		
 	private:
 		static std::vector<std::string> charsets;
 		static const std::string magnetSignature;

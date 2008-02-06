@@ -23,8 +23,9 @@
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 
-#include "wulformanager.hh"
 #include "settingsmanager.hh"
+#include "wulformanager.hh"
+#include "WulforUtil.hh"
 #include <iostream>
 #include <signal.h>
 
@@ -39,6 +40,19 @@ int main(int argc, char *argv[])
 	bindtextdomain("linuxdcpp", _DATADIR "/locale");
 	textdomain("linuxdcpp");
 	bind_textdomain_codeset("linuxdcpp", "UTF-8");
+
+	// Check if profile is locked
+	if (WulforUtil::profileIsLocked())
+	{
+		gtk_init(&argc, &argv);
+		string message = _("Only one instance of LinuxDC++ is allowed per profile");
+
+		GtkWidget *dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE, message.c_str());
+		gtk_dialog_run(GTK_DIALOG(dialog));
+		gtk_widget_destroy(dialog);
+
+		return -1;
+	}
 
 	// Start the DC++ client core
 	startup(callBack, NULL);
@@ -65,3 +79,4 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+
