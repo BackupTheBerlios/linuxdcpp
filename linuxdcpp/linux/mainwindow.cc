@@ -1346,6 +1346,8 @@ void MainWindow::transferComplete_client(Transfer *t)
 	params["CID"] = user->getCID().toBase32();
 	params["Progress"] = "100";
 	params["Time Left"] = _("Done");
+	params["Speed"] = " ";
+	params["Speed Order"] = "0";
 	params["Sort Order"] = "w" + WulforUtil::getNicks(user) + WulforUtil::getHubNames(user);
 
 	if (t->getUserConnection().isSet(UserConnection::FLAG_DOWNLOAD))
@@ -1373,6 +1375,9 @@ void MainWindow::on(ConnectionManagerListener::Added, ConnectionQueueItem *cqi) 
 	params["Hub Name"] = WulforUtil::getHubNames(cqi->getUser());
 	params["Status"] = _("Connecting...");
 	params["Progress"] = "0";
+	params["Time Left"] = " ";
+	params["Speed"] = " ";
+	params["Speed Order"] = "0";
 	params["Sort Order"] = "w" + params["User"] + params["Hub Name"];
 
 	typedef Func2<MainWindow, StringMap, bool> F2;
@@ -1396,6 +1401,9 @@ void MainWindow::on(ConnectionManagerListener::Failed, ConnectionQueueItem *cqi,
 
 	params["CID"] = user->getCID().toBase32();
 	params["Status"] = reason;
+	params["Time Left"] = " ";
+	params["Speed"] = " ";
+	params["Speed Order"] = "0";
 	params["Sort Order"] = "w" + WulforUtil::getNicks(user) + WulforUtil::getHubNames(user);
 
 	typedef Func2<MainWindow, StringMap, bool> F2;
@@ -1408,6 +1416,9 @@ void MainWindow::on(ConnectionManagerListener::StatusChanged, ConnectionQueueIte
 	StringMap params;
 
 	params["CID"] = cqi->getUser()->getCID().toBase32();
+	params["Time Left"] = " ";
+	params["Speed"] = " ";
+	params["Speed Order"] = "0";
 
 	if (cqi->getState() == ConnectionQueueItem::CONNECTING)
 		params["Status"] = _("Connecting...");
@@ -1516,6 +1527,9 @@ void MainWindow::on(DownloadManagerListener::Failed, Download *dl, const string 
 	params["CID"] = user->getCID().toBase32();
 	params["Path"] = Util::getFilePath(dl->getTarget());
 	params["Status"] = reason;
+	params["Time Left"] = " ";
+	params["Speed"] = " ";
+	params["Speed Order"] = "0";
 	params["Size"] = Util::formatBytes(dl->getSize());
 	params["Size Order"] = Util::toString(dl->getSize());
 	params["Sort Order"] = "w" + WulforUtil::getNicks(user) + WulforUtil::getHubNames(user);
