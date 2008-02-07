@@ -556,6 +556,8 @@ void MainWindow::setToolbarStyle_gui(int style)
 		case 4:
 			gtk_widget_hide(getWidget("toolbar1"));
 			break;
+		case 5:
+			return;
 		default:
 			toolbarStyle = GTK_TOOLBAR_BOTH;
 	}

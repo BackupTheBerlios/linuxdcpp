@@ -39,7 +39,7 @@ WulforSettingsManager::WulforSettingsManager()
 	defaultInt["show-tray-icon"] = 1;
 	defaultInt["use-stock-icons"] = 0;
 	defaultInt["tab-position"] = 0;
-	defaultInt["toolbar-style"] = 2;
+	defaultInt["toolbar-style"] = 5;
 	defaultString["downloadqueue-order"] = "";
 	defaultString["downloadqueue-width"] = "";
 	defaultString["downloadqueue-visibility"] = "";

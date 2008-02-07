@@ -2103,7 +2103,8 @@ Bottom</property>
 Text
 Both
 Both horizontal
-Hidden</property>
+Hidden
+System default</property>
                                         </widget>
                                         <packing>
                                           <property name="expand">False</property>
