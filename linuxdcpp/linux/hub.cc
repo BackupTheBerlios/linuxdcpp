@@ -271,25 +271,65 @@ void Hub::popupNickMenu_gui()
 	::UserCommand::List list = FavoriteManager::getInstance()->
 		getUserCommands(::UserCommand::CONTEXT_CHAT, StringList(1, client->getHubUrl()));
 
-	if (!list.empty())
-	{
-		GtkWidget *menuItem;
+	GtkWidget *menuItem;
+	bool separator = FALSE;
+	GtkWidget *menu = getWidget("usercommandMenu");
 
-		for (::UserCommand::Iter i = list.begin(); i != list.end(); ++i)
+	for (::UserCommand::Iter i = list.begin(); i != list.end(); ++i)
+	{
+		::UserCommand& uc = *i;
+
+		// Add line separator only if it's not a duplicate
+		if (uc.getType() == ::UserCommand::TYPE_SEPARATOR && !separator)
 		{
-			::UserCommand& uc = *i;
-			if (uc.getType() == ::UserCommand::TYPE_SEPARATOR)
+			menuItem = gtk_separator_menu_item_new();
+			gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuItem);
+			separator = TRUE;
+		}
+		else if (uc.getType() == ::UserCommand::TYPE_RAW || uc.getType() == ::UserCommand::TYPE_RAW_ONCE)
+		{
+			menu = getWidget("usercommandMenu");
+			string command = uc.getName();
+			string::size_type i = 0;
+			separator = FALSE;
+
+			// Create subfolders based on path separators in the command
+			while ((i = command.find('\\')) != string::npos)
 			{
-				menuItem = gtk_separator_menu_item_new();
-				gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("usercommandMenu")), menuItem);
+				bool createSubmenu = TRUE;
+				GList *menuItems = gtk_container_get_children(GTK_CONTAINER(menu));
+
+				// Search for the sub menu to append the command to
+				for (GList *iter = menuItems; iter; iter = iter->next)
+				{
+					GtkMenuItem *item = (GtkMenuItem *)iter->data;
+					if (gtk_menu_item_get_submenu(item) && WulforUtil::getTextFromMenu(item) == command.substr(0, i))
+					{
+						menu = gtk_menu_item_get_submenu(item);
+						createSubmenu = FALSE;
+						break;
+					}
+				}
+				g_list_free(menuItems);
+
+				// Couldn't find existing sub menu, so we create one
+				if (createSubmenu)
+				{
+					GtkWidget *submenu = gtk_menu_new();
+					menuItem = gtk_menu_item_new_with_label(command.substr(0, i).c_str());
+					gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuItem);
+					gtk_menu_item_set_submenu(GTK_MENU_ITEM(menuItem), submenu);
+					menu = submenu;
+				}
+
+				command = command.substr(++i);
 			}
-			else
-			{
-				menuItem = gtk_menu_item_new_with_label(uc.getName().c_str());
-				g_signal_connect(menuItem, "activate", G_CALLBACK(onUserCommandClick_gui), (gpointer)this);
-				g_object_set_data_full(G_OBJECT(menuItem), "command", g_strdup(uc.getCommand().c_str()), g_free);
-				gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("usercommandMenu")), menuItem);
-			}
+
+			menuItem = gtk_menu_item_new_with_label(command.c_str());
+			g_signal_connect(menuItem, "activate", G_CALLBACK(onUserCommandClick_gui), (gpointer)this);
+			g_object_set_data_full(G_OBJECT(menuItem), "name", g_strdup(uc.getName().c_str()), g_free);
+			g_object_set_data_full(G_OBJECT(menuItem), "command", g_strdup(uc.getCommand().c_str()), g_free);
+			gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuItem);
 		}
 	}
 
@@ -919,7 +959,7 @@ void Hub::onUserCommandClick_gui(GtkMenuItem *item, gpointer data)
 	GtkTreeIter iter;
 	GtkTreePath *path;
 	string cid;
-	string commandName = WulforUtil::getTextFromMenu(item);
+	string commandName = (gchar *)g_object_get_data(G_OBJECT(item), "name");
 	string command = (gchar *)g_object_get_data(G_OBJECT(item), "command");
 	GList *list = gtk_tree_selection_get_selected_rows(hub->nickSelection, NULL);
 	MainWindow *mw = WulforManager::get()->getMainWindow();

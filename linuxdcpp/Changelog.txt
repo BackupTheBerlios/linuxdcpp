@@ -7,6 +7,7 @@
 [2008-02-05] Nick completion now finds nicks in the form [xyz]nick (thanks Razzloss).
 [2008-02-05] Clear speed & time after up/downloads finish (thanks Bart Vullings).
 [2008-02-06] Bug #12401: Main toolbar system default (thanks Bart Vullings).
+[2008-02-07] Added the ability to view user command sub-menus (thanks Bart Vullings).
 
 *** 1.0.1 2007-12-25 ***
 [2007-10-13] Use strtoll instead of atoll to enable build on HPUX (thanks Tobias Nygren).
