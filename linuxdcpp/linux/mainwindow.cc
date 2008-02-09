@@ -38,7 +38,8 @@ MainWindow::MainWindow():
 	Entry("Main Window", "mainwindow.glade"),
 	lastUpdate(0),
 	lastUp(0),
-	lastDown(0)
+	lastDown(0),
+	minimized(FALSE)
 {
 	// Configure the dialogs
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("exitDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
@@ -146,6 +147,7 @@ MainWindow::MainWindow():
 	gtk_widget_set_sensitive(getWidget("closeMenuItem"), FALSE);
 
 	// Connect the signals to their callback functions.
+	g_signal_connect(window, "window-state-event", G_CALLBACK(onWindowState_gui), (gpointer)this);
 	g_signal_connect(window, "delete-event", G_CALLBACK(onDeleteWindow_gui), (gpointer)this);
 	g_signal_connect(window, "key-press-event", G_CALLBACK(onKeyPressed_gui), (gpointer)this);
 	g_signal_connect(transferView.get(), "button-press-event", G_CALLBACK(onTransferButtonPressed_gui), (gpointer)this);
@@ -632,6 +634,27 @@ void MainWindow::openMagnetDialog_gui(const string &magnet)
 
 	gtk_dialog_run(GTK_DIALOG(getWidget("magnetDialog")));
 	gtk_widget_hide(getWidget("magnetDialog"));
+}
+
+gboolean MainWindow::onWindowState_gui(GtkWidget *widget, GdkEventWindowState *event, gpointer data)
+{
+	MainWindow *mw = (MainWindow *)data;
+
+	if (!mw->minimized && event->new_window_state & (GDK_WINDOW_STATE_ICONIFIED | GDK_WINDOW_STATE_WITHDRAWN))
+	{
+		mw->minimized = TRUE;
+		if (BOOLSETTING(SettingsManager::AUTO_AWAY) && !Util::getAway())
+			Util::setAway(TRUE);
+	}
+	else if (mw->minimized && (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED ||
+		event->new_window_state == 0))
+	{
+		mw->minimized = FALSE;
+		if (BOOLSETTING(SettingsManager::AUTO_AWAY) && !Util::getManualAway())
+			Util::setAway(FALSE);
+	}
+
+	return TRUE;
 }
 
 gboolean MainWindow::onDeleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data)

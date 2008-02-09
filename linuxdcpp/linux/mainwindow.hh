@@ -79,6 +79,7 @@ class MainWindow:
 		void setToolbarStyle_gui(int style);
 
 		// GUI Callbacks
+		static gboolean onWindowState_gui(GtkWidget *widget, GdkEventWindowState *event, gpointer data);
 		static gboolean onDeleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data);
 		static gboolean onKeyPressed_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
 		static gboolean onButtonPressPage_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
@@ -153,6 +154,7 @@ class MainWindow:
 		GtkWidget *trayIcon;
 		int64_t lastUpdate, lastUp, lastDown;
 		int emptyStatusWidth;
+		bool minimized;
 };
 
 #else
