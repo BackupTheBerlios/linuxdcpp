@@ -785,6 +785,9 @@ void MainWindow::onPageSwitched_gui(GtkNotebook *notebook, GtkNotebookPage *page
 	list = g_list_remove(list, (gpointer)child);
 	list = g_list_prepend(list, (gpointer)child);
 	g_object_set_data(G_OBJECT(notebook), "page-rotation-list", (gpointer)list);
+
+	// Focus the tab so it will focus its children (e.g. a text entry box)
+	gtk_widget_grab_focus(child);
 }
 
 void MainWindow::onPaneRealized_gui(GtkWidget *pane, gpointer data)

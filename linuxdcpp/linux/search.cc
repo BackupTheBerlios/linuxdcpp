@@ -115,6 +115,7 @@ Search::Search():
 	gtk_tree_view_set_fixed_height_mode(resultView.get(), TRUE);
 
 	// Connect the signals to their callback functions.
+	g_signal_connect(getContainer(), "focus-in-event", G_CALLBACK(onFocusIn_gui), (gpointer)this);
 	g_signal_connect(getWidget("checkbuttonFilter"), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
 	g_signal_connect(getWidget("checkbuttonSlots"), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
 	g_signal_connect(getWidget("checkbuttonOp"), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
@@ -656,6 +657,15 @@ void Search::clearList_gui()
 		valid = gtk_tree_model_iter_next(m, &iter);
 	}
 	gtk_list_store_clear(resultStore);
+}
+
+gboolean Search::onFocusIn_gui(GtkWidget *widget, GdkEventFocus *event, gpointer data)
+{
+	Search *s = (Search *)data;
+
+	gtk_widget_grab_focus(s->getWidget("comboboxentrySearch"));
+
+	return TRUE;
 }
 
 gboolean Search::onButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)

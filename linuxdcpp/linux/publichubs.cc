@@ -87,6 +87,7 @@ PublicHubs::PublicHubs():
 
 
 	// Connect the signals to their callback functions.
+	g_signal_connect(getContainer(), "focus-in-event", G_CALLBACK(onFocusIn_gui), (gpointer)this);
 	g_signal_connect(getWidget("filterEntry"), "key-release-event", G_CALLBACK(onFilterHubs_gui), (gpointer)this);
 	g_signal_connect(getWidget("connectButton"), "clicked", G_CALLBACK(onConnect_gui), (gpointer)this);
 	g_signal_connect(getWidget("connectMenuItem"), "activate", G_CALLBACK(onConnect_gui), (gpointer)this);
@@ -175,6 +176,15 @@ void PublicHubs::setStatus_gui(string statusBar, string text)
 {
 	gtk_statusbar_pop(GTK_STATUSBAR(getWidget(statusBar)), 0);
 	gtk_statusbar_push(GTK_STATUSBAR(getWidget(statusBar)), 0, text.c_str());
+}
+
+gboolean PublicHubs::onFocusIn_gui(GtkWidget *widget, GdkEventFocus *event, gpointer data)
+{
+	PublicHubs *ph = (PublicHubs *)data;
+
+	gtk_widget_grab_focus(ph->getWidget("filterEntry"));
+
+	return TRUE;
 }
 
 gboolean PublicHubs::onButtonPress_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)

@@ -40,6 +40,7 @@ class PrivateMessage:
 		void updateCursor(GtkWidget *widget);
 
 		// GUI callbacks
+		static gboolean onFocusIn_gui(GtkWidget *widget, GdkEventFocus *event, gpointer data);
 		static gboolean onKeyPress_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
 		static gboolean onLinkTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data);
 		static gboolean onHubTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data);

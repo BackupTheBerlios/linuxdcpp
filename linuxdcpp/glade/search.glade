@@ -4,6 +4,7 @@
 <glade-interface>
   <widget class="GtkVBox" id="mainBox">
     <property name="visible">True</property>
+    <property name="can_focus">True</property>
     <property name="border_width">4</property>
     <property name="spacing">4</property>
     <child>

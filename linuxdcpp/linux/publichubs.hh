@@ -44,6 +44,7 @@ class PublicHubs:
 		void setStatus_gui(std::string statusBar, std::string text);
 
 		// GUI callbacks
+		static gboolean onFocusIn_gui(GtkWidget *widget, GdkEventFocus *event, gpointer data);
 		static gboolean onButtonPress_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onButtonRelease_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onKeyRelease_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);

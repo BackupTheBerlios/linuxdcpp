@@ -54,7 +54,7 @@ class Hub:
 		void updateCursor_gui(GtkWidget *widget);
 
 		// GUI callbacks
-		static void onSendMessage_gui(GtkEntry *entry, gpointer data);
+		static gboolean onFocusIn_gui(GtkWidget *widget, GdkEventFocus *event, gpointer data);
 		static gboolean onNickListButtonPress_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onNickListButtonRelease_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);
 		static gboolean onNickListKeyRelease_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
@@ -65,6 +65,7 @@ class Hub:
 		static gboolean onMagnetTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data);
 		static gboolean onChatPointerMoved_gui(GtkWidget *widget, GdkEventMotion *event, gpointer data);
 		static gboolean onChatVisibilityChanged_gui(GtkWidget *widget, GdkEventVisibility *event, gpointer data);
+		static void onSendMessage_gui(GtkEntry *entry, gpointer data);
 		static void onCopyNickItemClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onBrowseItemClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onMatchItemClicked_gui(GtkMenuItem *item, gpointer data);

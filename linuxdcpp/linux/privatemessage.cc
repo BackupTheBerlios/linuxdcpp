@@ -51,6 +51,7 @@ PrivateMessage::PrivateMessage(const string &cid):
 		gdk_beep();
 
 	// Connect the signals to their callback functions.
+	g_signal_connect(getContainer(), "focus-in-event", G_CALLBACK(onFocusIn_gui), (gpointer)this);
 	g_signal_connect(getWidget("entry"), "activate", G_CALLBACK(onSendMessage_gui), (gpointer)this);
 	g_signal_connect(getWidget("entry"), "key-press-event", G_CALLBACK(onKeyPress_gui), (gpointer)this);
 	g_signal_connect(getWidget("text"), "motion-notify-event", G_CALLBACK(onChatPointerMoved_gui), (gpointer)this);
@@ -228,6 +229,15 @@ void PrivateMessage::updateCursor(GtkWidget *widget)
 
 	if (tagList)
 		g_slist_free(tagList);
+}
+
+gboolean PrivateMessage::onFocusIn_gui(GtkWidget *widget, GdkEventFocus *event, gpointer data)
+{
+	PrivateMessage *pm = (PrivateMessage *)data;
+
+	gtk_widget_grab_focus(pm->getWidget("entry"));
+
+	return TRUE;
 }
 
 void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)

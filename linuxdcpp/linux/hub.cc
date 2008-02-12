@@ -100,6 +100,7 @@ Hub::Hub(const string &address):
 	userIcons["dc++-fw-op"] = gdk_pixbuf_new_from_file(icon.c_str(), NULL);
 
 	// Connect the signals to their callback functions.
+	g_signal_connect(getContainer(), "focus-in-event", G_CALLBACK(onFocusIn_gui), (gpointer)this);
 	g_signal_connect(nickView.get(), "button-press-event", G_CALLBACK(onNickListButtonPress_gui), (gpointer)this);
 	g_signal_connect(nickView.get(), "button-release-event", G_CALLBACK(onNickListButtonRelease_gui), (gpointer)this);
 	g_signal_connect(nickView.get(), "key-release-event", G_CALLBACK(onNickListKeyRelease_gui), (gpointer)this);
@@ -528,154 +529,13 @@ void Hub::updateCursor_gui(GtkWidget *widget)
 		g_slist_free(tagList);
 }
 
-void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
+gboolean Hub::onFocusIn_gui(GtkWidget *widget, GdkEventFocus *event, gpointer data)
 {
-	string text = gtk_entry_get_text(entry);
-	if (text.empty())
-		return;
-
-	gtk_entry_set_text(entry, "");
 	Hub *hub = (Hub *)data;
-	typedef Func1<Hub, string> F1;
-	F1 *func;
 
-	// Store line in chat history
-	hub->history.pop_back();
-	hub->history.push_back(text);
-	hub->history.push_back("");
-	hub->historyIndex = hub->history.size() - 1;
-	if (hub->history.size() > maxHistory + 1)
-		hub->history.erase(hub->history.begin());
+	gtk_widget_grab_focus(hub->getWidget("chatEntry"));
 
-	// Process special commands
-	if (text[0] == '/')
-	{
-		string command, param;
-		string::size_type separator = text.find_first_of(' ');
-		if (separator != string::npos && text.size() > separator + 1)
-		{
-			command = text.substr(1, separator - 1);
-			param = text.substr(separator + 1);
-		}
-		else
-		{
-			command = text.substr(1);
-		}
-		std::transform(command.begin(), command.end(), command.begin(), (int(*)(int))tolower);
-
-		if (command == _("away"))
-		{
-			if (Util::getAway() && param.empty())
-			{
-				Util::setAway(FALSE);
-				Util::setManualAway(FALSE);
-				hub->addStatusMessage_gui(_("Away mode off"));
-			}
-			else
-			{
-				Util::setAway(TRUE);
-				Util::setManualAway(TRUE);
-				Util::setAwayMessage(param);
-				hub->addStatusMessage_gui(_("Away mode on: ") + Util::getAwayMessage());
-			}
-		}
-		else if (command == _("back"))
-		{
-			Util::setAway(FALSE);
-			hub->addStatusMessage_gui(_("Away mode off"));
-		}
-		else if (command == _("clear"))
-		{
-			GtkTextIter startIter, endIter;
-			gtk_text_buffer_get_start_iter(hub->chatBuffer, &startIter);
-			gtk_text_buffer_get_end_iter(hub->chatBuffer, &endIter);
-			gtk_text_buffer_delete(hub->chatBuffer, &startIter, &endIter);
-		}
-		else if (command == _("close"))
-		{
-			/// @todo: figure out why this sometimes closes and reopens the tab
-			WulforManager::get()->deleteEntry_gui(hub);
-		}
-		else if (command == _("favorite") || command == _("fav"))
-		{
-			WulforManager::get()->dispatchClientFunc(new Func0<Hub>(hub, &Hub::addAsFavorite_client));
-		}
-		else if (command == _("getlist"))
-		{
-			if (hub->userMap.find(param) != hub->userMap.end())
-			{
-				typedef Func2<Hub, string, bool> F2;
-				F2 *f2 = new F2(hub, &Hub::getFileList_client, hub->userMap[param], FALSE);
-				WulforManager::get()->dispatchClientFunc(f2);
-			}
-			else
-				hub->addStatusMessage_gui(_("User not found"));
-		}
-		else if (command == _("grant"))
-		{
-			if (hub->userMap.find(param) != hub->userMap.end())
-			{
-				func = new F1(hub, &Hub::grantSlot_client, hub->userMap[param]);
-				WulforManager::get()->dispatchClientFunc(func);
-			}
-			else
-				hub->addStatusMessage_gui(_("User not found"));
-		}
-		else if (command == _("help"))
-		{
-			hub->addStatusMessage_gui(_("Available commands: /away <message>, /back, /clear, /close, /favorite, "\
-				 "/getlist <nick>, /grant <nick>, /help, /join <address>, /pm <nick>, /rebuild, /refresh, /userlist"));
-		}
-		else if (command == _("join") && !param.empty())
-		{
-			if (BOOLSETTING(JOIN_OPEN_NEW_WINDOW))
-			{
-				// Assumption: new hub is same encoding as current hub.
-				WulforManager::get()->addHub_gui(param, hub->client->getEncoding());
-			}
-			else
-			{
-				func = new F1(hub, &Hub::redirect_client, param);
-				WulforManager::get()->dispatchClientFunc(func);
-			}
-		}
-		else if (command == _("pm"))
-		{
-			if (hub->userMap.find(param) != hub->userMap.end())
-				hub->addPrivateMessage_gui(hub->userMap[param], "");
-			else
-				hub->addStatusMessage_gui(_("User not found"));
-		}
-		else if (command == _("rebuild"))
-		{
-			WulforManager::get()->dispatchClientFunc(new Func0<Hub>(hub, &Hub::rebuildHashData_client));
-		}
-		else if (command == _("refresh"))
-		{
-			WulforManager::get()->dispatchClientFunc(new Func0<Hub>(hub, &Hub::refreshFileList_client));
-		}
-		else if (command == _("userlist"))
-		{
-			if (GTK_WIDGET_VISIBLE(hub->getWidget("scrolledwindow2")))
-				gtk_widget_hide(hub->getWidget("scrolledwindow2"));
-			else
-				gtk_widget_show_all(hub->getWidget("scrolledwindow2"));
-		}
-		else if (BOOLSETTING(SEND_UNKNOWN_COMMANDS))
-		{
-			func = new F1(hub, &Hub::sendMessage_client, text);
-			WulforManager::get()->dispatchClientFunc(func);
-		}
-		else
-		{
-			hub->addStatusMessage_gui(_("Unknown command '") + text + _("': type /help for a list of available commands"));
-		}
-	}
-	else
-	{
-		func = new F1(hub, &Hub::sendMessage_client, text);
-		WulforManager::get()->dispatchClientFunc(func);
-	}
+	return TRUE;
 }
 
 gboolean Hub::onNickListButtonPress_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
@@ -840,6 +700,265 @@ gboolean Hub::onEntryKeyPress_gui(GtkWidget *entry, GdkEventKey *event, gpointer
 
 	hub->completionKey.clear();
 	return FALSE;
+}
+
+gboolean Hub::onNickTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data)
+{
+	Hub *hub = (Hub *)data;
+
+	if (event->type == GDK_BUTTON_PRESS)
+	{
+		GtkTreeIter nickIter;
+		if (hub->findUser_gui(tag->name, &nickIter))
+		{
+			// Select the user in the nick list view
+			GtkTreePath *path = gtk_tree_model_get_path(GTK_TREE_MODEL(hub->nickStore), &nickIter);
+			gtk_tree_view_scroll_to_cell(hub->nickView.get(), path, gtk_tree_view_get_column(hub->nickView.get(), hub->nickView.col("Nick")), FALSE, 0.0, 0.0);
+			gtk_tree_view_set_cursor(hub->nickView.get(), path, NULL, FALSE);
+			gtk_tree_path_free(path);
+		}
+
+		if (event->button.button == 3)
+			hub->popupNickMenu_gui();
+
+		return TRUE;
+	}
+	return FALSE;
+}
+
+gboolean Hub::onLinkTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data)
+{
+	Hub *hub = (Hub *)data;
+
+	if (event->type == GDK_BUTTON_PRESS)
+	{
+		switch (event->button.button)
+		{
+			case 1:
+				onOpenLinkClicked_gui(NULL, data);
+				break;
+			case 3:
+				// Popup uri context menu
+				gtk_widget_show_all(hub->getWidget("linkMenu"));
+				gtk_menu_popup(GTK_MENU(hub->getWidget("linkMenu")), NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
+				break;
+		}
+		return TRUE;
+	}
+	return FALSE;
+}
+
+gboolean Hub::onHubTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data)
+{
+	Hub *hub = (Hub *)data;
+
+	if (event->type == GDK_BUTTON_PRESS)
+	{
+		switch (event->button.button)
+		{
+			case 1:
+				onOpenHubClicked_gui(NULL, data);
+				break;
+			case 3:
+				// Popup uri context menu
+				gtk_widget_show_all(hub->getWidget("hubMenu"));
+				gtk_menu_popup(GTK_MENU(hub->getWidget("hubMenu")), NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
+				break;
+		}
+		return TRUE;
+	}
+	return FALSE;
+}
+
+gboolean Hub::onMagnetTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data)
+{
+	Hub *hub = (Hub *)data;
+
+	if (event->type == GDK_BUTTON_PRESS)
+	{
+		switch (event->button.button)
+		{
+			case 1:
+				// Search for magnet
+				onSearchMagnetClicked_gui(NULL, data);
+				break;
+			case 3:
+				// Popup magnet context menu
+				gtk_widget_show_all(hub->getWidget("magnetMenu"));
+				gtk_menu_popup(GTK_MENU(hub->getWidget("magnetMenu")), NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
+				break;
+		}
+		return TRUE;
+	}
+	return FALSE;
+}
+
+gboolean Hub::onChatPointerMoved_gui(GtkWidget *widget, GdkEventMotion *event, gpointer data)
+{
+	Hub *hub = (Hub *)data;
+
+	hub->updateCursor_gui(widget);
+
+	return FALSE;
+}
+
+gboolean Hub::onChatVisibilityChanged_gui(GtkWidget *widget, GdkEventVisibility *event, gpointer data)
+{
+	Hub *hub = (Hub *)data;
+
+	hub->updateCursor_gui(widget);
+
+	return FALSE;
+}
+
+void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
+{
+	string text = gtk_entry_get_text(entry);
+	if (text.empty())
+		return;
+
+	gtk_entry_set_text(entry, "");
+	Hub *hub = (Hub *)data;
+	typedef Func1<Hub, string> F1;
+	F1 *func;
+
+	// Store line in chat history
+	hub->history.pop_back();
+	hub->history.push_back(text);
+	hub->history.push_back("");
+	hub->historyIndex = hub->history.size() - 1;
+	if (hub->history.size() > maxHistory + 1)
+		hub->history.erase(hub->history.begin());
+
+	// Process special commands
+	if (text[0] == '/')
+	{
+		string command, param;
+		string::size_type separator = text.find_first_of(' ');
+		if (separator != string::npos && text.size() > separator + 1)
+		{
+			command = text.substr(1, separator - 1);
+			param = text.substr(separator + 1);
+		}
+		else
+		{
+			command = text.substr(1);
+		}
+		std::transform(command.begin(), command.end(), command.begin(), (int(*)(int))tolower);
+
+		if (command == _("away"))
+		{
+			if (Util::getAway() && param.empty())
+			{
+				Util::setAway(FALSE);
+				Util::setManualAway(FALSE);
+				hub->addStatusMessage_gui(_("Away mode off"));
+			}
+			else
+			{
+				Util::setAway(TRUE);
+				Util::setManualAway(TRUE);
+				Util::setAwayMessage(param);
+				hub->addStatusMessage_gui(_("Away mode on: ") + Util::getAwayMessage());
+			}
+		}
+		else if (command == _("back"))
+		{
+			Util::setAway(FALSE);
+			hub->addStatusMessage_gui(_("Away mode off"));
+		}
+		else if (command == _("clear"))
+		{
+			GtkTextIter startIter, endIter;
+			gtk_text_buffer_get_start_iter(hub->chatBuffer, &startIter);
+			gtk_text_buffer_get_end_iter(hub->chatBuffer, &endIter);
+			gtk_text_buffer_delete(hub->chatBuffer, &startIter, &endIter);
+		}
+		else if (command == _("close"))
+		{
+			/// @todo: figure out why this sometimes closes and reopens the tab
+			WulforManager::get()->deleteEntry_gui(hub);
+		}
+		else if (command == _("favorite") || command == _("fav"))
+		{
+			WulforManager::get()->dispatchClientFunc(new Func0<Hub>(hub, &Hub::addAsFavorite_client));
+		}
+		else if (command == _("getlist"))
+		{
+			if (hub->userMap.find(param) != hub->userMap.end())
+			{
+				typedef Func2<Hub, string, bool> F2;
+				F2 *f2 = new F2(hub, &Hub::getFileList_client, hub->userMap[param], FALSE);
+				WulforManager::get()->dispatchClientFunc(f2);
+			}
+			else
+				hub->addStatusMessage_gui(_("User not found"));
+		}
+		else if (command == _("grant"))
+		{
+			if (hub->userMap.find(param) != hub->userMap.end())
+			{
+				func = new F1(hub, &Hub::grantSlot_client, hub->userMap[param]);
+				WulforManager::get()->dispatchClientFunc(func);
+			}
+			else
+				hub->addStatusMessage_gui(_("User not found"));
+		}
+		else if (command == _("help"))
+		{
+			hub->addStatusMessage_gui(_("Available commands: /away <message>, /back, /clear, /close, /favorite, "\
+				 "/getlist <nick>, /grant <nick>, /help, /join <address>, /pm <nick>, /rebuild, /refresh, /userlist"));
+		}
+		else if (command == _("join") && !param.empty())
+		{
+			if (BOOLSETTING(JOIN_OPEN_NEW_WINDOW))
+			{
+				// Assumption: new hub is same encoding as current hub.
+				WulforManager::get()->addHub_gui(param, hub->client->getEncoding());
+			}
+			else
+			{
+				func = new F1(hub, &Hub::redirect_client, param);
+				WulforManager::get()->dispatchClientFunc(func);
+			}
+		}
+		else if (command == _("pm"))
+		{
+			if (hub->userMap.find(param) != hub->userMap.end())
+				hub->addPrivateMessage_gui(hub->userMap[param], "");
+			else
+				hub->addStatusMessage_gui(_("User not found"));
+		}
+		else if (command == _("rebuild"))
+		{
+			WulforManager::get()->dispatchClientFunc(new Func0<Hub>(hub, &Hub::rebuildHashData_client));
+		}
+		else if (command == _("refresh"))
+		{
+			WulforManager::get()->dispatchClientFunc(new Func0<Hub>(hub, &Hub::refreshFileList_client));
+		}
+		else if (command == _("userlist"))
+		{
+			if (GTK_WIDGET_VISIBLE(hub->getWidget("scrolledwindow2")))
+				gtk_widget_hide(hub->getWidget("scrolledwindow2"));
+			else
+				gtk_widget_show_all(hub->getWidget("scrolledwindow2"));
+		}
+		else if (BOOLSETTING(SEND_UNKNOWN_COMMANDS))
+		{
+			func = new F1(hub, &Hub::sendMessage_client, text);
+			WulforManager::get()->dispatchClientFunc(func);
+		}
+		else
+		{
+			hub->addStatusMessage_gui(_("Unknown command '") + text + _("': type /help for a list of available commands"));
+		}
+	}
+	else
+	{
+		func = new F1(hub, &Hub::sendMessage_client, text);
+		WulforManager::get()->dispatchClientFunc(func);
+	}
 }
 
 void Hub::onCopyNickItemClicked_gui(GtkMenuItem *item, gpointer data)
@@ -1038,115 +1157,6 @@ void Hub::onRemoveUserItemClicked_gui(GtkMenuItem *item, gpointer data)
 		}
 		g_list_free(list);
 	}
-}
-
-gboolean Hub::onNickTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data)
-{
-	Hub *hub = (Hub *)data;
-
-	if (event->type == GDK_BUTTON_PRESS)
-	{
-		GtkTreeIter nickIter;
-		if (hub->findUser_gui(tag->name, &nickIter))
-		{
-			// Select the user in the nick list view
-			GtkTreePath *path = gtk_tree_model_get_path(GTK_TREE_MODEL(hub->nickStore), &nickIter);
-			gtk_tree_view_scroll_to_cell(hub->nickView.get(), path, gtk_tree_view_get_column(hub->nickView.get(), hub->nickView.col("Nick")), FALSE, 0.0, 0.0);
-			gtk_tree_view_set_cursor(hub->nickView.get(), path, NULL, FALSE);
-			gtk_tree_path_free(path);
-		}
-
-		if (event->button.button == 3)
-			hub->popupNickMenu_gui();
-
-		return TRUE;
-	}
-	return FALSE;
-}
-
-gboolean Hub::onLinkTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data)
-{
-	Hub *hub = (Hub *)data;
-
-	if (event->type == GDK_BUTTON_PRESS)
-	{
-		switch (event->button.button)
-		{
-			case 1:
-				onOpenLinkClicked_gui(NULL, data);
-				break;
-			case 3:
-				// Popup uri context menu
-				gtk_widget_show_all(hub->getWidget("linkMenu"));
-				gtk_menu_popup(GTK_MENU(hub->getWidget("linkMenu")), NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
-				break;
-		}
-		return TRUE;
-	}
-	return FALSE;
-}
-
-gboolean Hub::onHubTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data)
-{
-	Hub *hub = (Hub *)data;
-
-	if (event->type == GDK_BUTTON_PRESS)
-	{
-		switch (event->button.button)
-		{
-			case 1:
-				onOpenHubClicked_gui(NULL, data);
-				break;
-			case 3:
-				// Popup uri context menu
-				gtk_widget_show_all(hub->getWidget("hubMenu"));
-				gtk_menu_popup(GTK_MENU(hub->getWidget("hubMenu")), NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
-				break;
-		}
-		return TRUE;
-	}
-	return FALSE;
-}
-
-gboolean Hub::onMagnetTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data)
-{
-	Hub *hub = (Hub *)data;
-
-	if (event->type == GDK_BUTTON_PRESS)
-	{
-		switch (event->button.button)
-		{
-			case 1:
-				// Search for magnet
-				onSearchMagnetClicked_gui(NULL, data);
-				break;
-			case 3:
-				// Popup magnet context menu
-				gtk_widget_show_all(hub->getWidget("magnetMenu"));
-				gtk_menu_popup(GTK_MENU(hub->getWidget("magnetMenu")), NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
-				break;
-		}
-		return TRUE;
-	}
-	return FALSE;
-}
-
-gboolean Hub::onChatPointerMoved_gui(GtkWidget *widget, GdkEventMotion *event, gpointer data)
-{
-	Hub *hub = (Hub *)data;
-
-	hub->updateCursor_gui(widget);
-
-	return FALSE;
-}
-
-gboolean Hub::onChatVisibilityChanged_gui(GtkWidget *widget, GdkEventVisibility *event, gpointer data)
-{
-	Hub *hub = (Hub *)data;
-
-	hub->updateCursor_gui(widget);
-
-	return FALSE;
 }
 
 void Hub::onCopyURIClicked_gui(GtkMenuItem *item, gpointer data)
