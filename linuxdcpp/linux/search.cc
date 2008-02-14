@@ -97,6 +97,7 @@ Search::Search():
 	resultView.insertHiddenColumn("SearchResult", G_TYPE_POINTER);
 	resultView.insertHiddenColumn("Hub URL", G_TYPE_STRING);
 	resultView.insertHiddenColumn("CID", G_TYPE_STRING);
+	resultView.insertHiddenColumn("Shared", G_TYPE_BOOLEAN);
 	resultView.finalize();
 	resultStore = gtk_list_store_newv(resultView.getColCount(), resultView.getGTypes());
 	searchFilterModel = gtk_tree_model_filter_new(GTK_TREE_MODEL(resultStore), NULL);
@@ -119,6 +120,7 @@ Search::Search():
 	g_signal_connect(getWidget("checkbuttonFilter"), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
 	g_signal_connect(getWidget("checkbuttonSlots"), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
 	g_signal_connect(getWidget("checkbuttonOp"), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
+	g_signal_connect(getWidget("checkbuttonShared"), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
 	g_signal_connect(renderer, "toggled", G_CALLBACK(onToggledClicked_gui), (gpointer)this);
 	g_signal_connect(resultView.get(), "button-press-event", G_CALLBACK(onButtonPressed_gui), (gpointer)this);
 	g_signal_connect(resultView.get(), "button-release-event", G_CALLBACK(onButtonReleased_gui), (gpointer)this);
@@ -545,7 +547,7 @@ void Search::search_gui()
 	}
 }
 
-void Search::addResult_gui(SearchResult *result)
+void Search::addResult_gui(SearchResult *result, bool isShared)
 {
 	if (!result)
 		return;
@@ -634,6 +636,7 @@ void Search::addResult_gui(SearchResult *result)
 		resultView.col("SearchResult"), (gpointer)result,
 		resultView.col("Hub URL"), hubURL.c_str(),
 		resultView.col("CID"), cid.c_str(),
+		resultView.col("Shared"), isShared, 
 		-1);
 
 	++searchHits;
@@ -1497,6 +1500,7 @@ void Search::on(ClientManagerListener::ClientDisconnected, Client *client) throw
 
 void Search::on(SearchManagerListener::SR, SearchResult *result) throw()
 {
+	bool isShared = false;
 	if (searchlist.empty() || result == NULL)
 		return;
 
@@ -1537,9 +1541,13 @@ void Search::on(SearchManagerListener::SR, SearchResult *result) throw()
 		return;
 	}
 
+	if (result->getType() != SearchResult::TYPE_DIRECTORY)
+		isShared = ShareManager::getInstance()->isTTHShared(result->getTTH());
+
 	result->incRef();
-	typedef Func1<Search, SearchResult *> F1;
-	F1 *func2 = new F1(this, &Search::addResult_gui, result);
+
+	typedef Func2<Search, SearchResult *, bool> F2_2;
+	F2_2 *func2 = new F2_2(this, &Search::addResult_gui, result, isShared);
 	WulforManager::get()->dispatchGuiFunc(func2);
 }
 
@@ -1570,6 +1578,11 @@ gboolean Search::searchFilterFunc_gui(GtkTreeModel *model, GtkTreeIter *iter, gp
 
 	// Filter based on free slots.
 	if (s->onlyFree && result->getFreeSlots() < 1)
+		return FALSE;
+
+	// Hide results already in share
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(s->getWidget("checkbuttonShared"))) &&
+		s->resultView.getValue<gboolean>(iter, "Shared", model) == TRUE)
 		return FALSE;
 
 	// Search within local results.

@@ -49,7 +49,7 @@ class Search:
 		void popupMenu_gui();
 		void setStatus_gui(std::string statusBar, std::string text);
 		void search_gui();
-		void addResult_gui(SearchResult *result);
+		void addResult_gui(SearchResult *result, bool inShare);
 		void clearList_gui();
 
 		// GUI callbacks
