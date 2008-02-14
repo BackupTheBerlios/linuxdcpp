@@ -11,6 +11,7 @@
 [2008-02-07] Updated copyright to 2008.
 [2008-02-08] Bug #13060: Auto-away on minimize not working (thanks Bart Vullings).
 [2008-02-12] Focus text entry boxes when switching tabs (thanks Mikael Eman).
+[2008-02-13] Use CC env. variable when compiling C files (thanks Razzloss).
 
 *** 1.0.1 2007-12-25 ***
 [2007-10-13] Use strtoll instead of atoll to enable build on HPUX (thanks Tobias Nygren).

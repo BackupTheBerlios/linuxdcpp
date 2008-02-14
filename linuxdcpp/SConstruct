@@ -77,6 +77,9 @@ conf = Configure(env,
 if os.environ.has_key('CXX'):
 	conf.env['CXX'] = os.environ['CXX']
 
+if os.environ.has_key('CC'):
+	conf.env['CC'] = os.environ['CC']
+
 if os.environ.has_key('CXXFLAGS'):
 	conf.env['CPPFLAGS'] = conf.env['CXXFLAGS'] = os.environ['CXXFLAGS'].split()
 
