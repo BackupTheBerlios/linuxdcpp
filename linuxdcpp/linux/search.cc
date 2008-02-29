@@ -650,11 +650,11 @@ void Search::clearList_gui()
 {
 	GtkTreeIter iter;
 	SearchResult *result = NULL;
-	GtkTreeModel *m = sortedFilterModel;
+	GtkTreeModel *m = GTK_TREE_MODEL(resultStore);
 	gboolean valid = gtk_tree_model_get_iter_first(m, &iter);
 	while (valid)
 	{
-		result = resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
+		result = resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult", m);
 		if (result)
 			result->decRef();
 		valid = gtk_tree_model_iter_next(m, &iter);
