@@ -996,44 +996,43 @@ Contributors:
     <child>
       <widget class="GtkMenuItem" id="getFileListItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Get file list</property>
+        <property name="label" translatable="yes">_Browse file list</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
     <child>
       <widget class="GtkMenuItem" id="matchQueueItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Match queue</property>
+        <property name="label" translatable="yes">_Match queue</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
     <child>
       <widget class="GtkMenuItem" id="sendPrivateMessageItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Send private message</property>
+        <property name="label" translatable="yes">_Send private message</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
     <child>
       <widget class="GtkMenuItem" id="addToFavoritesItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Add to favorites</property>
+        <property name="label" translatable="yes">_Add to favorites</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
     <child>
       <widget class="GtkMenuItem" id="grantExtraSlotItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Grant extra slot</property>
+        <property name="label" translatable="yes">_Grant extra slot</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
     <child>
       <widget class="GtkMenuItem" id="removeUserItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Remove user from queue</property>
+        <property name="label" translatable="yes">_Remove user from queue</property>
         <property name="use_underline">True</property>
-        <signal name="activate" handler="on_removeUserItem_activate"/>
       </widget>
     </child>
     <child>
@@ -1044,7 +1043,7 @@ Contributors:
     <child>
       <widget class="GtkMenuItem" id="forceAttemptItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Force attempt</property>
+        <property name="label" translatable="yes">_Force attempt</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
@@ -1056,7 +1055,7 @@ Contributors:
     <child>
       <widget class="GtkMenuItem" id="closeConnectionItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Close connection</property>
+        <property name="label" translatable="yes">_Close connection</property>
         <property name="use_underline">True</property>
       </widget>
     </child>

@@ -192,7 +192,7 @@
     <child>
       <widget class="GtkMenuItem" id="browseItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">_Browse files</property>
+        <property name="label" translatable="yes">_Browse file list</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
@@ -234,7 +234,7 @@
     <child>
       <widget class="GtkMenuItem" id="usercommandItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">User commands</property>
+        <property name="label" translatable="yes">_User commands</property>
         <property name="use_underline">True</property>
         <child>
           <widget class="GtkMenu" id="usercommandMenu">

@@ -115,49 +115,49 @@
     <child>
       <widget class="GtkMenuItem" id="dirSetPriorityItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Set Priority</property>
+        <property name="label" translatable="yes">Set Priorit_y</property>
         <property name="use_underline">True</property>
         <child>
           <widget class="GtkMenu" id="dirPriorityMenu">
             <child>
               <widget class="GtkMenuItem" id="pausedPriorityItem">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">Paused</property>
+                <property name="label" translatable="yes">_Paused</property>
                 <property name="use_underline">True</property>
               </widget>
             </child>
             <child>
               <widget class="GtkMenuItem" id="lowestPriorityItem">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">Lowest</property>
+                <property name="label" translatable="yes">_Lowest</property>
                 <property name="use_underline">True</property>
               </widget>
             </child>
             <child>
               <widget class="GtkMenuItem" id="lowPrioritytem">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">Low</property>
+                <property name="label" translatable="yes">L_ow</property>
                 <property name="use_underline">True</property>
               </widget>
             </child>
             <child>
               <widget class="GtkMenuItem" id="normalPriorityItem">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">Normal</property>
+                <property name="label" translatable="yes">_Normal</property>
                 <property name="use_underline">True</property>
               </widget>
             </child>
             <child>
               <widget class="GtkMenuItem" id="highPriorityItem">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">High</property>
+                <property name="label" translatable="yes">H_igh</property>
                 <property name="use_underline">True</property>
               </widget>
             </child>
             <child>
               <widget class="GtkMenuItem" id="highestPriorityItem">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">Highest</property>
+                <property name="label" translatable="yes">_Highest</property>
                 <property name="use_underline">True</property>
               </widget>
             </child>
@@ -173,7 +173,7 @@
     <child>
       <widget class="GtkMenuItem" id="moveDirItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Move</property>
+        <property name="label" translatable="yes">_Move</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
@@ -185,7 +185,7 @@
     <child>
       <widget class="GtkMenuItem" id="removeDirItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Remove</property>
+        <property name="label" translatable="yes">_Remove</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
@@ -220,49 +220,49 @@
     <child>
       <widget class="GtkMenuItem" id="fileSetPriorityItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Set Priority</property>
+        <property name="label" translatable="yes">Set Priorit_y</property>
         <property name="use_underline">True</property>
         <child>
           <widget class="GtkMenu" id="filePriorityMenu">
             <child>
               <widget class="GtkMenuItem" id="filePausedItem">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">Paused</property>
+                <property name="label" translatable="yes">_Paused</property>
                 <property name="use_underline">True</property>
               </widget>
             </child>
             <child>
               <widget class="GtkMenuItem" id="fileLowestPriorityItem">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">Lowest</property>
+                <property name="label" translatable="yes">_Lowest</property>
                 <property name="use_underline">True</property>
               </widget>
             </child>
             <child>
               <widget class="GtkMenuItem" id="fileLowPriorityItem">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">Low</property>
+                <property name="label" translatable="yes">L_ow</property>
                 <property name="use_underline">True</property>
               </widget>
             </child>
             <child>
               <widget class="GtkMenuItem" id="fileNormalPriorityItem">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">Normal</property>
+                <property name="label" translatable="yes">_Normal</property>
                 <property name="use_underline">True</property>
               </widget>
             </child>
             <child>
               <widget class="GtkMenuItem" id="fileHighPriorityItem">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">High</property>
+                <property name="label" translatable="yes">H_igh</property>
                 <property name="use_underline">True</property>
               </widget>
             </child>
             <child>
               <widget class="GtkMenuItem" id="fileHighestPriorityItem">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">Highest</property>
+                <property name="label" translatable="yes">_Highest</property>
                 <property name="use_underline">True</property>
               </widget>
             </child>
@@ -273,7 +273,7 @@
     <child>
       <widget class="GtkMenuItem" id="getFileListItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Get file list</property>
+        <property name="label" translatable="yes">_Browse file list</property>
         <property name="use_underline">True</property>
         <child>
           <widget class="GtkMenu" id="browseMenu">
@@ -284,7 +284,7 @@
     <child>
       <widget class="GtkMenuItem" id="sendPrivateMessageItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Send private message</property>
+        <property name="label" translatable="yes">Send _private message</property>
         <property name="use_underline">True</property>
         <child>
           <widget class="GtkMenu" id="pmMenu">
@@ -295,7 +295,7 @@
     <child>
       <widget class="GtkMenuItem" id="reAddSourceItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Re-add source</property>
+        <property name="label" translatable="yes">Re-_add source</property>
         <property name="use_underline">True</property>
         <child>
           <widget class="GtkMenu" id="reAddMenu">
@@ -311,7 +311,7 @@
     <child>
       <widget class="GtkMenuItem" id="removeSourceItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Remove Source</property>
+        <property name="label" translatable="yes">Remove So_urce</property>
         <property name="use_underline">True</property>
         <child>
           <widget class="GtkMenu" id="removeMenu">
@@ -322,7 +322,7 @@
     <child>
       <widget class="GtkMenuItem" id="removeUserFromQueueItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Remove user from queue</property>
+        <property name="label" translatable="yes">Remove user from _queue</property>
         <property name="use_underline">True</property>
         <child>
           <widget class="GtkMenu" id="removeAllMenu">
@@ -333,7 +333,7 @@
     <child>
       <widget class="GtkMenuItem" id="fileRemoveItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Remove</property>
+        <property name="label" translatable="yes">_Remove</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
@@ -341,7 +341,7 @@
   <widget class="GtkFileChooserDialog" id="dirChooserDialog">
     <property name="do_overwrite_confirmation">True</property>
     <property name="action">GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER</property>
-    <property name="title" translatable="yes">Move To...</property>
+    <property name="title" translatable="yes">Move to...</property>
     <property name="modal">True</property>
     <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
     <child internal-child="vbox">

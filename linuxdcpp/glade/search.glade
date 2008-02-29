@@ -363,14 +363,14 @@ TTH</property>
     <child>
       <widget class="GtkMenuItem" id="downloadItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Download</property>
+        <property name="label" translatable="yes">_Download</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
     <child>
       <widget class="GtkMenuItem" id="downloadToItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Download to...</property>
+        <property name="label" translatable="yes">Download _to...</property>
         <property name="use_underline">True</property>
         <child>
           <widget class="GtkMenu" id="downloadMenu">
@@ -381,14 +381,14 @@ TTH</property>
     <child>
       <widget class="GtkMenuItem" id="downloadWholeDirItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Download whole directory</property>
+        <property name="label" translatable="yes">Download _whole directory</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
     <child>
       <widget class="GtkMenuItem" id="downloadWholeDirToItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Download whole directory to...</property>
+        <property name="label" translatable="yes">Download whole director_y to...</property>
         <property name="use_underline">True</property>
         <child>
           <widget class="GtkMenu" id="downloadDirMenu">
@@ -404,7 +404,7 @@ TTH</property>
     <child>
       <widget class="GtkMenuItem" id="searchByTTHItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Search by TTH</property>
+        <property name="label" translatable="yes">_Search by TTH</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
@@ -423,49 +423,49 @@ TTH</property>
     <child>
       <widget class="GtkMenuItem" id="getFileListItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Get file list</property>
+        <property name="label" translatable="yes">_Browse file list</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
     <child>
       <widget class="GtkMenuItem" id="matchQueueItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Match Queue</property>
+        <property name="label" translatable="yes">_Match Queue</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
     <child>
       <widget class="GtkMenuItem" id="sendPrivateMessageItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Send private message</property>
+        <property name="label" translatable="yes">Send _private message</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
     <child>
       <widget class="GtkMenuItem" id="addToFavoritesItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Add to favorites</property>
+        <property name="label" translatable="yes">_Add to favorites</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
     <child>
       <widget class="GtkMenuItem" id="grantExtraSlotItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Grant extra slot</property>
+        <property name="label" translatable="yes">_Grant extra slot</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
     <child>
       <widget class="GtkMenuItem" id="removeUserFromQueueItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Remove user from queue</property>
+        <property name="label" translatable="yes">Remove user from _queue</property>
         <property name="use_underline">True</property>
       </widget>
     </child>
     <child>
       <widget class="GtkMenuItem" id="usercommandItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">User commands</property>
+        <property name="label" translatable="yes">_User commands</property>
         <property name="use_underline">True</property>
         <child>
           <widget class="GtkMenu" id="usercommandMenu">
@@ -481,7 +481,7 @@ TTH</property>
     <child>
       <widget class="GtkMenuItem" id="removeItem">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Remove</property>
+        <property name="label" translatable="yes">_Remove</property>
         <property name="use_underline">True</property>
       </widget>
     </child>

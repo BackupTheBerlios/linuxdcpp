@@ -14,6 +14,7 @@
 [2008-02-13] Use CC env. variable when compiling C files (thanks Razzloss).
 [2008-02-13] Filter files already in share (thanks Razzloss).
 [2008-02-28] Fixed finished transfers totals not showing when opened.
+[2008-02-28] Standardized menu entries to 'Browse file list'.
 
 *** 1.0.1 2007-12-25 ***
 [2007-10-13] Use strtoll instead of atoll to enable build on HPUX (thanks Tobias Nygren).
