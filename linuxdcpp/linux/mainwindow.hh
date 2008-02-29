@@ -46,7 +46,6 @@ class MainWindow:
 
 		// Inherited from Entry
 		GtkWidget *getContainer();
-		void applyCallback(GCallback closeCallback);
 
 		// GUI functions
 		void autoOpen_gui();
@@ -80,6 +79,7 @@ class MainWindow:
 
 		// GUI Callbacks
 		static gboolean onWindowState_gui(GtkWidget *widget, GdkEventWindowState *event, gpointer data);
+		static gboolean onCloseWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data);
 		static gboolean onDeleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data);
 		static gboolean onKeyPressed_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
 		static gboolean onButtonPressPage_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);

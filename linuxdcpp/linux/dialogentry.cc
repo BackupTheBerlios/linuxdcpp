@@ -17,15 +17,17 @@
  */
 
 #include "dialogentry.hh"
+#include "wulformanager.hh"
 
 using namespace std;
 
-int DialogEntry::responseID = GTK_RESPONSE_NONE;
-
 DialogEntry::DialogEntry(const std::string &id, const std::string &glade):
-	Entry(id, glade)
+	Entry(id, glade),
+	responseID(GTK_RESPONSE_NONE)
 {
 	gtk_window_set_role(GTK_WINDOW(getContainer()), getID().c_str());
+
+	WulforManager::get()->insertEntry_gui(this);
 }
 
 DialogEntry::~DialogEntry()
@@ -38,17 +40,16 @@ GtkWidget* DialogEntry::getContainer()
 	return getWidget("dialog");
 }
 
-void DialogEntry::setResponseID(int responseID)
+gint DialogEntry::run()
 {
-	this->responseID = responseID;
+	responseID = gtk_dialog_run(GTK_DIALOG(getContainer()));
+	WulforManager::get()->deleteEntry_gui(this);
+
+	return responseID;
 }
 
-int DialogEntry::getResponseID()
+gint DialogEntry::getResponseID()
 {
 	return responseID;
 }
 
-void DialogEntry::applyCallback(GCallback closeCallback)
-{
-	g_signal_connect(getWidget("dialog"), "response", closeCallback, (gpointer)this);
-}

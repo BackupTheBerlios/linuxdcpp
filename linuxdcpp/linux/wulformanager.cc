@@ -138,8 +138,6 @@ void WulforManager::createMainWindow()
 	dcassert(!mainWin);
 	mainWin = new MainWindow();
 
-	mainWin->applyCallback(GCallback(onCloseWindow_gui));
-
 	// Autoconnect and autoopen calls stuff in wulformanager that needs to know
 	// what mainWin is, so these cannot be called by the MainWindow constructor.
 	typedef Func0<MainWindow> F0;
@@ -234,73 +232,52 @@ void WulforManager::processClientQueue()
 
 void WulforManager::dispatchGuiFunc(FuncBase *func)
 {
-	g_mutex_lock(guiQueueMutex);
 	g_static_rw_lock_reader_lock(&entryMutex);
 
 	// Make sure we're not adding functions to deleted objects.
 	if (func->getID() == "Main Window" || entries.find(func->getID()) != entries.end())
+	{
+		g_mutex_lock(guiQueueMutex);
 		guiFuncs.push_back(func);
+		g_mutex_unlock(guiQueueMutex);
+
+		g_mutex_lock(guiCondMutex);
+		guiCondValue++;
+		g_cond_signal(guiCond);
+		g_mutex_unlock(guiCondMutex);
+	}
 	else
 		delete func;
 
 	g_static_rw_lock_reader_unlock(&entryMutex);
-	g_mutex_unlock(guiQueueMutex);
-
-	g_mutex_lock(guiCondMutex);
-	guiCondValue++;
-	g_cond_signal(guiCond);
-	g_mutex_unlock(guiCondMutex);
 }
 
 void WulforManager::dispatchClientFunc(FuncBase *func)
 {
-	g_mutex_lock(clientQueueMutex);
 	g_static_rw_lock_reader_lock(&entryMutex);
 
 	// Make sure we're not adding functions to deleted objects.
 	if (func->getID() == "Main Window" || entries.find(func->getID()) != entries.end())
+	{
+		g_mutex_lock(clientQueueMutex);
 		clientFuncs.push_back(func);
+		g_mutex_unlock(clientQueueMutex);
+
+		g_mutex_lock(clientCondMutex);
+		clientCondValue++;
+		g_cond_signal(clientCond);
+		g_mutex_unlock(clientCondMutex);
+	}
 	else
 		delete func;
 
 	g_static_rw_lock_reader_unlock(&entryMutex);
-	g_mutex_unlock(clientQueueMutex);
-
-	g_mutex_lock(clientCondMutex);
-	clientCondValue++;
-	g_cond_signal(clientCond);
-	g_mutex_unlock(clientCondMutex);
 }
 
 MainWindow *WulforManager::getMainWindow()
 {
 	dcassert(mainWin);
 	return mainWin;
-}
-
-gboolean WulforManager::onCloseWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data)
-{
-	get()->deleteAllEntries();
-	get()->deleteEntry_gui(get()->getMainWindow());
-	gtk_main_quit();
-	return TRUE;
-}
-
-void WulforManager::onCloseBookEntry_gui(GtkWidget *widget, gpointer data)
-{
-	get()->deleteEntry_gui((Entry *)data);
-}
-
-void WulforManager::onCloseDialogEntry_gui(GtkDialog *dialog, gint response, gpointer data)
-{
-	DialogEntry *entry = (DialogEntry *)data;
-	entry->setResponseID(response);
-
-	// We must save the settings if OK was clicked. Can't do this anywhere else. ugh.
-	if (response == GTK_RESPONSE_OK && entry->getID() == "Settings")
-		dynamic_cast<Settings *>(entry)->saveSettings();
-
-	get()->deleteEntry_gui(entry);
 }
 
 string WulforManager::getPath()
@@ -323,14 +300,8 @@ BookEntry *WulforManager::getBookEntry_gui(const string &id, bool raise)
 	return ret;
 }
 
-void WulforManager::insertBookEntry_gui(BookEntry *entry, bool raise)
+void WulforManager::insertEntry_gui(Entry *entry)
 {
-	// Associates entry to the widget for later retrieval in MainWindow::switchPage_gui()
-	g_object_set_data(G_OBJECT(entry->getContainer()), "entry", (gpointer)entry);
-
-	entry->applyCallback(G_CALLBACK(onCloseBookEntry_gui));
-	mainWin->addPage_gui(entry->getContainer(), entry->getTitle(), raise);
-
 	g_static_rw_lock_writer_lock(&entryMutex);
 	entries[entry->getID()] = entry;
 	g_static_rw_lock_writer_unlock(&entryMutex);
@@ -390,6 +361,8 @@ void WulforManager::deleteAllEntries()
 {
 	while (entries.size() > 0)
 		deleteEntry_gui(entries.begin()->second);
+
+	WulforManager::get()->deleteEntry_gui(mainWin);
 }
 
 DialogEntry* WulforManager::getDialogEntry_gui(const string &id)
@@ -404,139 +377,96 @@ DialogEntry* WulforManager::getDialogEntry_gui(const string &id)
 	return ret;
 }
 
-void WulforManager::insertDialogEntry_gui(DialogEntry *entry)
-{
-	entry->applyCallback(G_CALLBACK(onCloseDialogEntry_gui));
-
-	g_static_rw_lock_writer_lock(&entryMutex);
-	entries[entry->getID()] = entry;
-	g_static_rw_lock_writer_unlock(&entryMutex);
-
-	gtk_dialog_run(GTK_DIALOG(entry->getContainer()));
-}
-
 BookEntry *WulforManager::addPublicHubs_gui()
 {
 	BookEntry *entry = getBookEntry_gui(_("Public Hubs"));
-	if (entry) return entry;
 
-	PublicHubs *pubHubs = new PublicHubs();
-	insertBookEntry_gui(pubHubs);
+	if (entry == NULL)
+		entry = new PublicHubs();
 
-	dispatchClientFunc(new Func0<PublicHubs>(pubHubs, &PublicHubs::downloadList_client));
-
-	return pubHubs;
+	return entry;
 }
 
 BookEntry *WulforManager::addDownloadQueue_gui()
 {
 	BookEntry *entry = getBookEntry_gui(_("Download Queue"));
-	if (entry) return entry;
 
-	DownloadQueue *dlQueue = new DownloadQueue();
-	insertBookEntry_gui(dlQueue);
+	if (entry == NULL)
+		entry = new DownloadQueue();
 
-	return dlQueue;
+	return entry;
 }
 
 BookEntry *WulforManager::addFavoriteHubs_gui()
 {
 	BookEntry *entry = getBookEntry_gui(_("Favorite Hubs"));
-	if (entry) return entry;
 
-	FavoriteHubs *favHubs = new FavoriteHubs();
-	insertBookEntry_gui(favHubs);
+	if (entry == NULL)
+		entry = new FavoriteHubs();
 
-	return favHubs;
+	return entry;
 }
 
 BookEntry *WulforManager::addHub_gui(const string &address, const string &encoding)
 {
 	BookEntry *entry = getBookEntry_gui(_("Hub: ") + address);
-	if (entry) return entry;
 
-	Hub *hub = new Hub(address);
-	GtkWidget *item = mainWin->appendWindowItem(hub->getContainer(), hub->getID());
-	hub->setWindowItem(item);
-	insertBookEntry_gui(hub);
+	if (entry == NULL)
+		entry = new Hub(address, encoding);
 
-	string charset;
-	if (address.substr(0, 6) == "adc://" || address.substr(0, 7) == "adcs://")
-		charset = "UTF-8";
-	else if (encoding.empty())
-		charset = WGETS("default-charset");
-	else
-		charset = encoding;
-
-	if (charset == _("System default"))
-		charset = Text::getSystemCharset();
-
-	string::size_type i = charset.find(' ', 0);
-	if (i != string::npos)
-		charset = charset.substr(0, i);
-
-	typedef Func2<Hub, string, string> F2;
-	F2 *func = new F2(hub, &Hub::connectClient_client, address, charset);
-	dispatchClientFunc(func);
-
-	return hub;
+	return entry;
 }
 
 BookEntry *WulforManager::addPrivMsg_gui(const std::string &cid, bool raise)
 {
 	BookEntry *entry = getBookEntry_gui(_("PM: ") + WulforUtil::getNicks(cid), FALSE);
-	if (entry) return entry;
 
-	PrivateMessage *privMsg = new PrivateMessage(cid);
-	GtkWidget *item = mainWin->appendWindowItem(privMsg->getContainer(), privMsg->getID());
-	privMsg->setWindowItem(item);
-	insertBookEntry_gui(privMsg, raise);
+	if (entry == NULL)
+		entry = new PrivateMessage(cid, raise);
 
-	return privMsg;
+	return entry;
 }
 
 BookEntry *WulforManager::addShareBrowser_gui(User::Ptr user, const string &file, bool raise)
 {
 	BookEntry *entry = getBookEntry_gui(_("List: ") + WulforUtil::getNicks(user), raise);
-	if (entry) return entry;
 
-	ShareBrowser *browser = new ShareBrowser(user, file);
-	insertBookEntry_gui(browser, raise);
+	if (entry == NULL)
+		entry = new ShareBrowser(user, file, raise);
 
-	return browser;
+	return entry;
 }
 
 BookEntry *WulforManager::addSearch_gui()
 {
-	Search *s = new Search();
-	insertBookEntry_gui(s);
+	BookEntry *entry = new Search();
 
-	return s;
+	return entry;
 }
 
 BookEntry *WulforManager::addFinishedTransfers_gui(const string &title)
 {
 	BookEntry *entry = getBookEntry_gui(title);
-	if (entry) return entry;
 
-	FinishedTransfers *ft = new FinishedTransfers(title);
-	insertBookEntry_gui(ft);
+	if (entry == NULL)
+		entry = new FinishedTransfers(title);
 
-	return ft;
+	return entry;
 }
 
-int WulforManager::openHashDialog_gui()
+gint WulforManager::openHashDialog_gui()
 {
 	Hash *h = new Hash();
-	insertDialogEntry_gui(h);
+	gint response = h->run();
 
-	return Hash::getResponseID();
+	return response;
 }
 
-int WulforManager::openSettingsDialog_gui()
+gint WulforManager::openSettingsDialog_gui()
 {
 	Settings *s = new Settings();
-	insertDialogEntry_gui(s);
+	gint response = s->run();
 
-	return Settings::getResponseID();
+	return response;
 }
+

@@ -50,6 +50,9 @@ Settings::Settings() : DialogEntry("Settings", "settingsdialog.glade")
 
 Settings::~Settings()
 {
+	if (getResponseID() == GTK_RESPONSE_OK)
+		saveSettings_client();
+
 	gtk_widget_destroy(getWidget("favoriteNameDialog"));
 	gtk_widget_destroy(getWidget("publicHubsDialog"));
 	gtk_widget_destroy(getWidget("virtualNameDialog"));
@@ -58,7 +61,7 @@ Settings::~Settings()
 	gtk_widget_destroy(getWidget("commandDialog"));
 }
 
-void Settings::saveSettings()
+void Settings::saveSettings_client()
 {
 	SettingsManager *sm = SettingsManager::getInstance();
 	GtkTreeIter iter;

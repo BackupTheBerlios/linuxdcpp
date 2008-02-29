@@ -29,12 +29,12 @@ class DialogEntry : public Entry
 		virtual ~DialogEntry();
 
 		GtkWidget *getContainer();
-		void setResponseID(int responseID);
-		static int getResponseID();
-		virtual void applyCallback(GCallback closeCallback);
+		gint run();
+		gint getResponseID();
 
 	private:
-		static int responseID;
+
+		gint responseID;
 };
 
 #else

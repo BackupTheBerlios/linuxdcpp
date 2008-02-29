@@ -3,9 +3,11 @@
 <!--*- mode: xml -*-->
 <glade-interface>
   <widget class="GtkDialog" id="dialog">
+    <property name="visible">False</property>
     <property name="title" translatable="yes">Preferences</property>
     <property name="resizable">False</property>
     <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
+    <property name="modal">True</property>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox1">
         <property name="visible">True</property>

@@ -26,12 +26,16 @@
 
 using namespace std;
 
-PrivateMessage::PrivateMessage(const string &cid):
-	BookEntry(_("PM: ") + WulforUtil::getNicks(cid), "privatemessage.glade"),
+PrivateMessage::PrivateMessage(const string &cid, bool raise):
+	BookEntry(_("PM: ") + WulforUtil::getNicks(cid), "privatemessage.glade", raise),
 	cid(cid),
 	historyIndex(0),
 	sentAwayMessage(FALSE)
 {
+	// Set the Window item
+	GtkWidget *item = WulforManager::get()->getMainWindow()->appendWindowItem(getContainer(), getID());
+	setWindowItem(item);
+
 	// Intialize the chat window
 	if (SETTING(USE_OEM_MONOFONT))
 	{

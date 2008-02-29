@@ -31,13 +31,17 @@
 
 using namespace std;
 
-Hub::Hub(const string &address):
+Hub::Hub(const string &address, const string &encoding):
 	BookEntry(_("Hub: ") + address, "hub.glade"),
 	client(NULL),
 	historyIndex(0),
 	totalShared(0),
 	aboveTag(FALSE)
 {
+	// Set the window item
+	GtkWidget *item = WulforManager::get()->getMainWindow()->appendWindowItem(getContainer(), getID());
+	setWindowItem(item);
+
 	// Configure the dialog
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("passwordDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
@@ -131,6 +135,11 @@ Hub::Hub(const string &address):
 		gtk_paned_set_position(GTK_PANED(getWidget("pane")), panePosition);
 
 	history.push_back("");
+
+	// Connect to the hub
+	typedef Func2<Hub, string, string> F2;
+	F2 *func = new F2(this, &Hub::connectClient_client, address, encoding);
+	WulforManager::get()->dispatchClientFunc(func);
 }
 
 Hub::~Hub()
@@ -1204,6 +1213,19 @@ void Hub::onMagnetPropertiesClicked_gui(GtkMenuItem *item, gpointer data)
 void Hub::connectClient_client(string address, string encoding)
 {
 	dcassert(client == NULL);
+
+	if (address.substr(0, 6) == "adc://" || address.substr(0, 7) == "adcs://")
+		encoding = "UTF-8";
+	else if (encoding.empty())
+		encoding = WGETS("default-charset");
+
+	if (encoding == _("System default"))
+		encoding = Text::getSystemCharset();
+
+	string::size_type i = encoding.find(' ', 0);
+	if (i != string::npos)
+		encoding = encoding.substr(0, i);
+
 	client = ClientManager::getInstance()->getClient(address);
 	client->setEncoding(encoding);
 	client->addListener(this);

@@ -34,7 +34,6 @@ class Entry
 		Entry(const std::string &id, const std::string &glade);
 		virtual ~Entry();
 		const std::string& getID();
-		virtual void applyCallback(GCallback closeCallback) = 0;
 		virtual GtkWidget *getContainer() = 0;
 
 	protected:

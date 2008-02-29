@@ -52,33 +52,27 @@ class WulforManager
 		BookEntry *addSearch_gui();
 		BookEntry *addShareBrowser_gui(User::Ptr user, const std::string &file, bool raise = TRUE);
 		BookEntry *addFinishedTransfers_gui(const std::string &title);
+		void insertEntry_gui(Entry *entry);
 		void deleteEntry_gui(Entry *entry);
+		void deleteAllEntries();
 
 		// DialogEntry functions
-		int openHashDialog_gui();
-		int openSettingsDialog_gui();
+		gint openHashDialog_gui();
+		gint openSettingsDialog_gui();
 
 	private:
 		// MainWindow-related functions
 		void createMainWindow();
 
 		// Entry functions
-		void insertBookEntry_gui(BookEntry *entry, bool raise = TRUE);
-		void insertDialogEntry_gui(DialogEntry *entry);
 		BookEntry *getBookEntry_gui(const std::string &id, bool raise = TRUE);
 		DialogEntry *getDialogEntry_gui(const std::string &id);
-		void deleteAllEntries();
 
 		// Thread-related functions
 		static gpointer threadFunc_gui(gpointer data);
 		static gpointer threadFunc_client(gpointer data);
 		void processGuiQueue();
 		void processClientQueue();
-
-		// Callbacks
-		static gboolean onCloseWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data);
-		static void onCloseBookEntry_gui(GtkWidget *widget, gpointer data);
-		static void onCloseDialogEntry_gui(GtkDialog *dialog, gint response, gpointer data);
 
 		static WulforManager *manager;
 		MainWindow *mainWin;

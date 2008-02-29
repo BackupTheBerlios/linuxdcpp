@@ -21,13 +21,13 @@
 
 using namespace std;
 
-BookEntry::BookEntry(const string &title, const string &glade):
+BookEntry::BookEntry(const string &title, const string &glade, bool raise):
 	Entry(title, glade),
 	windowItem(NULL),
 	bold(FALSE)
 {
 	bold = FALSE;
-	box = gtk_hbox_new(FALSE, 5);
+	GtkWidget *box = gtk_hbox_new(FALSE, 5);
 
 	eventBox = gtk_event_box_new();
 	gtk_event_box_set_above_child(GTK_EVENT_BOX(eventBox), TRUE);
@@ -49,6 +49,14 @@ BookEntry::BookEntry(const string &title, const string &glade):
 	gtk_widget_show_all(box);
 
 	setLabel_gui(title);
+
+	// Associates entry to the widget for later retrieval in MainWindow::switchPage_gui()
+	g_object_set_data(G_OBJECT(getContainer()), "entry", (gpointer)this);
+
+	WulforManager::get()->insertEntry_gui(this);
+	WulforManager::get()->getMainWindow()->addPage_gui(getContainer(), box, raise);
+
+	g_signal_connect(button, "clicked", G_CALLBACK(onCloseBookEntry_gui), (gpointer)this);
 }
 
 BookEntry::~BookEntry()
@@ -65,11 +73,6 @@ GtkWidget* BookEntry::getContainer()
 	return getWidget("mainBox");
 }
 
-GtkWidget *BookEntry::getTitle()
-{
-	return box;
-}
-
 void BookEntry::setWindowItem(GtkWidget *item)
 {
 	dcassert(windowItem == NULL);
@@ -82,9 +85,10 @@ GtkWidget *BookEntry::getWindowItem()
 	return windowItem;
 }
 
-void BookEntry::applyCallback(GCallback closeCallback)
+void BookEntry::onCloseBookEntry_gui(GtkWidget *widget, gpointer data)
 {
-	g_signal_connect(button, "clicked", closeCallback, (gpointer)this);
+	BookEntry *entry = (BookEntry *)data;
+	WulforManager::get()->deleteEntry_gui(entry);
 }
 
 void BookEntry::setLabel_gui(string text)
@@ -115,3 +119,4 @@ void BookEntry::unsetBold_gui()
 		bold = FALSE;
 	}
 }
+

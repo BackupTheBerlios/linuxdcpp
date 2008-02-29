@@ -34,8 +34,6 @@ class Settings:
 		Settings();
 		~Settings();
 
-		void saveSettings();
-
 	private:
 		// GUI functions
 		void addOption_gui(GtkListStore *store, const std::string &name, SettingsManager::IntSetting setting);
@@ -109,6 +107,7 @@ class Settings:
 		static void onGenerateCertificatesClicked_gui(GtkWidget *widget, gpointer data);
 
 		// Client functions
+		void saveSettings_client();
 		void shareHidden_client(bool show);
 		void addShare_client(std::string path, std::string name);
 		void removeUserCommand_client(std::string name);

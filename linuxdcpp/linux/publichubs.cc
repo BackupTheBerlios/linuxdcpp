@@ -106,25 +106,15 @@ PublicHubs::PublicHubs():
 
 	if (favMan->isDownloading())
 		setStatus_gui("statusMain", "Downloading hub list");
+
+	Func0<PublicHubs> *func = new Func0<PublicHubs>(this, &PublicHubs::downloadList_client);
+	WulforManager::get()->dispatchClientFunc(func);
 }
 
 PublicHubs::~PublicHubs()
 {
 	FavoriteManager::getInstance()->removeListener(this);
 	gtk_widget_destroy(getWidget("configureDialog"));
-}
-
-void PublicHubs::downloadList_client()
-{
-	hubs = FavoriteManager::getInstance()->getPublicHubs();
-
-	if (hubs.empty())
-		FavoriteManager::getInstance()->refresh();
-
-	FavoriteManager::getInstance()->save();
-
-	Func0<PublicHubs> *func = new Func0<PublicHubs>(this, &PublicHubs::updateList_gui);
-	WulforManager::get()->dispatchGuiFunc(func);
 }
 
 void PublicHubs::updateList_gui()
@@ -398,6 +388,19 @@ void PublicHubs::onCellEdited_gui(GtkCellRendererText *cell, char *path, char *t
 
 	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(ph->listsStore), &it, path))
 		gtk_list_store_set(ph->listsStore, &it, ph->listsView.col("List"), text, -1);
+}
+
+void PublicHubs::downloadList_client()
+{
+	hubs = FavoriteManager::getInstance()->getPublicHubs();
+
+	if (hubs.empty())
+		FavoriteManager::getInstance()->refresh();
+
+	FavoriteManager::getInstance()->save();
+
+	Func0<PublicHubs> *func = new Func0<PublicHubs>(this, &PublicHubs::updateList_gui);
+	WulforManager::get()->dispatchGuiFunc(func);
 }
 
 void PublicHubs::refresh_client(int pos)

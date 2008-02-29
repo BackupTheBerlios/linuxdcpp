@@ -35,9 +35,6 @@ class PublicHubs:
 		PublicHubs();
 		~PublicHubs();
 
-		// Client functions
-		void downloadList_client();
-
 	private:
 		// GUI functions
 		void updateList_gui();
@@ -60,6 +57,7 @@ class PublicHubs:
 		static void onCellEdited_gui(GtkCellRendererText *cell, char *path, char *text, gpointer data);
 
 		// Client functions
+		void downloadList_client();
 		void refresh_client(int pos);
 		void addFav_client(FavoriteHubEntry entry);
 

@@ -27,7 +27,7 @@ class PrivateMessage:
 	public BookEntry
 {
 	public:
-		PrivateMessage(const std::string &cid);
+		PrivateMessage(const std::string &cid, bool raise = TRUE);
 		~PrivateMessage();
 
 		// GUI functions

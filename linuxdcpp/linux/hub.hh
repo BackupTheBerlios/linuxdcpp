@@ -31,11 +31,10 @@ class Hub:
 	public ClientListener
 {
 	public:
-		Hub(const std::string &address);
+		Hub(const std::string &address, const std::string &encoding);
 		~Hub();
 
 		// Client functions
-		void connectClient_client(string address, string encoding);
 		void reconnect_client();
 
 	private:
@@ -80,6 +79,7 @@ class Hub:
 		static void onMagnetPropertiesClicked_gui(GtkMenuItem *item, gpointer data);
 
 		// Client functions
+		void connectClient_client(string address, string encoding);
 		void disconnect_client();
 		void setPassword_client(std::string password);
 		void sendMessage_client(std::string message);

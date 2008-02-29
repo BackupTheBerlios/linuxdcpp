@@ -28,8 +28,8 @@
 
 using namespace std;
 
-ShareBrowser::ShareBrowser(User::Ptr user, const std::string &file):
-	BookEntry(_("List: ") + WulforUtil::getNicks(user), "sharebrowser.glade"),
+ShareBrowser::ShareBrowser(User::Ptr user, const std::string &file, bool raise):
+	BookEntry(_("List: ") + WulforUtil::getNicks(user), "sharebrowser.glade", raise),
 	listing(user),
 	shareSize(0),
 	currentSize(0),
@@ -340,8 +340,7 @@ void ShareBrowser::updateFiles_gui(DirectoryListing::Directory *dir)
 	}
 
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(fileStore), sortColumn, sortType);
-	if (GTK_WIDGET_REALIZED(fileView.get()))
-		gtk_tree_view_scroll_to_point(fileView.get(), 0, 0);
+	gtk_tree_view_scroll_to_point(fileView.get(), 0, 0);
 	updateStatus_gui();
 	updateFileView = TRUE;
 }

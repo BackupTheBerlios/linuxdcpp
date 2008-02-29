@@ -147,6 +147,7 @@ MainWindow::MainWindow():
 	gtk_widget_set_sensitive(getWidget("closeMenuItem"), FALSE);
 
 	// Connect the signals to their callback functions.
+	g_signal_connect(window, "delete-event", G_CALLBACK(onCloseWindow_gui), (gpointer)this);
 	g_signal_connect(window, "window-state-event", G_CALLBACK(onWindowState_gui), (gpointer)this);
 	g_signal_connect(window, "delete-event", G_CALLBACK(onDeleteWindow_gui), (gpointer)this);
 	g_signal_connect(window, "key-press-event", G_CALLBACK(onKeyPressed_gui), (gpointer)this);
@@ -280,11 +281,6 @@ MainWindow::~MainWindow()
 GtkWidget *MainWindow::getContainer()
 {
 	return getWidget("mainWindow");
-}
-
-void MainWindow::applyCallback(GCallback closeCallback)
-{
-	g_signal_connect(window, "delete-event", closeCallback, (gpointer)this);
 }
 
 void MainWindow::autoOpen_gui()
@@ -657,6 +653,14 @@ gboolean MainWindow::onWindowState_gui(GtkWidget *widget, GdkEventWindowState *e
 	return TRUE;
 }
 
+gboolean MainWindow::onCloseWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data)
+{
+	WulforManager::get()->deleteAllEntries();
+	gtk_main_quit();
+
+	return TRUE;
+}
+
 gboolean MainWindow::onDeleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
 	MainWindow *mw = (MainWindow *)data;
@@ -831,7 +835,9 @@ void MainWindow::onPreferencesClicked_gui(GtkWidget *widget, gpointer data)
 	int lastConn = SETTING(INCOMING_CONNECTIONS);
 	bool lastShowProgressSetting = BOOLSETTING(SHOW_PROGRESS_BARS);
 
-	if (WulforManager::get()->openSettingsDialog_gui() == GTK_RESPONSE_OK)
+	gint response = WulforManager::get()->openSettingsDialog_gui();
+
+	if (response == GTK_RESPONSE_OK)
 	{
 		if (SETTING(INCOMING_CONNECTIONS) != lastConn || SETTING(TCP_PORT) != tcpPort || SETTING(UDP_PORT) != udpPort)
 		{

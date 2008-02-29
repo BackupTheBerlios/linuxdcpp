@@ -25,23 +25,22 @@ class BookEntry : public Entry
 {
 	public:
 		BookEntry() {}
-		BookEntry(const std::string &title, const std::string &glade);
+		BookEntry(const std::string &title, const std::string &glade, bool raise = TRUE);
 		virtual ~BookEntry();
-		virtual void applyCallback(GCallback closeCallback);
 		GtkWidget *getContainer();
 
 		void setLabel_gui(std::string text);
 		void setBold_gui();
 		void unsetBold_gui();
-		GtkWidget *getTitle();
 		void setWindowItem(GtkWidget *windowItem);
 
 	protected:
 		GtkWidget *getWindowItem();
 
 	private:
+		static void onCloseBookEntry_gui(GtkWidget *widget, gpointer data);
+
 		std::string title;
-		GtkWidget *box;
 		GtkWidget *eventBox;
 		GtkWidget *windowItem;
 		GtkButton *button;

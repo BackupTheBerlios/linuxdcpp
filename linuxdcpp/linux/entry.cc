@@ -58,3 +58,4 @@ const string& Entry::getID()
 {
 	return id;
 }
+
