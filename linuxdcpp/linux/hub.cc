@@ -130,9 +130,14 @@ Hub::Hub(const string &address, const string &encoding):
 	gtk_widget_grab_focus(getWidget("chatEntry"));
 
 	// Set the pane position
-	int panePosition = WGETI("nick-pane-position");
+	gint panePosition = WGETI("nick-pane-position");
 	if (panePosition > 10)
-		gtk_paned_set_position(GTK_PANED(getWidget("pane")), panePosition);
+	{
+		gint width;
+		GtkWindow *window = GTK_WINDOW(WulforManager::get()->getMainWindow()->getContainer());
+		gtk_window_get_size(window, &width, NULL);
+		gtk_paned_set_position(GTK_PANED(getWidget("pane")), width - panePosition);
+	}
 
 	history.push_back("");
 
@@ -151,7 +156,10 @@ Hub::~Hub()
 		g_object_unref(G_OBJECT(it->second));
 
 	// Save the pane position
-	int panePosition = gtk_paned_get_position(GTK_PANED(getWidget("pane")));
+	gint width;
+	GtkWindow *window = GTK_WINDOW(WulforManager::get()->getMainWindow()->getContainer());
+	gtk_window_get_size(window, &width, NULL);
+	gint panePosition = width - gtk_paned_get_position(GTK_PANED(getWidget("pane")));
 	if (panePosition > 10)
 		WSET("nick-pane-position", panePosition);
 

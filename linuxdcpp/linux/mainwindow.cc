@@ -191,10 +191,10 @@ MainWindow::MainWindow():
 	g_signal_connect(getWidget("closeConnectionItem"), "activate", G_CALLBACK(onCloseConnectionClicked_gui), (gpointer)this);
 
 	// Load window state and position from settings manager
-	int posX = WGETI("main-window-pos-x");
-	int posY = WGETI("main-window-pos-y");
-	int sizeX = WGETI("main-window-size-x");
-	int sizeY = WGETI("main-window-size-y");
+	gint posX = WGETI("main-window-pos-x");
+	gint posY = WGETI("main-window-pos-y");
+	gint sizeX = WGETI("main-window-size-x");
+	gint sizeY = WGETI("main-window-size-y");
 
 	gtk_window_move(window, posX, posY);
 	gtk_window_resize(window, sizeX, sizeY);
@@ -243,18 +243,18 @@ MainWindow::~MainWindow()
 	g_list_free(list);
 
 	// Save window state and position
-	int posX, posY, sizeX, sizeY, transferPanePosition;
-	int state = 1;
+	gint posX, posY, sizeX, sizeY, transferPanePosition;
+	bool maximized = TRUE;
 	GdkWindowState gdkState;
 
 	gtk_window_get_position(window, &posX, &posY);
 	gtk_window_get_size(window, &sizeX, &sizeY);
 	gdkState = gdk_window_get_state(GTK_WIDGET(window)->window);
-	transferPanePosition = gtk_paned_get_position(GTK_PANED(getWidget("pane")));
+	transferPanePosition = sizeY - gtk_paned_get_position(GTK_PANED(getWidget("pane")));
 
 	if (!(gdkState & GDK_WINDOW_STATE_MAXIMIZED))
 	{
-		state = 0;
+		maximized = FALSE;
 		// The get pos/size functions return junk when window is maximized
 		WSET("main-window-pos-x", posX);
 		WSET("main-window-pos-y", posY);
@@ -262,8 +262,9 @@ MainWindow::~MainWindow()
 		WSET("main-window-size-y", sizeY);
 	}
 
-	WSET("main-window-maximized", state);
-	WSET("transfer-pane-position", transferPanePosition);
+	WSET("main-window-maximized", maximized);
+	if (transferPanePosition > 10)
+		WSET("transfer-pane-position", transferPanePosition);
 
 	// Make sure all windows are deallocated
 	gtk_widget_destroy(getWidget("connectDialog"));
@@ -796,7 +797,16 @@ void MainWindow::onPageSwitched_gui(GtkNotebook *notebook, GtkNotebookPage *page
 
 void MainWindow::onPaneRealized_gui(GtkWidget *pane, gpointer data)
 {
-	gtk_paned_set_position(GTK_PANED(pane), WGETI("transfer-pane-position"));
+	MainWindow *mw = (MainWindow *)data;
+	gint position = WGETI("transfer-pane-position");
+
+	if (position > 10)
+	{
+		// @todo: fix get window height when maximized
+		gint height;
+		gtk_window_get_size(mw->window, NULL, &height);
+		gtk_paned_set_position(GTK_PANED(pane), height - position);
+	}
 }
 
 void MainWindow::onConnectClicked_gui(GtkWidget *widget, gpointer data)
