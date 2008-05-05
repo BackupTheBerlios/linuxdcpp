@@ -179,7 +179,13 @@ void WulforUtil::openURI(const std::string &uri)
 {
 	GError* error = NULL;
 	gchar *argv[3];
+#if defined(__APPLE__)
+	argv[0] = (gchar *)"open";
+#elif defined(_WIN32)
+	argv[0] = (gchar *)"start";
+#else
 	argv[0] = (gchar *)"xdg-open";
+#endif
 	argv[1] = (gchar *)Text::fromUtf8(uri).c_str();
 	argv[2] = NULL;
 
