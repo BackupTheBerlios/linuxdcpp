@@ -75,9 +75,11 @@ vector<string> WulforUtil::getLocalIPs()
 
 	if (getifaddrs(&ifap) == 0)
 	{
-		while (ifap)
+		struct ifaddrs *interface = ifap;
+
+		while (interface)
 		{
-			struct sockaddr *ifa_addr = ifap->ifa_addr;
+			struct sockaddr *ifa_addr = interface->ifa_addr;
 			if (ifa_addr && ifa_addr->sa_family == AF_INET)
 			{
 				struct sockaddr_in *addr_in = (struct sockaddr_in *)ifa_addr;
@@ -86,7 +88,7 @@ vector<string> WulforUtil::getLocalIPs()
 				if (address != "127.0.0.1")
 					addresses.push_back(address);
 			}
-			ifap = ifap->ifa_next;
+			interface = interface->ifa_next;
 		}
 		freeifaddrs(ifap);
 	}
