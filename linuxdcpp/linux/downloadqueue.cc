@@ -24,8 +24,10 @@
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
 
+using namespace std;
+
 DownloadQueue::DownloadQueue():
-	BookEntry(_("Download Queue"), "downloadqueue.glade"),
+	BookEntry(_("Download Queue"), Entry::DOWNLOAD_QUEUE, "downloadqueue.glade"),
 	currentItems(0),
 	totalItems(0),
 	currentSize(0),
@@ -110,10 +112,6 @@ DownloadQueue::DownloadQueue():
 	int panePosition = WGETI("downloadqueue-pane-position");
 	if (panePosition > 10)
 		gtk_paned_set_position(GTK_PANED(getWidget("pane")), panePosition);
-
-	buildList_client();
-	//WulforManager::get()->dispatchClientFunc(new Func0<DownloadQueue>(this, &DownloadQueue::buildList_client));
-	QueueManager::getInstance()->addListener(this);
 }
 
 DownloadQueue::~DownloadQueue()
@@ -126,6 +124,12 @@ DownloadQueue::~DownloadQueue()
 		WSET("downloadqueue-pane-position", panePosition);
 
 	gtk_widget_destroy(getWidget("dirChooserDialog"));
+}
+
+void DownloadQueue::show()
+{
+	buildList_client();
+	QueueManager::getInstance()->addListener(this);
 }
 
 void DownloadQueue::buildDynamicMenu_gui()
@@ -479,7 +483,7 @@ void DownloadQueue::updateFileView_gui()
 void DownloadQueue::sendMessage_gui(string cid)
 {
 	if (!cid.empty())
-		WulforManager::get()->addPrivMsg_gui(cid);
+		WulforManager::get()->getMainWindow()->addPrivateMessage_gui(cid);
 }
 
 gboolean DownloadQueue::onDirButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
@@ -699,7 +703,7 @@ void DownloadQueue::onFileSearchAlternatesClicked_gui(GtkMenuItem *item, gpointe
 			tth = dq->fileView.getString(&iter, "TTH");
 			if (!tth.empty())
 			{
-				s = dynamic_cast<Search *>(WulforManager::get()->addSearch_gui());
+				s = WulforManager::get()->getMainWindow()->addSearch_gui();
 				s->putValue_gui(tth, 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
 			}
 		}

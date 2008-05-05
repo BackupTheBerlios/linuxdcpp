@@ -26,22 +26,21 @@
 #include "privatemessage.hh"
 #include "search.hh"
 #include "settingsmanager.hh"
+#include "UserCommandMenu.hh"
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
 
 using namespace std;
 
 Hub::Hub(const string &address, const string &encoding):
-	BookEntry(_("Hub: ") + address, "hub.glade"),
+	BookEntry(_("Hub: ") + address, Entry::HUB + address, "hub.glade"),
 	client(NULL),
 	historyIndex(0),
 	totalShared(0),
-	aboveTag(FALSE)
+	aboveTag(FALSE),
+	address(address),
+	encoding(encoding)
 {
-	// Set the window item
-	GtkWidget *item = WulforManager::get()->getMainWindow()->appendWindowItem(getContainer(), getID());
-	setWindowItem(item);
-
 	// Configure the dialog
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("passwordDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
@@ -103,6 +102,10 @@ Hub::Hub(const string &address, const string &encoding):
 	icon = path + "dc++-fw-op.png";
 	userIcons["dc++-fw-op"] = gdk_pixbuf_new_from_file(icon.c_str(), NULL);
 
+	// Initialize the user command menu
+	userCommandMenu = new UserCommandMenu(getWidget("usercommandMenu"), ::UserCommand::CONTEXT_CHAT);
+	addChild(userCommandMenu);
+
 	// Connect the signals to their callback functions.
 	g_signal_connect(getContainer(), "focus-in-event", G_CALLBACK(onFocusIn_gui), (gpointer)this);
 	g_signal_connect(nickView.get(), "button-press-event", G_CALLBACK(onNickListButtonPress_gui), (gpointer)this);
@@ -140,11 +143,6 @@ Hub::Hub(const string &address, const string &encoding):
 	}
 
 	history.push_back("");
-
-	// Connect to the hub
-	typedef Func2<Hub, string, string> F2;
-	F2 *func = new F2(this, &Hub::connectClient_client, address, encoding);
-	WulforManager::get()->dispatchClientFunc(func);
 }
 
 Hub::~Hub()
@@ -170,6 +168,14 @@ Hub::~Hub()
 		gdk_cursor_unref(handCursor);
 		handCursor = NULL;
 	}
+}
+
+void Hub::show()
+{
+	// Connect to the hub
+	typedef Func2<Hub, string, string> F2;
+	F2 *func = new F2(this, &Hub::connectClient_client, address, encoding);
+	WulforManager::get()->dispatchClientFunc(func);
 }
 
 void Hub::setStatus_gui(string statusBar, string text)
@@ -283,73 +289,25 @@ void Hub::clearNickList_gui()
 
 void Hub::popupNickMenu_gui()
 {
-	gtk_container_foreach(GTK_CONTAINER(getWidget("usercommandMenu")), (GtkCallback)gtk_widget_destroy, NULL);
+	// Build user command menu
+	userCommandMenu->cleanMenu_gui();
 
-	// Add user commands.
-	::UserCommand::List list = FavoriteManager::getInstance()->
-		getUserCommands(::UserCommand::CONTEXT_CHAT, StringList(1, client->getHubUrl()));
+	GtkTreeIter iter;
+	GList *list = gtk_tree_selection_get_selected_rows(nickSelection, NULL);
 
-	GtkWidget *menuItem;
-	bool separator = FALSE;
-	GtkWidget *menu = getWidget("usercommandMenu");
-
-	for (::UserCommand::Iter i = list.begin(); i != list.end(); ++i)
+	for (GList *i = list; i; i = i->next)
 	{
-		::UserCommand& uc = *i;
-
-		// Add line separator only if it's not a duplicate
-		if (uc.getType() == ::UserCommand::TYPE_SEPARATOR && !separator)
-		{
-			menuItem = gtk_separator_menu_item_new();
-			gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuItem);
-			separator = TRUE;
+		GtkTreePath *path = (GtkTreePath *)i->data;
+		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(nickStore), &iter, path))
+ 		{
+			userCommandMenu->addUser(nickView.getString(&iter, "CID"));
 		}
-		else if (uc.getType() == ::UserCommand::TYPE_RAW || uc.getType() == ::UserCommand::TYPE_RAW_ONCE)
-		{
-			menu = getWidget("usercommandMenu");
-			string command = uc.getName();
-			string::size_type i = 0;
-			separator = FALSE;
-
-			// Create subfolders based on path separators in the command
-			while ((i = command.find('\\')) != string::npos)
-			{
-				bool createSubmenu = TRUE;
-				GList *menuItems = gtk_container_get_children(GTK_CONTAINER(menu));
-
-				// Search for the sub menu to append the command to
-				for (GList *iter = menuItems; iter; iter = iter->next)
-				{
-					GtkMenuItem *item = (GtkMenuItem *)iter->data;
-					if (gtk_menu_item_get_submenu(item) && WulforUtil::getTextFromMenu(item) == command.substr(0, i))
-					{
-						menu = gtk_menu_item_get_submenu(item);
-						createSubmenu = FALSE;
-						break;
-					}
-				}
-				g_list_free(menuItems);
-
-				// Couldn't find existing sub menu, so we create one
-				if (createSubmenu)
-				{
-					GtkWidget *submenu = gtk_menu_new();
-					menuItem = gtk_menu_item_new_with_label(command.substr(0, i).c_str());
-					gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuItem);
-					gtk_menu_item_set_submenu(GTK_MENU_ITEM(menuItem), submenu);
-					menu = submenu;
-				}
-
-				command = command.substr(++i);
-			}
-
-			menuItem = gtk_menu_item_new_with_label(command.c_str());
-			g_signal_connect(menuItem, "activate", G_CALLBACK(onUserCommandClick_gui), (gpointer)this);
-			g_object_set_data_full(G_OBJECT(menuItem), "name", g_strdup(uc.getName().c_str()), g_free);
-			g_object_set_data_full(G_OBJECT(menuItem), "command", g_strdup(uc.getCommand().c_str()), g_free);
-			gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuItem);
-		}
+		gtk_tree_path_free(path);
 	}
+	g_list_free(list);
+
+	userCommandMenu->addHub(client->getHubUrl());
+	userCommandMenu->buildMenu_gui();
 
 	gtk_menu_popup(GTK_MENU(getWidget("nickMenu")), NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
 	gtk_widget_show_all(getWidget("nickMenu"));
@@ -497,16 +455,6 @@ void Hub::applyTags_gui(const string &line)
 			gtk_text_iter_backward_chars(&endIter, g_utf8_strlen(line.c_str() + end, -1));
 			gtk_text_buffer_apply_tag(chatBuffer, tag, &startIter, &endIter);
 		}
-	}
-}
-
-void Hub::addPrivateMessage_gui(string cid, string msg)
-{
-	if (!cid.empty())
-	{
-		BookEntry *entry = WulforManager::get()->addPrivMsg_gui(cid, !BOOLSETTING(POPUNDER_PM));
-		if (!msg.empty())
-			dynamic_cast< ::PrivateMessage *>(entry)->addMessage_gui(msg);
 	}
 }
 
@@ -894,7 +842,7 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
 		else if (command == _("close"))
 		{
 			/// @todo: figure out why this sometimes closes and reopens the tab
-			WulforManager::get()->deleteEntry_gui(hub);
+			WulforManager::get()->getMainWindow()->removeBookEntry_gui(hub);
 		}
 		else if (command == _("favorite") || command == _("fav"))
 		{
@@ -931,7 +879,7 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
 			if (BOOLSETTING(JOIN_OPEN_NEW_WINDOW))
 			{
 				// Assumption: new hub is same encoding as current hub.
-				WulforManager::get()->addHub_gui(param, hub->client->getEncoding());
+				WulforManager::get()->getMainWindow()->showHub_gui(param, hub->client->getEncoding());
 			}
 			else
 			{
@@ -942,7 +890,7 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
 		else if (command == _("pm"))
 		{
 			if (hub->userMap.find(param) != hub->userMap.end())
-				hub->addPrivateMessage_gui(hub->userMap[param], "");
+				WulforManager::get()->getMainWindow()->addPrivateMessage_gui(hub->userMap[param]);
 			else
 				hub->addStatusMessage_gui(_("User not found"));
 		}
@@ -1081,43 +1029,12 @@ void Hub::onMsgItemClicked_gui(GtkMenuItem *item, gpointer data)
 			if (gtk_tree_model_get_iter(GTK_TREE_MODEL(hub->nickStore), &iter, path))
 			{
 				cid = hub->nickView.getString(&iter, "CID");
-				hub->addPrivateMessage_gui(cid, "");
+				WulforManager::get()->getMainWindow()->addPrivateMessage_gui(cid);
 			}
 			gtk_tree_path_free(path);
 		}
 		g_list_free(list);
 	}
-}
-
-void Hub::onUserCommandClick_gui(GtkMenuItem *item, gpointer data)
-{
-	Hub *hub = (Hub *)data;
-	GtkTreeIter iter;
-	GtkTreePath *path;
-	string cid;
-	string commandName = (gchar *)g_object_get_data(G_OBJECT(item), "name");
-	string command = (gchar *)g_object_get_data(G_OBJECT(item), "command");
-	GList *list = gtk_tree_selection_get_selected_rows(hub->nickSelection, NULL);
-	MainWindow *mw = WulforManager::get()->getMainWindow();
-	typedef Func3<Hub, string, string, StringMap> F3;
-	F3 *func;
-
-	for (GList *i = list; i; i = i->next)
-	{
-		path = (GtkTreePath *)i->data;
-		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(hub->nickStore), &iter, path))
-		{
-			cid = hub->nickView.getString(&iter, "CID");
-			StringMap params;
-			if (mw->getUserCommandLines_gui(command, params))
-			{
-				func = new F3(hub, &Hub::sendUserCommand_client, cid, commandName, params);
-				WulforManager::get()->dispatchClientFunc(func);
-			}
-		}
-		gtk_tree_path_free(path);
-	}
-	g_list_free(list);
 }
 
 void Hub::onGrantItemClicked_gui(GtkMenuItem *item, gpointer data)
@@ -1194,7 +1111,7 @@ void Hub::onOpenHubClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	Hub *hub = (Hub *)data;
 
-	WulforManager::get()->addHub_gui(hub->selectedTag);
+	WulforManager::get()->getMainWindow()->showHub_gui(hub->selectedTag);
 }
 
 void Hub::onSearchMagnetClicked_gui(GtkMenuItem *item, gpointer data)
@@ -1206,7 +1123,7 @@ void Hub::onSearchMagnetClicked_gui(GtkMenuItem *item, gpointer data)
 
 	if (WulforUtil::splitMagnet(hub->selectedTag, name, size, tth))
 	{
-		Search *s = dynamic_cast<Search *>(WulforManager::get()->addSearch_gui());
+		Search *s = WulforManager::get()->getMainWindow()->addSearch_gui();
 		s->putValue_gui(tth, 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
 	}
 }
@@ -1264,22 +1181,6 @@ void Hub::sendMessage_client(string message)
 {
 	if (client && !message.empty())
 		client->hubMessage(message);
-}
-
-void Hub::sendUserCommand_client(string cid, string commandName, StringMap params)
-{
-	if (!cid.empty() && !commandName.empty())
-	{
-		int id = FavoriteManager::getInstance()->findUserCommand(commandName);
-		::UserCommand uc;
-
-		if (id == -1 || !FavoriteManager::getInstance()->getUserCommand(id, uc))
-			return;
-
-		User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
-		if (user)
-			ClientManager::getInstance()->userCommand(user, uc, params, true);
-	}
 }
 
 void Hub::getFileList_client(string cid, bool match)
@@ -1574,9 +1475,6 @@ void Hub::on(ClientListener::HubUpdated, Client *) throw()
 
 	F1 *func1 = new F1(this, &BookEntry::setLabel_gui, hubName);
 	WulforManager::get()->dispatchGuiFunc(func1);
-
-	F2 *func2 = new F2(WulforManager::get()->getMainWindow(), &MainWindow::modifyWindowItem, getWindowItem(), hubName);
-	WulforManager::get()->dispatchGuiFunc(func2);
 }
 
 void Hub::on(ClientListener::Message, Client *, const OnlineUser &from, const string &message) throw()
@@ -1668,8 +1566,9 @@ void Hub::on(ClientListener::PrivateMessage, Client *, const OnlineUser &from,
 	}
 	else
 	{
-		typedef Func2<Hub, string, string> F2;
-		F2 *func = new F2(this, &Hub::addPrivateMessage_gui, user.getUser()->getCID().toBase32(), line);
+		typedef Func3<MainWindow, string, string, bool> F3;
+		F3 *func = new F3(WulforManager::get()->getMainWindow(), &MainWindow::addPrivateMessage_gui, 
+			user.getUser()->getCID().toBase32(), line, TRUE);
 		WulforManager::get()->dispatchGuiFunc(func);
 	}
 }

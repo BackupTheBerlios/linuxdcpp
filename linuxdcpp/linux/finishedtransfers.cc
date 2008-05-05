@@ -21,8 +21,21 @@
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
 
-FinishedTransfers::FinishedTransfers(const string &title):
-	BookEntry(title, "finishedtransfers.glade"),
+using namespace std;
+
+FinishedTransfers* FinishedTransfers::createFinishedDownloads()
+{
+	return new FinishedTransfers(_("Finished Downloads"), Entry::FINISHED_DOWNLOADS, false);
+}
+
+FinishedTransfers* FinishedTransfers::createFinishedUploads()
+{
+	return new FinishedTransfers(_("Finished Uploads"), Entry::FINISHED_UPLOADS, true);
+}
+
+FinishedTransfers::FinishedTransfers(const string &title, const std::string &id, bool isUpload):
+	BookEntry(title, id, "finishedtransfers.glade"),
+	isUpload(isUpload),
 	items(0),
 	totalBytes(0),
 	totalTime(0)
@@ -59,19 +72,19 @@ FinishedTransfers::FinishedTransfers(const string &title):
 	g_signal_connect(transferView.get(), "button-press-event", G_CALLBACK(onButtonPressed_gui), (gpointer)this);
 	g_signal_connect(transferView.get(), "button-release-event", G_CALLBACK(onButtonReleased_gui), (gpointer)this);
 	g_signal_connect(transferView.get(), "key-release-event", G_CALLBACK(onKeyReleased_gui), (gpointer)this);
-
-	isUpload = (getID() == _("Finished Uploads")) ? TRUE : FALSE;
-
-	initializeList_client();
-	//Func0<FinishedTransfers> *func = new Func0<FinishedTransfers>(this, &FinishedTransfers::initializeList_client);
-	//WulforManager::get()->dispatchClientFunc(func);
-
-	FinishedManager::getInstance()->addListener(this);
 }
 
 FinishedTransfers::~FinishedTransfers()
 {
 	FinishedManager::getInstance()->removeListener(this);
+}
+
+void FinishedTransfers::show()
+{
+	initializeList_client();
+	//Func0<FinishedTransfers> *func = new Func0<FinishedTransfers>(this, &FinishedTransfers::initializeList_client);
+	//WulforManager::get()->dispatchClientFunc(func);
+	FinishedManager::getInstance()->addListener(this);
 }
 
 void FinishedTransfers::addItem_gui(StringMap params, bool update)
@@ -309,7 +322,8 @@ void FinishedTransfers::initializeList_client()
 
 	FinishedManager::getInstance()->unlockList();
 
-	WulforManager::get()->dispatchGuiFunc(new Func0<FinishedTransfers>(this, &FinishedTransfers::updateStatus_gui));
+	updateStatus_gui();
+	//WulforManager::get()->dispatchGuiFunc(new Func0<FinishedTransfers>(this, &FinishedTransfers::updateStatus_gui));
 }
 
 void FinishedTransfers::getFinishedParams_client(FinishedItem *item, StringMap &params)

@@ -21,51 +21,46 @@
 
 using namespace std;
 
-BookEntry::BookEntry(const string &title, const string &glade, bool raise):
-	Entry(title, glade),
+BookEntry::BookEntry(const string &title, const string &id, const string &glade, bool duplicates):
+	Entry(id, glade, duplicates),
 	windowItem(NULL),
 	bold(FALSE)
 {
-	bold = FALSE;
-	GtkWidget *box = gtk_hbox_new(FALSE, 5);
+	labelBox = gtk_hbox_new(FALSE, 5);
 
 	eventBox = gtk_event_box_new();
 	gtk_event_box_set_above_child(GTK_EVENT_BOX(eventBox), TRUE);
 	gtk_event_box_set_visible_window(GTK_EVENT_BOX(eventBox), FALSE);
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(eventBox), FALSE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(labelBox), GTK_WIDGET(eventBox), FALSE, TRUE, 0);
 
 	label = GTK_LABEL(gtk_label_new(title.c_str()));
 	gtk_container_add(GTK_CONTAINER(eventBox), GTK_WIDGET(label));
 
-	button = GTK_BUTTON(gtk_button_new());
-	gtk_container_add(GTK_CONTAINER(button), gtk_image_new_from_stock(GTK_STOCK_CLOSE, GTK_ICON_SIZE_MENU));
-	gtk_widget_set_size_request(GTK_WIDGET(button), 16, 16);
-	gtk_button_set_relief(button, GTK_RELIEF_NONE);
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(button), FALSE, TRUE, 0);
+	closeButton = gtk_button_new();
+	gtk_button_set_relief(GTK_BUTTON(closeButton), GTK_RELIEF_NONE);
+	gtk_button_set_focus_on_click(GTK_BUTTON(closeButton), FALSE);
+
+	// Shrink the padding around the close button
+	GtkRcStyle *rcstyle = gtk_rc_style_new();
+	rcstyle->xthickness = rcstyle->ythickness = 0;
+	gtk_widget_modify_style(closeButton, rcstyle);
+	gtk_rc_style_unref(rcstyle);
+
+	// Add the stock icon to the close button
+	GtkWidget *image = gtk_image_new_from_stock(GTK_STOCK_CLOSE, GTK_ICON_SIZE_MENU);
+	gtk_container_add(GTK_CONTAINER(closeButton), image);
+	gtk_box_pack_start(GTK_BOX(labelBox), closeButton, FALSE, FALSE, 0);
 
 	tips = gtk_tooltips_new();
 	gtk_tooltips_enable(tips);
+	gtk_tooltips_set_tip(tips, closeButton, _("Close tab"), NULL);
 
-	gtk_widget_show_all(box);
+	gtk_widget_show_all(labelBox);
 
 	setLabel_gui(title);
 
 	// Associates entry to the widget for later retrieval in MainWindow::switchPage_gui()
 	g_object_set_data(G_OBJECT(getContainer()), "entry", (gpointer)this);
-
-	WulforManager::get()->insertEntry_gui(this);
-	WulforManager::get()->getMainWindow()->addPage_gui(getContainer(), box, raise);
-
-	g_signal_connect(button, "clicked", G_CALLBACK(onCloseBookEntry_gui), (gpointer)this);
-}
-
-BookEntry::~BookEntry()
-{
-	// Remove the flap from the notebook
-	WulforManager::get()->getMainWindow()->removePage_gui(getContainer());
-
-	if (windowItem)
-		WulforManager::get()->getMainWindow()->removeWindowItem(windowItem);
 }
 
 GtkWidget* BookEntry::getContainer()
@@ -85,17 +80,11 @@ GtkWidget *BookEntry::getWindowItem()
 	return windowItem;
 }
 
-void BookEntry::onCloseBookEntry_gui(GtkWidget *widget, gpointer data)
-{
-	BookEntry *entry = (BookEntry *)data;
-	WulforManager::get()->deleteEntry_gui(entry);
-}
-
 void BookEntry::setLabel_gui(string text)
 {
 	gtk_tooltips_set_tip(tips, eventBox, text.c_str(), text.c_str());
-	if (text.size() > 20)
-		text = text.substr(0, 17) + "...";
+	if (text.size() > labelSize)
+		text = text.substr(0, labelSize - 3) + "...";
 	gtk_label_set_text(label, text.c_str());
 	title = text;
 }

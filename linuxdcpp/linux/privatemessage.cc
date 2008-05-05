@@ -26,16 +26,12 @@
 
 using namespace std;
 
-PrivateMessage::PrivateMessage(const string &cid, bool raise):
-	BookEntry(_("PM: ") + WulforUtil::getNicks(cid), "privatemessage.glade", raise),
+PrivateMessage::PrivateMessage(const string &cid):
+	BookEntry(_("PM: ") + WulforUtil::getNicks(cid), Entry::PRIVATE_MESSAGE + cid, "privatemessage.glade"),
 	cid(cid),
 	historyIndex(0),
 	sentAwayMessage(FALSE)
 {
-	// Set the Window item
-	GtkWidget *item = WulforManager::get()->getMainWindow()->appendWindowItem(getContainer(), getID());
-	setWindowItem(item);
-
 	// Intialize the chat window
 	if (SETTING(USE_OEM_MONOFONT))
 	{
@@ -83,6 +79,10 @@ PrivateMessage::~PrivateMessage()
 		gdk_cursor_unref(handCursor);
 		handCursor = NULL;
 	}
+}
+
+void PrivateMessage::show()
+{
 }
 
 void PrivateMessage::addMessage_gui(string message)
@@ -308,7 +308,7 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
 		}
 		else if (command == _("close"))
 		{
-			WulforManager::get()->deleteEntry_gui(pm);
+			WulforManager::get()->getMainWindow()->removeBookEntry_gui(pm);
 		}
 		else if (command == _("favorite") || text == _("fav"))
 		{
@@ -486,7 +486,7 @@ void PrivateMessage::onOpenHubClicked_gui(GtkMenuItem *item, gpointer data)
 {
 	PrivateMessage *pm = (PrivateMessage *)data;
 
-	WulforManager::get()->addHub_gui(pm->selectedURI);
+	WulforManager::get()->getMainWindow()->showHub_gui(pm->selectedURI);
 }
 
 void PrivateMessage::onSearchMagnetClicked_gui(GtkMenuItem *item, gpointer data)
@@ -498,7 +498,7 @@ void PrivateMessage::onSearchMagnetClicked_gui(GtkMenuItem *item, gpointer data)
 
 	if (WulforUtil::splitMagnet(pm->selectedURI, name, size, tth))
 	{
-		Search *s = dynamic_cast<Search *>(WulforManager::get()->addSearch_gui());
+		Search *s = WulforManager::get()->getMainWindow()->addSearch_gui();
 		s->putValue_gui(tth, 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
 	}
 }

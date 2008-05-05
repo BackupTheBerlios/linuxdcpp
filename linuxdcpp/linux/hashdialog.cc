@@ -20,7 +20,7 @@
 #include <client/HashManager.h>
 #include "wulformanager.hh"
 
-Hash::Hash() : DialogEntry("Hash", "hash.glade")
+Hash::Hash() : DialogEntry(Entry::HASH_DIALOG, "hash.glade")
 {
 	string tmp;
 	startTime = GET_TICK();

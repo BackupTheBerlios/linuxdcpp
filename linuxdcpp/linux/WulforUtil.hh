@@ -38,6 +38,8 @@ class WulforUtil
 		static std::string getHubNames(const std::string &cid);
 		static std::string getHubNames(const CID& cid);
 		static std::string getHubNames(const User::Ptr& user);
+		static StringList getHubAddress(const CID& cid);
+		static StringList getHubAddress(const User::Ptr& user);
 		static std::string getTextFromMenu(GtkMenuItem *item);
 		static std::vector<std::string>& getCharsets();
 		static void openURI(const std::string &uri);

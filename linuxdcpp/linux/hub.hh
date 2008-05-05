@@ -26,13 +26,16 @@
 #include "bookentry.hh"
 #include "treeview.hh"
 
+class UserCommandMenu;
+
 class Hub:
 	public BookEntry,
 	public ClientListener
 {
 	public:
 		Hub(const std::string &address, const std::string &encoding);
-		~Hub();
+		virtual ~Hub();
+		virtual void show();
 
 		// Client functions
 		void reconnect_client();
@@ -49,7 +52,6 @@ class Hub:
 		void addMessage_gui(std::string message);
 		void applyTags_gui(const string &line);
 		void addStatusMessage_gui(std::string message);
-		void addPrivateMessage_gui(std::string cid, std::string message);
 		void updateCursor_gui(GtkWidget *widget);
 
 		// GUI callbacks
@@ -71,7 +73,6 @@ class Hub:
 		static void onMsgItemClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onGrantItemClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onRemoveUserItemClicked_gui(GtkMenuItem *item, gpointer data);
-		static void onUserCommandClick_gui(GtkMenuItem *item, gpointer data);
 		static void onCopyURIClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onOpenLinkClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onOpenHubClicked_gui(GtkMenuItem *item, gpointer data);
@@ -83,7 +84,6 @@ class Hub:
 		void disconnect_client();
 		void setPassword_client(std::string password);
 		void sendMessage_client(std::string message);
-		void sendUserCommand_client(std::string cid, std::string commandName, StringMap params);
 		void getFileList_client(std::string cid, bool match);
 		void grantSlot_client(std::string cid);
 		void removeUserFromQueue_client(std::string cid);
@@ -129,6 +129,9 @@ class Hub:
 		GdkCursor *handCursor;
 		bool aboveTag;
 		std::string selectedTag;
+		UserCommandMenu *userCommandMenu;
+		std::string address;
+		std::string encoding;
 };
 
 #else

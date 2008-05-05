@@ -32,7 +32,8 @@ class FavoriteHubs:
 {
 	public:
 		FavoriteHubs();
-		~FavoriteHubs();
+		virtual ~FavoriteHubs();
+		virtual void show();
 
 	private:
 		// GUI functions

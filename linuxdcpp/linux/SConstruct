@@ -16,6 +16,7 @@ gui_files = [
 	'settingsmanager.cc',
 	'sharebrowser.cc',
 	'treeview.cc',
+	'UserCommandMenu.cc',
 	'wulfor.cc',
 	'wulformanager.cc',
 	'WulforUtil.cc']

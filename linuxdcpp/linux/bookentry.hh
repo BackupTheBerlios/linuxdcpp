@@ -25,28 +25,31 @@ class BookEntry : public Entry
 {
 	public:
 		BookEntry() {}
-		BookEntry(const std::string &title, const std::string &glade, bool raise = TRUE);
-		virtual ~BookEntry();
-		GtkWidget *getContainer();
+		BookEntry(const std::string &title, const std::string &id, const std::string &glade, bool duplicates = FALSE);
+		virtual ~BookEntry() {}
 
+		GtkWidget *getContainer();
+		GtkWidget *getLabelBox() { return labelBox; }
+		GtkWidget *getCloseButton() { return closeButton; }
 		void setLabel_gui(std::string text);
 		void setBold_gui();
 		void unsetBold_gui();
 		void setWindowItem(GtkWidget *windowItem);
+		virtual void show() = 0;
 
 	protected:
 		GtkWidget *getWindowItem();
 
 	private:
-		static void onCloseBookEntry_gui(GtkWidget *widget, gpointer data);
-
 		std::string title;
 		GtkWidget *eventBox;
+		GtkWidget *labelBox;
 		GtkWidget *windowItem;
-		GtkButton *button;
+		GtkWidget *closeButton;
 		GtkLabel *label;
 		GtkTooltips *tips;
 		bool bold;
+		static const guint labelSize = 20; ///@todo: make a preference?
 };
 
 #else

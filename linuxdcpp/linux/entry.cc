@@ -17,6 +17,7 @@
  */
 
 #include "entry.hh"
+
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/Util.h>
@@ -24,26 +25,55 @@
 
 using namespace std;
 
-Entry::Entry(const string &id, const string &glade):
-	xml(NULL)
-{
-	// Special case: Allow search tab to have many tabs with the same title.
-	if (id == _("Search: "))
-		this->id = id + Util::toString((long)this);
-	else
-		this->id = id;
+const string Entry::DOWNLOAD_QUEUE = "DOWNLOAD_QUEUE";
+const string Entry::FAVORITE_HUBS = "FAVORITE_HUBS";
+const string Entry::FINISHED_DOWNLOADS = "FINISHED_DOWNLOADS";
+const string Entry::FINISHED_UPLOADS = "FINISHED_UPLOADS";
+const string Entry::HASH_DIALOG = "HASH_DIALOG";
+const string Entry::HUB = "HUB";
+const string Entry::MAIN_WINDOW = "MAIN_WINDOW";
+const string Entry::PRIVATE_MESSAGE = "PRIVATE_MESSAGE";
+const string Entry::PUBLIC_HUBS = "PUBLIC_HUBS";
+const string Entry::SEARCH = "SEARCH";
+const string Entry::SETTINGS_DIALOG = "SETTINGS_DIALOG";
+const string Entry::SHARE_BROWSER = "SHARE_BROWSER";
 
-	// Load the Glade XML file
-	string file = WulforManager::get()->getPath() + "/glade/" + glade;
-	xml = glade_xml_new(file.c_str(), NULL, NULL);
-	if (xml == NULL)
-		gtk_main_quit();
+Entry::Entry(const string &id, const string &glade, bool duplicates):
+	xml(NULL),
+	id(id)
+{
+	// To allow duplicate entries we need to generate an unique ID
+	if (duplicates)
+		this->id += Util::toString((long)this);
+
+	// Load the Glade XML file, if applicable
+	if (!glade.empty())
+	{
+		string file = WulforManager::get()->getPath() + "/glade/" + glade;
+		xml = glade_xml_new(file.c_str(), NULL, NULL);
+		if (xml == NULL)
+			gtk_main_quit();
+	}
 }
 
 Entry::~Entry()
 {
-	g_object_unref(xml);
-	xml = NULL;
+	if (xml)
+	{
+		g_object_unref(xml);
+		xml = NULL;
+	}
+}
+
+const string& Entry::getID()
+{
+	return id;
+}
+
+void Entry::remove()
+{
+	removeChildren();
+	WulforManager::get()->deleteEntry_gui(this);
 }
 
 GtkWidget *Entry::getWidget(const string &name)
@@ -54,8 +84,41 @@ GtkWidget *Entry::getWidget(const string &name)
 	return widget;
 }
 
-const string& Entry::getID()
+void Entry::addChild(Entry *entry)
 {
-	return id;
+	children.insert(make_pair(entry->getID(), entry));
+	WulforManager::get()->insertEntry_gui(entry);
+}
+
+Entry *Entry::getChild(const string &id)
+{
+	map<string, Entry *>::const_iterator it = children.find(id);
+
+	if (it == children.end())
+		return NULL;
+	else
+		return it->second;
+}
+
+void Entry::removeChild(const string &id)
+{
+	Entry *entry = getChild(id);
+	removeChild(entry);
+}
+
+void Entry::removeChild(Entry *entry)
+{
+	if (entry != NULL)
+	{
+		entry->removeChildren();
+		children.erase(entry->getID());
+		WulforManager::get()->deleteEntry_gui(entry);
+	}
+}
+
+void Entry::removeChildren()
+{
+	while (!children.empty())
+		removeChild(children.begin()->second);
 }
 

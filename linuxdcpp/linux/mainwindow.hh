@@ -31,6 +31,10 @@
 #include "entry.hh"
 #include "treeview.hh"
 
+class BookEntry;
+class Search;
+class UserCommandMenu;
+
 class MainWindow:
 	public Entry,
 	public ConnectionManagerListener,
@@ -48,34 +52,42 @@ class MainWindow:
 		GtkWidget *getContainer();
 
 		// GUI functions
-		void autoOpen_gui();
-		void addPage_gui(GtkWidget *page, GtkWidget *label, bool raise = TRUE);
+		void show();
+		void removeBookEntry_gui(BookEntry *entry);
 		GtkWidget *currentPage_gui();
 		void raisePage_gui(GtkWidget *page);
-		void removePage_gui(GtkWidget *page);
 		GtkWidget *appendWindowItem(GtkWidget *page, const std::string &title);
 		void modifyWindowItem(GtkWidget *menuItem, std::string title);
 		void removeWindowItem(GtkWidget *menuItem);
 		bool getUserCommandLines_gui(const std::string &command, StringMap &ucParams);
 		void openMagnetDialog_gui(const std::string &magnet);
-
-		// Client functions
-		void autoConnect_client();
+		void showDownloadQueue_gui();
+		void showFavoriteHubs_gui();
+		void showFinishedDownloads_gui();
+		void showFinishedUploads_gui();
+		void showHub_gui(std::string address, std::string encoding = "");
+		void addPrivateMessage_gui(std::string cid, std::string message = "", bool useSetting = FALSE);
+		void showPublicHubs_gui();
+		void showShareBrowser_gui(User::Ptr user, std::string file, std::string dir, bool useSetting);
+		Search *addSearch_gui();
+		void setMainStatus_gui(std::string text);
 
 	private:
 		// GUI functions
+		void autoOpen_gui();
+		void addBookEntry_gui(BookEntry *entry);
+		BookEntry *findBookEntry(const std::string &id);
 		void createTrayIcon_gui();
 		void updateTrayToolTip_gui(std::string download, std::string upload);
 		void setStatus_gui(std::string statusBar, std::string text);
 		void setStats_gui(std::string hub, std::string slot,
 			std::string dTot, std::string uTot, std::string dl, std::string ul);
-		void addShareBrowser_gui(User::Ptr user, std::string filename, std::string dir, bool useSetting);
-		void openHub_gui(std::string server, std::string encoding);
 		bool findTransfer_gui(const std::string &cid, bool download, GtkTreeIter *iter);
 		void updateTransfer_gui(StringMap params, bool download);
 		void removeTransfer_gui(std::string cid, bool download);
 		void setTabPosition_gui(int position);
 		void setToolbarStyle_gui(int style);
+		void popupTransferMenu_gui();
 
 		// GUI Callbacks
 		static gboolean onWindowState_gui(GtkWidget *widget, GdkEventWindowState *event, gpointer data);
@@ -105,6 +117,7 @@ class MainWindow:
 		static void onCloseClicked_gui(GtkWidget *widget, gpointer data);
 		static void onAboutClicked_gui(GtkWidget *widget, gpointer data);
 		static void onAboutDialogActivateLink_gui(GtkAboutDialog *dialog, const gchar *link, gpointer data);
+		static void onCloseBookEntry_gui(GtkWidget *widget, gpointer data);
 		static void onGetFileListClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onMatchQueueClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onPrivateMessageClicked_gui(GtkMenuItem *item, gpointer data);
@@ -117,6 +130,7 @@ class MainWindow:
 		static void onToggleWindowVisibility_gui(GtkMenuItem *item, gpointer data);
 
 		// Client functions
+		void autoConnect_client();
 		void startSocket_client();
 		void openOwnList_client();
 		void refreshFileList_client();
@@ -155,6 +169,7 @@ class MainWindow:
 		int64_t lastUpdate, lastUp, lastDown;
 		int emptyStatusWidth;
 		bool minimized;
+		UserCommandMenu *userCommandMenu;
 };
 
 #else

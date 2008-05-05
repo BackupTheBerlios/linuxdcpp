@@ -22,11 +22,12 @@
 #include <client/stdinc.h>
 #include <client/DCPlusPlus.h>
 #include <client/ClientManager.h>
-#include <client/QueueManager.h>
 #include <client/SearchManager.h>
 
 #include "bookentry.hh"
 #include "treeview.hh"
+
+class UserCommandMenu;
 
 class Search:
 	public BookEntry,
@@ -35,7 +36,8 @@ class Search:
 {
 	public:
 		Search();
-		~Search();
+		virtual ~Search();
+		virtual void show();
 
 		void putValue_gui(const std::string &str, int64_t size, SearchManager::SizeModes mode, SearchManager::TypeModes type);
 
@@ -45,7 +47,6 @@ class Search:
 		void addHub_gui(std::string name, std::string url, bool op);
 		void modifyHub_gui(std::string name, std::string url, bool op);
 		void removeHub_gui(std::string url);
-		void buildDownloadMenu_gui();
 		void popupMenu_gui();
 		void setStatus_gui(std::string statusBar, std::string text);
 		void search_gui();
@@ -79,7 +80,6 @@ class Search:
 		static void onGrantExtraSlotClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onRemoveUserFromQueueClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onRemoveClicked_gui(GtkMenuItem *item, gpointer data);
-		static void onUserCommandClicked_gui(GtkMenuItem *item, gpointer data);
 
 		// Client functions
 		void download_client(std::string target, SearchResult *result);
@@ -89,7 +89,6 @@ class Search:
 		void addFavUser_client(std::string cid);
 		void grantSlot_client(std::string cid);
 		void removeSource_client(std::string cid);
-		void sendUserCommand_client(std::string cid, std::string commandName, StringMap params);
 
 		// Client callbacks
 		virtual void on(ClientManagerListener::ClientConnected, Client *client) throw();
@@ -114,6 +113,7 @@ class Search:
 		bool isHash;
 		bool onlyFree;
 		static bool onlyOp;
+		UserCommandMenu *userCommandMenu;
 };
 
 #else

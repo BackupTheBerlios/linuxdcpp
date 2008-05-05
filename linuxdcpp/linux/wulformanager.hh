@@ -23,7 +23,6 @@
 #include <glib.h>
 #include <string>
 
-#include "bookentry.hh"
 #include "dialogentry.hh"
 #include "func.hh"
 #include "mainwindow.hh"
@@ -40,21 +39,12 @@ class WulforManager
 
 		std::string getPath();
 		MainWindow *getMainWindow();
+		void deleteMainWindow();
 		void dispatchGuiFunc(FuncBase *func);
 		void dispatchClientFunc(FuncBase *func);
 
-		// BookEntry functions
-		BookEntry *addPublicHubs_gui();
-		BookEntry *addHub_gui(const std::string &address, const std::string &encoding = "");
-		BookEntry *addPrivMsg_gui(const std::string &cid, bool raise = TRUE);
-		BookEntry *addDownloadQueue_gui();
-		BookEntry *addFavoriteHubs_gui();
-		BookEntry *addSearch_gui();
-		BookEntry *addShareBrowser_gui(User::Ptr user, const std::string &file, bool raise = TRUE);
-		BookEntry *addFinishedTransfers_gui(const std::string &title);
 		void insertEntry_gui(Entry *entry);
 		void deleteEntry_gui(Entry *entry);
-		void deleteAllEntries();
 
 		// DialogEntry functions
 		gint openHashDialog_gui();
@@ -65,7 +55,6 @@ class WulforManager
 		void createMainWindow();
 
 		// Entry functions
-		BookEntry *getBookEntry_gui(const std::string &id, bool raise = TRUE);
 		DialogEntry *getDialogEntry_gui(const std::string &id);
 
 		// Thread-related functions

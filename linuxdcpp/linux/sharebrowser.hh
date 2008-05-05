@@ -26,30 +26,30 @@
 #include "bookentry.hh"
 #include "treeview.hh"
 
+class UserCommandMenu;
+
 class ShareBrowser:
 	public BookEntry
 {
 	public:
-		ShareBrowser(User::Ptr user, const std::string &file, bool raise = TRUE);
-		~ShareBrowser();
-
-		// GUI functions
-		void openDir_gui(const std::string &dir);
+		ShareBrowser(User::Ptr user, const std::string &file, const std::string &initialDirectory);
+		virtual ~ShareBrowser();
+		virtual void show();
 
 	private:
 		// GUI functions
+		void buildList_gui();
+		void openDir_gui(const std::string &dir);
 		bool findDir_gui(const std::string &dir, GtkTreeIter *parent);
 		void buildDirs_gui(DirectoryListing::Directory *dir, GtkTreeIter *iter);
-		void buildDirDownloadMenu_gui();
-		void buildFileDownloadMenu_gui();
 		void updateFiles_gui(DirectoryListing::Directory *dir);
 		void updateStatus_gui();
 		void setStatus_gui(std::string statusBar, std::string msg);
 		void fileViewSelected_gui();
 		void downloadSelectedFiles_gui(const std::string &target);
 		void downloadSelectedDirs_gui(const std::string &target);
-		void filePopupMenu_gui();
-		void dirPopupMenu_gui();
+		void popupFileMenu_gui();
+		void popupDirMenu_gui();
 		void find_gui();
 
 		// GUI callbacks
@@ -76,6 +76,9 @@ class ShareBrowser:
 		void matchQueue_client();
 
 		GdkEventType oldType;
+		User::Ptr user;
+		std::string file;
+		std::string initialDirectory;
 		DirectoryListing listing;
 		int64_t shareSize;
 		int64_t currentSize;
@@ -89,6 +92,8 @@ class ShareBrowser:
 		GtkTreeStore *dirStore;
 		GtkTreeSelection *fileSelection, *dirSelection;
 		GdkPixbuf *iconFile, *iconDirectory;
+		UserCommandMenu *fileUserCommandMenu;
+		UserCommandMenu *dirUserCommandMenu;
 };
 
 #else

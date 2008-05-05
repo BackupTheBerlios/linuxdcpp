@@ -20,18 +20,8 @@
 
 #include <iostream>
 #include <glib/gi18n.h>
-#include "downloadqueue.hh"
-#include "favoritehubs.hh"
-#include "finishedtransfers.hh"
 #include "hashdialog.hh"
-#include "hub.hh"
-#include "privatemessage.hh"
-#include "publichubs.hh"
-#include "search.hh"
 #include "settingsdialog.hh"
-#include "settingsmanager.hh"
-#include "sharebrowser.hh"
-#include "WulforUtil.hh"
 
 using namespace std;
 
@@ -137,15 +127,14 @@ void WulforManager::createMainWindow()
 {
 	dcassert(!mainWin);
 	mainWin = new MainWindow();
+	WulforManager::insertEntry_gui(mainWin);
+	mainWin->show();
+}
 
-	// Autoconnect and autoopen calls stuff in wulformanager that needs to know
-	// what mainWin is, so these cannot be called by the MainWindow constructor.
-	typedef Func0<MainWindow> F0;
-	F0 *f0 = new F0(mainWin, &MainWindow::autoConnect_client);
-	WulforManager::get()->dispatchClientFunc(f0);
-
-	f0 = new F0(mainWin, &MainWindow::autoOpen_gui);
-	WulforManager::get()->dispatchGuiFunc(f0);
+void WulforManager::deleteMainWindow()
+{
+	mainWin->remove();
+	gtk_main_quit();
 }
 
 gpointer WulforManager::threadFunc_gui(gpointer data)
@@ -235,7 +224,7 @@ void WulforManager::dispatchGuiFunc(FuncBase *func)
 	g_static_rw_lock_reader_lock(&entryMutex);
 
 	// Make sure we're not adding functions to deleted objects.
-	if (func->getID() == "Main Window" || entries.find(func->getID()) != entries.end())
+	if (entries.find(func->getID()) != entries.end())
 	{
 		g_mutex_lock(guiQueueMutex);
 		guiFuncs.push_back(func);
@@ -257,7 +246,7 @@ void WulforManager::dispatchClientFunc(FuncBase *func)
 	g_static_rw_lock_reader_lock(&entryMutex);
 
 	// Make sure we're not adding functions to deleted objects.
-	if (func->getID() == "Main Window" || entries.find(func->getID()) != entries.end())
+	if (entries.find(func->getID()) != entries.end())
 	{
 		g_mutex_lock(clientQueueMutex);
 		clientFuncs.push_back(func);
@@ -283,21 +272,6 @@ MainWindow *WulforManager::getMainWindow()
 string WulforManager::getPath()
 {
 	return path;
-}
-
-BookEntry *WulforManager::getBookEntry_gui(const string &id, bool raise)
-{
-	BookEntry *ret = NULL;
-
-	g_static_rw_lock_reader_lock(&entryMutex);
-	if (entries.find(id) != entries.end())
-		ret = dynamic_cast<BookEntry *>(entries[id]);
-	g_static_rw_lock_reader_unlock(&entryMutex);
-
-	if (ret && raise)
-		mainWin->raisePage_gui(ret->getContainer());
-
-	return ret;
 }
 
 void WulforManager::insertEntry_gui(Entry *entry)
@@ -356,15 +330,6 @@ void WulforManager::deleteEntry_gui(Entry *entry)
 	entry = NULL;
 }
 
-// Should be called from a callback, so gdk_threads_enter/leave is called automatically.
-void WulforManager::deleteAllEntries()
-{
-	while (entries.size() > 0)
-		deleteEntry_gui(entries.begin()->second);
-
-	WulforManager::get()->deleteEntry_gui(mainWin);
-}
-
 DialogEntry* WulforManager::getDialogEntry_gui(const string &id)
 {
 	DialogEntry *ret = NULL;
@@ -375,83 +340,6 @@ DialogEntry* WulforManager::getDialogEntry_gui(const string &id)
 	g_static_rw_lock_reader_unlock(&entryMutex);
 
 	return ret;
-}
-
-BookEntry *WulforManager::addPublicHubs_gui()
-{
-	BookEntry *entry = getBookEntry_gui(_("Public Hubs"));
-
-	if (entry == NULL)
-		entry = new PublicHubs();
-
-	return entry;
-}
-
-BookEntry *WulforManager::addDownloadQueue_gui()
-{
-	BookEntry *entry = getBookEntry_gui(_("Download Queue"));
-
-	if (entry == NULL)
-		entry = new DownloadQueue();
-
-	return entry;
-}
-
-BookEntry *WulforManager::addFavoriteHubs_gui()
-{
-	BookEntry *entry = getBookEntry_gui(_("Favorite Hubs"));
-
-	if (entry == NULL)
-		entry = new FavoriteHubs();
-
-	return entry;
-}
-
-BookEntry *WulforManager::addHub_gui(const string &address, const string &encoding)
-{
-	BookEntry *entry = getBookEntry_gui(_("Hub: ") + address);
-
-	if (entry == NULL)
-		entry = new Hub(address, encoding);
-
-	return entry;
-}
-
-BookEntry *WulforManager::addPrivMsg_gui(const std::string &cid, bool raise)
-{
-	BookEntry *entry = getBookEntry_gui(_("PM: ") + WulforUtil::getNicks(cid), FALSE);
-
-	if (entry == NULL)
-		entry = new PrivateMessage(cid, raise);
-
-	return entry;
-}
-
-BookEntry *WulforManager::addShareBrowser_gui(User::Ptr user, const string &file, bool raise)
-{
-	BookEntry *entry = getBookEntry_gui(_("List: ") + WulforUtil::getNicks(user), raise);
-
-	if (entry == NULL)
-		entry = new ShareBrowser(user, file, raise);
-
-	return entry;
-}
-
-BookEntry *WulforManager::addSearch_gui()
-{
-	BookEntry *entry = new Search();
-
-	return entry;
-}
-
-BookEntry *WulforManager::addFinishedTransfers_gui(const string &title)
-{
-	BookEntry *entry = getBookEntry_gui(title);
-
-	if (entry == NULL)
-		entry = new FinishedTransfers(title);
-
-	return entry;
 }
 
 gint WulforManager::openHashDialog_gui()

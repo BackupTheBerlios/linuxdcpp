@@ -28,7 +28,7 @@
 
 using namespace std;
 
-Settings::Settings() : DialogEntry("Settings", "settingsdialog.glade")
+Settings::Settings() : DialogEntry(Entry::SETTINGS_DIALOG, "settingsdialog.glade")
 {
 	// Configure the dialogs.
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("dialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
@@ -666,7 +666,7 @@ void Settings::initAppearance_gui()
 		g_list_free(list);
 
 		addOption_gui(windowStore2, _("Open file list window in the background"), SettingsManager::POPUNDER_FILELIST);
-		addOption_gui(windowStore2, _("Open new private message windows in the background"), SettingsManager::POPUNDER_PM);
+		addOption_gui(windowStore2, _("Open new private messages from other users in the background"), SettingsManager::POPUNDER_PM);
 		addOption_gui(windowStore2, _("Open new window when using /join"), SettingsManager::JOIN_OPEN_NEW_WINDOW);
 		addOption_gui(windowStore2, _("Ignore private messages from the hub"), SettingsManager::IGNORE_HUB_PMS);
 		addOption_gui(windowStore2, _("Ignore private messages from bots"), SettingsManager::IGNORE_BOT_PMS);
@@ -908,6 +908,8 @@ void Settings::saveUserCommand(UserCommand *uc)
 		ctx |= UserCommand::CONTEXT_CHAT;
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("commandDialogSearchMenu"))))
 		ctx |= UserCommand::CONTEXT_SEARCH;
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("commandDialogFilelistMenu"))))
+		ctx |= UserCommand::CONTEXT_FILELIST;
 
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("commandDialogSeparator"))))
 	{
@@ -1514,6 +1516,7 @@ void Settings::onUserCommandAdd_gui(GtkWidget *widget, gpointer data)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogHubMenu")), TRUE);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogUserMenu")), TRUE);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogSearchMenu")), TRUE);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogFilelistMenu")), TRUE);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogOnce")), FALSE);
 	gtk_entry_set_text(GTK_ENTRY(s->getWidget("commandDialogName")), "");
 	gtk_entry_set_text(GTK_ENTRY(s->getWidget("commandDialogCommand")), "");
@@ -1571,10 +1574,12 @@ void Settings::onUserCommandEdit_gui(GtkWidget *widget, gpointer data)
 		bool hub = uc.getCtx() & UserCommand::CONTEXT_HUB;
 		bool user = uc.getCtx() & UserCommand::CONTEXT_CHAT;
 		bool search = uc.getCtx() & UserCommand::CONTEXT_SEARCH;
+		bool filelist = uc.getCtx() & UserCommand::CONTEXT_FILELIST;
 
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogHubMenu")), hub);
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogUserMenu")), user);
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogSearchMenu")), search);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogFilelistMenu")), filelist);
 
 		if (uc.getType() == UserCommand::TYPE_SEPARATOR)
 		{
@@ -1592,7 +1597,7 @@ void Settings::onUserCommandEdit_gui(GtkWidget *widget, gpointer data)
 				command.find('|') == command.length() - 1)
 			{
 				string::size_type i = command.find('>') + 2;
-				command = NmdcHub::validateMessage(command.substr(i, command.length() - i - 1), TRUE);;
+				command = NmdcHub::validateMessage(command.substr(i, command.length() - i - 1), TRUE);
 				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogChat")), TRUE);
 			}
 			// PM command

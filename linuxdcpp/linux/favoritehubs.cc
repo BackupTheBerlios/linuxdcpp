@@ -21,8 +21,10 @@
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
 
+using namespace std;
+
 FavoriteHubs::FavoriteHubs():
-	BookEntry(_("Favorite Hubs"), "favoritehubs.glade")
+	BookEntry(_("Favorite Hubs"), Entry::FAVORITE_HUBS, "favoritehubs.glade")
 {
 	// Configure the dialogs
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("deleteFavoriteDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
@@ -72,10 +74,6 @@ FavoriteHubs::FavoriteHubs():
 	g_signal_connect(favoriteView.get(), "button-press-event", G_CALLBACK(onButtonPressed_gui), (gpointer)this);
 	g_signal_connect(favoriteView.get(), "button-release-event", G_CALLBACK(onButtonReleased_gui), (gpointer)this);
 	g_signal_connect(favoriteView.get(), "key-release-event", G_CALLBACK(onKeyReleased_gui), (gpointer)this);
-
-	initializeList_client();
-	//WulforManager::get()->dispatchClientFunc(new Func0<FavoriteHubs>(this, &FavoriteHubs::initializeList_client));
-	FavoriteManager::getInstance()->addListener(this);
 }
 
 FavoriteHubs::~FavoriteHubs()
@@ -83,6 +81,13 @@ FavoriteHubs::~FavoriteHubs()
 	FavoriteManager::getInstance()->removeListener(this);
 	gtk_widget_destroy(getWidget("deleteFavoriteDialog"));
 	gtk_widget_destroy(getWidget("errorDialog"));
+}
+
+void FavoriteHubs::show()
+{
+	initializeList_client();
+	//WulforManager::get()->dispatchClientFunc(new Func0<FavoriteHubs>(this, &FavoriteHubs::initializeList_client));
+	FavoriteManager::getInstance()->addListener(this);
 }
 
 void FavoriteHubs::addEntry_gui(StringMap params)
@@ -178,7 +183,7 @@ gboolean FavoriteHubs::onButtonReleased_gui(GtkWidget *widget, GdkEventButton *e
 		}
 		else if (fh->previous == GDK_2BUTTON_PRESS && event->button == 1)
 		{
-			WulforManager::get()->addHub_gui(
+			WulforManager::get()->getMainWindow()->showHub_gui(
 				fh->favoriteView.getString(&iter, "Address"),
 				fh->favoriteView.getString(&iter, "Encoding"));
 		}
@@ -204,7 +209,7 @@ gboolean FavoriteHubs::onKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, 
 			gtk_tree_view_get_cursor(fh->favoriteView.get(), NULL, &column);
 			if (column && column != gtk_tree_view_get_column(fh->favoriteView.get(), fh->favoriteView.col("Auto Connect")))
 			{
-				WulforManager::get()->addHub_gui(
+				WulforManager::get()->getMainWindow()->showHub_gui(
 					fh->favoriteView.getString(&iter, "Address"),
 					fh->favoriteView.getString(&iter, "Encoding"));
 			}
@@ -355,7 +360,7 @@ void FavoriteHubs::onConnect_gui(GtkButton *widget, gpointer data)
 	GtkTreeIter iter;
 
 	if (gtk_tree_selection_get_selected(fh->favoriteSelection, NULL, &iter))
-		WulforManager::get()->addHub_gui(
+		WulforManager::get()->getMainWindow()->showHub_gui(
 			fh->favoriteView.getString(&iter, "Address"),
 			fh->favoriteView.getString(&iter, "Encoding"));
 }

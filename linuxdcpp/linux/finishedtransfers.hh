@@ -30,10 +30,14 @@ class FinishedTransfers:
 	public FinishedManagerListener
 {
 	public:
-		FinishedTransfers(const std::string &title);
-		~FinishedTransfers();
+		static FinishedTransfers* createFinishedUploads();
+		static FinishedTransfers* createFinishedDownloads();
+		virtual ~FinishedTransfers();
+		virtual void show();
 
 	private:
+		FinishedTransfers(const std::string &title, const std::string &id, bool isUpload);
+
 		// GUI functions
 		void addItem_gui(StringMap params, bool update);
 		void removeItem_gui(std::string target);

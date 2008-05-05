@@ -33,6 +33,7 @@ class DownloadQueue:
 	public:
 		DownloadQueue();
 		virtual ~DownloadQueue();
+		virtual void show();
 
 	private:
 		// GUI functions

@@ -24,18 +24,25 @@
 #include <client/FavoriteManager.h>
 #include <client/ShareManager.h>
 #include <client/Text.h>
+#include "downloadqueue.hh"
 #include "eggtrayicon.h"
+#include "favoritehubs.hh"
+#include "finishedtransfers.hh"
 #include "func.hh"
 #include "hub.hh"
+#include "privatemessage.hh"
+#include "publichubs.hh"
+#include "search.hh"
 #include "settingsmanager.hh"
 #include "sharebrowser.hh"
+#include "UserCommandMenu.hh"
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
 
 using namespace std;
 
 MainWindow::MainWindow():
-	Entry("Main Window", "mainwindow.glade"),
+	Entry(Entry::MAIN_WINDOW, "mainwindow.glade"),
 	lastUpdate(0),
 	lastUp(0),
 	lastDown(0),
@@ -146,6 +153,10 @@ MainWindow::MainWindow():
 	g_object_set_data(G_OBJECT(getWidget("book")), "page-rotation-list", NULL);
 	gtk_widget_set_sensitive(getWidget("closeMenuItem"), FALSE);
 
+	// Initialize the user command menu
+	userCommandMenu = new UserCommandMenu(getWidget("userCommandMenu"), ::UserCommand::CONTEXT_CHAT);
+	addChild(userCommandMenu);
+
 	// Connect the signals to their callback functions.
 	g_signal_connect(window, "delete-event", G_CALLBACK(onCloseWindow_gui), (gpointer)this);
 	g_signal_connect(window, "window-state-event", G_CALLBACK(onWindowState_gui), (gpointer)this);
@@ -218,16 +229,6 @@ MainWindow::MainWindow():
 	setToolbarStyle_gui(WGETI("toolbar-style"));
 
 	createTrayIcon_gui();
-
-	QueueManager::getInstance()->addListener(this);
-	TimerManager::getInstance()->addListener(this);
-	DownloadManager::getInstance()->addListener(this);
-	LogManager::getInstance()->addListener(this);
-	UploadManager::getInstance()->addListener(this);
-	ConnectionManager::getInstance()->addListener(this);
-
-	Func0<MainWindow> *f0 = new Func0<MainWindow>(this, &MainWindow::startSocket_client);
-	WulforManager::get()->dispatchClientFunc(f0);
 }
 
 MainWindow::~MainWindow()
@@ -284,31 +285,59 @@ GtkWidget *MainWindow::getContainer()
 	return getWidget("mainWindow");
 }
 
+void MainWindow::show()
+{
+	QueueManager::getInstance()->addListener(this);
+	TimerManager::getInstance()->addListener(this);
+	DownloadManager::getInstance()->addListener(this);
+	LogManager::getInstance()->addListener(this);
+	UploadManager::getInstance()->addListener(this);
+	ConnectionManager::getInstance()->addListener(this);
+
+	typedef Func0<MainWindow> F0;
+	F0 *f0 = new F0(this, &MainWindow::startSocket_client);
+	WulforManager::get()->dispatchClientFunc(f0);
+
+	f0 = new F0(this, &MainWindow::autoConnect_client);
+	WulforManager::get()->dispatchClientFunc(f0);
+
+	autoOpen_gui();
+}
+
 void MainWindow::autoOpen_gui()
 {
 	if (BOOLSETTING(OPEN_PUBLIC))
-		WulforManager::get()->addPublicHubs_gui();
+		showPublicHubs_gui();
 	if (BOOLSETTING(OPEN_QUEUE))
-		WulforManager::get()->addDownloadQueue_gui();
+		showDownloadQueue_gui();
 	if (BOOLSETTING(OPEN_FAVORITE_HUBS))
-		WulforManager::get()->addFavoriteHubs_gui();
+		showFavoriteHubs_gui();
 	if (BOOLSETTING(OPEN_FINISHED_DOWNLOADS))
-		WulforManager::get()->addFinishedTransfers_gui(_("Finished Downloads"));
+		showFinishedDownloads_gui();
+	if (BOOLSETTING(OPEN_FINISHED_UPLOADS))
+		showFinishedUploads_gui();
 }
 
-void MainWindow::addPage_gui(GtkWidget *page, GtkWidget *label, bool raise)
+void MainWindow::addBookEntry_gui(BookEntry *entry)
 {
-	gtk_notebook_append_page(GTK_NOTEBOOK(getWidget("book")), page, label);
-	g_signal_connect(label, "button-press-event", G_CALLBACK(onButtonPressPage_gui), (gpointer)this);
+	addChild(entry);
 
-	if (raise)
-		gtk_notebook_set_current_page(GTK_NOTEBOOK(getWidget("book")), -1);
+	GtkWidget *page = entry->getContainer();
+	GtkWidget *label = entry->getLabelBox();
+	GtkWidget *closeButton = entry->getCloseButton();
+
+	gtk_notebook_append_page(GTK_NOTEBOOK(getWidget("book")), page, label);
+
+	g_signal_connect(label, "button-press-event", G_CALLBACK(onButtonPressPage_gui), (gpointer)entry);
+	g_signal_connect(closeButton, "clicked", G_CALLBACK(onCloseBookEntry_gui), (gpointer)entry);
 
 	gtk_widget_set_sensitive(getWidget("closeMenuItem"), TRUE);
 
 #if GTK_CHECK_VERSION(2, 10, 0)
 	gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(getWidget("book")), page, TRUE);
 #endif
+
+	entry->show();
 }
 
 GtkWidget *MainWindow::currentPage_gui()
@@ -329,10 +358,12 @@ void MainWindow::raisePage_gui(GtkWidget *page)
 		gtk_notebook_set_current_page(GTK_NOTEBOOK(getWidget("book")), num);
 }
 
-void MainWindow::removePage_gui(GtkWidget *page)
+void MainWindow::removeBookEntry_gui(BookEntry *entry)
 {
 	GtkNotebook *book = GTK_NOTEBOOK(getWidget("book"));
+	GtkWidget *page = entry->getContainer();
 	int num = gtk_notebook_page_num(book, page);
+	removeChild(entry);
 
 	if (num != -1)
 	{
@@ -409,6 +440,11 @@ void MainWindow::updateTrayToolTip_gui(string download, string upload)
 	gtk_tooltips_set_tip(trayToolTip, trayIcon, toolTip.str().c_str(), NULL);
 }
 
+void MainWindow::setMainStatus_gui(string text)
+{
+	setStatus_gui("status1", text);
+}
+
 void MainWindow::setStatus_gui(string statusBar, std::string text)
 {
 	if (statusBar != "status1")
@@ -440,20 +476,133 @@ void MainWindow::setStats_gui(std::string hub, std::string slot,
 	setStatus_gui("status7", dl);
 }
 
-void MainWindow::addShareBrowser_gui(User::Ptr user, string filename, string dir, bool useSetting)
+BookEntry* MainWindow::findBookEntry(const string &id)
 {
-	bool raise = useSetting ? !BOOLSETTING(POPUNDER_FILELIST) : TRUE;
-	BookEntry *entry = WulforManager::get()->addShareBrowser_gui(user, filename, raise);
-
-	if (!dir.empty())
-		dynamic_cast<ShareBrowser *>(entry)->openDir_gui(dir);
-
-	setStatus_gui("status1", _("File list loaded"));
+	Entry *entry = getChild(id);
+	return dynamic_cast<BookEntry*>(entry);
 }
 
-void MainWindow::openHub_gui(string server, string encoding)
+void MainWindow::showDownloadQueue_gui()
 {
-	WulforManager::get()->addHub_gui(server, encoding);
+	BookEntry *entry = findBookEntry(Entry::DOWNLOAD_QUEUE);
+
+	if (entry == NULL)
+	{
+		entry = new DownloadQueue();
+		addBookEntry_gui(entry);
+	}
+
+	raisePage_gui(entry->getContainer());
+}
+
+void MainWindow::showFavoriteHubs_gui()
+{
+	BookEntry *entry = findBookEntry(Entry::FAVORITE_HUBS);
+
+	if (entry == NULL)
+	{
+		entry = new FavoriteHubs();
+		addBookEntry_gui(entry);
+	}
+
+	raisePage_gui(entry->getContainer());
+}
+
+void MainWindow::showFinishedDownloads_gui()
+{
+	BookEntry *entry = findBookEntry(Entry::FINISHED_DOWNLOADS);
+
+	if (entry == NULL)
+	{
+		entry = FinishedTransfers::createFinishedDownloads();
+		addBookEntry_gui(entry);
+	}
+
+	raisePage_gui(entry->getContainer());
+}
+
+void MainWindow::showFinishedUploads_gui()
+{
+	BookEntry *entry = findBookEntry(Entry::FINISHED_UPLOADS);
+
+	if (entry == NULL)
+	{
+		entry = FinishedTransfers::createFinishedUploads();
+		addBookEntry_gui(entry);
+	}
+
+	raisePage_gui(entry->getContainer());
+}
+
+void MainWindow::showHub_gui(string address, string encoding)
+{
+	BookEntry *entry = findBookEntry(Entry::HUB + address);
+
+	if (entry == NULL)
+	{
+		entry = new Hub(address, encoding);
+		addBookEntry_gui(entry);
+	}
+
+	raisePage_gui(entry->getContainer());
+}
+
+void MainWindow::addPrivateMessage_gui(string cid, string message, bool useSetting)
+{
+	BookEntry *entry = findBookEntry(Entry::PRIVATE_MESSAGE + cid);
+	bool raise = TRUE;
+
+	// If PM is initiated by another user, use setting except if tab is already open.
+	if (useSetting)
+		raise = (entry == NULL) ? !BOOLSETTING(POPUNDER_PM) : FALSE;
+
+	if (entry == NULL)
+	{
+		entry = new PrivateMessage(cid);
+		addBookEntry_gui(entry);
+	}
+
+	if (!message.empty())
+		dynamic_cast<PrivateMessage*>(entry)->addMessage_gui(message);
+
+	if (raise)
+		raisePage_gui(entry->getContainer());
+}
+
+void MainWindow::showPublicHubs_gui()
+{
+	BookEntry *entry = findBookEntry(Entry::PUBLIC_HUBS);
+
+	if (entry == NULL)
+	{
+		entry = new PublicHubs();
+		addBookEntry_gui(entry);
+	}
+
+	raisePage_gui(entry->getContainer());
+}
+
+void MainWindow::showShareBrowser_gui(User::Ptr user, string filename, string dir, bool useSetting)
+{
+	bool raise = useSetting ? !BOOLSETTING(POPUNDER_FILELIST) : TRUE;
+	BookEntry *entry = findBookEntry(Entry::SHARE_BROWSER + user->getCID().toBase32());
+
+	if (entry == NULL)
+	{
+		entry = new ShareBrowser(user, filename, dir);
+		addBookEntry_gui(entry);
+	}
+
+	if (raise)
+		raisePage_gui(entry->getContainer());
+}
+
+Search *MainWindow::addSearch_gui()
+{
+	Search *entry = new Search();
+	addBookEntry_gui(entry);
+	raisePage_gui(entry->getContainer());
+	return entry;
 }
 
 bool MainWindow::findTransfer_gui(const string &cid, bool download, GtkTreeIter *iter)
@@ -568,6 +717,34 @@ void MainWindow::setToolbarStyle_gui(int style)
 	}
 }
 
+void MainWindow::popupTransferMenu_gui()
+{
+	// Build user command menu
+	userCommandMenu->cleanMenu_gui();
+
+	GtkTreePath *path;
+	GtkTreeIter iter;
+	GList *list = gtk_tree_selection_get_selected_rows(transferSelection, NULL);
+
+	for (GList *i = list; i; i = i->next)
+	{
+		path = (GtkTreePath *)i->data;
+		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(transferStore), &iter, path))
+		{
+			string cid = transferView.getString(&iter, "CID");
+			userCommandMenu->addUser(cid);
+			userCommandMenu->addHub(WulforUtil::getHubAddress(CID(cid)));
+		}
+		gtk_tree_path_free(path);
+	}
+	g_list_free(list);
+
+	userCommandMenu->buildMenu_gui();
+
+	gtk_menu_popup(GTK_MENU(getWidget("transferMenu")), NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
+	gtk_widget_show_all(getWidget("transferMenu"));
+}
+
 bool MainWindow::getUserCommandLines_gui(const string &command, StringMap &ucParams)
 {
 	string name;
@@ -656,8 +833,7 @@ gboolean MainWindow::onWindowState_gui(GtkWidget *widget, GdkEventWindowState *e
 
 gboolean MainWindow::onCloseWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
-	WulforManager::get()->deleteAllEntries();
-	gtk_main_quit();
+	WulforManager::get()->deleteMainWindow();
 
 	return TRUE;
 }
@@ -717,26 +893,12 @@ gboolean MainWindow::onKeyPressed_gui(GtkWidget *widget, GdkEventKey *event, gpo
 
 gboolean MainWindow::onButtonPressPage_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
-	MainWindow *mw = (MainWindow *)data;
 
 	if (event->button == 2)
 	{
-		GtkNotebook *book = GTK_NOTEBOOK(mw->getWidget("book"));
-		GtkWidget *entryWidget;
-
-		for (int i = 0; i < gtk_notebook_get_n_pages(book); i++)
-		{
-			entryWidget = gtk_notebook_get_nth_page(book, i);
-			if (gtk_notebook_get_tab_label(book, entryWidget) == widget)
-			{
-				BookEntry *entry = (BookEntry *)g_object_get_data(G_OBJECT(entryWidget), "entry");
-
-				if (entry)
-					WulforManager::get()->deleteEntry_gui(entry);
-
-				return TRUE;
-			}
-		}
+		BookEntry *entry = (BookEntry *)data;
+		WulforManager::get()->getMainWindow()->removeBookEntry_gui(entry);
+		return TRUE;
 	}
 
 	return FALSE;
@@ -768,7 +930,7 @@ gboolean MainWindow::onTransferButtonReleased_gui(GtkWidget *widget, GdkEventBut
 	int count = gtk_tree_selection_count_selected_rows(mw->transferSelection);
 
 	if (count > 0 && event->type == GDK_BUTTON_RELEASE && event->button == 3)
-		gtk_menu_popup(GTK_MENU(mw->getWidget("transferMenu")), NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
+		mw->popupTransferMenu_gui();
 
 	return FALSE;
 }
@@ -821,18 +983,20 @@ void MainWindow::onConnectClicked_gui(GtkWidget *widget, gpointer data)
 	if (response == GTK_RESPONSE_OK)
 	{
 		string address = gtk_entry_get_text(GTK_ENTRY(mw->getWidget("connectEntry")));
-		WulforManager::get()->addHub_gui(address);
+		mw->showHub_gui(address);
 	}
 }
 
 void MainWindow::onFavoriteHubsClicked_gui(GtkWidget *widget, gpointer data)
 {
-	WulforManager::get()->addFavoriteHubs_gui();
+	MainWindow *mw = (MainWindow *)data;
+	mw->showFavoriteHubs_gui();
 }
 
 void MainWindow::onPublicHubsClicked_gui(GtkWidget *widget, gpointer data)
 {
-	WulforManager::get()->addPublicHubs_gui();
+	MainWindow *mw = (MainWindow *)data;
+	mw->showPublicHubs_gui();
 }
 
 void MainWindow::onPreferencesClicked_gui(GtkWidget *widget, gpointer data)
@@ -890,22 +1054,26 @@ void MainWindow::onHashClicked_gui(GtkWidget *widget, gpointer data)
 
 void MainWindow::onSearchClicked_gui(GtkWidget *widget, gpointer data)
 {
-	WulforManager::get()->addSearch_gui();
+	MainWindow *mw = (MainWindow *)data;
+	mw->addSearch_gui();
 }
 
 void MainWindow::onDownloadQueueClicked_gui(GtkWidget *widget, gpointer data)
 {
-	WulforManager::get()->addDownloadQueue_gui();
+	MainWindow *mw = (MainWindow *)data;
+	mw->showDownloadQueue_gui();
 }
 
 void MainWindow::onFinishedDownloadsClicked_gui(GtkWidget *widget, gpointer data)
 {
-	WulforManager::get()->addFinishedTransfers_gui(_("Finished Downloads"));
+	MainWindow *mw = (MainWindow *)data;
+	mw->showFinishedDownloads_gui();
 }
 
 void MainWindow::onFinishedUploadsClicked_gui(GtkWidget *widget, gpointer data)
 {
-	WulforManager::get()->addFinishedTransfers_gui(_("Finished Uploads"));
+	MainWindow *mw = (MainWindow *)data;
+	mw->showFinishedUploads_gui();
 }
 
 void MainWindow::onQuitClicked_gui(GtkWidget *widget, gpointer data)
@@ -934,7 +1102,7 @@ void MainWindow::onOpenFileListClicked_gui(GtkWidget *widget, gpointer data)
 
 			User::Ptr user = DirectoryListing::getUserFromFilename(path);
 			if (user)
-				mw->addShareBrowser_gui(user, path, "", FALSE);
+				mw->showShareBrowser_gui(user, path, "", FALSE);
 			else
 				mw->setStatus_gui("status1", _("Unable to open: Older file list format detected"));
 		}
@@ -985,7 +1153,7 @@ void MainWindow::onCloseClicked_gui(GtkWidget *widget, gpointer data)
 		BookEntry *entry = (BookEntry *)g_object_get_data(G_OBJECT(entryWidget), "entry");
 
 		if (entry)
-			WulforManager::get()->deleteEntry_gui(entry);
+			mw->removeBookEntry_gui(entry);
 	}
 }
 
@@ -999,6 +1167,12 @@ void MainWindow::onAboutClicked_gui(GtkWidget *widget, gpointer data)
 void MainWindow::onAboutDialogActivateLink_gui(GtkAboutDialog *dialog, const gchar *link, gpointer data)
 {
 	WulforUtil::openURI(link);
+}
+
+void MainWindow::onCloseBookEntry_gui(GtkWidget *widget, gpointer data)
+{
+	BookEntry *entry = (BookEntry *)data;
+	WulforManager::get()->getMainWindow()->removeBookEntry_gui(entry);
 }
 
 void MainWindow::onGetFileListClicked_gui(GtkMenuItem *item, gpointer data)
@@ -1064,7 +1238,7 @@ void MainWindow::onPrivateMessageClicked_gui(GtkMenuItem *item, gpointer data)
 		if (gtk_tree_model_get_iter(GTK_TREE_MODEL(mw->transferStore), &iter, path))
 		{
 			cid = mw->transferView.getString(&iter, "CID");
-			WulforManager::get()->addPrivMsg_gui(cid);
+			mw->addPrivateMessage_gui(cid);
 		}
 		gtk_tree_path_free(path);
 	}
@@ -1248,7 +1422,7 @@ void MainWindow::autoConnect_client()
 
 		if (hub->getConnect())
 		{
-			func = new F2(this, &MainWindow::openHub_gui, hub->getServer(), hub->getEncoding());
+			func = new F2(this, &MainWindow::showHub_gui, hub->getServer(), hub->getEncoding());
 			WulforManager::get()->dispatchGuiFunc(func);
 		}
 	}
@@ -1300,9 +1474,8 @@ void MainWindow::openOwnList_client()
 	User::Ptr user = ClientManager::getInstance()->getMe();
 	string path = ShareManager::getInstance()->getOwnListFile();
 
-	// Have to use MainWindow::addShareBrowser_gui since WulforManager's has a return type
 	typedef Func4<MainWindow, User::Ptr, string, string, bool> F4;
-	F4 *func = new F4(this, &MainWindow::addShareBrowser_gui, user, path, "", FALSE);
+	F4 *func = new F4(this, &MainWindow::showShareBrowser_gui, user, path, "", FALSE);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
@@ -1678,7 +1851,7 @@ void MainWindow::on(QueueManagerListener::Finished, QueueItem *item, const strin
 		string listName = item->getListName();
 
 		typedef Func4<MainWindow, User::Ptr, string, string, bool> F4;
-		F4 *func = new F4(this, &MainWindow::addShareBrowser_gui, user, listName, dir, TRUE);
+		F4 *func = new F4(this, &MainWindow::showShareBrowser_gui, user, listName, dir, TRUE);
 		WulforManager::get()->dispatchGuiFunc(func);
 	}
 }

@@ -20,18 +20,22 @@
 
 #include <client/ClientManager.h>
 #include <client/FavoriteManager.h>
+#include <client/QueueManager.h>
 #include <client/ShareManager.h>
 #include <client/StringTokenizer.h>
 #include <client/Text.h>
 #include <client/UserCommand.h>
+#include "UserCommandMenu.hh"
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
+
+using namespace std;
 
 bool Search::onlyOp = FALSE;
 GtkTreeModel* Search::searchEntriesModel = NULL;
 
 Search::Search():
-	BookEntry(_("Search: "), "search.glade")
+	BookEntry(_("Search: "), Entry::SEARCH, "search.glade", TRUE)
 {
 	// Initialize the search entries combo box
 	if (searchEntriesModel == NULL)
@@ -115,6 +119,10 @@ Search::Search():
 	resultView.setSortColumn_gui("Filename", "File Order");
 	gtk_tree_view_set_fixed_height_mode(resultView.get(), TRUE);
 
+	// Initialize the user command menu
+	userCommandMenu = new UserCommandMenu(getWidget("usercommandMenu"), ::UserCommand::CONTEXT_SEARCH);
+	addChild(userCommandMenu);
+
 	// Connect the signals to their callback functions.
 	g_signal_connect(getContainer(), "focus-in-event", G_CALLBACK(onFocusIn_gui), (gpointer)this);
 	g_signal_connect(getWidget("checkbuttonFilter"), "toggled", G_CALLBACK(onButtonToggled_gui), (gpointer)this);
@@ -144,24 +152,27 @@ Search::Search():
 	g_signal_connect(getWidget("comboboxentrySearch"), "changed", G_CALLBACK(onComboBoxChanged_gui), (gpointer)this);
 	g_signal_connect(getWidget("comboboxUnit"), "changed", G_CALLBACK(onComboBoxChanged_gui), (gpointer)this);
 	g_signal_connect(getWidget("comboboxFile"), "changed", G_CALLBACK(onComboBoxChanged_gui), (gpointer)this);
-
-	initHubs_gui();
-
-	ClientManager::getInstance()->addListener(this);
-	SearchManager::getInstance()->addListener(this);
 }
 
 Search::~Search()
 {
-	clearList_gui();
 	ClientManager::getInstance()->removeListener(this);
 	SearchManager::getInstance()->removeListener(this);
+
+	clearList_gui();
 	gtk_widget_destroy(getWidget("dirChooserDialog"));
 
 	if (iconFile)
 		g_object_unref(iconFile);
 	if (iconDirectory)
 		g_object_unref(iconDirectory);
+}
+
+void Search::show()
+{
+	initHubs_gui();
+	ClientManager::getInstance()->addListener(this);
+	SearchManager::getInstance()->addListener(this);
 }
 
 void Search::putValue_gui(const string &str, int64_t size, SearchManager::SizeModes mode, SearchManager::TypeModes type)
@@ -243,7 +254,7 @@ void Search::removeHub_gui(string url)
 	}
 }
 
-void Search::buildDownloadMenu_gui()
+void Search::popupMenu_gui()
 {
 	int count = gtk_tree_selection_count_selected_rows(selection);
 
@@ -277,10 +288,13 @@ void Search::buildDownloadMenu_gui()
 	string tth;
 	bool firstTTH;
 	bool hasTTH;
-	StringList hubList;
+
+	// Clean menus
+	gtk_container_foreach(GTK_CONTAINER(getWidget("downloadMenu")), (GtkCallback)gtk_widget_destroy, NULL);
+	gtk_container_foreach(GTK_CONTAINER(getWidget("downloadDirMenu")), (GtkCallback)gtk_widget_destroy, NULL);
+	userCommandMenu->cleanMenu_gui();
 
 	// Build "Download to..." submenu
-	gtk_container_foreach(GTK_CONTAINER(getWidget("downloadMenu")), (GtkCallback)gtk_widget_destroy, NULL);
 
 	// Add favorite download directories
 	StringPairList spl = FavoriteManager::getInstance()->getFavoriteDirs();
@@ -312,7 +326,9 @@ void Search::buildDownloadMenu_gui()
 		path = (GtkTreePath *)i->data;
 		if (gtk_tree_model_get_iter(sortedFilterModel, &iter, path))
 		{
-			hubList.push_back(resultView.getString(&iter, "Hub URL"));
+			userCommandMenu->addHub(resultView.getString(&iter, "Hub URL"));
+			userCommandMenu->addUser(resultView.getString(&iter, "CID"));
+
 			if (firstTTH)
 			{
 				tth = resultView.getString(&iter, "TTH");
@@ -348,7 +364,6 @@ void Search::buildDownloadMenu_gui()
 	}
 
 	// Build "Download whole directory to..." submenu
-	gtk_container_foreach(GTK_CONTAINER(getWidget("downloadDirMenu")), (GtkCallback)gtk_widget_destroy, NULL);
 
 	spl.clear();
 	spl = FavoriteManager::getInstance()->getFavoriteDirs();
@@ -369,77 +384,9 @@ void Search::buildDownloadMenu_gui()
 	g_signal_connect(menuItem, "activate", G_CALLBACK(onDownloadDirToClicked_gui), (gpointer)this);
 	gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("downloadDirMenu")), menuItem);
 
-	// Add user commands.
-	gtk_container_foreach(GTK_CONTAINER(getWidget("usercommandMenu")), (GtkCallback)gtk_widget_destroy, NULL);
+	// Build user command menu
+	userCommandMenu->buildMenu_gui();
 
-	::UserCommand::List usercommandList = FavoriteManager::getInstance()->
-		getUserCommands(::UserCommand::CONTEXT_SEARCH, hubList);
-
-	bool separator = FALSE;
-	GtkWidget *menu = getWidget("usercommandMenu");
-
-	for (::UserCommand::Iter i = usercommandList.begin(); i != usercommandList.end(); ++i)
-	{
-		::UserCommand& uc = *i;
-
-		// Add line separator only if it's not a duplicate
-		if (uc.getType() == ::UserCommand::TYPE_SEPARATOR && !separator)
-		{
-			menuItem = gtk_separator_menu_item_new();
-			gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuItem);
-			separator = TRUE;
-		}
-		else if (uc.getType() == ::UserCommand::TYPE_RAW || uc.getType() == ::UserCommand::TYPE_RAW_ONCE)
-		{
-			menu = getWidget("usercommandMenu");
-			string command = uc.getName();
-			string::size_type i = 0;
-			separator = FALSE;
-
-			// Create subfolders based on path separators in the command
-			while ((i = command.find('\\')) != string::npos)
-			{
-				bool createSubmenu = TRUE;
-				GList *menuItems = gtk_container_get_children(GTK_CONTAINER(menu));
-
-				// Search for the sub menu to append the command to
-				for (GList *iter = menuItems; iter; iter = iter->next)
-				{
-					GtkMenuItem *item = (GtkMenuItem *)iter->data;
-					if (gtk_menu_item_get_submenu(item) && WulforUtil::getTextFromMenu(item) == command.substr(0, i))
-					{
-						menu = gtk_menu_item_get_submenu(item);
-						createSubmenu = FALSE;
-						break;
-					}
-				}
-				g_list_free(menuItems);
-
-				// Couldn't find existing sub menu, so we create one
-				if (createSubmenu)
-				{
-					GtkWidget *submenu = gtk_menu_new();
-					menuItem = gtk_menu_item_new_with_label(command.substr(0, i).c_str());
-					gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuItem);
-					gtk_menu_item_set_submenu(GTK_MENU_ITEM(menuItem), submenu);
-					menu = submenu;
-				}
-
-				command = command.substr(++i);
-			}
-
-			menuItem = gtk_menu_item_new_with_label(command.c_str());
-			g_signal_connect(menuItem, "activate", G_CALLBACK(onUserCommandClicked_gui), (gpointer)this);
-			g_object_set_data_full(G_OBJECT(menuItem), "name", g_strdup(uc.getName().c_str()), g_free);
-			g_object_set_data_full(G_OBJECT(menuItem), "command", g_strdup(uc.getCommand().c_str()), g_free);
-			gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuItem);
-		}
-	}
-}
-
-void Search::popupMenu_gui()
-{
-	buildDownloadMenu_gui();
 	gtk_menu_popup(GTK_MENU(getWidget("mainMenu")), NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
 	gtk_widget_show_all(getWidget("mainMenu"));
 }
@@ -1152,7 +1099,7 @@ void Search::onPrivateMessageClicked_gui(GtkMenuItem *item, gpointer data)
 			if (gtk_tree_model_get_iter(s->sortedFilterModel, &iter, path))
 			{
 				cid = s->resultView.getString(&iter, "CID");
-				WulforManager::get()->addPrivMsg_gui(cid);
+				WulforManager::get()->getMainWindow()->addPrivateMessage_gui(cid);
 			}
 			gtk_tree_path_free(path);
 		}
@@ -1266,41 +1213,6 @@ void Search::onRemoveClicked_gui(GtkMenuItem *item, gpointer data)
 				gtk_tree_model_sort_convert_iter_to_child_iter(GTK_TREE_MODEL_SORT(s->sortedFilterModel), &filterIter, &iter);
 				gtk_tree_model_filter_convert_iter_to_child_iter(GTK_TREE_MODEL_FILTER(s->searchFilterModel), &iter, &filterIter);
 				gtk_list_store_remove(s->resultStore, &iter);
-			}
-			gtk_tree_path_free(path);
-		}
-		g_list_free(list);
-	}
-}
-
-void Search::onUserCommandClicked_gui(GtkMenuItem *item, gpointer data)
-{
-	Search *s = (Search *)data;
-
-	if (gtk_tree_selection_count_selected_rows(s->selection) > 0)
-	{
-		MainWindow *mw = WulforManager::get()->getMainWindow();
-		string cid;
-		string commandName = (gchar *)g_object_get_data(G_OBJECT(item), "name");
-		string command = (gchar *)g_object_get_data(G_OBJECT(item), "command");
-		GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
-		GtkTreeIter iter;
-		GtkTreePath *path;
-		typedef Func3<Search, string, string, StringMap> F3;
-		F3 *func;
-
-		for (GList *i = list; i; i = i->next)
-		{
-			path = (GtkTreePath *)i->data;
-			if (gtk_tree_model_get_iter(s->sortedFilterModel, &iter, path))
-			{
-				cid = s->resultView.getString(&iter, "CID");
-				StringMap params;
-				if (mw->getUserCommandLines_gui(command, params))
-				{
-					func = new F3(s, &Search::sendUserCommand_client, cid, commandName, params);
-					WulforManager::get()->dispatchClientFunc(func);
-				}
 			}
 			gtk_tree_path_free(path);
 		}
@@ -1449,22 +1361,6 @@ void Search::removeSource_client(string cid)
 		User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
 		if (user)
 			QueueManager::getInstance()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
-	}
-}
-
-void Search::sendUserCommand_client(string cid, string commandName, StringMap params)
-{
-	if (!cid.empty() && !commandName.empty())
-	{
-		int id = FavoriteManager::getInstance()->findUserCommand(commandName);
-		::UserCommand uc;
-
-		if (id == -1 || !FavoriteManager::getInstance()->getUserCommand(id, uc))
-			return;
-
-		User::Ptr user = ClientManager::getInstance()->findUser(CID(cid));
-		if (user)
-			ClientManager::getInstance()->userCommand(user, uc, params, true);
 	}
 }
 

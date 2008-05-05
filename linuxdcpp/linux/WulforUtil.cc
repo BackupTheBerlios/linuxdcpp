@@ -128,6 +128,16 @@ string WulforUtil::getHubNames(const User::Ptr& user)
 	return getHubNames(user->getCID());
 }
 
+StringList WulforUtil::getHubAddress(const CID& cid)
+{
+	return ClientManager::getInstance()->getHubs(cid);
+}
+
+StringList WulforUtil::getHubAddress(const User::Ptr& user)
+{
+	return getHubAddress(user->getCID());
+}
+
 string WulforUtil::getTextFromMenu(GtkMenuItem *item)
 {
 	string text;
@@ -167,7 +177,7 @@ void WulforUtil::openURI(const std::string &uri)
 {
 	GError* error = NULL;
 	gchar *argv[3];
-	argv[0] = "xdg-open";
+	argv[0] = (gchar *)"xdg-open";
 	argv[1] = (gchar *)Text::fromUtf8(uri).c_str();
 	argv[2] = NULL;
 

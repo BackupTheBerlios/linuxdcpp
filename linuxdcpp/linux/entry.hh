@@ -24,24 +24,43 @@
 #include <gdk/gdkkeysyms.h>
 #include <glib/gi18n.h>
 #include <string>
-
+#include <map>
 
 class Entry
 {
 	public:
+		const static std::string DOWNLOAD_QUEUE;
+		const static std::string FAVORITE_HUBS;
+		const static std::string FINISHED_DOWNLOADS;
+		const static std::string FINISHED_UPLOADS;
+		const static std::string HASH_DIALOG;
+		const static std::string HUB;
+		const static std::string MAIN_WINDOW;
+		const static std::string PRIVATE_MESSAGE;
+		const static std::string PUBLIC_HUBS;
+		const static std::string SEARCH;
+		const static std::string SETTINGS_DIALOG;
+		const static std::string SHARE_BROWSER;
 
 		Entry() {}
-		Entry(const std::string &id, const std::string &glade);
+		Entry(const std::string &id, const std::string &glade = "", bool duplicates = FALSE);
 		virtual ~Entry();
 		const std::string& getID();
 		virtual GtkWidget *getContainer() = 0;
+		void remove();
 
 	protected:
 		GtkWidget *getWidget(const std::string &name);
+		void addChild(Entry *entry);
+		Entry *getChild(const std::string &id);
+		void removeChild(const std::string &id);
+		void removeChild(Entry *entry);
+		void removeChildren();
 
 	private:
 		GladeXML *xml;
 		std::string id;
+		std::map<std::string, Entry *> children;
 };
 
 #else

@@ -33,10 +33,12 @@ class PublicHubs:
 {
 	public:
 		PublicHubs();
-		~PublicHubs();
+		virtual ~PublicHubs();
+		virtual void show();
 
 	private:
 		// GUI functions
+		void buildHubList_gui();
 		void updateList_gui();
 		void setStatus_gui(std::string statusBar, std::string text);
 

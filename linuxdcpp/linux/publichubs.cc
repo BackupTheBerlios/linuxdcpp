@@ -22,13 +22,10 @@
 using namespace std;
 
 PublicHubs::PublicHubs():
-	BookEntry(_("Public Hubs"), "publichubs.glade"),
+	BookEntry(_("Public Hubs"), Entry::PUBLIC_HUBS, "publichubs.glade"),
 	hubs(0),
 	filter("")
 {
-	FavoriteManager *favMan = FavoriteManager::getInstance();
-	favMan->addListener(this);
-
 	// Configure the dialog
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("configureDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
@@ -67,24 +64,12 @@ PublicHubs::PublicHubs():
 	GList *l = gtk_tree_view_column_get_cell_renderers(c);
 	GObject *editRenderer = G_OBJECT(g_list_nth_data(l, 0));
 	g_list_free(l);
- 	StringList list = favMan->getHubLists();
-	GtkTreeIter iter;
-	for (StringList::iterator it = list.begin(); it != list.end(); ++it)
-	{
-		gtk_list_store_append(listsStore, &iter);
-		gtk_list_store_set(listsStore, &iter, 0, it->c_str(), -1);
-	}
 
-	// Fill the combo box with hub lists
+	// Initialize the hub lists combo box
 	gtk_combo_box_set_model(GTK_COMBO_BOX(getWidget("hubListBox")), GTK_TREE_MODEL(listsStore));
 	GtkCellRenderer *cell = gtk_cell_renderer_text_new();
 	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(GTK_COMBO_BOX(getWidget("hubListBox"))), cell, FALSE);
 	gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(GTK_COMBO_BOX(getWidget("hubListBox"))), cell, "text", 0);
-	if (static_cast<size_t>(favMan->getSelectedHubList()) >= list.size())
-		gtk_combo_box_set_active(GTK_COMBO_BOX(getWidget("hubListBox")), list.size() - 1);
-	else
-		gtk_combo_box_set_active(GTK_COMBO_BOX(getWidget("hubListBox")), favMan->getSelectedHubList());
-
 
 	// Connect the signals to their callback functions.
 	g_signal_connect(getContainer(), "focus-in-event", G_CALLBACK(onFocusIn_gui), (gpointer)this);
@@ -103,18 +88,40 @@ PublicHubs::PublicHubs():
 	g_signal_connect(hubView.get(), "button-release-event", G_CALLBACK(onButtonRelease_gui), (gpointer)this);
 	g_signal_connect(hubView.get(), "key-release-event", G_CALLBACK(onKeyRelease_gui), (gpointer)this);
 	g_signal_connect(getWidget("favMenuItem"), "activate", G_CALLBACK(onAddFav_gui), (gpointer)this);
-
-	if (favMan->isDownloading())
-		setStatus_gui("statusMain", "Downloading hub list");
-
-	Func0<PublicHubs> *func = new Func0<PublicHubs>(this, &PublicHubs::downloadList_client);
-	WulforManager::get()->dispatchClientFunc(func);
 }
 
 PublicHubs::~PublicHubs()
 {
 	FavoriteManager::getInstance()->removeListener(this);
 	gtk_widget_destroy(getWidget("configureDialog"));
+}
+
+void PublicHubs::show()
+{
+	buildHubList_gui();
+
+	FavoriteManager::getInstance()->addListener(this);
+	Func0<PublicHubs> *func = new Func0<PublicHubs>(this, &PublicHubs::downloadList_client);
+	WulforManager::get()->dispatchClientFunc(func);
+}
+
+// Populate the public hubs list
+void PublicHubs::buildHubList_gui()
+{
+ 	StringList list = FavoriteManager::getInstance()->getHubLists();
+	int selected = FavoriteManager::getInstance()->getSelectedHubList();
+ 
+	for (StringList::iterator it = list.begin(); it != list.end(); ++it)
+	{
+		GtkTreeIter iter;
+		gtk_list_store_append(listsStore, &iter);
+		gtk_list_store_set(listsStore, &iter, 0, it->c_str(), -1);
+	}
+
+	if (static_cast<size_t>(selected) >= list.size())
+		gtk_combo_box_set_active(GTK_COMBO_BOX(getWidget("hubListBox")), list.size() - 1);
+	else
+		gtk_combo_box_set_active(GTK_COMBO_BOX(getWidget("hubListBox")), selected);
 }
 
 void PublicHubs::updateList_gui()
@@ -252,7 +259,7 @@ void PublicHubs::onConnect_gui(GtkWidget *widget, gpointer data)
 	if (gtk_tree_selection_get_selected(ph->hubSelection, NULL, &iter))
 	{
 		string address = ph->hubView.getString(&iter, "Address");
-		WulforManager::get()->addHub_gui(address);
+		WulforManager::get()->getMainWindow()->showHub_gui(address);
 	}
 }
 
