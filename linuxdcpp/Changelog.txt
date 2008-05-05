@@ -21,6 +21,7 @@
 [2008-05-04] Removed BookEntry from WulforManager (thanks David Grundberg).
 [2008-05-04] Improved the tab close button.
 [2008-05-04] Fix auto-open of Finished Uploads tab.
+[2008-05-04] Bug #013330: Confirm exit application dialog not working.
 
 *** 1.0.1 2007-12-25 ***
 [2007-10-13] Use strtoll instead of atoll to enable build on HPUX (thanks Tobias Nygren).

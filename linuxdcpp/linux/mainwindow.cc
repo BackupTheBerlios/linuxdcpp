@@ -160,7 +160,6 @@ MainWindow::MainWindow():
 	// Connect the signals to their callback functions.
 	g_signal_connect(window, "delete-event", G_CALLBACK(onCloseWindow_gui), (gpointer)this);
 	g_signal_connect(window, "window-state-event", G_CALLBACK(onWindowState_gui), (gpointer)this);
-	g_signal_connect(window, "delete-event", G_CALLBACK(onDeleteWindow_gui), (gpointer)this);
 	g_signal_connect(window, "key-press-event", G_CALLBACK(onKeyPressed_gui), (gpointer)this);
 	g_signal_connect(transferView.get(), "button-press-event", G_CALLBACK(onTransferButtonPressed_gui), (gpointer)this);
 	g_signal_connect(transferView.get(), "button-release-event", G_CALLBACK(onTransferButtonReleased_gui), (gpointer)this);
@@ -266,6 +265,8 @@ MainWindow::~MainWindow()
 	WSET("main-window-maximized", maximized);
 	if (transferPanePosition > 10)
 		WSET("transfer-pane-position", transferPanePosition);
+
+	transferView.saveSettings();
 
 	// Make sure all windows are deallocated
 	gtk_widget_destroy(getWidget("connectDialog"));
@@ -833,18 +834,11 @@ gboolean MainWindow::onWindowState_gui(GtkWidget *widget, GdkEventWindowState *e
 
 gboolean MainWindow::onCloseWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
-	WulforManager::get()->deleteMainWindow();
-
-	return TRUE;
-}
-
-gboolean MainWindow::onDeleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data)
-{
 	MainWindow *mw = (MainWindow *)data;
 
 	if (!BOOLSETTING(CONFIRM_EXIT))
 	{
-		mw->transferView.saveSettings();
+		WulforManager::get()->deleteMainWindow();
 		return FALSE;
 	}
 
@@ -853,7 +847,7 @@ gboolean MainWindow::onDeleteWindow_gui(GtkWidget *widget, GdkEvent *event, gpoi
 
 	if (response == GTK_RESPONSE_OK)
 	{
-		mw->transferView.saveSettings();
+		WulforManager::get()->deleteMainWindow();
 		return FALSE;
 	}
 
