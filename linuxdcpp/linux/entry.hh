@@ -29,36 +29,44 @@
 class Entry
 {
 	public:
-		const static std::string DOWNLOAD_QUEUE;
-		const static std::string FAVORITE_HUBS;
-		const static std::string FINISHED_DOWNLOADS;
-		const static std::string FINISHED_UPLOADS;
-		const static std::string HASH_DIALOG;
-		const static std::string HUB;
-		const static std::string MAIN_WINDOW;
-		const static std::string PRIVATE_MESSAGE;
-		const static std::string PUBLIC_HUBS;
-		const static std::string SEARCH;
-		const static std::string SETTINGS_DIALOG;
-		const static std::string SHARE_BROWSER;
+		typedef enum
+		{
+			DOWNLOAD_QUEUE,
+			FAVORITE_HUBS,
+			FINISHED_DOWNLOADS,
+			FINISHED_UPLOADS,
+			HASH_DIALOG,
+			HUB,
+			MAIN_WINDOW,
+			PRIVATE_MESSAGE,
+			PUBLIC_HUBS,
+			SEARCH,
+			SETTINGS_DIALOG,
+			SHARE_BROWSER,
+			USER_COMMAND_MENU
+		} EntryType;
 
-		Entry() {}
-		Entry(const std::string &id, const std::string &glade = "", bool duplicates = FALSE);
+		Entry() : xml(NULL) {}
+		Entry(const EntryType type, const std::string &glade, const std::string &id = "");
 		virtual ~Entry();
+
+		const EntryType getType();
 		const std::string& getID();
 		virtual GtkWidget *getContainer() = 0;
 		void remove();
 
 	protected:
+		std::string generateID();
 		GtkWidget *getWidget(const std::string &name);
 		void addChild(Entry *entry);
-		Entry *getChild(const std::string &id);
-		void removeChild(const std::string &id);
+		Entry *getChild(const EntryType childType, const std::string &childId);
+		void removeChild(const EntryType childType, const std::string &childId);
 		void removeChild(Entry *entry);
 		void removeChildren();
 
 	private:
 		GladeXML *xml;
+		EntryType type;
 		std::string id;
 		std::map<std::string, Entry *> children;
 };

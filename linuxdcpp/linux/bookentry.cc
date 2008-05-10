@@ -21,8 +21,8 @@
 
 using namespace std;
 
-BookEntry::BookEntry(const string &title, const string &id, const string &glade, bool duplicates):
-	Entry(id, glade, duplicates),
+BookEntry::BookEntry(const EntryType type, const string &title, const string &glade, const string &id):
+	Entry(type, glade, id),
 	windowItem(NULL),
 	bold(FALSE)
 {

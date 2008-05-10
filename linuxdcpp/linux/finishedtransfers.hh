@@ -36,7 +36,7 @@ class FinishedTransfers:
 		virtual void show();
 
 	private:
-		FinishedTransfers(const std::string &title, const std::string &id, bool isUpload);
+		FinishedTransfers(const EntryType type, const std::string &title, bool isUpload);
 
 		// GUI functions
 		void addItem_gui(StringMap params, bool update);

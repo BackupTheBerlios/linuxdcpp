@@ -21,8 +21,8 @@
 
 using namespace std;
 
-DialogEntry::DialogEntry(const std::string &id, const std::string &glade):
-	Entry(id, glade),
+DialogEntry::DialogEntry(const EntryType type, const std::string &glade):
+	Entry(type, glade),
 	responseID(GTK_RESPONSE_NONE)
 {
 	gtk_window_set_role(GTK_WINDOW(getContainer()), getID().c_str());

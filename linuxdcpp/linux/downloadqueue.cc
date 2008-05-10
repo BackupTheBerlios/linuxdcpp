@@ -27,7 +27,7 @@
 using namespace std;
 
 DownloadQueue::DownloadQueue():
-	BookEntry(_("Download Queue"), Entry::DOWNLOAD_QUEUE, "downloadqueue.glade"),
+	BookEntry(Entry::DOWNLOAD_QUEUE, _("Download Queue"), "downloadqueue.glade"),
 	currentItems(0),
 	totalItems(0),
 	currentSize(0),

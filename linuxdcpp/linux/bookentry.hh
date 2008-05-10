@@ -25,7 +25,7 @@ class BookEntry : public Entry
 {
 	public:
 		BookEntry() {}
-		BookEntry(const std::string &title, const std::string &id, const std::string &glade, bool duplicates = FALSE);
+		BookEntry(const EntryType type, const std::string &title, const std::string &glade, const std::string &id = "");
 		virtual ~BookEntry() {}
 
 		GtkWidget *getContainer();

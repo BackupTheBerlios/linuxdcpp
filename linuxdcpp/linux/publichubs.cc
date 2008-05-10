@@ -22,7 +22,7 @@
 using namespace std;
 
 PublicHubs::PublicHubs():
-	BookEntry(_("Public Hubs"), Entry::PUBLIC_HUBS, "publichubs.glade"),
+	BookEntry(Entry::PUBLIC_HUBS, _("Public Hubs"), "publichubs.glade"),
 	hubs(0),
 	filter("")
 {

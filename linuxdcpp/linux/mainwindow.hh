@@ -76,7 +76,7 @@ class MainWindow:
 		// GUI functions
 		void autoOpen_gui();
 		void addBookEntry_gui(BookEntry *entry);
-		BookEntry *findBookEntry(const std::string &id);
+		BookEntry *findBookEntry(const EntryType type, const std::string &id = "");
 		void createTrayIcon_gui();
 		void updateTrayToolTip_gui(std::string download, std::string upload);
 		void setStatus_gui(std::string statusBar, std::string text);

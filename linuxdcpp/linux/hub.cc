@@ -33,7 +33,7 @@
 using namespace std;
 
 Hub::Hub(const string &address, const string &encoding):
-	BookEntry(_("Hub: ") + address, Entry::HUB + address, "hub.glade"),
+	BookEntry(Entry::HUB, _("Hub: ") + address, "hub.glade", address),
 	client(NULL),
 	historyIndex(0),
 	totalShared(0),

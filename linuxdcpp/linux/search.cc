@@ -35,7 +35,7 @@ bool Search::onlyOp = FALSE;
 GtkTreeModel* Search::searchEntriesModel = NULL;
 
 Search::Search():
-	BookEntry(_("Search: "), Entry::SEARCH, "search.glade", TRUE)
+	BookEntry(Entry::SEARCH, _("Search: "), "search.glade", generateID())
 {
 	// Initialize the search entries combo box
 	if (searchEntriesModel == NULL)

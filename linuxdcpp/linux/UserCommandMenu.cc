@@ -25,7 +25,7 @@
 using namespace std;
 
 UserCommandMenu::UserCommandMenu(GtkWidget *userCommandMenu, int ctx):
-	Entry("User Command Menu", "", TRUE),
+	Entry(Entry::USER_COMMAND_MENU, "", generateID()),
 	userCommandMenu(userCommandMenu),
 	ctx(ctx)
 {

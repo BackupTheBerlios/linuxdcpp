@@ -25,16 +25,16 @@ using namespace std;
 
 FinishedTransfers* FinishedTransfers::createFinishedDownloads()
 {
-	return new FinishedTransfers(_("Finished Downloads"), Entry::FINISHED_DOWNLOADS, false);
+	return new FinishedTransfers(Entry::FINISHED_DOWNLOADS, _("Finished Downloads"), false);
 }
 
 FinishedTransfers* FinishedTransfers::createFinishedUploads()
 {
-	return new FinishedTransfers(_("Finished Uploads"), Entry::FINISHED_UPLOADS, true);
+	return new FinishedTransfers(Entry::FINISHED_UPLOADS, _("Finished Uploads"), true);
 }
 
-FinishedTransfers::FinishedTransfers(const string &title, const std::string &id, bool isUpload):
-	BookEntry(title, id, "finishedtransfers.glade"),
+FinishedTransfers::FinishedTransfers(const EntryType type, const string &title, bool isUpload):
+	BookEntry(type, title, "finishedtransfers.glade"),
 	isUpload(isUpload),
 	items(0),
 	totalBytes(0),

@@ -25,27 +25,11 @@
 
 using namespace std;
 
-const string Entry::DOWNLOAD_QUEUE = "DOWNLOAD_QUEUE";
-const string Entry::FAVORITE_HUBS = "FAVORITE_HUBS";
-const string Entry::FINISHED_DOWNLOADS = "FINISHED_DOWNLOADS";
-const string Entry::FINISHED_UPLOADS = "FINISHED_UPLOADS";
-const string Entry::HASH_DIALOG = "HASH_DIALOG";
-const string Entry::HUB = "HUB";
-const string Entry::MAIN_WINDOW = "MAIN_WINDOW";
-const string Entry::PRIVATE_MESSAGE = "PRIVATE_MESSAGE";
-const string Entry::PUBLIC_HUBS = "PUBLIC_HUBS";
-const string Entry::SEARCH = "SEARCH";
-const string Entry::SETTINGS_DIALOG = "SETTINGS_DIALOG";
-const string Entry::SHARE_BROWSER = "SHARE_BROWSER";
-
-Entry::Entry(const string &id, const string &glade, bool duplicates):
+Entry::Entry(const EntryType type, const string &glade, const string &id):
 	xml(NULL),
-	id(id)
+	type(type),
+	id(Util::toString(type) + ":" + id)
 {
-	// To allow duplicate entries we need to generate an unique ID
-	if (duplicates)
-		this->id += Util::toString((long)this);
-
 	// Load the Glade XML file, if applicable
 	if (!glade.empty())
 	{
@@ -65,6 +49,11 @@ Entry::~Entry()
 	}
 }
 
+const Entry::EntryType Entry::getType()
+{
+	return type;
+}
+
 const string& Entry::getID()
 {
 	return id;
@@ -74,6 +63,14 @@ void Entry::remove()
 {
 	removeChildren();
 	WulforManager::get()->deleteEntry_gui(this);
+}
+
+/*
+ * Generates a unique ID to allow for duplicate entries
+ */
+string Entry::generateID()
+{
+	return Util::toString((long)this);
 }
 
 GtkWidget *Entry::getWidget(const string &name)
@@ -90,8 +87,9 @@ void Entry::addChild(Entry *entry)
 	WulforManager::get()->insertEntry_gui(entry);
 }
 
-Entry *Entry::getChild(const string &id)
+Entry *Entry::getChild(const EntryType childType, const string &childId)
 {
+	string id = Util::toString(childType) + ":" + childId;
 	map<string, Entry *>::const_iterator it = children.find(id);
 
 	if (it == children.end())
@@ -100,9 +98,9 @@ Entry *Entry::getChild(const string &id)
 		return it->second;
 }
 
-void Entry::removeChild(const string &id)
+void Entry::removeChild(const EntryType childType, const string &childId)
 {
-	Entry *entry = getChild(id);
+	Entry *entry = getChild(childType, childId);
 	removeChild(entry);
 }
 

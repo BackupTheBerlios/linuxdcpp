@@ -477,9 +477,9 @@ void MainWindow::setStats_gui(std::string hub, std::string slot,
 	setStatus_gui("status7", dl);
 }
 
-BookEntry* MainWindow::findBookEntry(const string &id)
+BookEntry* MainWindow::findBookEntry(const EntryType type, const string &id)
 {
-	Entry *entry = getChild(id);
+	Entry *entry = getChild(type, id);
 	return dynamic_cast<BookEntry*>(entry);
 }
 
@@ -537,7 +537,7 @@ void MainWindow::showFinishedUploads_gui()
 
 void MainWindow::showHub_gui(string address, string encoding)
 {
-	BookEntry *entry = findBookEntry(Entry::HUB + address);
+	BookEntry *entry = findBookEntry(Entry::HUB, address);
 
 	if (entry == NULL)
 	{
@@ -550,7 +550,7 @@ void MainWindow::showHub_gui(string address, string encoding)
 
 void MainWindow::addPrivateMessage_gui(string cid, string message, bool useSetting)
 {
-	BookEntry *entry = findBookEntry(Entry::PRIVATE_MESSAGE + cid);
+	BookEntry *entry = findBookEntry(Entry::PRIVATE_MESSAGE, cid);
 	bool raise = TRUE;
 
 	// If PM is initiated by another user, use setting except if tab is already open.
@@ -586,7 +586,7 @@ void MainWindow::showPublicHubs_gui()
 void MainWindow::showShareBrowser_gui(User::Ptr user, string filename, string dir, bool useSetting)
 {
 	bool raise = useSetting ? !BOOLSETTING(POPUNDER_FILELIST) : TRUE;
-	BookEntry *entry = findBookEntry(Entry::SHARE_BROWSER + user->getCID().toBase32());
+	BookEntry *entry = findBookEntry(Entry::SHARE_BROWSER, user->getCID().toBase32());
 
 	if (entry == NULL)
 	{
@@ -1129,7 +1129,7 @@ void MainWindow::onReconnectClicked_gui(GtkWidget *widget, gpointer data)
 	{
 		BookEntry *entry = (BookEntry *)g_object_get_data(G_OBJECT(entryWidget), "entry");
 
-		if (entry && entry->getID().substr(0, 5) == _("Hub: "))
+		if (entry && entry->getType() == Entry::HUB)
 		{
 			Func0<Hub> *func = new Func0<Hub>(dynamic_cast<Hub *>(entry), &Hub::reconnect_client);
 			WulforManager::get()->dispatchClientFunc(func);

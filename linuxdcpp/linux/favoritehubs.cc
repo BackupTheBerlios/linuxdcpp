@@ -24,7 +24,7 @@
 using namespace std;
 
 FavoriteHubs::FavoriteHubs():
-	BookEntry(_("Favorite Hubs"), Entry::FAVORITE_HUBS, "favoritehubs.glade")
+	BookEntry(Entry::FAVORITE_HUBS, _("Favorite Hubs"), "favoritehubs.glade")
 {
 	// Configure the dialogs
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("deleteFavoriteDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
