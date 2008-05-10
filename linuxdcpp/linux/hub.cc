@@ -189,27 +189,20 @@ void Hub::setStatus_gui(string statusBar, string text)
 
 bool Hub::findUser_gui(const string &nick, GtkTreeIter *iter)
 {
-	if (userMap.find(nick) != userMap.end())
+	hash_map<std::string, GtkTreeIter>::const_iterator it = userIters.find(nick);
+
+	if (it == userIters.end())
+		return FALSE;
+	else
 	{
-		if (iter == NULL)
-			return TRUE;
+		if (iter)
+			*iter = it->second;
 
-		GtkTreeModel *m = GTK_TREE_MODEL(nickStore);
-		gboolean valid = gtk_tree_model_get_iter_first(m, iter);
-
-		while (valid)
-		{
-			if (nick == nickView.getString(iter, "Nick"))
-				return TRUE;
-
-			valid = gtk_tree_model_iter_next(m, iter);
-		}
+		return TRUE;
 	}
-
-	return FALSE;
 }
 
-void Hub::updateUser_gui(StringMap params)
+void Hub::updateUser_gui(ParamMap params)
 {
 	GtkTreeIter iter;
 	int64_t shared = Util::toInt64(params["Shared Bytes"]);
@@ -258,6 +251,8 @@ void Hub::updateUser_gui(StringMap params)
 			nickView.col("Nick Order"), params["Nick Order"].c_str(),
 			nickView.col("CID"), params["CID"].c_str(),
 			-1);
+
+		userIters[params["Nick"]] = iter;
 	}
 
 	setStatus_gui("statusUsers", Util::toString(userMap.size()) + _(" Users"));
@@ -273,6 +268,7 @@ void Hub::removeUser_gui(string nick)
 		totalShared -= nickView.getValue<int64_t>(&iter, "Shared Bytes");
 		gtk_list_store_remove(nickStore, &iter);
 		userMap.erase(nick);
+		userIters.erase(nick);
 		setStatus_gui("statusUsers", Util::toString(userMap.size()) + _(" Users"));
 		setStatus_gui("statusShared", Util::formatBytes(totalShared));
 	}
@@ -282,6 +278,7 @@ void Hub::clearNickList_gui()
 {
 	gtk_list_store_clear(nickStore);
 	userMap.clear();
+	userIters.clear();
 	totalShared = 0;
 	setStatus_gui("statusUsers", _("0 Users"));
 	setStatus_gui("statusShared", "0 B");
@@ -1338,7 +1335,7 @@ void Hub::checkFavoriteUserJoin_client(string cid)
 	}
 }
 
-void Hub::getParams_client(StringMap &params, Identity &id)
+void Hub::getParams_client(ParamMap &params, Identity &id)
 {
 	if (id.getUser()->isSet(User::DCPLUSPLUS))
 		params["Icon"] = "dc++";
@@ -1388,9 +1385,9 @@ void Hub::on(ClientListener::UserUpdated, Client *, const OnlineUser &user) thro
 
 	if (!id.isHidden())
 	{
-		StringMap params;
+		ParamMap params;
 		getParams_client(params, id);
-		Func1<Hub, StringMap> *func = new Func1<Hub, StringMap>(this, &Hub::updateUser_gui, params);
+		Func1<Hub, ParamMap> *func = new Func1<Hub, ParamMap>(this, &Hub::updateUser_gui, params);
 		WulforManager::get()->dispatchGuiFunc(func);
 	}
 }
@@ -1398,7 +1395,7 @@ void Hub::on(ClientListener::UserUpdated, Client *, const OnlineUser &user) thro
 void Hub::on(ClientListener::UsersUpdated, Client *, const OnlineUser::List &list) throw()
 {
 	Identity id;
-	typedef Func1<Hub, StringMap> F1;
+	typedef Func1<Hub, ParamMap> F1;
 	F1 *func;
 
 	for (OnlineUser::List::const_iterator it = list.begin(); it != list.end(); ++it)
@@ -1406,7 +1403,7 @@ void Hub::on(ClientListener::UsersUpdated, Client *, const OnlineUser::List &lis
 		id = (*it)->getIdentity();
 		if (!id.isHidden())
 		{
-			StringMap params;
+			ParamMap params;
 			getParams_client(params, id);
 			func = new F1(this, &Hub::updateUser_gui, params);
 			WulforManager::get()->dispatchGuiFunc(func);

@@ -41,10 +41,12 @@ class Hub:
 		void reconnect_client();
 
 	private:
+		typedef std::map<string, string> ParamMap;
+
 		// GUI functions
 		void setStatus_gui(std::string statusBar, std::string text);
 		bool findUser_gui(const std::string &nick, GtkTreeIter *iter);
-		void updateUser_gui(StringMap id);
+		void updateUser_gui(ParamMap id);
 		void removeUser_gui(std::string nick);
 		void clearNickList_gui();
 		void popupNickMenu_gui();
@@ -92,7 +94,7 @@ class Hub:
 		void refreshFileList_client();
 		void addAsFavorite_client();
 		void checkFavoriteUserJoin_client(std::string cid);
-		void getParams_client(StringMap &user, Identity &id);
+		void getParams_client(ParamMap &user, Identity &id);
 
 		// Client callbacks
 		virtual void on(ClientListener::Connecting, Client *) throw();
@@ -112,6 +114,7 @@ class Hub:
 		virtual void on(ClientListener::SearchFlood, Client *, const string &message) throw();
 
 		hash_map<std::string, std::string> userMap;
+		hash_map<std::string, GtkTreeIter> userIters;
 		hash_map<std::string, GdkPixbuf *> userIcons;
 		std::string completionKey;
 		Client *client;

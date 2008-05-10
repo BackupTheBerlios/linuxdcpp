@@ -20,8 +20,9 @@
 #define WULFOR_TREE_VIEW_HH
 
 #include <gtk/gtk.h>
-#include <client/stdinc.h>
-#include <client/DCPlusPlus.h>
+#include <cassert>
+#include <map>
+#include <string>
 
 class TreeView
 {
@@ -60,7 +61,7 @@ class TreeView
 			if (m == NULL)
 				m = gtk_tree_view_get_model(view);
 			T value;
-			dcassert(gtk_tree_model_get_column_type(m, col(column)) != G_TYPE_STRING);
+			assert(gtk_tree_model_get_column_type(m, col(column)) != G_TYPE_STRING);
 			gtk_tree_model_get(m, i, col(column), &value, -1);
 			return C(value);
 		}
@@ -70,7 +71,7 @@ class TreeView
 			if (m == NULL)
 				m = gtk_tree_view_get_model(view);
 			T value;
-			dcassert(gtk_tree_model_get_column_type(m, col(column)) != G_TYPE_STRING);
+			assert(gtk_tree_model_get_column_type(m, col(column)) != G_TYPE_STRING);
 			gtk_tree_model_get(m, i, col(column), &value, -1);
 			return value;
 		}
@@ -110,10 +111,10 @@ class TreeView
 		int visibleColumns;
 		GtkMenu *menu;
 		GType *gtypes;
-		hash_map<std::string, GtkWidget*> colMenuItems;
+		std::map<std::string, GtkWidget*> colMenuItems;
 
-		typedef hash_map<std::string, Column> ColMap;
-		typedef hash_map<int, std::string> SortedColMap;
+		typedef std::map<std::string, Column> ColMap;
+		typedef std::map<int, std::string> SortedColMap;
 		typedef ColMap::iterator ColIter;
 		typedef SortedColMap::iterator SortedColIter;
 		ColMap columns;
