@@ -20,7 +20,8 @@
 #include <client/HashManager.h>
 #include "wulformanager.hh"
 
-Hash::Hash() : DialogEntry(Entry::HASH_DIALOG, "hash.glade")
+Hash::Hash(GtkWindow* parent):
+	DialogEntry(Entry::HASH_DIALOG, "hash.glade", parent)
 {
 	string tmp;
 	startTime = GET_TICK();

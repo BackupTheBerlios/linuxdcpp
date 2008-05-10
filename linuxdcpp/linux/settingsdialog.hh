@@ -31,7 +31,7 @@ class Settings:
 	public DialogEntry
 {
 	public:
-		Settings();
+		Settings(GtkWindow* parent = NULL);
 		~Settings();
 
 	private:

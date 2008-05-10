@@ -25,7 +25,7 @@ class DialogEntry : public Entry
 {
 	public:
 		DialogEntry() {}
-		DialogEntry(const EntryType type, const std::string &glade);
+		DialogEntry(const EntryType type, const std::string &glade, GtkWindow* parent = NULL);
 		virtual ~DialogEntry();
 
 		GtkWidget *getContainer();
@@ -33,7 +33,7 @@ class DialogEntry : public Entry
 		gint getResponseID();
 
 	private:
-
+		GtkWindow* parent;
 		gint responseID;
 };
 

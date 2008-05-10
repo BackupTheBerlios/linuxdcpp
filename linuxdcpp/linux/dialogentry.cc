@@ -21,11 +21,21 @@
 
 using namespace std;
 
-DialogEntry::DialogEntry(const EntryType type, const std::string &glade):
+DialogEntry::DialogEntry(const EntryType type, const std::string &glade, GtkWindow* parent):
 	Entry(type, glade),
+	parent(parent),
 	responseID(GTK_RESPONSE_NONE)
 {
-	gtk_window_set_role(GTK_WINDOW(getContainer()), getID().c_str());
+	GtkWindow* window = GTK_WINDOW(getContainer());
+
+	gtk_window_set_role(window, getID().c_str());
+
+	if (parent == NULL)
+		parent = GTK_WINDOW(WulforManager::get()->getMainWindow()->getContainer());
+
+	gboolean modal = gtk_window_get_modal(window);
+	if (modal)
+		gtk_window_set_transient_for(window, parent);
 
 	WulforManager::get()->insertEntry_gui(this);
 }

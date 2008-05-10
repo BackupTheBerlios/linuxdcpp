@@ -30,7 +30,7 @@ class Hash:
 	public TimerManagerListener
 {
 	public:
-		Hash();
+		Hash(GtkWindow* parent = NULL);
 		~Hash();
 
 	private:
