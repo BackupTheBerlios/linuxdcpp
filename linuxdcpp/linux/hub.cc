@@ -39,7 +39,8 @@ Hub::Hub(const string &address, const string &encoding):
 	totalShared(0),
 	aboveTag(FALSE),
 	address(address),
-	encoding(encoding)
+	encoding(encoding),
+	scrollToBottom(TRUE)
 {
 	// Configure the dialog
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("passwordDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
@@ -106,6 +107,8 @@ Hub::Hub(const string &address, const string &encoding):
 	userCommandMenu = new UserCommandMenu(getWidget("usercommandMenu"), ::UserCommand::CONTEXT_CHAT);
 	addChild(userCommandMenu);
 
+	GtkAdjustment *adjustment = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(getWidget("chatScroll")));
+
 	// Connect the signals to their callback functions.
 	g_signal_connect(getContainer(), "focus-in-event", G_CALLBACK(onFocusIn_gui), (gpointer)this);
 	g_signal_connect(nickView.get(), "button-press-event", G_CALLBACK(onNickListButtonPress_gui), (gpointer)this);
@@ -115,6 +118,8 @@ Hub::Hub(const string &address, const string &encoding):
 	g_signal_connect(getWidget("chatEntry"), "key-press-event", G_CALLBACK(onEntryKeyPress_gui), (gpointer)this);
 	g_signal_connect(getWidget("chatText"), "motion-notify-event", G_CALLBACK(onChatPointerMoved_gui), (gpointer)this);
 	g_signal_connect(getWidget("chatText"), "visibility-notify-event", G_CALLBACK(onChatVisibilityChanged_gui), (gpointer)this);
+	g_signal_connect(adjustment, "value_changed", G_CALLBACK(onChatScroll_gui), (gpointer)this);
+	g_signal_connect(adjustment, "changed", G_CALLBACK(onChatResize_gui), (gpointer)this);
 	g_signal_connect(getWidget("copyNickItem"), "activate", G_CALLBACK(onCopyNickItemClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("browseItem"), "activate", G_CALLBACK(onBrowseItemClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("matchItem"), "activate", G_CALLBACK(onMatchItemClicked_gui), (gpointer)this);
@@ -348,16 +353,11 @@ void Hub::addMessage_gui(string message)
 		return;
 
 	GtkTextIter iter;
-	GtkAdjustment *adj;
-	bool setBottom;
 	string line = "";
 
 	if (BOOLSETTING(TIME_STAMPS))
 		line = "[" + Util::getShortTimeString() + "] ";
 	line += message + "\n";
-
-	adj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(getWidget("chatScroll")));
-	setBottom = gtk_adjustment_get_value(adj) >= (adj->upper - adj->page_size);
 
 	gtk_text_buffer_get_end_iter(chatBuffer, &iter);
 	gtk_text_buffer_insert(chatBuffer, &iter, line.c_str(), line.size());
@@ -373,14 +373,6 @@ void Hub::addMessage_gui(string message)
 		gtk_text_buffer_get_start_iter(chatBuffer, &iter);
 		gtk_text_buffer_get_iter_at_line(chatBuffer, &next, 1);
 		gtk_text_buffer_delete(chatBuffer, &iter, &next);
-	}
-
-	// Scroll to the bottom
-	if (setBottom)
-	{
-		gtk_text_buffer_get_end_iter(chatBuffer, &iter);
-		gtk_text_buffer_move_mark(chatBuffer, chatMark, &iter);
-		gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(getWidget("chatText")), chatMark, 0, FALSE, 0, 0);
 	}
 
 	if (BOOLSETTING(BOLD_HUB))
@@ -771,6 +763,28 @@ gboolean Hub::onChatVisibilityChanged_gui(GtkWidget *widget, GdkEventVisibility 
 	hub->updateCursor_gui(widget);
 
 	return FALSE;
+}
+
+void Hub::onChatScroll_gui(GtkAdjustment *adjustment, gpointer data)
+{
+	Hub *hub = (Hub *)data;
+	gdouble value = gtk_adjustment_get_value(adjustment);
+	hub->scrollToBottom = value >= (adjustment->upper - adjustment->page_size);
+}
+
+void Hub::onChatResize_gui(GtkAdjustment *adjustment, gpointer data)
+{
+	Hub *hub = (Hub *)data;
+	gdouble value = gtk_adjustment_get_value(adjustment);
+
+	if (hub->scrollToBottom && value < (adjustment->upper - adjustment->page_size))
+	{
+		GtkTextIter iter;
+
+		gtk_text_buffer_get_end_iter(hub->chatBuffer, &iter);
+		gtk_text_buffer_move_mark(hub->chatBuffer, hub->chatMark, &iter);
+		gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(hub->getWidget("chatText")), hub->chatMark, 0, FALSE, 0, 0);
+	}
 }
 
 void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)

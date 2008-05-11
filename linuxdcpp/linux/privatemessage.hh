@@ -48,6 +48,8 @@ class PrivateMessage:
 		static gboolean onMagnetTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *event, GtkTextIter *iter, gpointer data);
 		static gboolean onChatPointerMoved_gui(GtkWidget *widget, GdkEventMotion *event, gpointer data);
 		static gboolean onChatVisibilityChanged_gui(GtkWidget* widget, GdkEventVisibility* event, gpointer data);
+		static void onChatScroll_gui(GtkAdjustment *adjustment, gpointer data);
+		static void onChatResize_gui(GtkAdjustment *adjustment, gpointer data);
 		static void onSendMessage_gui(GtkEntry *entry, gpointer data);
 		static void onCopyURIClicked_gui(GtkMenuItem *item, gpointer data);
 		static void onOpenLinkClicked_gui(GtkMenuItem *item, gpointer data);
@@ -73,6 +75,7 @@ class PrivateMessage:
 		GdkCursor* handCursor;
 		bool aboveURI;
 		std::string selectedURI;
+		bool scrollToBottom;
 };
 
 #else

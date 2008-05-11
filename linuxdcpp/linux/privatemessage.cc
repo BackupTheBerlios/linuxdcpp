@@ -30,7 +30,8 @@ PrivateMessage::PrivateMessage(const string &cid):
 	BookEntry(Entry::PRIVATE_MESSAGE, _("PM: ") + WulforUtil::getNicks(cid), "privatemessage.glade", cid),
 	cid(cid),
 	historyIndex(0),
-	sentAwayMessage(FALSE)
+	sentAwayMessage(FALSE),
+	scrollToBottom(TRUE)
 {
 	// Intialize the chat window
 	if (SETTING(USE_OEM_MONOFONT))
@@ -50,12 +51,16 @@ PrivateMessage::PrivateMessage(const string &cid):
 	if (BOOLSETTING(PRIVATE_MESSAGE_BEEP_OPEN))
 		gdk_beep();
 
+	GtkAdjustment *adjustment = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(getWidget("scroll")));
+
 	// Connect the signals to their callback functions.
 	g_signal_connect(getContainer(), "focus-in-event", G_CALLBACK(onFocusIn_gui), (gpointer)this);
 	g_signal_connect(getWidget("entry"), "activate", G_CALLBACK(onSendMessage_gui), (gpointer)this);
 	g_signal_connect(getWidget("entry"), "key-press-event", G_CALLBACK(onKeyPress_gui), (gpointer)this);
 	g_signal_connect(getWidget("text"), "motion-notify-event", G_CALLBACK(onChatPointerMoved_gui), (gpointer)this);
 	g_signal_connect(getWidget("text"), "visibility-notify-event", G_CALLBACK(onChatVisibilityChanged_gui), (gpointer)this);
+	g_signal_connect(adjustment, "value_changed", G_CALLBACK(onChatScroll_gui), (gpointer)this);
+	g_signal_connect(adjustment, "changed", G_CALLBACK(onChatResize_gui), (gpointer)this);
 	g_signal_connect(getWidget("copyLinkItem"), "activate", G_CALLBACK(onCopyURIClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("openLinkItem"), "activate", G_CALLBACK(onOpenLinkClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("copyhubItem"), "activate", G_CALLBACK(onCopyURIClicked_gui), (gpointer)this);
@@ -134,14 +139,9 @@ void PrivateMessage::addStatusMessage_gui(string message)
 void PrivateMessage::addLine_gui(const string &message)
 {
 	GtkTextIter iter;
-	GtkAdjustment *adj;
-	bool setBottom;
 	string line = "";
 	string::size_type start, end = 0;
 	GtkTextIter i_start, i_end;
-
-	adj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(getWidget("scroll")));
-	setBottom = gtk_adjustment_get_value(adj) >= (adj->upper - adj->page_size);
 
 	if (BOOLSETTING(TIME_STAMPS))
 		line = "[" + Util::getShortTimeString() + "] ";
@@ -193,13 +193,6 @@ void PrivateMessage::addLine_gui(const string &message)
 		gtk_text_buffer_get_start_iter(buffer, &iter);
 		gtk_text_buffer_get_iter_at_line(buffer, &next, 1);
 		gtk_text_buffer_delete(buffer, &iter, &next);
-	}
-
-	if (setBottom)
-	{
-		gtk_text_buffer_get_end_iter(buffer, &iter);
-		gtk_text_buffer_move_mark(buffer, mark, &iter);
-		gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(getWidget("text")), mark, 0, FALSE, 0, 0);
 	}
 }
 
@@ -466,6 +459,28 @@ gboolean PrivateMessage::onChatVisibilityChanged_gui(GtkWidget* widget, GdkEvent
 	pm->updateCursor(widget);
 
 	return FALSE;
+}
+
+void PrivateMessage::onChatScroll_gui(GtkAdjustment *adjustment, gpointer data)
+{
+	PrivateMessage *pm = (PrivateMessage *)data;
+	gdouble value = gtk_adjustment_get_value(adjustment);
+	pm->scrollToBottom = value >= (adjustment->upper - adjustment->page_size);
+}
+
+void PrivateMessage::onChatResize_gui(GtkAdjustment *adjustment, gpointer data)
+{
+	PrivateMessage *pm = (PrivateMessage *)data;
+	gdouble value = gtk_adjustment_get_value(adjustment);
+
+	if (pm->scrollToBottom && value < (adjustment->upper - adjustment->page_size))
+	{
+		GtkTextIter iter;
+
+		gtk_text_buffer_get_end_iter(pm->buffer, &iter);
+		gtk_text_buffer_move_mark(pm->buffer, pm->mark, &iter);
+		gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(pm->getWidget("text")), pm->mark, 0, FALSE, 0, 0);
+	}
 }
 
 void PrivateMessage::onCopyURIClicked_gui(GtkMenuItem *item, gpointer data)
