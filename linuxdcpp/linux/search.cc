@@ -557,7 +557,10 @@ void Search::addResult_gui(SearchResult *result, bool isShared)
 	{
 		result2 = resultView.getValue<gpointer, SearchResult *>(&iter, "SearchResult");
 		if (result->getUser()->getCID() == result2->getUser()->getCID() && result->getFile() == result2->getFile())
+		{
+			result->decRef();
 			return;
+		}
 
 		valid = gtk_tree_model_iter_next(sortedFilterModel, &iter);
 	}
