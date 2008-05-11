@@ -48,6 +48,7 @@ class Settings:
 		void loadUserCommands_gui();
 		void saveUserCommand(UserCommand *uc);
 		void updateUserCommandTextSent_gui();
+		bool validateUserCommandInput(const std::string &oldName = "");
 		void showErrorDialog(const std::string &error);
 
 		// GUI callbacks

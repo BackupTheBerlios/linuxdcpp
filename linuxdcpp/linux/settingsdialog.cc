@@ -781,6 +781,8 @@ void Settings::initAdvanced_gui()
 		gtk_tree_view_column_set_sort_column_id(gtk_tree_view_get_column(userCommandView.get(), userCommandView.col("Command")), -1);
 		gtk_tree_view_column_set_sort_column_id(gtk_tree_view_get_column(userCommandView.get(), userCommandView.col("Hub")), -1);
 
+		gtk_window_set_transient_for(GTK_WINDOW(getWidget("commandDialog")), GTK_WINDOW(getContainer()));
+
 		g_signal_connect(getWidget("userCommandAddButton"), "clicked", G_CALLBACK(onUserCommandAdd_gui), (gpointer)this);
 		g_signal_connect(getWidget("userCommandRemoveButton"), "clicked", G_CALLBACK(onUserCommandRemove_gui), (gpointer)this);
 		g_signal_connect(getWidget("userCommandEditButton"), "clicked", G_CALLBACK(onUserCommandEdit_gui), (gpointer)this);
@@ -990,6 +992,29 @@ void Settings::updateUserCommandTextSent_gui()
 	}
 
 	gtk_entry_set_text(GTK_ENTRY(getWidget("commandDialogTextSent")), command.c_str());
+}
+
+bool Settings::validateUserCommandInput(const string &oldName)
+{
+	if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("commandDialogSeparator"))))
+	{
+		string name = gtk_entry_get_text(GTK_ENTRY(getWidget("commandDialogName")));
+		string command = gtk_entry_get_text(GTK_ENTRY(getWidget("commandDialogCommand")));
+
+		if (name.length() == 0 || command.length() == 0)
+		{
+			showErrorDialog(_("Name and command must not be empty"));
+			return FALSE;
+		}
+
+		if (name != oldName && FavoriteManager::getInstance()->findUserCommand(name) != -1)
+		{
+			showErrorDialog(_("Command name already exists"));
+			return FALSE;
+		}
+	}
+
+	return TRUE;
 }
 
 void Settings::showErrorDialog(const std::string &error)
@@ -1529,31 +1554,18 @@ void Settings::onUserCommandAdd_gui(GtkWidget *widget, gpointer data)
 	gtk_widget_set_sensitive(s->getWidget("commandDialogTo"), FALSE);
 	gtk_widget_set_sensitive(s->getWidget("commandDialogOnce"), FALSE);
 
-	gint response = gtk_dialog_run(GTK_DIALOG(s->getWidget("commandDialog")));
+	gint response;
+
+	do
+	{
+		response = gtk_dialog_run(GTK_DIALOG(s->getWidget("commandDialog")));
+	}
+	while (response == GTK_RESPONSE_OK && !s->validateUserCommandInput());
+
 	gtk_widget_hide(s->getWidget("commandDialog"));
 
 	if (response == GTK_RESPONSE_OK)
-	{
-		if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogSeparator"))))
-		{
-			string name = gtk_entry_get_text(GTK_ENTRY(s->getWidget("commandDialogName")));
-			string command = gtk_entry_get_text(GTK_ENTRY(s->getWidget("commandDialogName")));
-
-			if (name.length() == 0 || command.length() == 0)
-			{
-				s->showErrorDialog(_("Name and command must not be empty"));
-				return;
-			}
-
-			if (FavoriteManager::getInstance()->findUserCommand(name) != -1)
-			{
-				s->showErrorDialog(_("Command name already exists"));
-				return;
-			}
-		}
-
 		s->saveUserCommand(NULL);
-	}
 }
 
 void Settings::onUserCommandEdit_gui(GtkWidget *widget, gpointer data)
@@ -1627,31 +1639,18 @@ void Settings::onUserCommandEdit_gui(GtkWidget *widget, gpointer data)
 
 		s->updateUserCommandTextSent_gui();
 
-		gint response = gtk_dialog_run(GTK_DIALOG(s->getWidget("commandDialog")));
+		gint response;
+
+		do
+		{
+			response = gtk_dialog_run(GTK_DIALOG(s->getWidget("commandDialog")));
+		}
+		while (response == GTK_RESPONSE_OK && !s->validateUserCommandInput(name));
+
 		gtk_widget_hide(s->getWidget("commandDialog"));
 
 		if (response == GTK_RESPONSE_OK)
-		{
-			if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(s->getWidget("commandDialogSeparator"))))
-			{
-				string newName = gtk_entry_get_text(GTK_ENTRY(s->getWidget("commandDialogName")));
-				string command = gtk_entry_get_text(GTK_ENTRY(s->getWidget("commandDialogName")));
-
-				if (newName.length() == 0 || command.length() == 0)
-				{
-					s->showErrorDialog(_("Name and command must not be empty"));
-					return;
-				}
-
-				if (newName != name && FavoriteManager::getInstance()->findUserCommand(newName) != -1)
-				{
-					s->showErrorDialog(_("Command name already exists"));
-					return;
-				}
-			}
-
 			s->saveUserCommand(&uc);
-		}
 	}
 }
 

@@ -24,10 +24,11 @@
 [2008-05-04] Bug #013330: Confirm exit application dialog not working.
 [2008-05-04] Fix small memory leak when retrieving local IPs (thanks Razzloss).
 [2008-05-04] Add ability to open URIs on Mac OSX (thanks David Grundberg).
-[2008-05-10] Fix hub reconnect regression.
+[2008-05-10] Fixed hub reconnect regression.
 [2008-05-10] Keep dialogs above the application (thanks Razzloss).
 [2008-05-10] User list performance improvements (thanks Razzloss & olsner).
 [2008-05-10] Scroll chat to bottom after window resize (thanks Bart Vullings).
+[2008-05-10] Fixed user command dialog not saving its state after an error (thanks Bart Vullings).
 
 *** 1.0.1 2007-12-25 ***
 [2007-10-13] Use strtoll instead of atoll to enable build on HPUX (thanks Tobias Nygren).
