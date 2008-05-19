@@ -31,23 +31,21 @@ class BookEntry : public Entry
 		GtkWidget *getContainer();
 		GtkWidget *getLabelBox() { return labelBox; }
 		GtkWidget *getCloseButton() { return closeButton; }
+		GtkWidget *getTabMenuItem() { return tabMenuItem; }
 		void setLabel_gui(std::string text);
 		void setBold_gui();
-		void unsetBold_gui();
-		void setWindowItem(GtkWidget *windowItem);
+		void setActive_gui();
 		virtual void show() = 0;
-
-	protected:
-		GtkWidget *getWindowItem();
 
 	private:
 		std::string title;
 		GtkWidget *eventBox;
 		GtkWidget *labelBox;
-		GtkWidget *windowItem;
+		GtkWidget *tabMenuItem;
 		GtkWidget *closeButton;
 		GtkLabel *label;
 		GtkTooltips *tips;
+		static GSList *group;
 		bool bold;
 		static const guint labelSize = 20; ///@todo: make a preference?
 };

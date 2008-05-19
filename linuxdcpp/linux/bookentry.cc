@@ -21,9 +21,10 @@
 
 using namespace std;
 
+GSList* BookEntry::group = NULL;
+
 BookEntry::BookEntry(const EntryType type, const string &title, const string &glade, const string &id):
 	Entry(type, glade, id),
-	windowItem(NULL),
 	bold(FALSE)
 {
 	labelBox = gtk_hbox_new(FALSE, 5);
@@ -57,6 +58,9 @@ BookEntry::BookEntry(const EntryType type, const string &title, const string &gl
 
 	gtk_widget_show_all(labelBox);
 
+	tabMenuItem = gtk_radio_menu_item_new_with_label(group, title.c_str());
+	group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(tabMenuItem));
+
 	setLabel_gui(title);
 
 	// Associates entry to the widget for later retrieval in MainWindow::switchPage_gui()
@@ -68,20 +72,14 @@ GtkWidget* BookEntry::getContainer()
 	return getWidget("mainBox");
 }
 
-void BookEntry::setWindowItem(GtkWidget *item)
-{
-	dcassert(windowItem == NULL);
-	windowItem = item;
-}
-
-GtkWidget *BookEntry::getWindowItem()
-{
-	dcassert(windowItem);
-	return windowItem;
-}
-
 void BookEntry::setLabel_gui(string text)
 {
+	// Update the tab menu item label
+	GtkWidget *child = gtk_bin_get_child(GTK_BIN(tabMenuItem));
+	if (child && GTK_IS_LABEL(child))
+		gtk_label_set_text(GTK_LABEL(child), text.c_str());
+
+	// Update the notebook tab label
 	gtk_tooltips_set_tip(tips, eventBox, text.c_str(), text.c_str());
 	if (text.size() > labelSize)
 		text = text.substr(0, labelSize - 3) + "...";
@@ -100,12 +98,14 @@ void BookEntry::setBold_gui()
 	}
 }
 
-void BookEntry::unsetBold_gui()
+void BookEntry::setActive_gui()
 {
 	if (bold)
 	{
 		gtk_label_set_text(label, title.c_str());
 		bold = FALSE;
 	}
+
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(tabMenuItem), TRUE);
 }
 

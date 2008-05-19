@@ -56,9 +56,6 @@ class MainWindow:
 		void removeBookEntry_gui(BookEntry *entry);
 		GtkWidget *currentPage_gui();
 		void raisePage_gui(GtkWidget *page);
-		GtkWidget *appendWindowItem(GtkWidget *page, const std::string &title);
-		void modifyWindowItem(GtkWidget *menuItem, std::string title);
-		void removeWindowItem(GtkWidget *menuItem);
 		bool getUserCommandLines_gui(const std::string &command, StringMap &ucParams);
 		void openMagnetDialog_gui(const std::string &magnet);
 		void showDownloadQueue_gui();
@@ -75,7 +72,11 @@ class MainWindow:
 	private:
 		// GUI functions
 		void autoOpen_gui();
+		void addTabMenuItem_gui(GtkWidget* menuItem, GtkWidget* page);
+		void removeTabMenuItem_gui(GtkWidget *menuItem);
 		void addBookEntry_gui(BookEntry *entry);
+		void previousTab_gui();
+		void nextTab_gui();
 		BookEntry *findBookEntry(const EntryType type, const std::string &id = "");
 		void createTrayIcon_gui();
 		void updateTrayToolTip_gui(std::string download, std::string upload);
@@ -114,6 +115,8 @@ class MainWindow:
 		static void onRefreshFileListClicked_gui(GtkWidget *widget, gpointer data);
 		static void onReconnectClicked_gui(GtkWidget *widget, gpointer data);
 		static void onCloseClicked_gui(GtkWidget *widget, gpointer data);
+		static void onPreviousTabClicked_gui(GtkWidget* widget, gpointer data);
+		static void onNextTabClicked_gui(GtkWidget* widget, gpointer data);
 		static void onAboutClicked_gui(GtkWidget *widget, gpointer data);
 		static void onAboutDialogActivateLink_gui(GtkAboutDialog *dialog, const gchar *link, gpointer data);
 		static void onCloseBookEntry_gui(GtkWidget *widget, gpointer data);

@@ -30,6 +30,7 @@
 [2008-05-10] Scroll chat to bottom after window resize (thanks Bart Vullings).
 [2008-05-10] Fixed user command dialog not saving its state after an error (thanks Bart Vullings).
 [2008-05-11] Fixed a memory leak when filtering duplicate search results (thanks Razzloss).
+[2008-05-19] Replaced the 'Windows' menu with an improved 'Tabs' menu.
 
 *** 1.0.1 2007-12-25 ***
 [2007-10-13] Use strtoll instead of atoll to enable build on HPUX (thanks Tobias Nygren).

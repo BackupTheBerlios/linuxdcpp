@@ -245,12 +245,35 @@
               </widget>
             </child>
             <child>
-              <widget class="GtkMenuItem" id="window1">
+              <widget class="GtkMenuItem" id="tabs1">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">_Window</property>
+                <property name="label" translatable="yes">_Tabs</property>
                 <property name="use_underline">True</property>
                 <child>
-                  <widget class="GtkMenu" id="windowMenu">
+                  <widget class="GtkMenu" id="tabsMenu">
+                    <child>
+                      <widget class="GtkMenuItem" id="previousTabMenuItem">
+                        <property name="visible">True</property>
+                        <property name="sensitive">False</property>
+                        <property name="label" translatable="yes">_Previous Tab</property>
+                        <property name="use_underline">True</property>
+                        <accelerator key="Page_Up" modifiers="GDK_MOD1_MASK | GDK_CONTROL_MASK" signal="activate"/>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkMenuItem" id="nextTabMenuItem">
+                        <property name="visible">True</property>
+                        <property name="sensitive">False</property>
+                        <property name="label" translatable="yes">_Next Tab</property>
+                        <property name="use_underline">True</property>
+                        <accelerator key="Page_Down" modifiers="GDK_MOD1_MASK | GDK_CONTROL_MASK" signal="activate"/>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkSeparatorMenuItem" id="tabMenuSeparator">
+                        <property name="visible">True</property>
+                      </widget>
+                    </child>
                   </widget>
                 </child>
               </widget>

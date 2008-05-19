@@ -190,6 +190,8 @@ MainWindow::MainWindow():
 	g_signal_connect(getWidget("downloadQueueMenuItem"), "activate", G_CALLBACK(onDownloadQueueClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("finishedDownloadsMenuItem"), "activate", G_CALLBACK(onFinishedDownloadsClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("finishedUploadsMenuItem"), "activate", G_CALLBACK(onFinishedUploadsClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("previousTabMenuItem"), "activate", G_CALLBACK(onPreviousTabClicked_gui), (gpointer)this);
+	g_signal_connect(getWidget("nextTabMenuItem"), "activate", G_CALLBACK(onNextTabClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("aboutMenuItem"), "activate", G_CALLBACK(onAboutClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("getFileListItem"), "activate", G_CALLBACK(onGetFileListClicked_gui), (gpointer)this);
 	g_signal_connect(getWidget("matchQueueItem"), "activate", G_CALLBACK(onMatchQueueClicked_gui), (gpointer)this);
@@ -326,6 +328,9 @@ void MainWindow::addBookEntry_gui(BookEntry *entry)
 	GtkWidget *page = entry->getContainer();
 	GtkWidget *label = entry->getLabelBox();
 	GtkWidget *closeButton = entry->getCloseButton();
+	GtkWidget *tabMenuItem = entry->getTabMenuItem();
+
+	addTabMenuItem_gui(tabMenuItem, page);
 
 	gtk_notebook_append_page(GTK_NOTEBOOK(getWidget("book")), page, label);
 
@@ -363,6 +368,7 @@ void MainWindow::removeBookEntry_gui(BookEntry *entry)
 {
 	GtkNotebook *book = GTK_NOTEBOOK(getWidget("book"));
 	GtkWidget *page = entry->getContainer();
+	GtkWidget* menuItem = entry->getTabMenuItem();
 	int num = gtk_notebook_page_num(book, page);
 	removeChild(entry);
 
@@ -384,31 +390,56 @@ void MainWindow::removeBookEntry_gui(BookEntry *entry)
 		}
 		gtk_notebook_remove_page(book, num);
 
+		removeTabMenuItem_gui(menuItem);
+
 		if (gtk_notebook_get_n_pages(book) == 0)
 			gtk_widget_set_sensitive(getWidget("closeMenuItem"), FALSE);
 	}
 }
 
-GtkWidget *MainWindow::appendWindowItem(GtkWidget *page, const string &title)
+void MainWindow::previousTab_gui()
 {
-	GtkWidget *menuItem = gtk_menu_item_new_with_label(title.c_str());
+	GtkNotebook *book = GTK_NOTEBOOK(getWidget("book"));
+
+	if (gtk_notebook_get_current_page(book) == 0)
+		gtk_notebook_set_current_page(book, -1);
+	else
+		gtk_notebook_prev_page(book);
+}
+
+void MainWindow::nextTab_gui()
+{
+	GtkNotebook *book = GTK_NOTEBOOK(getWidget("book"));
+
+	if (gtk_notebook_get_n_pages(book) - 1 == gtk_notebook_get_current_page(book))
+		gtk_notebook_set_current_page(book, 0);
+	else
+		gtk_notebook_next_page(book);
+}
+
+void MainWindow::addTabMenuItem_gui(GtkWidget* menuItem, GtkWidget* page)
+{
 	g_signal_connect(menuItem, "activate", G_CALLBACK(onRaisePage_gui), (gpointer)page);
-	gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("windowMenu")), menuItem);
-	gtk_widget_show_all(getWidget("windowMenu"));
+	gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("tabsMenu")), menuItem);
+	gtk_widget_show_all(getWidget("tabsMenu"));
 
-	return menuItem;
+	gtk_widget_set_sensitive(getWidget("previousTabMenuItem"), TRUE);
+	gtk_widget_set_sensitive(getWidget("nextTabMenuItem"), TRUE);
+	gtk_widget_set_sensitive(getWidget("tabMenuSeparator"), TRUE);
 }
 
-void MainWindow::modifyWindowItem(GtkWidget *menuItem, string title)
+void MainWindow::removeTabMenuItem_gui(GtkWidget *menuItem)
 {
-	GtkWidget *child = gtk_bin_get_child(GTK_BIN(menuItem));
-	if (child && GTK_IS_LABEL(child))
-		gtk_label_set_text(GTK_LABEL(child), title.c_str());
-}
+	GtkNotebook *book = GTK_NOTEBOOK(getWidget("book"));
 
-void MainWindow::removeWindowItem(GtkWidget *menuItem)
-{
-	gtk_container_remove(GTK_CONTAINER(getWidget("windowMenu")), menuItem);
+	gtk_container_remove(GTK_CONTAINER(getWidget("tabsMenu")), menuItem);
+
+	if (gtk_notebook_get_n_pages(book) == 0)
+	{
+		gtk_widget_set_sensitive(getWidget("previousTabMenuItem"), FALSE);
+		gtk_widget_set_sensitive(getWidget("nextTabMenuItem"), FALSE);
+		gtk_widget_set_sensitive(getWidget("tabMenuSeparator"), FALSE);
+	}
 }
 
 /*
@@ -860,24 +891,14 @@ gboolean MainWindow::onKeyPressed_gui(GtkWidget *widget, GdkEventKey *event, gpo
 
 	if (event->state & GDK_CONTROL_MASK)
 	{
-		GtkNotebook *book = GTK_NOTEBOOK(mw->getWidget("book"));
-
 		if (event->state & GDK_SHIFT_MASK && event->keyval == GDK_ISO_Left_Tab)
 		{
-			if (gtk_notebook_get_current_page(book) == 0)
-				gtk_notebook_set_current_page(book, -1);
-			else
-				gtk_notebook_prev_page(book);
-
+			mw->previousTab_gui();
 			return TRUE;
 		}
 		else if (event->keyval == GDK_Tab)
 		{
-			if (gtk_notebook_get_n_pages(book) - 1 == gtk_notebook_get_current_page(book))
-				gtk_notebook_set_current_page(book, 0);
-			else
-				gtk_notebook_next_page(book);
-
+			mw->nextTab_gui();
 			return TRUE;
 		}
 	}
@@ -940,7 +961,7 @@ void MainWindow::onPageSwitched_gui(GtkNotebook *notebook, GtkNotebookPage *page
 	BookEntry *entry = (BookEntry *)g_object_get_data(G_OBJECT(child), "entry");
 
 	if (entry)
-		entry->unsetBold_gui();
+		entry->setActive_gui();
 
 	GList *list = (GList *)g_object_get_data(G_OBJECT(notebook), "page-rotation-list");
 	list = g_list_remove(list, (gpointer)child);
@@ -1149,6 +1170,18 @@ void MainWindow::onCloseClicked_gui(GtkWidget *widget, gpointer data)
 		if (entry)
 			mw->removeBookEntry_gui(entry);
 	}
+}
+
+void MainWindow::onPreviousTabClicked_gui(GtkWidget* widget, gpointer data)
+{
+	MainWindow *mw = (MainWindow *)data;
+	mw->previousTab_gui();
+}
+
+void MainWindow::onNextTabClicked_gui(GtkWidget* widget, gpointer data)
+{
+	MainWindow *mw = (MainWindow *)data;
+	mw->nextTab_gui();
 }
 
 void MainWindow::onAboutClicked_gui(GtkWidget *widget, gpointer data)
