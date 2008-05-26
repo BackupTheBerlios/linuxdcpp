@@ -143,9 +143,14 @@ void PrivateMessage::addLine_gui(const string &message)
 	string::size_type start, end = 0;
 	GtkTextIter i_start, i_end;
 
+	// Add a new line if this isn't the first line in buffer.
+	if (gtk_text_buffer_get_char_count(buffer) > 0)
+		line = "\n";
+
 	if (BOOLSETTING(TIME_STAMPS))
-		line = "[" + Util::getShortTimeString() + "] ";
-	line += message + "\n";
+		line += "[" + Util::getShortTimeString() + "] ";
+
+	line += message;
 
 	gtk_text_buffer_get_end_iter(buffer, &iter);
 	gtk_text_buffer_insert(buffer, &iter, line.c_str(), line.size());

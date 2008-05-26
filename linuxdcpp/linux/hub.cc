@@ -355,9 +355,14 @@ void Hub::addMessage_gui(string message)
 	GtkTextIter iter;
 	string line = "";
 
+	// Add a new line if this isn't the first line in buffer.
+	if (gtk_text_buffer_get_char_count(chatBuffer) > 0)
+		line = "\n";
+
 	if (BOOLSETTING(TIME_STAMPS))
-		line = "[" + Util::getShortTimeString() + "] ";
-	line += message + "\n";
+		line += "[" + Util::getShortTimeString() + "] ";
+
+	line += message;
 
 	gtk_text_buffer_get_end_iter(chatBuffer, &iter);
 	gtk_text_buffer_insert(chatBuffer, &iter, line.c_str(), line.size());
