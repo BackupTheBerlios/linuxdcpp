@@ -334,7 +334,8 @@ void MainWindow::addBookEntry_gui(BookEntry *entry)
 
 	gtk_notebook_append_page(GTK_NOTEBOOK(getWidget("book")), page, label);
 
-	g_signal_connect(label, "button-press-event", G_CALLBACK(onButtonPressPage_gui), (gpointer)entry);
+	g_signal_connect(label, "button-release-event", G_CALLBACK(onButtonReleasePage_gui), (gpointer)entry);
+	g_signal_connect(closeButton, "button-release-event", G_CALLBACK(onButtonReleasePage_gui), (gpointer)entry);
 	g_signal_connect(closeButton, "clicked", G_CALLBACK(onCloseBookEntry_gui), (gpointer)entry);
 
 	gtk_widget_set_sensitive(getWidget("closeMenuItem"), TRUE);
@@ -906,10 +907,14 @@ gboolean MainWindow::onKeyPressed_gui(GtkWidget *widget, GdkEventKey *event, gpo
 	return FALSE;
 }
 
-gboolean MainWindow::onButtonPressPage_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
+gboolean MainWindow::onButtonReleasePage_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
+	gint width, height;
+	gdk_drawable_get_size(event->window, &width, &height);
 
-	if (event->button == 2)
+	// If middle mouse button was released when hovering over tab label
+	if (event->button == 2 && event->x >= 0 && event->y >= 0
+		&& event->x < width && event->y < height)
 	{
 		BookEntry *entry = (BookEntry *)data;
 		WulforManager::get()->getMainWindow()->removeBookEntry_gui(entry);
@@ -1885,6 +1890,10 @@ void MainWindow::on(QueueManagerListener::Finished, QueueItem *item, const strin
 
 void MainWindow::on(TimerManagerListener::Second, uint32_t ticks) throw()
 {
+	// Avoid calculating status update if it's not needed
+	if (!BOOLSETTING(MINIMIZE_TRAY) && minimized)
+		return;
+
 	string status1, status2, status3, status4, status5, status6;
 	int64_t diff = (int64_t)((lastUpdate == 0) ? ticks - 1000 : ticks - lastUpdate);
 	int64_t updiff = Socket::getTotalUp() - lastUp;
