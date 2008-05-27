@@ -32,6 +32,7 @@
 [2008-05-11] Fixed a memory leak when filtering duplicate search results (thanks Razzloss).
 [2008-05-19] Replaced the 'Windows' menu with an improved 'Tabs' menu.
 [2008-05-26] Removed extra newlines in hub/private chats (thanks David Grundberg).
+[2008-05-26] Fixed search hotkey collision.
 
 *** 1.0.1 2007-12-25 ***
 [2007-10-13] Use strtoll instead of atoll to enable build on HPUX (thanks Tobias Nygren).
