@@ -67,7 +67,7 @@ class MainWindow:
 		void showPublicHubs_gui();
 		void showShareBrowser_gui(User::Ptr user, std::string file, std::string dir, bool useSetting);
 		Search *addSearch_gui();
-		void setMainStatus_gui(std::string text);
+		void setMainStatus_gui(std::string text, time_t t = time(NULL));
 
 	private:
 		// GUI functions

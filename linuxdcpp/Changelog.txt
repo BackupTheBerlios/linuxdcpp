@@ -36,6 +36,7 @@
 [2008-05-26] Close tab on middle button release instead of press (thanks David Grundberg).
 [2008-05-27] Bug #12100: Away message says 'DC++'.
 [2008-05-27] Bug #12994: Long chat string doesn't wordwrap.
+[2008-05-27] Added timestamps to hub and mainwindow status bars.
 
 *** 1.0.1 2007-12-25 ***
 [2007-10-13] Use strtoll instead of atoll to enable build on HPUX (thanks Tobias Nygren).

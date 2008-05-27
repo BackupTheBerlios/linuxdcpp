@@ -187,6 +187,9 @@ void Hub::setStatus_gui(string statusBar, string text)
 {
 	if (!statusBar.empty() && !text.empty())
 	{
+		if (statusBar == "statusMain")
+			text = "[" + Util::getShortTimeString() + "] " + text;
+
 		gtk_statusbar_pop(GTK_STATUSBAR(getWidget(statusBar)), 0);
 		gtk_statusbar_push(GTK_STATUSBAR(getWidget(statusBar)), 0, text.c_str());
 	}

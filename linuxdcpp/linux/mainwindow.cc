@@ -220,7 +220,7 @@ MainWindow::MainWindow():
 	gtk_widget_destroy(dummy);
 	emptyStatusWidth = req.width;
 
-	gtk_statusbar_push(GTK_STATUSBAR(getWidget("status1")), 0, _("Welcome to LinuxDC++"));
+	setMainStatus_gui(_("Welcome to LinuxDC++"));
 
 	// Putting this after all the resizing and moving makes the window appear
 	// in the correct position instantly, looking slightly more cool
@@ -473,9 +473,14 @@ void MainWindow::updateTrayToolTip_gui(string download, string upload)
 	gtk_tooltips_set_tip(trayToolTip, trayIcon, toolTip.str().c_str(), NULL);
 }
 
-void MainWindow::setMainStatus_gui(string text)
+void MainWindow::setMainStatus_gui(string text, time_t t)
 {
-	setStatus_gui("status1", text);
+	if (!text.empty())
+	{
+		text = "[" + Util::getShortTimeString(t) + "] " + text;
+
+		setStatus_gui("status1", text);
+	}
 }
 
 void MainWindow::setStatus_gui(string statusBar, std::string text)
@@ -1124,7 +1129,7 @@ void MainWindow::onOpenFileListClicked_gui(GtkWidget *widget, gpointer data)
 			if (user)
 				mw->showShareBrowser_gui(user, path, "", FALSE);
 			else
-				mw->setStatus_gui("status1", _("Unable to open: Older file list format detected"));
+				mw->setMainStatus_gui(_("Unable to open: Older file list format detected"));
 		}
 	}
 }
@@ -1136,7 +1141,7 @@ void MainWindow::onOpenOwnListClicked_gui(GtkWidget *widget, gpointer data)
 	F0 *func = new F0(mw, &MainWindow::openOwnList_client);
 	WulforManager::get()->dispatchClientFunc(func);
 
-	mw->setStatus_gui("status1", _("Loading file list"));
+	mw->setMainStatus_gui(_("Loading file list"));
 }
 
 void MainWindow::onRefreshFileListClicked_gui(GtkWidget *widget, gpointer data)
@@ -1866,12 +1871,10 @@ void MainWindow::on(UploadManagerListener::Complete, Upload *ul) throw()
 	transferComplete_client(ul);
 }
 
-void MainWindow::on(LogManagerListener::Message, time_t t, const string &str) throw()
+void MainWindow::on(LogManagerListener::Message, time_t t, const string &message) throw()
 {
-	string message = "[" + Util::getShortTimeString(t) + "] " + str;
-
-	typedef Func2<MainWindow, string, string> F2;
-	F2 *func = new F2(this, &MainWindow::setStatus_gui, "status1", message);
+	typedef Func2<MainWindow, string, time_t> F2;
+	F2 *func = new F2(this, &MainWindow::setMainStatus_gui, message, t);
 	WulforManager::get()->dispatchGuiFunc(func);
 }
 
