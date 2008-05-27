@@ -329,7 +329,7 @@ void Util::decodeUrl(const string& url, string& aServer, uint16_t& aPort, string
 }
 
 string Util::getAwayMessage() {
-	return (formatTime(awayMsg.empty() ? SETTING(DEFAULT_AWAY_MESSAGE) : awayMsg, awayTime)) + " <DC++ v" VERSIONSTRING ">";
+	return (formatTime(awayMsg.empty() ? SETTING(DEFAULT_AWAY_MESSAGE) : awayMsg, awayTime)) + " <" APPNAME " v" VERSIONSTRING ">";
 }
 string Util::formatBytes(int64_t aBytes) {
 	char buf[64];
