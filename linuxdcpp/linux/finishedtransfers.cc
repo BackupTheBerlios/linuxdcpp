@@ -51,7 +51,8 @@ FinishedTransfers::FinishedTransfers(const EntryType type, const string &title, 
 	transferView.insertColumn("Speed", G_TYPE_STRING, TreeView::STRING, 100);
 	transferView.insertColumn("CRC Checked", G_TYPE_STRING, TreeView::STRING, 100);
 	transferView.insertHiddenColumn("Target", G_TYPE_STRING);
-	transferView.insertHiddenColumn("Chunk Size", G_TYPE_INT64);
+	transferView.insertHiddenColumn("Size Order", G_TYPE_INT64);
+	transferView.insertHiddenColumn("Speed Order", G_TYPE_INT64);
 	transferView.insertHiddenColumn("Elapsed Time", G_TYPE_INT64);
 	transferView.finalize();
 	transferStore = gtk_list_store_newv(transferView.getColCount(), transferView.getGTypes());
@@ -62,7 +63,8 @@ FinishedTransfers::FinishedTransfers(const EntryType type, const string &title, 
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(transferStore), transferView.col("Time"), GTK_SORT_ASCENDING);
 	gtk_tree_view_set_fixed_height_mode(transferView.get(), TRUE);
 	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(transferView.get()), GTK_SELECTION_MULTIPLE);
-	transferView.setSortColumn_gui("Size", "Chunk Size");
+	transferView.setSortColumn_gui("Size", "Size Order");
+	transferView.setSortColumn_gui("Speed", "Speed Order");
 
 	// Connect the signals to their callback functions.
 	g_signal_connect(getWidget("openItem"), "activate", G_CALLBACK(onOpen_gui), (gpointer)this);
@@ -90,7 +92,8 @@ void FinishedTransfers::show()
 void FinishedTransfers::addItem_gui(StringMap params, bool update)
 {
 	GtkTreeIter iter;
-	int64_t size = Util::toInt64(params["Chunk Size"]);
+	int64_t size = Util::toInt64(params["Size Order"]);
+	int64_t speed = Util::toInt64(params["Speed Order"]);
 	int64_t time = Util::toInt64(params["Elapsed Time"]);
 	totalBytes += size;
 	totalTime += time;
@@ -107,7 +110,8 @@ void FinishedTransfers::addItem_gui(StringMap params, bool update)
 		transferView.col("Speed"), params["Speed"].c_str(),
 		transferView.col("CRC Checked"), params["CRC Checked"].c_str(),
 		transferView.col("Target"), params["Target"].c_str(),
-		transferView.col("Chunk Size"), size,
+		transferView.col("Size Order"), size,
+		transferView.col("Speed Order"), speed,
 		transferView.col("Elapsed Time"), time,
 		-1);
 
@@ -279,7 +283,7 @@ void FinishedTransfers::removeItem_gui(string target)
 	{
 		if (target == transferView.getString(&iter, "Target"))
 		{
-			totalBytes -= transferView.getValue<gint64>(&iter, "Chunk Size");
+			totalBytes -= transferView.getValue<gint64>(&iter, "Size order");
 			totalTime -= transferView.getValue<gint64>(&iter, "Elapsed Time");
 			gtk_list_store_remove(transferStore, &iter);
 			items--;
@@ -337,7 +341,8 @@ void FinishedTransfers::getFinishedParams_client(FinishedItem *item, StringMap &
 	params["Speed"] = Util::formatBytes(item->getAvgSpeed()) + "/s";
 	params["CRC Checked"] = item->getCrc32Checked() ? _("Yes") : _("No");
 	params["Target"] = item->getTarget();
-	params["Chunk Size"] = Util::toString(item->getChunkSize());
+	params["Size Order"] = Util::toString(item->getChunkSize());
+	params["Speed Order"] = Util::toString(item->getAvgSpeed());
 	params["Elapsed Time"] = Util::toString(item->getMilliSeconds());
 }
 
