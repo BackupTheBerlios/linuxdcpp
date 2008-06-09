@@ -25,7 +25,8 @@ GSList* BookEntry::group = NULL;
 
 BookEntry::BookEntry(const EntryType type, const string &title, const string &glade, const string &id):
 	Entry(type, glade, id),
-	bold(FALSE)
+	bold(FALSE),
+	urgent(FALSE)
 {
 	labelBox = gtk_hbox_new(FALSE, 5);
 
@@ -82,30 +83,70 @@ void BookEntry::setLabel_gui(string text)
 	// Update the notebook tab label
 	gtk_tooltips_set_tip(tips, eventBox, text.c_str(), text.c_str());
 	if (text.size() > labelSize)
-		text = text.substr(0, labelSize - 3) + "...";
-	gtk_label_set_text(label, text.c_str());
-	title = text;
+		title = text.substr(0, labelSize - 3) + "...";
+	else
+		title = text;
+
+	updateLabel_gui();
 }
 
 void BookEntry::setBold_gui()
 {
-	if (!bold && WulforManager::get()->getMainWindow()->currentPage_gui() != getContainer())
+	if (!bold && !isActive_gui())
 	{
-		char *markup = g_markup_printf_escaped("<b>%s</b>", title.c_str());
-		gtk_label_set_markup(label, markup);
-		g_free(markup);
 		bold = TRUE;
+		updateLabel_gui();
+	}
+}
+
+void BookEntry::setUrgent_gui()
+{
+	if (!isActive_gui())
+	{
+		MainWindow *mw = WulforManager::get()->getMainWindow();
+
+		if (!urgent)
+		{
+			bold = TRUE;
+			urgent = TRUE;
+			updateLabel_gui();
+		}
+
+		if (!mw->isActive_gui())
+			mw->setUrgent_gui();
 	}
 }
 
 void BookEntry::setActive_gui()
 {
-	if (bold)
+	if (bold || urgent)
 	{
-		gtk_label_set_text(label, title.c_str());
 		bold = FALSE;
+		urgent = FALSE;
+		updateLabel_gui();
 	}
 
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(tabMenuItem), TRUE);
+}
+
+bool BookEntry::isActive_gui()
+{
+	MainWindow *mw = WulforManager::get()->getMainWindow();
+
+	return mw->isActive_gui() && mw->currentPage_gui() == getContainer();
+}
+
+void BookEntry::updateLabel_gui()
+{
+	const char *format = "%s";
+
+	if (urgent)
+		format = "<i><b>%s</b></i>";
+	else if (bold)
+		format = "<b>%s</b>";
+
+	char *markup = g_markup_printf_escaped(format, title.c_str());
+	gtk_label_set_markup(label, markup);
+	g_free(markup);
 }
 

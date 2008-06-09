@@ -160,6 +160,7 @@ MainWindow::MainWindow():
 	// Connect the signals to their callback functions.
 	g_signal_connect(window, "delete-event", G_CALLBACK(onCloseWindow_gui), (gpointer)this);
 	g_signal_connect(window, "window-state-event", G_CALLBACK(onWindowState_gui), (gpointer)this);
+	g_signal_connect(window, "focus-in-event", G_CALLBACK(onFocusIn_gui), (gpointer)this);
 	g_signal_connect(window, "key-press-event", G_CALLBACK(onKeyPressed_gui), (gpointer)this);
 	g_signal_connect(transferView.get(), "button-press-event", G_CALLBACK(onTransferButtonPressed_gui), (gpointer)this);
 	g_signal_connect(transferView.get(), "button-release-event", G_CALLBACK(onTransferButtonReleased_gui), (gpointer)this);
@@ -305,6 +306,16 @@ void MainWindow::show()
 	WulforManager::get()->dispatchClientFunc(f0);
 
 	autoOpen_gui();
+}
+
+bool MainWindow::isActive_gui()
+{
+	return gtk_window_is_active(window);
+}
+
+void MainWindow::setUrgent_gui()
+{
+	gtk_window_set_urgency_hint(window, true);
 }
 
 void MainWindow::autoOpen_gui()
@@ -867,6 +878,21 @@ gboolean MainWindow::onWindowState_gui(GtkWidget *widget, GdkEventWindowState *e
 	}
 
 	return TRUE;
+}
+
+gboolean MainWindow::onFocusIn_gui(GtkWidget *widget, GdkEventFocus *event, gpointer data)
+{
+	MainWindow *mw = (MainWindow *)data;
+	GtkWidget *child = mw->currentPage_gui();
+
+	if (child != NULL)
+	{
+		BookEntry *entry = (BookEntry *)g_object_get_data(G_OBJECT(child), "entry");
+		entry->setActive_gui();
+	}
+
+	gtk_window_set_urgency_hint(mw->window, FALSE);
+	return FALSE;
 }
 
 gboolean MainWindow::onCloseWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data)

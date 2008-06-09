@@ -620,8 +620,8 @@ void Settings::initAppearance_gui()
 		addOption_gui(colorStore, _("Finished Downloads"), SettingsManager::BOLD_FINISHED_DOWNLOADS);
 		addOption_gui(colorStore, _("Finished Uploads"), SettingsManager::BOLD_FINISHED_UPLOADS);
 		addOption_gui(colorStore, _("Download Queue"), SettingsManager::BOLD_QUEUE);
-		addOption_gui(colorStore, _("Hub"), SettingsManager::BOLD_HUB);
-		addOption_gui(colorStore, _("Private Message"), SettingsManager::BOLD_PM);
+		addOption_gui(colorStore, _("Hub (also sets urgency hint)"), SettingsManager::BOLD_HUB);
+		addOption_gui(colorStore, _("Private Message (also sets urgency hint)"), SettingsManager::BOLD_PM);
 		addOption_gui(colorStore, _("Search"), SettingsManager::BOLD_SEARCH);
 	}
 

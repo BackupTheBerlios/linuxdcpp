@@ -382,9 +382,6 @@ void Hub::addMessage_gui(string message)
 		gtk_text_buffer_get_iter_at_line(chatBuffer, &next, 1);
 		gtk_text_buffer_delete(chatBuffer, &iter, &next);
 	}
-
-	if (BOOLSETTING(BOLD_HUB))
-		setBold_gui();
 }
 
 void Hub::applyTags_gui(const string &line)
@@ -1481,7 +1478,6 @@ void Hub::on(ClientListener::GetPassword, Client *) throw()
 void Hub::on(ClientListener::HubUpdated, Client *) throw()
 {
 	typedef Func1<Hub, string> F1;
-	typedef Func2<MainWindow, GtkWidget *, string> F2;
 	string hubName = _("Hub: ");
 
 	if (client->getHubName().empty())
@@ -1527,6 +1523,17 @@ void Hub::on(ClientListener::Message, Client *, const OnlineUser &from, const st
 		typedef Func1<Hub, string> F1;
 		F1 *func = new F1(this, &Hub::addMessage_gui, line);
 		WulforManager::get()->dispatchGuiFunc(func);
+
+		// Set urgency hint if message contains user's nick
+		if (BOOLSETTING(BOLD_HUB) && from.getIdentity().getUser() != client->getMyIdentity().getUser())
+		{
+			if (message.find(client->getMyIdentity().getNick()) != string::npos)
+			{
+				typedef Func0<Hub> F0;
+				F0 *func = new F0(this, &Hub::setUrgent_gui);
+				WulforManager::get()->dispatchGuiFunc(func);
+			}
+		}
 	}
 }
 

@@ -34,10 +34,14 @@ class BookEntry : public Entry
 		GtkWidget *getTabMenuItem() { return tabMenuItem; }
 		void setLabel_gui(std::string text);
 		void setBold_gui();
+		void setUrgent_gui();
 		void setActive_gui();
+		bool isActive_gui();
 		virtual void show() = 0;
 
 	private:
+		void updateLabel_gui();
+
 		std::string title;
 		GtkWidget *eventBox;
 		GtkWidget *labelBox;
@@ -47,6 +51,7 @@ class BookEntry : public Entry
 		GtkTooltips *tips;
 		static GSList *group;
 		bool bold;
+		bool urgent;
 		static const guint labelSize = 20; ///@todo: make a preference?
 };
 

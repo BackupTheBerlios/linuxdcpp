@@ -53,6 +53,8 @@ class MainWindow:
 
 		// GUI functions
 		void show();
+		void setUrgent_gui();
+		bool isActive_gui();
 		void removeBookEntry_gui(BookEntry *entry);
 		GtkWidget *currentPage_gui();
 		void raisePage_gui(GtkWidget *page);
@@ -92,6 +94,7 @@ class MainWindow:
 
 		// GUI Callbacks
 		static gboolean onWindowState_gui(GtkWidget *widget, GdkEventWindowState *event, gpointer data);
+		static gboolean onFocusIn_gui(GtkWidget *widget, GdkEventFocus *event, gpointer data);
 		static gboolean onCloseWindow_gui(GtkWidget *widget, GdkEvent *event, gpointer data);
 		static gboolean onKeyPressed_gui(GtkWidget *widget, GdkEventKey *event, gpointer data);
 		static gboolean onButtonReleasePage_gui(GtkWidget *widget, GdkEventButton *event, gpointer data);

@@ -107,7 +107,10 @@ void PrivateMessage::addMessage_gui(string message)
 	}
 
 	if (BOOLSETTING(BOLD_PM))
-		setBold_gui();
+		setUrgent_gui();
+
+	if (BOOLSETTING(PRIVATE_MESSAGE_BEEP) && !isActive_gui())
+		gdk_beep();
 
 	// Send an away message, but only the first time after setting away mode.
 	if (!Util::getAway())
@@ -120,14 +123,6 @@ void PrivateMessage::addMessage_gui(string message)
 		typedef Func1<PrivateMessage, string> F1;
 		F1 *func = new F1(this, &PrivateMessage::sendMessage_client, Util::getAwayMessage());
 		WulforManager::get()->dispatchClientFunc(func);
-	}
-
-	if (BOOLSETTING(PRIVATE_MESSAGE_BEEP))
-	{
-		MainWindow *mw = WulforManager::get()->getMainWindow();
-		GdkWindowState state = gdk_window_get_state(mw->getContainer()->window);
-	 	if ((state & GDK_WINDOW_STATE_ICONIFIED) || mw->currentPage_gui() != getContainer())
-			gdk_beep();
 	}
 }
 
