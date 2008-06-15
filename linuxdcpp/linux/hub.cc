@@ -277,13 +277,30 @@ void Hub::removeUser_gui(string nick)
 		gtk_list_store_remove(nickStore, &iter);
 		userMap.erase(nick);
 		userIters.erase(nick);
+		removeTag_gui(nick);
 		setStatus_gui("statusUsers", Util::toString(userMap.size()) + _(" Users"));
 		setStatus_gui("statusShared", Util::formatBytes(totalShared));
 	}
 }
 
+/*
+ * Remove nick tag from text view
+ */
+void Hub::removeTag_gui(const std::string &nick)
+{
+	GtkTextTagTable *textTagTable = gtk_text_buffer_get_tag_table(chatBuffer);
+	GtkTextTag *tag = gtk_text_tag_table_lookup(textTagTable, nick.c_str());
+	if (tag)
+		gtk_text_tag_table_remove(textTagTable, tag);
+}
+
 void Hub::clearNickList_gui()
 {
+	// Remove all old nick tags from the text view
+	hash_map<string, string>::const_iterator it;
+	for (it = userMap.begin(); it != userMap.end(); ++it)
+		removeTag_gui(it->first);
+
 	gtk_list_store_clear(nickStore);
 	userMap.clear();
 	userIters.clear();
@@ -675,10 +692,10 @@ gboolean Hub::onNickTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent *e
 			gtk_tree_view_scroll_to_cell(hub->nickView.get(), path, gtk_tree_view_get_column(hub->nickView.get(), hub->nickView.col("Nick")), FALSE, 0.0, 0.0);
 			gtk_tree_view_set_cursor(hub->nickView.get(), path, NULL, FALSE);
 			gtk_tree_path_free(path);
-		}
 
-		if (event->button.button == 3)
-			hub->popupNickMenu_gui();
+			if (event->button.button == 3)
+				hub->popupNickMenu_gui();
+		}
 
 		return TRUE;
 	}

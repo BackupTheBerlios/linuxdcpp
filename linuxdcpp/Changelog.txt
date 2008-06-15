@@ -41,6 +41,7 @@
 [2008-06-08] Bold on content change setting for PM and hub now enables/disables urgency hint.
 [2008-06-08] Minimum version of GTK+ required is now 2.8.
 [2008-06-08] Fixed sorting by speed in Finished Transfers.
+[2008-06-14] Bug #13338: Context menu for absent users.
 
 *** 1.0.1 2007-12-25 ***
 [2007-10-13] Use strtoll instead of atoll to enable build on HPUX (thanks Tobias Nygren).

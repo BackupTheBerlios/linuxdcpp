@@ -48,6 +48,7 @@ class Hub:
 		bool findUser_gui(const std::string &nick, GtkTreeIter *iter);
 		void updateUser_gui(ParamMap id);
 		void removeUser_gui(std::string nick);
+		void removeTag_gui(const std::string &nick);
 		void clearNickList_gui();
 		void popupNickMenu_gui();
 		void getPassword_gui();
