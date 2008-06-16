@@ -227,7 +227,7 @@ bool WulforUtil::splitMagnet(const string &magnet, string &name, int64_t &size, 
 		if (nextpos == string::npos)
 			nextpos = magnet.size();
 
-    	if (pos == magnetSignature.length())
+		if (pos == magnetSignature.length())
 			tth = magnet.substr(magnetSignature.length(), nextpos - magnetSignature.length());
 		else if (magnet.compare(pos, 3, "xl=") == 0)
 			size = Util::toInt64(magnet.substr(pos + 3, nextpos - pos - 3));

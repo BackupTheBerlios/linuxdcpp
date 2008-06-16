@@ -52,7 +52,7 @@ class BookEntry : public Entry
 		static GSList *group;
 		bool bold;
 		bool urgent;
-		static const guint labelSize = 20; ///@todo: make a preference?
+		static const glong labelSize = 20; ///@todo: make a preference?
 };
 
 #else

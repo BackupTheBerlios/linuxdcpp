@@ -82,10 +82,21 @@ void BookEntry::setLabel_gui(string text)
 
 	// Update the notebook tab label
 	gtk_tooltips_set_tip(tips, eventBox, text.c_str(), text.c_str());
-	if (text.size() > labelSize)
-		title = text.substr(0, labelSize - 3) + "...";
+	glong len = g_utf8_strlen(text.c_str(), -1);
+
+	// Truncate the label text
+	if (len > labelSize)
+	{
+		gchar truncatedText[text.size()];
+		const string clipText = _("...");
+		len = labelSize - g_utf8_strlen(clipText.c_str(), -1);
+		g_utf8_strncpy(truncatedText, text.c_str(), len);
+		title = truncatedText + clipText;
+	}
 	else
+	{
 		title = text;
+	}
 
 	updateLabel_gui();
 }
