@@ -926,6 +926,10 @@ MemoryInputStream* ShareManager::generatePartialList(const string& dir, bool rec
 			}
 			j = i + 1;
 		}
+
+		if(it == directories.end())
+			return NULL;
+
 		for(ShareManager::Directory::MapIter it2 = it->second->directories.begin(); it2 != it->second->directories.end(); ++it2) {
 			it2->second->toXml(sos, indent, tmp, recurse);
 		}
