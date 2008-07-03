@@ -1,3 +1,10 @@
+Copyright © 2004-2008 Jens Oknelid, paskharen@gmail.com
+
+This program is released under the GPL with the additional exception
+that compiling, linking, and/or using OpenSSL is allowed. 
+
+Here follows the full text of the GPL:
+
 		    GNU GENERAL PUBLIC LICENSE
 		       Version 2, June 1991
 

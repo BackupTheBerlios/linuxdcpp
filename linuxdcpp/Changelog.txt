@@ -45,6 +45,7 @@
 [2008-06-16] Fixed tab label from truncating utf-8 text improperly.
 [2008-06-29] Fixed a possible remote crash on partial file list requests.
 [2008-06-29] Fixed a crash on empty private message.
+[2008-07-02] Added an OpenSSL exception to the license.
 
 *** 1.0.1 2007-12-25 ***
 [2007-10-13] Use strtoll instead of atoll to enable build on HPUX (thanks Tobias Nygren).
