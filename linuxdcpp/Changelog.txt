@@ -1,4 +1,4 @@
-*** 1.0.X 2008-XX-XX ***
+*** 1.0.2 2008-07-04 ***
 [2007-12-30] Bug #12815: Hide main toolbar option doesn't work after restart.
 [2008-01-05] GCC 4.3 compile fix.
 [2008-01-17] Added a copy nick menu item to main chat.
